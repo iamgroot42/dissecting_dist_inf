@@ -267,4 +267,4 @@ if __name__ == "__main__":
     # Make sure axis label not cut off
     plt.tight_layout()
 
-    sns_plot.figure.savefig("./meta_boxplot_varying_n.png")
+    sns_plot.figure.savefig("./meta_boxplot_varying_n_%s.png" % str(focus_n))

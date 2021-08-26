@@ -127,6 +127,8 @@ if __name__ == "__main__":
 
     focus_n = 1600
     for n, v1 in raw_data.items():
+        if focus_n not in v1:
+            continue
         v2 = v1[focus_n]
         for i in range(len(v2)):
             for j in range(len(v2[i])):
@@ -158,4 +160,4 @@ if __name__ == "__main__":
     # Make sure axis label not cut off
     plt.tight_layout()
 
-    sns_plot.figure.savefig("./meta_boxplot_varying_n.png")
+    sns_plot.figure.savefig("./meta_boxplot_varying_n_%s.png" % str(focus_n))

@@ -13,9 +13,9 @@ columns = [
     "Accuracy (%)"
 ]
 
-darkmode = False
+darkmode = True
 add_legend = False
-novtitle = False
+novtitle = True
 
 if darkmode:
     # Set dark background style
