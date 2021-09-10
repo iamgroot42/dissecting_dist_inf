@@ -48,9 +48,10 @@ if __name__ == "__main__":
         if args.verbose:
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
-
         save_path = os.path.join(
             model_utils.BASE_MODELS_DIR,
-            args.split, args.filter, str(args.ratio),
-            str(i + args.offset) + "_%.2f" % test_acc)
-        model_utils.save_model(clf, save_path)
+            args.split, args.filter, str(args.ratio))
+        if not os.path.isdir(save_path):
+            os.makedirs(save_path)
+        model_utils.save_model(clf, os.path.join(save_path,
+            str(i + args.offset) + "_%.2f" % test_acc))
