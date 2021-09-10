@@ -11,8 +11,7 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 def get_models(folder_path, n_models=1000):
-    if not os.path.isdir(folder_path):
-        os.makedirs(folder_path)
+   
     paths = np.random.permutation(os.listdir(folder_path))[:n_models]
 
     models = []
