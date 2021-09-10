@@ -6,7 +6,7 @@ import pandas as pd
 import os
 
 
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
+BASE_DATA_DIR = "/u/pdz6an/git/census"
 SUPPORTED_PROPERTIES = ["sex", "race", "none"]
 PROPERTY_FOCUS = {"sex": "Female", "race": "White"}
 
