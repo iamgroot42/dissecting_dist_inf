@@ -139,8 +139,7 @@ if __name__ == "__main__":
     current_dir = os.getcwd()
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
-    overall_threshold = "Overall threshold-test:",
-          ",".join(["%.2f" % x for x in thresholds])
+    overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
     log_path = os.join(current_dir, "baseline_result")
     if not os.isdir(log_path):
          os.makedirs(log_path)
