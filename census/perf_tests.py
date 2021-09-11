@@ -140,10 +140,10 @@ if __name__ == "__main__":
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
-    log_path = os.join(current_dir, "baseline_result")
+    log_path = os.path.join(current_dir, "baseline_result")
     if not os.isdir(log_path):
          os.makedirs(log_path)
-    with open(os.join(log_path,args.ratio_2),"w") as wr:
+    with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(overall_loss)
         wr.write(overall_threshold)
     print(overall_loss)
