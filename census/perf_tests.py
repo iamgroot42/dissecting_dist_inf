@@ -135,7 +135,17 @@ if __name__ == "__main__":
 
         basics.append((100 * basic_baseline_acc))
         thresholds.append(f_accs[np.argmax(adv_accs)])
-
-    print("Overall loss-test: %.2f" % np.mean(basics))
-    print("Overall threshold-test:",
-          ",".join(["%.2f" % x for x in thresholds]))
+         
+    current_dir = os.getcwd()
+   
+    overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
+    overall_threshold = "Overall threshold-test:",
+          ",".join(["%.2f" % x for x in thresholds])
+    log_path = os.join(current_dir, "baseline_result")
+    if not os.isdir(log_path):
+         os.makedirs(log_path)
+    with open(os.join(log_path,args.ratio_2),"w") as wr:
+        wr.write(overall_loss)
+        wr.write(overall_threshold)
+    print(overall_loss)
+    print(overall_threshold)
