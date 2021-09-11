@@ -140,7 +140,13 @@ if __name__ == "__main__":
             tgt_data.append(tacc)
             print("Test accuracy: %.3f" % tacc)
         data.append(tgt_data)
-
+    
     # Print data
-    for i, tup in enumerate(data):
-        print(targets[i], tup)
+    current_dir = os.getcwd()
+    log_path = os.path.join(current_dir, "meta_result")
+    if not os.isdir(log_path):
+        os.makedirs(log_path)
+    with open(os.path.join(log_path,"log"),"w") as wr:
+        for i, tup in enumerate(data):
+            print(targets[i], tup)
+            wr.write(":".join([targets[i], tup]))
