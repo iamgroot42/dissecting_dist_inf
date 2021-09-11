@@ -144,7 +144,7 @@ if __name__ == "__main__":
     # Print data
     current_dir = os.getcwd()
     log_path = os.path.join(current_dir, "meta_result")
-    if not os.isdir(log_path):
+    if not os.path.isdir(log_path):
         os.makedirs(log_path)
     with open(os.path.join(log_path,"log"),"w") as wr:
         for i, tup in enumerate(data):
