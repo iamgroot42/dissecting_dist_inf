@@ -22,6 +22,8 @@ if __name__ == "__main__":
                         help='Remove Y-axis label')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         help='name for subfolder to save/load data from')
+    parser.add_argument('--ratio', default = 0.5,
+                        help='test ratio')
     args = parser.parse_args()
     flash_utils(args)
 
@@ -47,8 +49,8 @@ if __name__ == "__main__":
     train_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % first_cat)
     test_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % first_cat)
 
-    targets = ["0.0", "0.1", "0.2", "0.3",
-               "0.4", "0.6", "0.7", "0.8", "0.9", "1.0"]
+    targets = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5,0.6, 0.7, 0.8, 0.9, 1.0]
+    targets = [str(x) for x in targets if x != args.ratio]
 
     if args.filter == "sex":
         raw_data = [
