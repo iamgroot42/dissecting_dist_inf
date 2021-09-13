@@ -1,4 +1,4 @@
-from model_utils import get_models_path, load_model
+from model_utils import get_models_path, load_model, BASE_MODELS_DIR
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import numpy as np
 from tqdm import tqdm
@@ -136,15 +136,14 @@ if __name__ == "__main__":
         basics.append((100 * basic_baseline_acc))
         thresholds.append(f_accs[np.argmax(adv_accs)])
          
-    current_dir = os.getcwd()
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
-    log_path = os.path.join(current_dir, "baseline_result")
+    log_path = os.path.join(BASE_MODELS_DIR, "baseline_result")
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
-    with open(os.path.join(log_path,args.ratio_2),"w") as wr:
-        wr.write(overall_loss)
+    with open(os.path.join(log_path,args.filter+args.ratio_2),"w") as wr:
+        wr.write(overall_loss+"; ")
         wr.write(overall_threshold)
     print(overall_loss)
     print(overall_threshold)
