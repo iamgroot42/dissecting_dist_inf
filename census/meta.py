@@ -1,6 +1,6 @@
 import utils
 from data_utils import SUPPORTED_PROPERTIES
-from model_utils import get_models_path, get_model_representations
+from model_utils import get_models_path, get_model_representations,BASE_MODELS_DIR
 import argparse
 import numpy as np
 import torch as ch
@@ -142,11 +142,11 @@ if __name__ == "__main__":
         data.append(tgt_data)
     
     # Print data
-    current_dir = os.getcwd()
-    log_path = os.path.join(current_dir, "meta_result")
+    
+    log_path = os.path.join(BASE_MODELS_DIR, "meta_result")
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
-    with open(os.path.join(log_path,"log"),"w") as wr:
+    with open(os.path.join(log_path,"-".join([args.filter,args.d_0,args.start_n,args.first_n])),"w") as wr:
         for i, tup in enumerate(data):
             print(targets[i], tup)
-            wr.write(":".join([targets[i], " ".join([str(x) for x in tup])]))
+            wr.write(":".join([targets[i], " ".join([str(x) for x in tup])])+"\n")
