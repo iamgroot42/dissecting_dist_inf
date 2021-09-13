@@ -149,4 +149,4 @@ if __name__ == "__main__":
     with open(os.path.join(log_path,"-".join([args.filter,args.d_0,args.start_n,args.first_n])),"w") as wr:
         for i, tup in enumerate(data):
             print(targets[i], tup)
-            wr.write(":".join([targets[i], " ".join([str(x) for x in tup])])+"\n")
+            wr.write(",".join([str(x) for x in tup])+"\n")
