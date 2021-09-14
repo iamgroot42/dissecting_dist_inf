@@ -139,7 +139,7 @@ if __name__ == "__main__":
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
-    log_path = os.path.join(BASE_MODELS_DIR, "baseline_result")
+    log_path = os.path.join(BASE_MODELS_DIR, "baseline_result"+args.ratio_1)
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
     with open(os.path.join(log_path,args.filter+args.ratio_2),"w") as wr:
