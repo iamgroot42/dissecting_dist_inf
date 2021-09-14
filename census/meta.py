@@ -146,7 +146,7 @@ if __name__ == "__main__":
     log_path = os.path.join(BASE_MODELS_DIR, "meta_result")
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
-    with open(os.path.join(log_path,"-".join([args.filter,args.d_0,args.start_n,args.first_n])),"w") as wr:
+    with open(os.path.join(log_path,"-".join([args.filter,str(args.d_0),str(args.start_n),str(args.first_n)])),"w") as wr:
         for i, tup in enumerate(data):
             print(targets[i], tup)
             wr.write(",".join([str(x) for x in tup])+"\n")
