@@ -7,7 +7,7 @@ import os
 
 
 BASE_DATA_DIR = "/u/pdz6an/git/census"
-SUPPORTED_PROPERTIES = ["sex", "race", "none"]
+SUPPORTED_PROPERTIES = ["sex", "race", "none","both"]
 PROPERTY_FOCUS = {"sex": "Female", "race": "White"}
 
 
@@ -156,16 +156,14 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,t_c=None):
+def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,t_c=[1,1]):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
         def lambda_fn(x): return x['sex:Female'] == 1
     elif filter_prop == "race":
-        def lambda_fn(x): return x['race:White'] == 0
+        def lambda_fn(x): return x['race:White'] == 1
     elif filter_prop == "both":
-        if t_c is None:
-            t_c = [1,0]
         def lambda_fn(x): return x['sex:Female'] == t_c[0] and x['race:White'] == t_c[1]
     # Rerun with 0.5:0.5
     prop_wise_subsample_sizes = {
