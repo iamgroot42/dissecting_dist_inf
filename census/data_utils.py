@@ -156,13 +156,17 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
+def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,t_c=None):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
         def lambda_fn(x): return x['sex:Female'] == 1
     elif filter_prop == "race":
         def lambda_fn(x): return x['race:White'] == 0
+    elif filter_prop == "both":
+        if t_c is None:
+            t_c = [1,0]
+        def lambda_fn(x): return x['sex:Female'] == t_c[0] and x['race:White'] == t_c[1]
     # Rerun with 0.5:0.5
     prop_wise_subsample_sizes = {
         "adv": {
