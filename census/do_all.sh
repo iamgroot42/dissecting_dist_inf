@@ -8,3 +8,4 @@ done
 ./perf_test_all.sh $1
 
 python meta.py --filter $1
+python make_boxplots.py --filter $1
