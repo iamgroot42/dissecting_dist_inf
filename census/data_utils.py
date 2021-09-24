@@ -8,7 +8,7 @@ import os
 
 BASE_DATA_DIR = "/u/pdz6an/git/census"
 SUPPORTED_PROPERTIES = ["sex", "race", "none","both"]
-PROPERTY_FOCUS = {"sex": "Female", "race": "White"}
+PROPERTY_FOCUS = {"sex": "Female", "race": "White","both":"both f and w"}
 
 
 # US Income dataset
