@@ -156,29 +156,55 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,t_c=[1,1]):
+def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
         def lambda_fn(x): return x['sex:Female'] == 1
     elif filter_prop == "race":
         def lambda_fn(x): return x['race:White'] == 1
-    elif filter_prop == "both":
+    elif filter_prop == "bothfw":
         def lambda_fn(x): 
-            a = x['sex:Female'] == t_c[0] 
-            b = x['race:White'] == t_c[1]
+            a = x['sex:Female'] == 1
+            b = x['race:White'] == 1
+            return a & b
+    elif filter_prop =="bothmw":
+        def lambda_fn(x): 
+            a = x['sex:Female'] == 0
+            b = x['race:White'] == 1
+            return a & b
+        
+    elif filter_prop =="bothfn":
+        def lambda_fn(x): 
+            a = x['sex:Female'] == 1
+            b = x['race:White'] == 0
+            return a & b
+    elif filter_prop =="bothmn":
+        def lambda_fn(x): 
+            a = x['sex:Female'] == 0
+            b = x['race:White'] == 0
             return a & b
     # Rerun with 0.5:0.5
     prop_wise_subsample_sizes = {
         "adv": {
             "sex": (1100, 500),
             "race": (600, 300),
-            "both": (900, 400),
+            "bothfw": (900, 400),
+            "bothfn": (210, 100),
+            "bothmn": (260, 130),
+            "bothmw": (2000,960),
+            
         },
         "victim": {
             "sex": (1100, 500),
             "race": (600, 300),
-            "both": (900, 400),
+            "bothfw": (900, 400),
+            "bothfn": (210, 100),
+            "bothmn": (260, 130),
+            "bothmw": (2000,960),
+            
+            
+            
         },
     }
 
