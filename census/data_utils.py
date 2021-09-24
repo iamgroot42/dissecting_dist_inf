@@ -164,16 +164,18 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,t_c=[1,
     elif filter_prop == "race":
         def lambda_fn(x): return x['race:White'] == 1
     elif filter_prop == "both":
-        def lambda_fn(x): return x['sex:Female'] == t_c[0] and x['race:White'] == t_c[1]
+        def lambda_fn(x): return x['sex:Female'] == t_c[0] & x['race:White'] == t_c[1]
     # Rerun with 0.5:0.5
     prop_wise_subsample_sizes = {
         "adv": {
             "sex": (1100, 500),
             "race": (600, 300),
+            "both": (900, 400),
         },
         "victim": {
             "sex": (1100, 500),
             "race": (600, 300),
+            "both": (900, 400),
         },
     }
 
