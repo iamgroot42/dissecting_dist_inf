@@ -52,7 +52,7 @@ if __name__ == "__main__":
     targets = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5,0.6, 0.7, 0.8, 0.9, 1.0]
     targets = [str(x) for x in targets if x != args.ratio]
 
-    if args.filter == "sex":
+    if args.filter != "race":
         with open("meta.log","r") as lg:
             lines = lg.readlines()
             lines = [line.strip() for line in lines]
