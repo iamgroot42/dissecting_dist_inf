@@ -115,7 +115,7 @@ if __name__ == "__main__":
         baselines = []
         thresholds = []
         for t in targets:
-            with open(os.path.join(BASE_MODELS_DIR,"baseline_result"+args.ratio,args.filter+str(t)),"r") as r_b:
+            with open(os.path.join(BASE_MODELS_DIR,"baseline_result"+str(args.ratio),args.filter+str(t)),"r") as r_b:
                 line = r_b.readline()
                 re = line.split("; ")
                 [_, b_l] = re[0].split(": ")
