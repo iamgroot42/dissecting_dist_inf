@@ -7,8 +7,8 @@ import os
 
 
 BASE_DATA_DIR = "/u/pdz6an/git/census"
-SUPPORTED_PROPERTIES = ["sex", "race", "none","bothfw","bothmw","bothfn","bothmn"]
-PROPERTY_FOCUS = {"sex": "Female", "race": "White","bothfw":"both f and w","bothmw":"both m and w","bothfn":"both f and n","bothmn":"both m and n"}
+SUPPORTED_PROPERTIES = ["sex", "race", "none","bothfw","bothmw","bothfn","bothmn","two_attr"]
+PROPERTY_FOCUS = {"sex": "Female", "race": "White","bothfw":"both f and w","bothmw":"both m and w","bothfn":"both f and n","bothmn":"both m and n","two_attr":"f and w"}
 
 
 # US Income dataset
@@ -154,7 +154,19 @@ class CensusIncome:
         self.train_df_victim, self.train_df_adv = s_split(self.train_df)
         self.test_df_victim, self.test_df_adv = s_split(self.test_df)
 
+def con_b(df):
+    return (df['sex:Female'] == 1) and (df['race:White'] == 1)
 
+def con_f(df):
+    return (df['sex:Female'] == 1) and (df['race:White'] == 0)
+
+def con_w(df):
+    return (df['sex:Female'] == 0) and (df['race:White'] == 1)
+
+def con_n(df):
+    return (df['sex:Female'] == 0) and (df['race:White'] == 0)
+
+con_l = [con_b,con_f,con_w,con_n]
 # Fet appropriate filter with sub-sampling according to ratio and property
 def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     if filter_prop == "none":
