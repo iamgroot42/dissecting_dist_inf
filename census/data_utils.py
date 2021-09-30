@@ -297,7 +297,7 @@ def filter2(df,ratio1,ratio2):
     return pd.concat(df_l)
 
 
-def heuristic2(df,  ratio1,ratio2, cwise_sample,class_imbalance=3.0,n_tries=1000,class_col="income", verbose=True):
+def heuristic2(df,  ratio1,ratio2, cwise_sample,class_imbalance=3.0,n_tries=100,class_col="income", verbose=True):
     vals, pckds,err = [], [],[]
     iterator = range(n_tries)
     if verbose:

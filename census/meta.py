@@ -37,8 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--d_0', default="0.5",
-                        help='ratio to use for D_0')
+    parser.add_argument('--d_0', help='ratios to use for D_0')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -46,10 +45,10 @@ if __name__ == "__main__":
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
     # Only look at multiples of 0.10
-    targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
-                     float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
-    # targets = ["0.3", "0.4", "0.6", "0.7", "0.8", "0.9"]
-    targets = sorted(list(targets))
+    #targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
+    #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
+    targets = sorted(['0.2,0.5','0.5,0.2'])
+    #targets = sorted(list(targets))
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
@@ -143,10 +142,10 @@ if __name__ == "__main__":
     
     # Print data
     
-    log_path = os.path.join(BASE_MODELS_DIR, "meta_result")
+    log_path = os.path.join(BASE_MODELS_DIR,args.filter, "meta_result")
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
-    with open(os.path.join(log_path,"-".join([args.filter,str(args.d_0),str(args.start_n),str(args.first_n)])),"w") as wr:
+    with open(os.path.join(log_path,"-".join([args.filter,args.d_0,str(args.start_n),str(args.first_n)])),"w") as wr:
         for i, tup in enumerate(data):
             print(targets[i], tup)
-            wr.write(",".join([str(x) for x in tup])+"\n")
+            wr.write(targets[i]+': '+",".join([str(x) for x in tup])+"\n")

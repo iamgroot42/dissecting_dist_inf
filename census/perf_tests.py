@@ -36,7 +36,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
+    parser.add_argument('--ratio_1', help="ratio for D_1")
     parser.add_argument('--ratio_2', help="ratio for D_2")
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
@@ -139,10 +139,10 @@ if __name__ == "__main__":
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
-    log_path = os.path.join(BASE_MODELS_DIR, "baseline_result"+args.ratio_1)
+    log_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_result:"+args.ratio_1)
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
-    with open(os.path.join(log_path,args.filter+args.ratio_2),"w") as wr:
+    with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(overall_loss+"; ")
         wr.write(overall_threshold)
     print(overall_loss)

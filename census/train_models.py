@@ -11,8 +11,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter', type=str,
                         choices=data_utils.SUPPORTED_PROPERTIES,
                         help='while filter to use')
-    parser.add_argument('--ratio', type=float, default=0.5,
-                        help='what ratio of the new sampled dataset should be true')
+    parser.add_argument('--ratio', help='what ratio of the new sampled dataset should be true')
     parser.add_argument('--num', type=int, default=1000,
                         help='how many classifiers to train?')
     parser.add_argument('--split', choices=["adv", "victim"],
@@ -23,10 +22,14 @@ if __name__ == "__main__":
                         help='start counting from here when saving models')
     args = parser.parse_args()
     utils.flash_utils(args)
-
-    # Census Income dataset
-    ds = data_utils.CensusWrapper(
-        filter_prop=args.filter, ratio=args.ratio, split=args.split)
+    if args.filter == 'two_attr':
+        [r1,r2] = args.ratio.split(',')
+        r1,r2 = float(r1),float(r2)
+        ds = data_utils.CensusTwo()
+    else:
+        # Census Income dataset
+        ds = data_utils.CensusWrapper(
+            filter_prop=args.filter, ratio=float(args.ratio), split=args.split)
 
     iterator = range(1, args.num + 1)
     if not args.verbose:
@@ -39,7 +42,10 @@ if __name__ == "__main__":
         # Sample to qualify ratio, ultimately coming from fixed split
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
-        (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
+        if args.filter == 'two_attr':
+            (x_tr, y_tr), (x_te, y_te), cols = ds.get_data(args.split,r1,r2)
+        else:
+            (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
 
         clf = model_utils.get_model()
         clf.fit(x_tr, y_tr.ravel())
@@ -48,9 +54,7 @@ if __name__ == "__main__":
         if args.verbose:
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
-        save_path = os.path.join(
-            model_utils.BASE_MODELS_DIR,
-            args.split, args.filter, str(args.ratio))
+        save_path = model_utils.get_models_path(args.filter,args.split,args.ratio)
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
         model_utils.save_model(clf, os.path.join(save_path,
