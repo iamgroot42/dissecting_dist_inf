@@ -1,5 +1,5 @@
 from model_utils import get_models_path, load_model, BASE_MODELS_DIR
-from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
+from data_utils import CensusTwo, CensusWrapper, SUPPORTED_PROPERTIES
 import numpy as np
 from tqdm import tqdm
 import os
@@ -36,8 +36,8 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--ratio_1', help="ratio for D_1")
-    parser.add_argument('--ratio_2', help="ratio for D_2")
+    parser.add_argument('--ratio_1', help="ratios for D_1")
+    parser.add_argument('--ratio_2', help="ratios for D_2")
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
     args = parser.parse_args()
@@ -59,17 +59,27 @@ if __name__ == "__main__":
         models_2 = get_models(get_models_path(
             args.filter, "adv", args.ratio_2), total_models // 2)
 
-        # Prepare data wrappers
-        ds_1 = CensusWrapper(
-            filter_prop=args.filter,
-            ratio=float(args.ratio_1), split="adv")
-        ds_2 = CensusWrapper(
-            filter_prop=args.filter,
-            ratio=float(args.ratio_2), split="adv")
+        if args.filter == "two_attr":
+            ds_1 = CensusTwo()
+            ds_2 = CensusTwo()
+            [r11,r12] = args.ratio_1.split(',')
+            r11,r12 = float(r11),float(r12)
+            [r21,r22] = args.ratio_2.split(',')
+            r21,r22 = float(r21),float(r22)
+            _, (x_te_1, y_te_1), _ = ds_1.get_data('adv',r11,r12)
+            _, (x_te_2, y_te_2), _ = ds_2.get_data('adv',r21,r22)
+        else:
+            # Prepare data wrappers
+            ds_1 = CensusWrapper(
+                filter_prop=args.filter,
+                ratio=float(args.ratio_1), split="adv")
+            ds_2 = CensusWrapper(
+                filter_prop=args.filter,
+                ratio=float(args.ratio_2), split="adv")
 
         # Fetch test data from both ratios
-        _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
-        _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
+            _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
+            _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
         y_te_1 = y_te_1.ravel()
         y_te_2 = y_te_2.ravel()
 
