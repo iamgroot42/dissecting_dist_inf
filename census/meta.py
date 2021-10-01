@@ -38,6 +38,7 @@ if __name__ == "__main__":
                         required=True,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--d_0', help='ratios to use for D_0')
+    parser.add_argument('--trg', default=None, help='target ratios')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -47,7 +48,11 @@ if __name__ == "__main__":
     # Only look at multiples of 0.10
     #targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
     #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
-    targets = sorted(['0.2,0.5','0.5,0.2'])
+    if args.trg==None:
+        targets = sorted(['0.2,0.5', '0.5,0.2' ,'0.1,0.5'])
+    else:
+        targets = sorted([args.trg])
+        
     #targets = sorted(list(targets))
 
     # Load up positive-label test, test data
@@ -145,7 +150,7 @@ if __name__ == "__main__":
     log_path = os.path.join(BASE_MODELS_DIR,args.filter, "meta_result")
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
-    with open(os.path.join(log_path,"-".join([args.filter,args.d_0,str(args.start_n),str(args.first_n)])),"w") as wr:
+    with open(os.path.join(log_path,"-".join([args.filter,args.d_0,str(args.start_n),str(args.first_n)])),"a") as wr:
         for i, tup in enumerate(data):
             print(targets[i], tup)
             wr.write(targets[i]+': '+",".join([str(x) for x in tup])+"\n")

@@ -1,10 +1,18 @@
 #!/bin/bash
-for i in 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
-do 
-./train_fast.sh adv $1 $i
-./train_fast.sh victim $1 $i
+
+./train_fast.sh adv two_attr 0.5,0.5
+./train_fast.sh victim two_attr 0.5,0.5
+./train_fast.sh adv two_attr 0.2,0.1
+./train_fast.sh victim two_attr 0.2,0.1
+./train_fast.sh adv two_attr 0.5,0.1
+./train_fast.sh victim two_attr 0.5,0.1
+
+for i in 0.2,0.5 0.5,0.2 0.1,0.5
+do
+./train_fast.sh adv two_attr $i
+./train_fast.sh victim two_attr $i
+python perf_tests.py --filter two_attr --ratio_1 0.5,0.5 --ratio_2 $i
 done
-
-./perf_test_all.sh $1
-
-python meta.py --filter $1
+python perf_tests.py --filter two_attr --ratio_1 0.2,0.1 --ratio_2 0.5,0.1
+python meta.py --filter two_attr --d_0 0.5,0.5
+python meta.py --filter two_attr --d_0 0.2,0.1 --trg 0.5,0.1
