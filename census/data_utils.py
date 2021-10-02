@@ -275,8 +275,8 @@ def cal_n(df,con,ratio):
             return qi,n
         return 0,n
 def get_filter2(df,ratio1,ratio2,is_test):
-    #sub_size = [1100, 500]
-    sub_size = [2700,1400]
+    sub_size = [1100, 500]
+    #sub_size = [2700,1400]
     return heuristic2(df,ratio1,ratio2,sub_size[is_test],verbose=False)
 def filter2(df,ratio1,ratio2):
     if ratio1==0.0 or ratio2 == 0.0:

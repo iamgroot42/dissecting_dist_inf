@@ -1,6 +1,6 @@
 import utils
 from data_utils import SUPPORTED_PROPERTIES
-from model_utils import get_models_path, get_model_representations,BASE_MODELS_DIR
+from model_utils import get_models_path, get_model_representations,BASE_MODELS_DIR, save_model
 import argparse
 import numpy as np
 import torch as ch
@@ -39,6 +39,7 @@ if __name__ == "__main__":
                         help='name for subfolder to save/load data from')
     parser.add_argument('--d_0', help='ratios to use for D_0')
     parser.add_argument('--trg', default=None, help='target ratios')
+    parser.add_argument('--save', default=False, help='save model or not')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -77,7 +78,7 @@ if __name__ == "__main__":
         print("Batching data: hold on")
         X_te = utils.prepare_batched_data(X_te)
 
-        for _ in range(args.ntimes):
+        for i in range(args.ntimes):
             # Random shuffles
             shuffled_1 = np.random.permutation(len(pos_labels))
             pp_x = pos_w[shuffled_1[:args.train_sample]]
@@ -140,7 +141,12 @@ if __name__ == "__main__":
                          batch_size=args.batch_size,
                          val_data=val_data, combined=True,
                          eval_every=10, gpu=True)
-
+            if args.save:
+                save_path = os.path.join(BASE_MODELS_DIR,args.filter, "meta_model","-".join([args.d_0,str(args.start_n),str(args.first_n)]),tg)
+                if not os.path.isdir(save_path):
+                    os.makedirs(save_path)
+                save_model(clf, os.path.join(save_path, str(i)+
+            "_%.2f" % tacc))
             tgt_data.append(tacc)
             print("Test accuracy: %.3f" % tacc)
         data.append(tgt_data)
