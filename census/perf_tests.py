@@ -40,6 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('--ratio_2', help="ratios for D_2")
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
+    parser.add_argument('--on_diff', default=False, help="test on different data")
     args = parser.parse_args()
     flash_utils(args)
 
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     models_victim_2 = get_models(
         get_models_path(args.filter, "victim", args.ratio_2))
 
-    basics, thresholds = [], []
+    basics, thresholds, dif_thre = [], [], []
     for _ in range(args.tries):
 
         # Load adv models
@@ -88,6 +89,7 @@ if __name__ == "__main__":
         loaders = [(x_te_1, y_te_1), (x_te_2, y_te_2)]
         allaccs_1, allaccs_2 = [], []
         adv_accs = []
+        #tr,rl = [],[]
         for loader in loaders:
             # Load models and get accuracies
             accs_1 = get_accs(loader, models_1)
@@ -103,7 +105,8 @@ if __name__ == "__main__":
             print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
                   (100 * tracc, threshold))
             adv_accs.append(100 * tracc)
-
+           # tr.append(threshold)
+           # rl.append(rule)
             # Compute accuracies on this data for victim
             accs_victim_1 = get_accs(loader, models_victim_1)
             accs_victim_2 = get_accs(loader, models_victim_2)
@@ -125,6 +128,7 @@ if __name__ == "__main__":
             # Collect all accuracies for basic baseline
             allaccs_1.append(accs_victim_1)
             allaccs_2.append(accs_victim_2)
+        
 
         # Basic baseline: look at model performance on test sets from both G_b
         # Predict b for whichever b it is higher
@@ -145,15 +149,55 @@ if __name__ == "__main__":
 
         basics.append((100 * basic_baseline_acc))
         thresholds.append(f_accs[np.argmax(adv_accs)])
-         
+       # tr = tr[np.argmax(adv_accs)]
+       # rl = rl[np.argmax(adv_accs)]
+        if args.on_diff:
+            ds_1 = CensusTwo()
+            ds_2 = CensusTwo()
+            _, (x_te_1, y_te_1), _ = ds_1.get_data('adv',0.5,0.5)
+            _, (x_te_2, y_te_2), _ = ds_2.get_data('adv',0.2,0.1)
+            y_te_1 = y_te_1.ravel()
+            y_te_2 = y_te_2.ravel()
+            loaders = [(x_te_1, y_te_1), (x_te_2, y_te_2)]
+            f_accs, adv_accs = [], []
+            def get_thre(a1,a2,t,r):
+                return get_threshold_acc(
+                    np.concatenate((a1, a2)),
+                    np.concatenate(
+                (np.zeros_like(a1), np.ones_like(a2))),
+                t,r)
+            for loader in loaders:
+                accs_1 = get_accs(loader, models_1)
+                accs_2 = get_accs(loader, models_2)
+
+            # Look at [0, 100]
+                accs_1 *= 100
+                accs_2 *= 100
+
+                tracc, tr, rl = find_threshold_acc(
+                # accs_1, accs_2, granularity=0.01)
+                accs_1, accs_2, granularity=0.005)
+                adv_accs.append(100 * tracc)
+                accs_victim_1 = get_accs(loader, models_victim_1)
+                accs_victim_2 = get_accs(loader, models_victim_2)
+
+            # Look at [0, 100]
+                accs_victim_1 *= 100
+                accs_victim_2 *= 100
+                s_acc = get_thre(accs_victim_1,accs_victim_2,tr,rl)
+                f_accs.append(100 * s_acc)
+            dif_thre.append(f_accs[np.argmax(adv_accs)])
+
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
     log_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_result:"+args.ratio_1)
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
-    with open(os.path.join(log_path,args.ratio_2),"w") as wr:
-        wr.write(overall_loss+"; ")
-        wr.write(overall_threshold)
+    #with open(os.path.join(log_path,args.ratio_2),"w") as wr:
+        #wr.write(overall_loss+"; ")
+        #wr.write(overall_threshold)
     print(overall_loss)
     print(overall_threshold)
+    if args.on_diff:
+        print(dif_thre)
