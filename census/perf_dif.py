@@ -141,7 +141,9 @@ if __name__ == "__main__":
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
     d_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_on_dif",'vs'.join([args.ratio_1,args.ratio_2]))
+    if not os.path.isdir(d_path):
+        os.makedirs(d_path)
     with open(os.path.join(d_path,args.filter_d+':'+'vs'.join([args.ratio_1_d,args.ratio_2_d])),"w") as wr:
-        wr.write(thresholds)
+        wr.write(str(thresholds))
     print(overall_loss)
     print(overall_threshold)

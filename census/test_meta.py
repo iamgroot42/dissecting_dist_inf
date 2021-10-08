@@ -51,5 +51,5 @@ if __name__ == "__main__":
     log_path=os.path.join(BASE_MODELS_DIR,args.filter, "meta_on_two_attr",'-'.join(['vs'.join([args.d_0,tg]),str(args.start_n),str(args.first_n)]))
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
-    with open(os.path.join(log_path,'vs'.join([args.md_0,args.mtrg])),"a") as wr:
-        wr.write(acc)
+    with open(os.path.join(log_path,'vs'.join([args.md_0,args.mtrg])),"w") as wr:
+        wr.write(str(acc))
