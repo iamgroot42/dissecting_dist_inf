@@ -1,5 +1,8 @@
 #!/bin/bash
-for i in 0.0 0.1 0.2 0.3 0.4 0.6 0.7 0.8 0.9 1.0
-do
-python perf_tests.py --filter $1 --ratio_1 0.5 --ratio_2 $i
-done
+python perf_tests.py --filter sex --ratio_1 0.5 --ratio_2 $1
+python perf_tests.py --filter race --ratio_1 0.5 --ratio_2 $2
+python perf_test.py --filter two_attr --ratio_1 0.5,0.5 --ratio_2 $1','$2
+python perf_dif.py --filter sex --ratio_1 0.5 --ratio_2 $1 --filter_d two_attr --ratio_1_d 0.5,0.5 --ratio_2_d $1','$2
+python perf_dif.py --filter race --ratio_1 0.5 --ratio_2 $1 --filter_d two_attr --ratio_1_d 0.5,0.5 --ratio_2_d $1','$2
+python perf_dif.py --filter two_attr --ratio_1 0.5,0.5 --ratio_2 $1','$2 --filter_d sex --ratio_1_d 0.5 --ratio_2 $1
+python perf_dif.py --filter two_attr --ratio_1 0.5,0.5 --ratio_2 $1','$2 --filter_d race --ratio_1_d 0.5 --ratio_2 $2

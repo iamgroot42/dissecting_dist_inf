@@ -7,37 +7,22 @@ import argparse
 from utils import get_threshold_acc, find_threshold_acc, flash_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from perf_tests import get_models, get_accs
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_models(folder_path, n_models=1000):
-   
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        model = load_model(os.path.join(folder_path, mpath))
-        models.append(model)
-    return models
-
-
-def get_accs(data, models):
-    x_te, y_te = data
-    accs = []
-    for model in tqdm(models):
-        vacc = model.score(x_te, y_te)
-        accs.append(vacc)
-
-    return np.array(accs)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
-                        help='name for subfolder to save/load data from')
+                        help='name for subfolder to save/load models from')
     parser.add_argument('--ratio_1', help="ratios for D_1")
     parser.add_argument('--ratio_2', help="ratios for D_2")
+    parser.add_argument('--filter_d', choices=SUPPORTED_PROPERTIES,
+                        required=True,
+                        help='name for subfolder to save/load data from')
+    parser.add_argument('--ratio_1_d')
+    parser.add_argument('--ratio_2_d')
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
     args = parser.parse_args()
@@ -48,8 +33,8 @@ if __name__ == "__main__":
         get_models_path(args.filter, "victim", args.ratio_1))
     models_victim_2 = get_models(
         get_models_path(args.filter, "victim", args.ratio_2))
-
-    basics, thresholds= [], []
+ 
+    basics, thresholds = [],[]
     for _ in range(args.tries):
 
         # Load adv models
@@ -59,23 +44,23 @@ if __name__ == "__main__":
         models_2 = get_models(get_models_path(
             args.filter, "adv", args.ratio_2), total_models // 2)
 
-        if args.filter == "two_attr":
+        if args.filter_d == "two_attr":
             ds_1 = CensusTwo()
             ds_2 = CensusTwo()
-            [r11,r12] = args.ratio_1.split(',')
+            [r11,r12] = args.ratio_1_d.split(',')
             r11,r12 = float(r11),float(r12)
-            [r21,r22] = args.ratio_2.split(',')
+            [r21,r22] = args.ratio_2_d.split(',')
             r21,r22 = float(r21),float(r22)
             _, (x_te_1, y_te_1), _ = ds_1.get_data('adv',r11,r12)
             _, (x_te_2, y_te_2), _ = ds_2.get_data('adv',r21,r22)
         else:
             # Prepare data wrappers
             ds_1 = CensusWrapper(
-                filter_prop=args.filter,
-                ratio=float(args.ratio_1), split="adv")
+                filter_prop=args.filter_d,
+                ratio=float(args.ratio_1_d), split="adv")
             ds_2 = CensusWrapper(
-                filter_prop=args.filter,
-                ratio=float(args.ratio_2), split="adv")
+                filter_prop=args.filter_d,
+                ratio=float(args.ratio_2_d), split="adv")
 
         # Fetch test data from both ratios
             _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
@@ -88,6 +73,7 @@ if __name__ == "__main__":
         loaders = [(x_te_1, y_te_1), (x_te_2, y_te_2)]
         allaccs_1, allaccs_2 = [], []
         adv_accs = []
+        d_accs = []
         #tr,rl = [],[]
         for loader in loaders:
             # Load models and get accuracies
@@ -109,7 +95,6 @@ if __name__ == "__main__":
             # Compute accuracies on this data for victim
             accs_victim_1 = get_accs(loader, models_victim_1)
             accs_victim_2 = get_accs(loader, models_victim_2)
-
             # Look at [0, 100]
             accs_victim_1 *= 100
             accs_victim_2 *= 100
@@ -123,11 +108,14 @@ if __name__ == "__main__":
             print("[Victim] Accuracy at specified threshold: %.2f" %
                   (100 * specific_acc))
             f_accs.append(100 * specific_acc)
-
+            #d_acc = get_threshold_acc(
+            #    np.concatenate((accs_d1, accs_d2)),
+            #    np.concatenate(
+            #    (np.zeros_like(accs_d1), np.ones_like(accs_d2))),
+            #      threshold, rule)
             # Collect all accuracies for basic baseline
             allaccs_1.append(accs_victim_1)
             allaccs_2.append(accs_victim_2)
-        
 
         # Basic baseline: look at model performance on test sets from both G_b
         # Predict b for whichever b it is higher
@@ -148,18 +136,12 @@ if __name__ == "__main__":
 
         basics.append((100 * basic_baseline_acc))
         thresholds.append(f_accs[np.argmax(adv_accs)])
-       # tr = tr[np.argmax(adv_accs)]
-       # rl = rl[np.argmax(adv_accs)]
-        
 
    
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
-    log_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_result:"+args.ratio_1)
-    if not os.path.isdir(log_path):
-         os.makedirs(log_path)
-    with open(os.path.join(log_path,args.ratio_2),"w") as wr:
-        wr.write(overall_loss+"; ")
-        wr.write(overall_threshold)
+    d_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_on_dif",'vs'.join([args.ratio_1,args.ratio_2]))
+    with open(os.path.join(d_path,args.filter_d+':'+'vs'.join([args.ratio_1_d,args.ratio_2_d])),"w") as wr:
+        wr.write(thresholds)
     print(overall_loss)
     print(overall_threshold)

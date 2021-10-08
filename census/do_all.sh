@@ -1,12 +1,15 @@
 #!/bin/bash
-./train_fast.sh adv sex 0.5
-./train_fast.sh victim sex 0.5
-./train_fast.sh adv race 0.5
-./train_fast.sh victim race 0.5
-./train_fast.sh adv sex 0.2
-./train_fast.sh victim sex 0.2
-./train_fast.sh adv race 0.1
-./train_fast.sh victim race 0.1
-python meta.py --filter sex --d_0 0.5 --trg 0.2 --save True
-python meta.py --filter race --d_0 0.5 --trg 0.1 --save True
-python meta.py --filter two_attr --d_0 0.5,0.5 --trg 0.2,0.1 --save True
+./perf_test_all.sh 0.1 0.2
+python test_meta.py --filter sex --md_0 0.5,0.5 --mtrg '0.1,0.2' --d_0 0.5 --trg 0.1
+python test_meta.py --filter race --md_0 0.5,0.5 --mtrg '0.1,0.2' --d_0 0.5 --trg 0.2
+for i in 0.4 0.6 0.8
+do
+./perf_test_all.sh 0.1 $i
+./perf_test_all.sh $i 0.1
+python test_meta.py --filter sex --md_0 0.5,0.5 --mtrg '0.1,'$i --d_0 0.5 --trg $i
+python test_meta.py --filter sex --md_0 0.5,0.5 --mtrg $i',0.1' --d_0 0.5 --trg $i
+python test_meta.py --filter race --md_0 0.5,0.5 --mtrg '0.1,'$i --d_0 0.5 --trg $i
+python test_meta.py --filter race --md_0 0.5,0.5 --mtrg $i',0.1' --d_0 0.5 --trg $i
+done
+
+

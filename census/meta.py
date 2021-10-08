@@ -52,7 +52,16 @@ if __name__ == "__main__":
     if args.trg==None:
         targets = sorted(['0.2,0.5', '0.5,0.2' ,'0.1,0.5'])
     else:
-        targets = sorted([args.trg])
+        lst = eval(args.trg)
+        targets = []
+        for i in lst:
+            if type(i) is list:
+                i = [str(x) for x in i]
+                targets.append(','.join(i))
+                
+            else:
+                targets.append(str(i))
+        targets = sorted(targets)
         
     #targets = sorted(list(targets))
 
