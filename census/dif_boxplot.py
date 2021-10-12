@@ -18,8 +18,9 @@ if __name__ == "__main__":
     flash_utils(args)
     data = []
     columns = [
-        'results of {} vs {} model'.format(args.d_0,args.ratio),
-        "Accuracy (%)"
+        
+        "Accuracy (%)",
+        'results of {} vs {} model'.format(args.d_0,args.ratio)
     ]
 
     d_0 = args.d_0.split(',')
@@ -44,25 +45,25 @@ if __name__ == "__main__":
                 t_s = t_l.split(",")
                 m_t=[float(x) for x in t_s]
     for i in m_t:
-        data.append(['two_attr threshold',i])
+        data.append([i,'two_attr threshold'])
     m_ts = []
     with open(os.path.join(BASE_MODELS_DIR,'two_attr',"baseline_on_dif",'vs'.join([args.d_0,args.ratio]),'sex:{}vs{}'.format(d_0[0],ratio[0])),"r") as r_b:
         line = r_b.readline()[1:-1]
         t_s = line.split(',')
         m_ts=[float(x) for x in t_s]
     for i in m_ts:
-        data.append(['two_attr model on sex data threshold',i])
+        data.append([i,'two_attr model on sex data threshold'])
     m_tr = []
     with open(os.path.join(BASE_MODELS_DIR,'two_attr',"baseline_on_dif",'vs'.join([args.d_0,args.ratio]),'race:{}vs{}'.format(d_0[1],ratio[1])),"r") as r_b:
         line = r_b.readline()[1:-1]
         t_s = line.split(',')
         m_tr=[float(x) for x in t_s]
     for i in m_tr:
-        data.append(['two_attr model on race data threshold',i])
+        data.append([i,'two_attr model on race data threshold'])
     for i in get_dt('sex'):
-        data.append(['sex model threshold',i])
+        data.append([i,'sex model threshold'])
     for i in get_dt('race'):
-        data.append(['race model threshold',i])
+        data.append([i,'race model threshold'])
     
     meta = []
     folder_path = os.path.join(BASE_MODELS_DIR,'two_attr','meta_result')
@@ -82,7 +83,7 @@ if __name__ == "__main__":
                 meta=[float(i) for i in l.split(",")]
                 break
     for i in meta:
-        data.append(['two_attr meta',i])
+        data.append([i,'two_attr meta'])
 
     meta_s = []
     folder_path = os.path.join(BASE_MODELS_DIR,'sex','meta_on_two_attr')
@@ -97,7 +98,7 @@ if __name__ == "__main__":
                         line = line.strip()[1:-1]
                         meta_s=[float(i) for i in line.split(',')]
     for i in meta_s:
-        data.append(['sex meta on two_attr',i])
+        data.append([i,'sex meta on two_attr'])
 
 
     meta_r = []
@@ -114,14 +115,14 @@ if __name__ == "__main__":
                         meta_r=[float(i) for i in line.split(',')]
 
     for i in meta_r:
-        data.append(['race meta on two_attr',i])
+        data.append([i,'race meta on two_attr'])
     
 
     df = pd.DataFrame(data, columns=columns)
-    fig, ax = plt.subplots(figsize=(25, 15))
+    fig, ax = plt.subplots(figsize=(30, 15))
     sns_plot = sns.boxplot(
-        x=columns[0], y=columns[1], data=df,ax=ax, color='C0', showfliers=False,)
-    sns_plot.set(ylim=(10, 101))
+        x=columns[0], y=columns[1], orient = 'h',data=df,ax=ax, color='C0', showfliers=False,)
+    sns_plot.set(xlim=(10, 101))
     sns_plot.figure.savefig("./tests_{}vs{}.png".format(args.d_0,args.ratio))
 
     
