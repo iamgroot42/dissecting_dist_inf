@@ -123,6 +123,6 @@ if __name__ == "__main__":
     sns_plot = sns.boxplot(
         x=columns[0], y=columns[1], orient = 'h',data=df,ax=ax, color='C0', showfliers=False,)
     sns_plot.set(xlim=(5, 101))
-    sns_plot.figure.savefig("./tests_{}vs{}.png".format(args.d_0,args.ratio))
+    sns_plot.figure.savefig("./images/tests_{}vs{}.png".format(args.d_0,args.ratio))
 
     

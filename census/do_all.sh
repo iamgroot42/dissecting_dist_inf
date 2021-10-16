@@ -1,5 +1,5 @@
-for i in 0.2 0.4 0.6 0.8
+
+for i in 0.0 0.1 0.2 0.3 0.4
 do
-python dif_boxplot.py --d_0 0.5,0.5 --ratio '0.1,'$i
-python dif_boxplot.py --d_0 0.5,0.5 --ratio $i',0.1'
+python perf_try.py --filter race --ratio_1 0.5 --ratio_2 $i
 done

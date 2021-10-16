@@ -224,7 +224,7 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     prop_wise_subsample_sizes = {
         "adv": {
             "sex": (1100, 500),
-            "race": (600, 300),
+            "race": (2000, 1000),
             "bothfw": (900, 400),
             "bothfn": (210, 100),
             "bothmn": (260, 130),
@@ -233,7 +233,7 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
         },
         "victim": {
             "sex": (1100, 500),
-            "race": (600, 300),
+            "race": (2000, 1000),
             "bothfw": (900, 400),
             "bothfn": (210, 100),
             "bothmn": (260, 130),
