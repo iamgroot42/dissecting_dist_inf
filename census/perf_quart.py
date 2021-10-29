@@ -1,3 +1,4 @@
+from tkinter import Y
 from model_utils import get_models_path, load_model, BASE_MODELS_DIR
 from data_utils import CensusTwo, CensusWrapper, SUPPORTED_PROPERTIES
 import numpy as np
@@ -21,30 +22,27 @@ def get_models(folder_path, n_models=1000):
     return models
 
 
-def get_accs(data, models):
-    x_te, y_te = data
-    accs = []
+def get_pred(data, models):
+    preds = []
     for model in tqdm(models):
-        vacc = model.score(x_te, y_te)
-        accs.append(vacc)
+        preds.append(model.predict(data))
 
-    return np.array(accs)
+    return np.transpose(np.array(preds))
 
-def select_points(model1,model2,x,Y,ratio = 0.5):
+def select_points(model1,model2,x,Y):
     models = list(zip(model1,model2))
     dims = x.shape
     total = dims[0]
-    p1 =  np.zeros((total,1))
-    p2 = np.zeros((total,1))
+    abs_dif = np.zeros((total,1))
     for (m1, m2) in models:
-        p1 += np.expand_dims(m1.predict_proba(x)[:,0],axis=1)
-        p2 += np.expand_dims(m2.predict_proba(x)[:,0],axis=1)
-        
-    abs_dif = np.absolute(p1-p2)
+        p1 = m1.predict_proba(x)[:,1]
+        p2 = m2.predict_proba(x)[:,1]
+        abs_dif += np.expand_dims(np.absolute(p1-p2),axis=1)
     da = np.append(x, Y, axis=1)
-    #da = np.append(da, abs_dif, axis=1)
-    re = da[np.argsort(abs_dif[:,0])][::-1][:int(ratio*total)]
-    return re[:,:-1],re[:,-1]
+    da = np.append(da, abs_dif, axis=1)
+    re = da[np.argsort(da[:, -1])][::-1]
+    
+    return re
 
 
 
@@ -55,21 +53,23 @@ if __name__ == "__main__":
                         help='name for subfolder to save/load data from')
     parser.add_argument('--ratio_1', help="ratios for D_1")
     parser.add_argument('--ratio_2', help="ratios for D_2")
-    parser.add_argument('--r')
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
     args = parser.parse_args()
     flash_utils(args)
-
+    lst = [0.05,0.1,0.2,0.3,0.4,0.5,1.0] #ratio of data points to try
     # Get victim models
     models_victim_1 = get_models(
         get_models_path(args.filter, "victim", args.ratio_1))
     models_victim_2 = get_models(
         get_models_path(args.filter, "victim", args.ratio_2))
-
-    basics, thresholds= [], []
+    each_thre = []
+    each_adv = []
+    avg_thre = []
+    
     for _ in range(args.tries):
-
+        thresholds = []
+        adv_thresholds = []
         # Load adv models
         total_models = 100
         models_1 = get_models(get_models_path(
@@ -100,85 +100,80 @@ if __name__ == "__main__":
             _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
         #y_te_1 = y_te_1.ravel()
         #y_te_2 = y_te_2.ravel()
-        x_te_1, y_te_1 = select_points(models_1,models_2,x_te_1,y_te_1,float(args.r))
-        x_te_2, y_te_2 = select_points(models_1,models_2,x_te_2,y_te_2,float(args.r))
-        # Iterate through data from both distrs
-        f_accs = []
-        loaders = [(x_te_1, y_te_1), (x_te_2, y_te_2)]
-        allaccs_1, allaccs_2 = [], []
-        adv_accs = []
-        #tr,rl = [],[]
-        for loader in loaders:
-            # Load models and get accuracies
-            accs_1 = get_accs(loader, models_1)
-            accs_2 = get_accs(loader, models_2)
+        re1 = select_points(models_1,models_2,x_te_1,y_te_1)
+        re2 = select_points(models_1,models_2,x_te_2,y_te_2)
+        x1,y1 = re1[:,:-2], re1[:,-2]
+        x2,y2 = re2[:,:-2], re2[:,-2]
+        yg = (y1,y2)
+        p1 = (get_pred(x1,models_1), get_pred(x2,models_1))
+        p2 = (get_pred(x1,models_2), get_pred(x2,models_2))
+        pv1 = (get_pred(x1,models_victim_1), get_pred(x2,models_victim_1))
+        pv2 = (get_pred(x1,models_victim_2), get_pred(x2,models_victim_2))
+        
+        if (p1[0].shape[0] != x1.shape[0]):
+            print('wrong dimension')
+            break
+        for ratio in lst:
+            f_accs = []
+            
+            adv_accs = []
+             #tr,rl = [],[]
+            
+            
+            for j in range(2):
+            #get accuracies
+                
+                leng = int(ratio*p1[j].shape[0])
+                accs_1 = np.average((p1[j][:leng]==np.repeat(np.expand_dims(yg[j][:leng],axis=1),p1[j].shape[1],axis=1)).astype(int),axis=0)
+                accs_2 = np.average((p2[j][:leng]==np.repeat(np.expand_dims(yg[j][:leng],axis=1),p2[j].shape[1],axis=1)).astype(int),axis=0)
 
             # Look at [0, 100]
-            accs_1 *= 100
-            accs_2 *= 100
+                accs_1 *= 100
+                accs_2 *= 100
 
-            tracc, threshold, rule = find_threshold_acc(
+                tracc, threshold, rule = find_threshold_acc(
                 # accs_1, accs_2, granularity=0.01)
                 accs_1, accs_2, granularity=0.005)
-            print("[Adversary] Threshold based accuracy: %.2f at threshold %.2f" %
-                  (100 * tracc, threshold))
-            adv_accs.append(100 * tracc)
+                adv_accs.append(100 * tracc)
            # tr.append(threshold)
            # rl.append(rule)
             # Compute accuracies on this data for victim
-            accs_victim_1 = get_accs(loader, models_victim_1)
-            accs_victim_2 = get_accs(loader, models_victim_2)
+                accs_victim_1 = np.average((pv1[j][:leng]==np.repeat(np.expand_dims(yg[j][:leng],axis=1),pv1[j].shape[1],axis=1)).astype(int),axis=0)
+                accs_victim_2 = np.average((pv2[j][:leng]==np.repeat(np.expand_dims(yg[j][:leng],axis=1),pv2[j].shape[1],axis=1)).astype(int),axis=0)
 
             # Look at [0, 100]
-            accs_victim_1 *= 100
-            accs_victim_2 *= 100
+                accs_victim_1 *= 100
+                accs_victim_2 *= 100
 
             # Threshold based on adv models
-            combined = np.concatenate((accs_victim_1, accs_victim_2))
-            classes = np.concatenate(
+                combined = np.concatenate((accs_victim_1, accs_victim_2))
+                classes = np.concatenate(
                 (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
-            specific_acc = get_threshold_acc(
+                specific_acc = get_threshold_acc(
                 combined, classes, threshold, rule)
-            print("[Victim] Accuracy at specified threshold: %.2f" %
-                  (100 * specific_acc))
-            f_accs.append(100 * specific_acc)
+                
+               # print("[Victim] Accuracy at specified threshold: %.2f" %
+               #   (100 * specific_acc))
+                f_accs.append(100 * specific_acc)
 
-            # Collect all accuracies for basic baseline
-            allaccs_1.append(accs_victim_1)
-            allaccs_2.append(accs_victim_2)
-        
 
-        # Basic baseline: look at model performance on test sets from both G_b
-        # Predict b for whichever b it is higher
-        adv_accs = np.array(adv_accs)
-        allaccs_1 = np.array(allaccs_1)
-        allaccs_2 = np.array(allaccs_2)
-
-        preds_1 = (allaccs_1[0, :] > allaccs_1[1, :])
-        preds_2 = (allaccs_2[0, :] <= allaccs_2[1, :])
-
-        basic_baseline_acc = (np.mean(preds_1) + np.mean(preds_2)) / 2
-        print("Basic baseline accuracy: %.3f" % (100 * basic_baseline_acc))
-
-        # Threshold baseline: look at model performance on test sets from both G_b
-        # and pick the better one
-        print("Threshold-test baseline accuracy: %.3f" %
-              (f_accs[np.argmax(adv_accs)]))
-
-        basics.append((100 * basic_baseline_acc))
-        thresholds.append(f_accs[np.argmax(adv_accs)])
-       # tr = tr[np.argmax(adv_accs)]
-       # rl = rl[np.argmax(adv_accs)]
-        
-
-   
-    overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
-    overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
-    log_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_selected_data:"+args.ratio_1)
+            ind = np.argmax(adv_accs)
+            thresholds.append(f_accs[ind])
+            adv_thresholds.append(adv_accs[ind])
+        each_adv.append(adv_thresholds)
+        each_thre.append(thresholds)
+    each_adv = np.array(each_adv)
+    each_thre = np.array(each_thre)
+    avg_thre = np.mean(each_adv[:,:-1],axis=0)
+    best= np.argmax(avg_thre)
+    content = 'At {}, best thresholds accuracy: {}\nAt {}, thresholds accuracy: {}'.format(lst[best],each_thre[:,best],1.0,each_thre[:,-1])
+    print(content)
+    log_path = os.path.join(BASE_MODELS_DIR, args.filter,"perf_quart:"+args.ratio_1)
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
-        wr.write(overall_loss+"; ")
-        wr.write(overall_threshold)
-    print(overall_loss)
-    print(overall_threshold)
+        wr.write(content)
+      
+    
+   
+    

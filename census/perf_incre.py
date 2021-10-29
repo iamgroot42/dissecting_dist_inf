@@ -9,41 +9,7 @@ from utils import get_threshold_acc, find_threshold_acc, flash_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_models(folder_path, n_models=1000):
-   
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        model = load_model(os.path.join(folder_path, mpath))
-        models.append(model)
-    return models
-
-
-def get_pred(data, models):
-    preds = []
-    for model in tqdm(models):
-        preds.append(model.predict(data))
-
-    return np.transpose(np.array(preds))
-
-def select_points(model1,model2,x,Y):
-    models = list(zip(model1,model2))
-    dims = x.shape
-    total = dims[0]
-    abs_dif = np.zeros((total,1))
-    for (m1, m2) in models:
-        p1 = m1.predict_proba(x)[:,1]
-        p2 = m2.predict_proba(x)[:,1]
-        abs_dif += np.expand_dims(np.absolute(p1-p2),axis=1)
-    da = np.append(x, Y, axis=1)
-    da = np.append(da, abs_dif, axis=1)
-    re = da[np.argsort(da[:, -1])][::-1]
-    
-    return re
-
+from perf_quart import get_models,get_pred,select_points
 
 
 if __name__ == "__main__":
@@ -183,8 +149,10 @@ if __name__ == "__main__":
        # tr = tr[np.argmax(adv_accs)]
        # rl = rl[np.argmax(adv_accs)]
     plt.plot(x_lst,avg_thre)
+    plt.title('{}: {}vs{}'.format(args.filter,args.ratio_1,args.ratio_2))
+    plt.ylim(30,101)
     plt.xlabel('number of points')
     plt.ylabel('average accuracy')
-    plt.savefig('./images/perf_try_{}_{}vs{}.png'.format(args.filter,args.ratio_1,args.ratio_2))
+    plt.savefig('./images/perf_incre_{}_{}vs{}.png'.format(args.filter,args.ratio_1,args.ratio_2))
    
     
