@@ -1,4 +1,4 @@
-# RSNA Boneage dataset experiments
+# CelebA dataset experiments
 
 ## Pre-requisites
 
