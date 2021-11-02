@@ -22,10 +22,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     flash_utils(args)
 
-    train_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.first)
-    train_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.second)
-    test_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.first)
-    test_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.second)
+    train_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.first)
+    train_dir_2 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.second)
+    test_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.first)
+    test_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % args.second)
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
