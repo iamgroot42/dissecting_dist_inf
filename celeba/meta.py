@@ -36,13 +36,13 @@ if __name__ == "__main__":
     utils.flash_utils(args)
 
     train_dir_1 = os.path.join(
-        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.first))
-    train_dir_2 = os.path.join(
-        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.second))
-    test_dir_1 = os.path.join(
         BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.first))
-    test_dir_2 = os.path.join(
+    train_dir_2 = os.path.join(
         BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.second))
+    test_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.first))
+    test_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.second))
 
     if args.conv_custom is not None:
         args.conv_custom = [int(x) for x in args.conv_custom.split(",")]
