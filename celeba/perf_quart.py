@@ -31,10 +31,10 @@ def get_preds(loader,ms):
             for data in loader:
                 images, _, _ = data
                 images = images.cuda()
-                #p.append(m(images).detach().to(ch.device('cpu')).numpy())
-                p.append(m(images).detach()[:, 0])
-        p = ch.stack(p,0).flatten()
-        #p = np.array(p).flatten()
+                p.append(m(images).detach().to(ch.device('cpu')).numpy())
+                #p.append(m(images).detach()[:, 0])
+        #p = ch.stack(p,0).flatten()
+        p = np.array(p).flatten()
         
         ps.append(p)
         del m
@@ -56,7 +56,7 @@ def cal_acc(p,y):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=4*256*32)
+    parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         required=True, choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--task', default="Smiling",
