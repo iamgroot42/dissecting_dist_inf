@@ -9,8 +9,10 @@ import argparse
 from utils import get_threshold_acc, find_threshold_acc, flash_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from perf_tests import get_models
-import copy
+from model_utils import get_model
+#from perf_tests import get_models
+def get_models(folder_path, n_models=1000):
+    return (folder_path,np.random.permutation(os.listdir(folder_path))[:n_models])
 
 mpl.rcParams['figure.dpi'] = 200
 #ch.cuda.set_device(3)
@@ -18,9 +20,10 @@ mpl.rcParams['figure.dpi'] = 200
 def get_preds(loader,ms):
     
     ps = []
-    for m in tqdm(ms):
+    for model in tqdm(ms[1]):
+        m = get_model(os.path.join(ms[0],model))
         m=nn.DataParallel(m.cuda())
-        m.cuda()
+        #m.cuda()
         m.eval()
         p=[]
         ch.cuda.empty_cache()
@@ -29,7 +32,7 @@ def get_preds(loader,ms):
                 images, _, _ = data
                 images = images.cuda()
                 #p.append(m(images).detach().to(ch.device('cpu')).numpy())
-                p.append(m(images).detach())
+                p.append(m(images).detach()[:, 0])
         p = ch.stack(p,0).flatten()
         #p = np.array(p).flatten()
         
@@ -53,7 +56,7 @@ def cal_acc(p,y):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=256*32)
+    parser.add_argument('--batch_size', type=int, default=4*256*32)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         required=True, choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--task', default="Smiling",
@@ -72,9 +75,9 @@ if __name__ == "__main__":
     # Load victim models
     print("Loading models")
     models_victim_1 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1),50)
+        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
     models_victim_2 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2),50)
+        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
     
     # Load adv models
     total_models = args.total_models
@@ -112,11 +115,11 @@ if __name__ == "__main__":
             yl = np.array(yl).flatten()
             yg.append(yl)
         
-        
-        p1 = [get_preds(loaders[0],models_1), get_preds(loaders[1],models_1)]
-        p2 = [get_preds(loaders[0],models_2), get_preds(loaders[1],models_2)]
         pv1 = [get_preds(loaders[0],models_victim_1), get_preds(loaders[1],models_victim_1)]
         pv2 = [get_preds(loaders[0],models_victim_2), get_preds(loaders[1],models_victim_2)]
+        p1 = [get_preds(loaders[0],models_1), get_preds(loaders[1],models_1)]
+        p2 = [get_preds(loaders[0],models_2), get_preds(loaders[1],models_2)]
+        
         ord = (order_points(p1[0],p2[0]),order_points(p1[1],p2[1]))
         for i in range(2):
             p1[i] = np.transpose(p1[i])[ord[i]][::-1]

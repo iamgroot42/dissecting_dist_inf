@@ -68,9 +68,9 @@ if __name__ == "__main__":
     # Load victim models
     print("Loading models")
     models_victim_1 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
+        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1),50)
     models_victim_2 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
+        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2),50)
 
     # Load adv models
     total_models = args.total_models
