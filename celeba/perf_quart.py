@@ -85,38 +85,41 @@ if __name__ == "__main__":
     each_thre = []
     each_adv = []
     avg_thre = []
-    for _ in range(args.tries):
-        thresholds = []
-        adv_thresholds = []
-        ds_1 = CelebaWrapper(args.filter, float(
+    ds_1 = CelebaWrapper(args.filter, float(
         args.ratio_1), "adv", cwise_samples=(int(1e6), int(1e6)),
         classify=args.task)
-        ds_2 = CelebaWrapper(args.filter, float(
+    ds_2 = CelebaWrapper(args.filter, float(
         args.ratio_2), "adv", cwise_samples=(int(1e6), int(1e6)),
         classify=args.task)
 
     # Get loaders
-        loaders = [
-        ds_1.get_loaders(args.batch_size, shuffle=False)[1],
-        ds_2.get_loaders(args.batch_size, shuffle=False)[1]
+    loaders = [
+    ds_1.get_loaders(args.batch_size, shuffle=False)[1],
+    ds_2.get_loaders(args.batch_size, shuffle=False)[1]
     ]
+    ygs = []
+    for i in range(2):
+        yl = []
+        for data in loaders[i]:
+            _,y,_ = data
+            yl.append(y.to(ch.device('cpu')).numpy())
+        yl = np.array(yl).flatten()
+        ygs.append(yl)
+    pvs1 = [get_preds(loaders[0],models_victim_1), get_preds(loaders[1],models_victim_1)]
+    pvs2 = [get_preds(loaders[0],models_victim_2), get_preds(loaders[1],models_victim_2)]
+    for _ in range(args.tries):
+        thresholds = []
+        adv_thresholds = []
+        yg = [[],[]]
         # Load adv models
         models_1 = get_models(os.path.join(
         BASE_MODELS_DIR, "adv", args.filter, args.ratio_1), total_models // 2)
         models_2 = get_models(os.path.join(
         BASE_MODELS_DIR, "adv", args.filter, args.ratio_2), total_models // 2)
         
-        yg = []
-        for i in range(2):
-            yl = []
-            for data in loaders[i]:
-                _,y,_ = data
-                yl.append(y.to(ch.device('cpu')).numpy())
-            yl = np.array(yl).flatten()
-            yg.append(yl)
         
-        pv1 = [get_preds(loaders[0],models_victim_1), get_preds(loaders[1],models_victim_1)]
-        pv2 = [get_preds(loaders[0],models_victim_2), get_preds(loaders[1],models_victim_2)]
+        
+        pv1,pv2 = [[],[]],[[],[]]
         p1 = [get_preds(loaders[0],models_1), get_preds(loaders[1],models_1)]
         p2 = [get_preds(loaders[0],models_2), get_preds(loaders[1],models_2)]
         
@@ -124,9 +127,9 @@ if __name__ == "__main__":
         for i in range(2):
             p1[i] = np.transpose(p1[i])[ord[i]][::-1]
             p2[i] = np.transpose(p2[i])[ord[i]][::-1]
-            pv1[i] = np.transpose(pv1[i])[ord[i]][::-1]
-            pv2[i] = np.transpose(pv2[i])[ord[i]][::-1]
-            yg[i] = yg[i][ord[i]][::-1]
+            pv1[i] = np.transpose(pvs1[i])[ord[i]][::-1]
+            pv2[i] = np.transpose(pvs2[i])[ord[i]][::-1]
+            yg[i] = ygs[i][ord[i]][::-1]
         for ratio in lst:
             f_accs = []
             
