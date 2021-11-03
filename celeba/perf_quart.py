@@ -38,9 +38,9 @@ def get_preds(loader,ms):
         
         ps.append(p)
         del m
-    #ps = np.array(ps)
-    ps = ch.stack(ps,0)
-    return ps.to(ch.device('cpu')).numpy()
+    ps = np.array(ps)
+    #ps = ch.stack(ps,0)
+    return ps#.to(ch.device('cpu')).numpy()
 
 
 def order_points(p1s,p2s):
