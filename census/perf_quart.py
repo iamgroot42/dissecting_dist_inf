@@ -33,11 +33,11 @@ def select_points(model1,model2,x,Y):
     models = list(zip(model1,model2))
     dims = x.shape
     total = dims[0]
-    abs_dif = np.zeros((total,1))
+    p1,p2 = np.zeros(total),np.zeros(total)
     for (m1, m2) in models:
-        p1 = m1.predict_proba(x)[:,1]
-        p2 = m2.predict_proba(x)[:,1]
-        abs_dif += np.expand_dims(np.absolute(p1-p2),axis=1)
+        p1 += m1.predict_proba(x)[:,1]
+        p2 += m2.predict_proba(x)[:,1]
+    abs_dif = np.expand_dims(np.absolute(p1-p2),axis=1)
     da = np.append(x, Y, axis=1)
     da = np.append(da, abs_dif, axis=1)
     re = da[np.argsort(da[:, -1])][::-1]

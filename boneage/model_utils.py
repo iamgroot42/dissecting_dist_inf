@@ -68,7 +68,7 @@ def save_model(model, split, prop_and_name):
 # Load model from given directory
 def load_model(path, fake_relu: bool = False, latent_focus: int = None):
     model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
-    model.load_state_dict(ch.load(path))
+    model.load_state_dict(ch.load(path,map_location=ch.device('cpu')))
     model.eval()
     return model
 

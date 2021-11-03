@@ -1311,6 +1311,7 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
     classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
     best_acc = 0.0
     best_threshold = 0
+    best_rule = None
     while lower < upper:
         best_of_two, rule = get_threshold_acc(combined, classes, lower)
         if best_of_two > best_acc:
