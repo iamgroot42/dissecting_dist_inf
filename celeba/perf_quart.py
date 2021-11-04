@@ -31,16 +31,16 @@ def get_preds(loader,ms):
             for data in loader:
                 images, _, _ = data
                 images = images.cuda()
-                p.append(m(images).detach()[:,0].to(ch.device('cpu')).numpy())
-                #p.append(m(images).detach()[:, 0])
-        #p = ch.stack(p,0).flatten()
-        p = np.concatenate(p)
+                #p.append(m(images).detach()[:,0].to(ch.device('cpu')).numpy())
+                p.append(m(images).detach()[:, 0])
+        p = ch.cat(p)
+        #p = np.concatenate(p)
         
         ps.append(p)
         del m
-    ps = np.array(ps)
-    #ps = ch.stack(ps,0)
-    return ps#.to(ch.device('cpu')).numpy()
+    #ps = np.array(ps)
+    ps = ch.stack(ps,0)
+    return ps.to(ch.device('cpu')).numpy()
 
 
 def order_points(p1s,p2s):
