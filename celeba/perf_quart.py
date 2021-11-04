@@ -10,19 +10,20 @@ from utils import get_threshold_acc, find_threshold_acc, flash_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from model_utils import get_model
-#from perf_tests import get_models
+#from perf_tests import get_models 
+
 def get_models(folder_path, n_models=1000):
     return (folder_path,np.random.permutation(os.listdir(folder_path))[:n_models])
 
 mpl.rcParams['figure.dpi'] = 200
-#ch.cuda.set_device(3)
+ch.cuda.set_device(3)
 
 def get_preds(loader,ms):
     
     ps = []
     for model in tqdm(ms[1]):
         m = get_model(os.path.join(ms[0],model))
-        m=nn.DataParallel(m.cuda())
+        m=nn.DataParallel(m.cuda(),device_ids=[3,0,1,2])
         #m.cuda()
         m.eval()
         p=[]
@@ -186,7 +187,7 @@ if __name__ == "__main__":
     best= np.argmax(avg_thre)
     content = 'At {}, best thresholds accuracy: {}\nAt {}, thresholds accuracy: {}'.format(lst[best],each_thre[:,best],1.0,each_thre[:,-1])
     print(content)
-    log_path = os.path.join('/u/pdz6an/git/property_inference/celeba/log',"perf_quart:"+args.ratio_1)
+    log_path = os.path.join('./log',"perf_quart_{}:{}".format(args.filter,args.ratio_1))
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:

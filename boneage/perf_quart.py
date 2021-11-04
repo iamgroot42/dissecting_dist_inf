@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from perf_tests import get_models
 mpl.rcParams['figure.dpi'] = 200
-
 def get_preds(loader,ms):
     
     ps = []
@@ -173,7 +172,7 @@ if __name__ == "__main__":
     best= np.argmax(avg_thre)
     content = 'At {}, best thresholds accuracy: {}\nAt {}, thresholds accuracy: {}'.format(lst[best],each_thre[:,best],1.0,each_thre[:,-1])
     print(content)
-    log_path = os.path.join('/u/pdz6an/git/property_inference/boneage/log',"perf_quart:"+args.ratio_1)
+    log_path = os.path.join('./log',"perf_quart:"+args.ratio_1)
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
