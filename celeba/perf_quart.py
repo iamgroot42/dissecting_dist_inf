@@ -31,10 +31,10 @@ def get_preds(loader,ms):
             for data in loader:
                 images, _, _ = data
                 images = images.cuda()
-                p.append(m(images).detach().to(ch.device('cpu')).numpy())
+                p.append(m(images).detach()[:,0].to(ch.device('cpu')).numpy())
                 #p.append(m(images).detach()[:, 0])
         #p = ch.stack(p,0).flatten()
-        p = np.array(p).flatten()
+        p = np.concatenate(p)
         
         ps.append(p)
         del m
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         for data in loaders[i]:
             _,y,_ = data
             yl.append(y.to(ch.device('cpu')).numpy())
-        yl = np.array(yl).flatten()
+        yl = np.concatenate(yl)
         ygs.append(yl)
     pvs1 = [get_preds(loaders[0],models_victim_1), get_preds(loaders[1],models_victim_1)]
     pvs2 = [get_preds(loaders[0],models_victim_2), get_preds(loaders[1],models_victim_2)]

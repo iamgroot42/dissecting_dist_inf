@@ -25,7 +25,7 @@ def get_preds(loader,ms):
                 images, _, _ = data
                 images = images.to(ch.device('cuda:2'))
                 p.append(m(images).to(ch.device('cpu')).numpy())
-        p = np.array(p).flatten()
+        p = np.concatenate(p)
         ps.append(p)
     return np.array(ps)
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
             for data in loaders[i]:
                 _,y,_ = data
                 yl.append(y.to(ch.device('cpu')).numpy())
-            yl = np.array(yl).flatten()
+            yl = np.concatenate(yl)
             yg.append(yl.astype('int'))
         
         
