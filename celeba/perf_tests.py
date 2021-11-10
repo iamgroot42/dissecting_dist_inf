@@ -9,7 +9,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-\
+
 def get_models(folder_path, n_models=1000):
     paths = np.random.permutation(os.listdir(folder_path))[:n_models]
 
@@ -48,6 +48,7 @@ if __name__ == "__main__":
                         help='task to focus on')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
+    parser.add_argument('--testing', action = 'store_false',help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
     args = parser.parse_args()
     utils.flash_utils(args)
@@ -69,10 +70,16 @@ if __name__ == "__main__":
 
     # Load victim models
     print("Loading models")
-    models_victim_1 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
-    models_victim_2 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
+    if args.testing:
+        models_victim_1 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_1),50)
+        models_victim_2 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_2),50)
+    else:
+        models_victim_1 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
+        models_victim_2 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
 
     # Load adv models
     total_models = args.total_models

@@ -15,14 +15,14 @@ def get_preds(loader,ms):
     
     ps = []
     for m in tqdm(ms):
-        m=m.to(ch.device('cuda:2'))
+        m=m.cuda()
         m.eval()
         p=[]
         ch.cuda.empty_cache()
         with ch.no_grad():
             for data in loader:
                 images, _, _ = data
-                images = images.to(ch.device('cuda:2'))
+                images = images.cuda()
                 p.append(m(images).to(ch.device('cpu')).numpy())
         p = np.concatenate(p)
         ps.append(p)

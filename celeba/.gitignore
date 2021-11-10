@@ -3,3 +3,4 @@ celeba_models/*
 celeba_models_split/*
 *.out
 log/*
+do*

@@ -119,8 +119,7 @@ def get_model(path, use_prefix=True, parallel=False, fake_relu=False, latent_foc
         model = nn.DataParallel(model)
 
     model.eval()
-    return model#.to(ch.device('cpu'))
-
+    return model
 
 def save_model(model, split, property, ratio, name, dataparallel=False):
     savepath = os.path.join(split, property, ratio, name)

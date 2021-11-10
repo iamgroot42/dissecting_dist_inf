@@ -8,3 +8,4 @@ RUN*
 images/*
 *.out
 log/*
+do*

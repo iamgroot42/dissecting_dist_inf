@@ -37,9 +37,9 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--d_0', help='ratios to use for D_0')
+    parser.add_argument('--d_0',default="0.5", help='ratios to use for D_0')
     parser.add_argument('--trg', default=None, help='target ratios')
-    parser.add_argument('--save', default=False, help='save model or not')
+    parser.add_argument('--save', action="store_false", help='save model or not')
     args = parser.parse_args()
     utils.flash_utils(args)
 

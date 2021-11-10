@@ -11,7 +11,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter', type=str,
                         choices=data_utils.SUPPORTED_PROPERTIES,
                         help='while filter to use')
-    parser.add_argument('--ratio', help='what ratio of the new sampled dataset should be true')
+    parser.add_argument('--ratio',default=0.5, help='what ratio of the new sampled dataset should be true')
     parser.add_argument('--num', type=int, default=1000,
                         help='how many classifiers to train?')
     parser.add_argument('--split', choices=["adv", "victim"],
