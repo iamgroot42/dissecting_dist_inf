@@ -5,7 +5,7 @@ models/*
 *.pth
 LOG_*
 RUN*
-images/*
+images/
 *.out
-log/*
-do*
+log/
+do*.sh

@@ -6,4 +6,6 @@ census_data/*
 *.png
 train_fix*.sh
 SEX_*
-do*
+images/
+log/
+do*.sh
