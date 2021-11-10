@@ -8,4 +8,4 @@ train_fix*.sh
 SEX_*
 images/
 log/
-do*.sh
+./do*.sh
