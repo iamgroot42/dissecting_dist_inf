@@ -121,7 +121,6 @@ def get_model(path, use_prefix=True, parallel=False, fake_relu=False, latent_foc
     model.eval()
     return model
 
-
 def save_model(model, split, property, ratio, name, dataparallel=False):
     savepath = os.path.join(split, property, ratio, name)
     # Make sure directory exists

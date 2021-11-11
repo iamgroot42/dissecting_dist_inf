@@ -6,8 +6,8 @@ from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
-
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
+BASE_MODELS_DIR = '/p/adversarialml/as9rw/models_census/50_50_new'
+#BASE_MODELS_DIR = "/u/pdz6an/git/census/50_50_new"
 
 
 def layer_output(data, MLP, layer=0, get_all=False):
@@ -72,5 +72,7 @@ def load_model(path):
 
 def get_models_path(property, split, value=None):
     if value is None:
-        return os.path.join(BASE_MODELS_DIR, split, property)
-    return os.path.join(BASE_MODELS_DIR, split, property, value)
+        return os.path.join(BASE_MODELS_DIR,property, split)
+    return os.path.join(BASE_MODELS_DIR,  property,split, value)
+
+

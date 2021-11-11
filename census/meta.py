@@ -1,6 +1,6 @@
 import utils
 from data_utils import SUPPORTED_PROPERTIES
-from model_utils import get_models_path, get_model_representations
+from model_utils import get_models_path, get_model_representations,BASE_MODELS_DIR, save_model
 import argparse
 import numpy as np
 import torch as ch
@@ -37,8 +37,9 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--d_0', default="0.5",
-                        help='ratio to use for D_0')
+    parser.add_argument('--d_0',default="0.5", help='ratios to use for D_0')
+    parser.add_argument('--trg', default=None, help='target ratios')
+    parser.add_argument('--save', action="store_false", help='save model or not')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -46,10 +47,23 @@ if __name__ == "__main__":
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
     # Only look at multiples of 0.10
-    targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
-                     float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
-    # targets = ["0.3", "0.4", "0.6", "0.7", "0.8", "0.9"]
-    targets = sorted(list(targets))
+    #targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
+    #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
+    if args.trg==None:
+        targets = sorted(['0.2,0.5', '0.5,0.2' ,'0.1,0.5'])
+    else:
+        lst = eval(args.trg)
+        targets = []
+        for i in lst:
+            if type(i) is list:
+                i = [str(x) for x in i]
+                targets.append(','.join(i))
+                
+            else:
+                targets.append(str(i))
+        targets = sorted(targets)
+        
+    #targets = sorted(list(targets))
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
@@ -73,7 +87,7 @@ if __name__ == "__main__":
         print("Batching data: hold on")
         X_te = utils.prepare_batched_data(X_te)
 
-        for _ in range(args.ntimes):
+        for i in range(args.ntimes):
             # Random shuffles
             shuffled_1 = np.random.permutation(len(pos_labels))
             pp_x = pos_w[shuffled_1[:args.train_sample]]
@@ -136,11 +150,22 @@ if __name__ == "__main__":
                          batch_size=args.batch_size,
                          val_data=val_data, combined=True,
                          eval_every=10, gpu=True)
-
+            if args.save:
+                save_path = os.path.join(BASE_MODELS_DIR,args.filter, "meta_model","-".join([args.d_0,str(args.start_n),str(args.first_n)]),tg)
+                if not os.path.isdir(save_path):
+                    os.makedirs(save_path)
+                save_model(clf, os.path.join(save_path, str(i)+
+            "_%.2f" % tacc))
             tgt_data.append(tacc)
             print("Test accuracy: %.3f" % tacc)
         data.append(tgt_data)
-
+    
     # Print data
-    for i, tup in enumerate(data):
-        print(targets[i], tup)
+    
+    log_path = os.path.join(BASE_MODELS_DIR,args.filter, "meta_result")
+    if not os.path.isdir(log_path):
+        os.makedirs(log_path)
+    with open(os.path.join(log_path,"-".join([args.filter,args.d_0,str(args.start_n),str(args.first_n)])),"a") as wr:
+        for i, tup in enumerate(data):
+            print(targets[i], tup)
+            wr.write(targets[i]+': '+",".join([str(x) for x in tup])+"\n")
