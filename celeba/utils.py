@@ -9,6 +9,7 @@ from robustness.model_utils import make_and_restore_model
 from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
+from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 from copy import deepcopy
 from PIL import Image
 from tqdm import tqdm
@@ -931,7 +932,7 @@ def heuristic(df, condition, ratio,
     return picked_df.reset_index(drop=True)
 
 
-def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
+def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True, adv_train=False):
     model.train()
     train_loss = AverageMeter()
     train_acc = AverageMeter()
@@ -944,7 +945,19 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
         N = images.size(0)
 
         optimizer.zero_grad()
-        outputs = model(images)[:, 0]
+
+        if adv_train is False:
+            outputs = model(images)[:, 0]
+        else:
+            adv_x = projected_gradient_descent(
+                model, images, eps=adv_train['eps'],
+                eps_iter=adv_train['eps_iter'],
+                nb_iter=adv_train['nb_iter'],
+                norm=adv_train['norm'],
+                clip_min=adv_train['clip_min'],
+                clip_max=adv_train['clip_max'],
+                random_restarts=adv_train['random_restarts'])
+            outputs = model(adv_x)[:, 0]
 
         loss = criterion(outputs, labels.float())
         loss.backward()
@@ -960,11 +973,14 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True):
     return train_loss.avg, train_acc.avg
 
 
-def validate_epoch(val_loader, model, criterion, verbose=True):
+def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False):
     model.eval()
     val_loss = AverageMeter()
     val_acc = AverageMeter()
-    with ch.no_grad():
+    adv_val_loss = AverageMeter()
+    adv_val_acc = AverageMeter()
+
+    with ch.set_grad_enabled(adv_train is not False):
         for data in val_loader:
             images, labels, _ = data
             images, labels = images.cuda(), labels.cuda()
@@ -973,22 +989,50 @@ def validate_epoch(val_loader, model, criterion, verbose=True):
             outputs = model(images)[:, 0]
             prediction = (outputs >= 0)
 
+            if adv_train is not False:
+                adv_x = projected_gradient_descent(
+                    model, images, eps=adv_train['eps'],
+                    eps_iter=adv_train['eps_iter'],
+                    nb_iter=adv_train['nb_iter'],
+                    norm=adv_train['norm'],
+                    clip_min=adv_train['clip_min'],
+                    clip_max=adv_train['clip_max'],
+                    random_restarts=adv_train['random_restarts'])
+                outputs_adv = model(adv_x)[:, 0]
+                prediction_adv = (outputs_adv >= 0)
+
+                adv_val_acc.update(prediction_adv.eq(
+                    labels.view_as(prediction_adv)).sum().item()/N)
+
+                adv_val_loss.update(
+                    criterion(outputs_adv, labels.float()).item())
+
             val_acc.update(prediction.eq(
                 labels.view_as(prediction)).sum().item()/N)
 
             val_loss.update(criterion(outputs, labels.float()).item())
 
     if verbose:
-        print('[Validation], Loss: %.5f, Accuracy: %.4f' %
-              (val_loss.avg, val_acc.avg))
+        if adv_train is False:
+            print('[Validation], Loss: %.5f, Accuracy: %.4f' %
+                  (val_loss.avg, val_acc.avg))
+        else:
+            print('[Validation], Loss: %.5f, Accuracy: %.4f | Adv-Loss: %.5f, Adv-Accuracy: %.4f' %
+                  (val_loss.avg, val_acc.avg,
+                   adv_val_loss.avg, adv_val_acc.avg))
         print()
-    return val_loss.avg, val_acc.avg
+
+    if adv_train is False:
+        return val_loss.avg, val_acc.avg
+    return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
 def train(model, loaders, lr=1e-3, epoch_num=10,
-          weight_decay=0, verbose=True, get_best=False):
+          weight_decay=0, verbose=True, get_best=False,
+          adv_train=False):
     # Get data loaders
     train_loader, val_loader = loaders
+
     # Define optimizer, loss function
     optimizer = ch.optim.Adam(
         model.parameters(), lr=lr,
@@ -1002,14 +1046,25 @@ def train(model, loaders, lr=1e-3, epoch_num=10,
     best_model, best_loss = None, np.inf
     for epoch in iterator:
         _, tacc = train_epoch(train_loader, model,
-                              criterion, optimizer, epoch, verbose)
-        vloss, vacc = validate_epoch(val_loader, model, criterion, verbose)
+                              criterion, optimizer, epoch,
+                              verbose=verbose, adv_train=adv_train)
+        vloss, vacc = validate_epoch(
+            val_loader, model, criterion, verbose=verbose,
+            adv_train=adv_train)
         if not verbose:
-            iterator.set_description(
-                "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
+            if adv_train is False:
+                iterator.set_description(
+                    "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
+            else:
+                iterator.set_description(
+                    "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (tacc, vacc[0], vacc[1]))
 
-        if get_best and vloss < best_loss:
-            best_loss = vloss
+        vloss_compare = vloss
+        if adv_train is not False:
+            vloss_compare = vloss[0]
+
+        if get_best and vloss_compare < best_loss:
+            best_loss = vloss_compare
             best_model = deepcopy(model)
 
     if get_best:
@@ -1414,3 +1469,18 @@ def bound(x, y, n):
     l2 = bound_2()
     pick = min(l1, l2) / 2
     return 0.5 + pick
+
+
+def extract_adv_params(
+        eps, eps_iter, nb_iter, norm,
+        random_restarts, clip_min, clip_max):
+    adv_params = {}
+    adv_params["eps"] = eps
+    adv_params["eps_iter"] = eps_iter
+    adv_params["nb_iter"] = nb_iter
+    adv_params["norm"] = norm
+    adv_params["clip_min"] = clip_min
+    adv_params["clip_max"] = clip_max
+    adv_params["random_restarts"] = random_restarts
+
+    return adv_params
