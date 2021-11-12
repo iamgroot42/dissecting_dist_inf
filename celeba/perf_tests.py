@@ -4,6 +4,7 @@ import torch.nn as nn
 import numpy as np
 import utils
 from tqdm import tqdm
+import torch as ch
 import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -29,16 +30,17 @@ def get_accs(val_loader, models):
 
         vloss, vacc = utils.validate_epoch(
             val_loader, model, criterion, verbose=False)
+
         accs.append(vacc)
         # accs.append(vloss)
-
+        ch.cuda.empty_cache()
     return np.array(accs)
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         required=True, choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--task', default="Smiling",
@@ -46,6 +48,8 @@ if __name__ == "__main__":
                         help='task to focus on')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
+    parser.add_argument('--testing', action='store_false',
+                        help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
     args = parser.parse_args()
     utils.flash_utils(args)
@@ -67,10 +71,16 @@ if __name__ == "__main__":
 
     # Load victim models
     print("Loading models")
-    models_victim_1 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
-    models_victim_2 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
+    if args.testing:
+        models_victim_1 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_1),50)
+        models_victim_2 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_2),50)
+    else:
+        models_victim_1 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
+        models_victim_2 = get_models(os.path.join(
+            BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
 
     # Load adv models
     total_models = args.total_models

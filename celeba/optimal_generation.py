@@ -132,7 +132,8 @@ def gen_optimal(models, labels, sample_shape, n_samples,
         # const = 2.
         const = 1.
         const_neg = 0.5
-        loss = ch.mean((const - reprs_z) ** 2) + ch.mean((const_neg + reprs_o) ** 2)
+        loss = ch.mean((const - reprs_z) ** 2) + \
+            ch.mean((const_neg + reprs_o) ** 2)
         # loss = ch.mean((const_neg + reprs_z) ** 2) + ch.mean((const - reprs_o) ** 2)
         grad = ch.autograd.grad(loss, [x_rand])
 
@@ -153,7 +154,8 @@ def gen_optimal(models, labels, sample_shape, n_samples,
                 difference = (x_rand_data_start - x_intermediate)
                 difference = difference.view(difference.shape[0], -1)
                 eps = 0.5
-                difference_norm = eps * ch.norm(difference, p=2, dim=0, keepdim=True)
+                difference_norm = eps * \
+                    ch.norm(difference, p=2, dim=0, keepdim=True)
                 difference_norm = difference_norm.view(*shape)
                 # difference = difference.renorm(p=2, dim=0, maxnorm=eps)
                 x_rand_data = x_rand_data_start - difference_norm
@@ -217,12 +219,13 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
         for i in range(args.n_samples):
             # Get optimal point based on local set
             x_opt_, loss_ = gen_optimal(
-                                X_train_1 + X_train_2, Y_train,
-                                (3, 218, 178), 1,
-                                args.steps, args.step_size,
-                                args.latent_focus, args.upscale,
-                                use_normal=normal_data[i:i+1] if (args.use_normal or args.start_natural) else None,
-                                constrained=args.constrained)
+                X_train_1 + X_train_2, Y_train,
+                (3, 218, 178), 1,
+                args.steps, args.step_size,
+                args.latent_focus, args.upscale,
+                use_normal=normal_data[i:i +
+                                       1] if (args.use_normal or args.start_natural) else None,
+                constrained=args.constrained)
             x_opt.append(x_opt_)
             losses.append(loss_)
 
@@ -371,7 +374,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.start_natural and args.use_normal:
-        raise ValueError("Can't start with nautral images to optimize and not use them")	
+        raise ValueError(
+            "Can't start with nautral images to optimize and not use them")
 
     flash_utils(args)
 
