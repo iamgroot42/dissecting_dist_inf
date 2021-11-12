@@ -5,10 +5,12 @@ from collections import OrderedDict
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
+
 from robustness.model_utils import make_and_restore_model
 from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
+
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 from copy import deepcopy
 from PIL import Image
@@ -379,16 +381,25 @@ def get_cropped_faces(cropmodel, x):
 def get_weight_layers(m, normalize=False, transpose=True,
                       first_n=np.inf, start_n=0,
                       custom_layers=None,
-                      conv=False, include_all=False):
+                      conv=False, include_all=False,
+                      prune_mask=[]):
     dims, dim_kernels, weights, biases = [], [], [], []
     i, j = 0, 0
 
     # Sort and store desired layers, if specified
     custom_layers = sorted(custom_layers) if custom_layers is not None else None
 
+    track = 0
     for name, param in m.named_parameters():
         if "weight" in name:
+
             param_data = param.data.detach().cpu()
+
+            # Apply pruning masks if provided
+            if len(prune_mask) > 0:
+                param_data = param_data * prune_mask[track]
+                track += 1
+
             if transpose:
                 param_data = param_data.T
             weights.append(param_data)

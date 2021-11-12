@@ -19,6 +19,9 @@ if __name__ == "__main__":
                         help="Only consider first N layers")
     parser.add_argument('--first', help="Ratio for D_0", default="0.5")
     parser.add_argument('--second', help="Ratio for D_1")
+    parser.add_argument(
+        '--prune_ratio', type=float, default=None,
+        help="Prune models before training meta-models")
     args = parser.parse_args()
     flash_utils(args)
 
@@ -29,14 +32,18 @@ if __name__ == "__main__":
 
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
-        train_dir_1, first_n=args.first_n, start_n=args.start_n)
+        train_dir_1, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio)
     _, vecs_train_2 = get_model_features(
-        train_dir_2, first_n=args.first_n, start_n=args.start_n)
+        train_dir_2, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio)
 
     _, vecs_test_1 = get_model_features(
-        test_dir_1, first_n=args.first_n, start_n=args.start_n)
+        test_dir_1, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio)
     _, vecs_test_2 = get_model_features(
-        test_dir_2, first_n=args.first_n, start_n=args.start_n)
+        test_dir_2, first_n=args.first_n,
+        start_n=args.start_n, prune_ratio=args.prune_ratio)
 
     vecs_train_1 = np.array(vecs_train_1)
     vecs_train_2 = np.array(vecs_train_2)

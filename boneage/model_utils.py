@@ -3,6 +3,7 @@ import torch.nn as nn
 from torchvision import models
 import numpy as np
 from tqdm import tqdm
+import torch.nn.utils.prune as prune
 from utils import get_weight_layers, ensure_dir_exists, BasicWrapper, FakeReluWrapper
 import os
 
@@ -84,7 +85,7 @@ def get_model_folder_path(split, ratio):
 
 
 # Function to extract model weights for all models in given directory
-def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0):
+def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0, prune_ratio=None):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -94,8 +95,20 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0):
     for mpath in tqdm(iterator):
         model = load_model(os.path.join(model_dir, mpath))
 
+        prune_mask = []
+        # Prune weight layers, if requested
+        if prune_ratio is not None:
+            for layer in model.layers:
+                if type(layer) == nn.Linear:
+                    # Keep track of weight pruning mask
+                    prune.l1_unstructured(
+                        layer, name='weight', amount=prune_ratio)
+                    prune_mask.append(layer.weight_mask.data.detach().cpu())
+
         # Get model params, shift to GPU
-        dims, fvec = get_weight_layers(model, first_n=first_n, start_n=start_n)
+        dims, fvec = get_weight_layers(
+            model, first_n=first_n, start_n=start_n,
+            prune_mask=prune_mask)
         fvec = [x.cuda() for x in fvec]
 
         vecs.append(fvec)
