@@ -286,6 +286,7 @@ if __name__ == "__main__":
                 color='white' if args.darkplot else 'black',
                 linewidth=1.0, linestyle='--')
 
+    # This data was for 1-ratio, so flip before plotting
     baselines = baselines[::-1]
     thresholds = thresholds[::-1]
 

@@ -349,6 +349,11 @@ if __name__ == "__main__":
         if focus_n not in v1:
             continue
         v2 = v1[focus_n]
+
+        # This data was for 1-ratio, so flip before plotting
+        if args.filter == "race":
+            v2 = v2[::-1]
+
         for i in range(len(v2)):
             for j in range(len(v2[i])):
                 data.append([categories[i], v2[i][j], n])

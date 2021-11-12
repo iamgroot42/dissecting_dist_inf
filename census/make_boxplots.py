@@ -110,6 +110,9 @@ if __name__ == "__main__":
             [55.15, 51.35, 50.70, 54.40, 54.75, 51.15, 51.65, 52.55, 51.05, 50.35],
             [50.95, 59.00, 58.00, 59.00, 56.85, 59.00, 56.30, 59.70, 59.00, 59.70]
         ]
+        # This data was for 1-ratio, so flip before plotting
+        baselines = baselines[::-1]
+        thresholds = thresholds[::-1]
     else:
         # For sex
         baselines = [70.5, 49.7, 50, 50.7, 50.4, 50, 52, 51.8, 50.3, 50.1]
@@ -136,9 +139,9 @@ if __name__ == "__main__":
 
     # Custom legend
     if args.legend:
-        meta_patch = mpatches.Patch(color='C0', label=r'$Acc_{meta-classifier}$')
-        baseline_patch = mpatches.Patch(color='C1', label=r'$Acc_{baseline}$')
-        threshold_patch = mpatches.Patch(color='C2', label=r'$Acc_{threshold}$')
+        meta_patch = mpatches.Patch(color='C0', label=r'Meta-Classifier')
+        baseline_patch = mpatches.Patch(color='C1', label=r'Loss Test')
+        threshold_patch = mpatches.Patch(color='C2', label=r'Threshold Test')
         plt.legend(handles=[meta_patch, baseline_patch, threshold_patch])
 
     if args.novtitle:

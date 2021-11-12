@@ -31,7 +31,6 @@ def get_accs(val_loader, models):
         vloss, vacc = utils.validate_epoch(
             val_loader, model, criterion, verbose=False)
         accs.append(vacc)
-        # accs.append(vloss)
 
     return np.array(accs)
 

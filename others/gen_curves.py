@@ -11,6 +11,7 @@ def bound_1(x, y, n):
     ratio = min(x, y) / max(x, y)
     return np.sqrt(1 -(ratio ** n))
 
+
 def bound_2(x, y, n):
     ratio = (1 - max(x, y)) / (1 - min(x, y))
     return np.sqrt(1 - (ratio ** n))
@@ -886,7 +887,7 @@ def process_data(meta, threshold, raw, ratios):
                 r1 = 1 - r1
                 r2 = 1 - r2
             r1, r2 = round(r1, 1), round(r2, 1)
-            
+
             if picked_ratio != r1 and picked_ratio != r2:
                 continue
 
@@ -919,6 +920,8 @@ if __name__ == "__main__":
     plt.rc('xtick', labelsize=15)
     plt.rc('ytick', labelsize=15)
     plt.rc('axes', labelsize=15)
+
+    # plt.style.use('dark_background')
 
     # Plot curves corresponding to ratios
     picked_ratio = 0.2
@@ -1031,7 +1034,7 @@ if __name__ == "__main__":
     plt.ylabel(r'Accuracy')
     plt.ylim(0.5, 1)
     plt.xticks(np.arange(min(x), max(x)+0.1, 0.1))
-    plt.grid()
+    # plt.grid()
     plt.style.use('seaborn')
     plt.legend()
     plt.savefig("./bound_curves_%.1f.png" % picked_ratio)
