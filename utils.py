@@ -1378,7 +1378,7 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
     best_acc = 0.0
     best_threshold = 0
     best_rule = None
-    while lower < upper:
+    while lower <= upper:
         best_of_two, rule = get_threshold_acc(combined, classes, lower)
         if best_of_two > best_acc:
             best_threshold = lower
@@ -1389,6 +1389,32 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
 
     return best_acc, best_threshold, best_rule
 
+
+def get_threshold_pred(X,Y,threshold,rule):
+    if (X.shape[1] != Y.shape[0]) or (X.shape[0]!=threshold.shape[0]):
+        raise ValueError('dimension mismatch')
+    res = []
+    for i in range(X.shape[1]):
+        res.append(np.average(((X[:,i]<=threshold)==rule))>=0.5)
+    res = np.array(res)
+    return np.mean(res==Y)
+
+def find_threshold_pred(pred_1,pred_2,granularity=0.005):
+    if pred_1.shape[0] != pred_2.shape[0]:
+        raise ValueError('dimension mismatch')
+    thres,rules = [],[]
+    g= granularity
+    for i in tqdm(range(pred_1.shape[0])):
+        _,t,r = find_threshold_acc(pred_1[i],pred_2[i],g)
+        while r is None:
+            g=g/10
+            _,t,r = find_threshold_acc(pred_1[i],pred_2[i],g)
+        thres.append(t)
+        rules.append(r-1)
+    thres = np.array(thres)
+    rules = np.array(rules)
+    acc = get_threshold_pred(np.concatenate((pred_1,pred_2),axis=1),np.concatenate((np.zeros(pred_1.shape[1]),np.ones(pred_2.shape[1]))),thres,rules)
+    return acc, thres,rules
 
 # Fix for repeated random augmentation issue
 # https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/
