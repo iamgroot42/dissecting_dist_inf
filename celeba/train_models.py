@@ -1,3 +1,4 @@
+import numpy as np
 from model_utils import create_model, save_model
 from data_utils import SUPPORTED_PROPERTIES, CelebaWrapper
 from utils import flash_utils, train, extract_adv_params
@@ -42,11 +43,15 @@ if __name__ == "__main__":
     # Get adv params
     adv_params = False
     if args.adv_train:
-        eps = 2.0
-        nb_iter = 20
+        # Given the way scaling is done, eps (passed as argument) should be
+        # double (for p=inf case)
+        eps = 1 / 255  # 5.0
+        norm = np.inf
+        nb_iter = 7
+        # Adv acc seems to be too high- investigate what's going on
         adv_params = extract_adv_params(
             eps=eps, eps_iter=(2.5 * eps / nb_iter), nb_iter=nb_iter,
-            norm=2, random_restarts=5,
+            norm=norm, random_restarts=4,
             clip_min=-1, clip_max=1)
 
     # Create model
