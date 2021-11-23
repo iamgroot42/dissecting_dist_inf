@@ -919,7 +919,7 @@ if __name__ == "__main__":
     plt.rcParams.update({'font.size': 20})
     plt.rc('xtick', labelsize=15)
     plt.rc('ytick', labelsize=15)
-    plt.rc('axes', labelsize=15)
+    plt.rc('axes', labelsize=14)
 
     # plt.style.use('dark_background')
 
@@ -1021,7 +1021,7 @@ if __name__ == "__main__":
     n_effs = sorted(n_effs)[::-1]
 
     for cc, n_eff in zip(curve_colors, n_effs):
-        plt.plot(x_axis, [bound(x_, picked_ratio, n_eff) for x_ in x_axis], color=cc, label=r"$n_{effective}=%d$" % n_eff)
+        plt.plot(x_axis, [bound(x_, picked_ratio, n_eff) for x_ in x_axis], color=cc, label=r"$n_{leaked}=%d$" % n_eff)
 
     # Trick to get desired legend
     plt.plot([], [], color=colors[0], marker="D", ms=10, ls="", label="RSNA Bone Age")

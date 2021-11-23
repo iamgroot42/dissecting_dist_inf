@@ -2,9 +2,11 @@ import torch as ch
 import dgl
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 from tqdm import tqdm
+from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.manifold import TSNE
+
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
@@ -384,3 +386,112 @@ def visualize(h, color):
 
     plt.scatter(z[:, 0], z[:, 1], s=70, c=color, cmap="Set2")
     plt.savefig("./clustered_tsne.png")
+
+
+# Theorem-related stuff
+def compute_bound(d0, d1, n):
+    # Determine which of two Ns are larger:
+    if d0[0] > d1[0]:
+        return compute_bound(d1, d0, n)
+
+    n0, m0 = d0
+    n1, m1 = d1
+
+    c0 = np.sum(np.arange(1, n0 + 1) ** -m0)
+    c1 = np.sum(np.arange(1, n1 + 1) ** -m1)
+
+    inner = (c0 / c1)
+    if m1 > m0:
+        inner *= (n0 ** (m0 - m1))
+    
+    return (1 + np.sqrt(1 - (inner ** n))) / 2
+
+
+def _best_fit_no_intercept(x, y):
+    num = np.sum(x * y)
+    den = np.sum(x * x)
+    return num / den
+
+
+def get_zipf_params_for_degree(split, degree, order=None):
+    ds = ArxivNodeDataset(split)
+
+    # Change mean-node degree
+    ds.change_mean_degree(degree)
+
+    # Compute degrees
+    ds.precompute_degrees()
+
+    # Get degs
+    degs = ds.degs
+
+    # Get counts of degrees
+    deg_counts_og = Counter(degs)
+    deg_counts = deg_counts_og.items()
+
+    # Get sorting order of degrees according to degree
+    # deg_counts.sort(key=lambda x: x[0])
+
+    start_point = 2
+    # Skip nodes with degree < start_point
+    deg_counts = [dc for dc in deg_counts if dc[0] >= start_point]
+
+    # Skip nodes with frequency <= 2
+    deg_counts = np.array([dc for dc in deg_counts if dc[1] > 2])
+
+    # Get sorting order of degrees according to frequency
+    if order is None:
+        order = np.argsort(deg_counts[:, 1])[::-1]
+        order = deg_counts[order][:, 0]
+    
+    deg_counts = [(k, deg_counts_og.get(k, 0)) for k in order]
+
+    # Sort by this order
+    # deg_counts = [deg_counts[o] for o in order]
+
+    # Extract frequencies (to fit Zipf's law)
+    freqs = np.array([dc[1] for dc in deg_counts])
+
+    # Normalize frequencies
+    x_range = np.arange(1, len(freqs) + 1)
+    freqs = freqs / np.sum(freqs)
+
+    # Convert to log-log scale to find parameters
+    log_freqs = np.log(freqs)
+    log_x_range = np.log(x_range)
+
+    # Get slope for log-log line
+    m = - _best_fit_no_intercept(log_x_range, log_freqs)
+
+    # Print out relevant parameters
+    N_max = len(freqs)
+
+    # While at it, also compute mean node degree using curve
+    y_calc = np.array([x_range ** (-m)])
+    y_calc /= np.sum(y_calc)
+    mean_deg = np.sum(y_calc * order)
+    # Add scaling (x-axis shift)
+    mean_deg += (start_point - 1)
+
+    return m, N_max, order, mean_deg
+
+
+def find_n_eff(deg0, deg1, acc):
+    if acc == 1:
+        return np.inf
+
+    n0, s0 = deg0
+    n1, s1 = deg1
+    if n0 >= n1:
+        return find_n_eff(deg1, deg0, acc)
+    
+    def gen_harmonic(n, s):
+        return np.sum(np.arange(1, n + 1) ** (-s))
+
+    numerator = np.log(1 - ((2 * acc - 1) ** 2))
+    denominator = np.log(gen_harmonic(n0, s0) / gen_harmonic(n1, s1))
+
+    if s1 > s0:
+        denominator += (s0 - s1) * np.log(n0)
+    
+    return numerator / denominator
