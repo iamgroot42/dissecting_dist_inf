@@ -1,6 +1,7 @@
 __pycache__/*
 data/*
 *.png
+*.pdf
 models/*
 *.pth
 LOG_*

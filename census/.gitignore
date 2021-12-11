@@ -4,6 +4,7 @@ census_models_mlp/*
 census_models_mlp_many/*
 census_data/*
 *.png
+*.pdf
 train_fix*.sh
 SEX_*
 images/

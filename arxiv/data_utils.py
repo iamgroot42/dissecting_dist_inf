@@ -12,6 +12,18 @@ mpl.rcParams['figure.dpi'] = 200
 
 
 SUPPORTED_PROPERTIES = ["mean", "keep_below"]
+# Mapping between distributions and their (n, s) values
+PARAM_MAPPING = {
+    9: (86, 1.843366),
+    10: (133, 1.881514),
+    11: (214, 1.929022),
+    12: (257, 1.927125),
+    13: (253, 1.918591),
+    14: (267, 1.914586),
+    15: (265, 1.903623),
+    16: (263, 1.886148),
+    17: (263, 1.876854)
+}
 
 
 class NodeLevelDataset:
@@ -482,7 +494,7 @@ def find_n_eff(deg0, deg1, acc):
 
     n0, s0 = deg0
     n1, s1 = deg1
-    if n0 >= n1:
+    if n0 > n1:
         return find_n_eff(deg1, deg0, acc)
     
     def gen_harmonic(n, s):
@@ -494,4 +506,7 @@ def find_n_eff(deg0, deg1, acc):
     if s1 > s0:
         denominator += (s0 - s1) * np.log(n0)
     
+    if denominator == 0:
+        return np.inf
+
     return numerator / denominator

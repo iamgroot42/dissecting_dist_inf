@@ -6,23 +6,6 @@ from tqdm import tqdm
 mpl.rcParams['figure.dpi'] = 200
 
 
-def generalized_harmonic(n, s):
-    return np.sum(np.arange(1.0, n + 1.0) ** (-s))
-
-
-def bound(d0, d1, n):
-    # Extract N, s params
-    N0, s0 = d0
-    N1, s1 = d1
-    if N0 >= N1:
-        return bound(d1, d0, n)
-
-    ratio = generalized_harmonic(N0, s0) / generalized_harmonic(N1, s1)
-    ratio = np.exp(log0 - log1)
-
-    return (1 + np.sqrt(1 - (ratio ** n))) / 2
-
-
 def get_arxiv_data():
     raw_data_meta = [
         [
@@ -181,20 +164,6 @@ def process_data(meta, threshold, raw, degrees, picked_degree):
             hmm += 1
 
     return collection
-
-
-def find_s_val(degree, N):
-    # Find S-value for given N
-    s_try = tqdm(np.linspace(1, 2, 1000))
-    best_s, best_deg = np.inf, np.inf
-    for s in s_try:
-        calc_deg = generalized_harmonic(N, s-1) / generalized_harmonic(N, s)
-        # Pick S value that gives degree closest to given degree
-        if abs(calc_deg - degree) < abs(best_deg - degree):
-            best_deg, best_s = calc_deg, s
-        s_try.set_description("Deg: %d | Closest: :%2f | s-val: %.3f" % (degree, best_deg, best_s))
-    print()
-    return best_s
 
 
 if __name__ == "__main__":

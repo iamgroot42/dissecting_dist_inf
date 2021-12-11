@@ -14,6 +14,8 @@ if __name__ == "__main__":
                         help='Add legend to plots')
     parser.add_argument('--novtitle', action="store_true",
                         help='Remove Y-axis label')
+    parser.add_argument('--dash', action="store_true",
+                        help='Add dashed line midway?')
     args = parser.parse_args()
 
     first_cat = " 0.5"
@@ -30,7 +32,7 @@ if __name__ == "__main__":
     columns = [
         r'Mean-degree of training data ($\alpha$)',
         "Accuracy (%)",
-        r'$n$'
+        'Layers'
     ]
 
     categories = ["9", "10", "11", "12", "14", "15", "16", "17"]
@@ -89,7 +91,7 @@ if __name__ == "__main__":
                 [100, 100, 99.9, 99.3, 99.5, 98.3, 100, 98.5, 100]
             ]
         },
-        "1": {
+        "First Layer": {
             10: [
                 [62.4, 99.45, 99.05, 86.9, 100],
                 [85.95, 98.95, 84.8, 86.85],
@@ -234,8 +236,8 @@ if __name__ == "__main__":
 
     focus_n = 1600
     for n, v1 in raw_data.items():
-        # if n not in ["1", "All"]:
-        #     continue
+        if n not in ["First Layer", "All"]:
+            continue
         v2 = v1[focus_n]
         for i in range(len(v2)):
             for j in range(len(v2[i])):
@@ -253,9 +255,10 @@ if __name__ == "__main__":
 
     # Add dividing line in centre
     lower, upper = plt.gca().get_xlim()
-    midpoint = (lower + upper) / 2
-    plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
-                linewidth=1.0, linestyle='--')
+    if args.dash:
+        midpoint = (lower + upper) / 2
+        plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
+                    linewidth=1.0, linestyle='--')
 
     # Map range to numbers to be plotted
     targets_scaled = range(int((upper - lower)))
@@ -267,4 +270,4 @@ if __name__ == "__main__":
     # Make sure axis label not cut off
     plt.tight_layout()
 
-    sns_plot.figure.savefig("./meta_boxplot_varying_n_%s.png" % str(focus_n))
+    sns_plot.figure.savefig("./meta_boxplot_varying_n_%s.pdf" % str(focus_n))

@@ -14,6 +14,10 @@ if __name__ == "__main__":
                         help='Add legend to plots')
     parser.add_argument('--novtitle', action="store_true",
                         help='Remove Y-axis label')
+    parser.add_argument('--dash', action="store_true",
+                        help='Add dashed line midway?')
+    parser.add_argument('--focus_n', type=int,
+                        help='Case to focus on')
     args = parser.parse_args()
 
     first_cat = " 0.5"
@@ -23,12 +27,12 @@ if __name__ == "__main__":
         plt.style.use('dark_background')
 
     # Set font size
-    plt.rcParams.update({'font.size': 18})
-    # plt.rcParams.update({'font.size': 14})
+    # plt.rcParams.update({'font.size': 18})
+    plt.rcParams.update({'font.size': 16})
 
     data = []
     columns = [
-        r'Female proportion of training data ($\alpha$)',
+        r'Female proportion of training data ($\alpha_1$)',
         "Accuracy (%)",
         "Layers"
     ]
@@ -339,10 +343,10 @@ if __name__ == "__main__":
         }
     }
 
-    focus_n = 40
+    focus_n = args.focus_n
     for n, v1 in raw_data.items():
         # Focus on "first" or "all"
-        if not("first" in n.lower() or "all" in n.lower()):
+        if not("first" in n.lower() or "all" in n.lower()) or "pruned" in n.lower():
             continue
 
         if focus_n not in v1:
@@ -364,9 +368,10 @@ if __name__ == "__main__":
 
     # Add dividing line in centre
     lower, upper = plt.gca().get_xlim()
-    midpoint = (lower + upper) / 2
-    plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
-                linewidth=1.0, linestyle='--')
+    if args.dash:
+        midpoint = (lower + upper) / 2
+        plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
+                    linewidth=1.0, linestyle='--')
 
     # Map range to numbers to be plotted
     targets_scaled = range(int((upper - lower)))
@@ -378,4 +383,4 @@ if __name__ == "__main__":
     # Make sure axis label not cut off
     plt.tight_layout()
 
-    sns_plot.figure.savefig("./meta_boxplot_varying_n_%s.png" % str(focus_n))
+    sns_plot.figure.savefig("./meta_boxplot_varying_n_%s.pdf" % str(focus_n))

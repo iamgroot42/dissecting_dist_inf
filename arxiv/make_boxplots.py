@@ -2,6 +2,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
+from data_utils import find_n_eff, PARAM_MAPPING
 import matplotlib.patches as mpatches
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
@@ -9,13 +10,14 @@ mpl.rcParams['figure.dpi'] = 200
 
 data = []
 columns = [
-    r"Mean-degree of training data ($\alpha$)",
+    r"Mean-degree of training data ($\alpha_1$)",
     "Accuracy (%)"
 ]
 
-darkmode = True
-add_legend = False
-novtitle = True
+darkmode = False
+add_legend = True
+novtitle = False
+dashed = False
 
 if darkmode:
     # Set dark background style
@@ -78,9 +80,10 @@ if novtitle:
 
 # Add dividing line in centre
 lower, upper = plt.gca().get_xlim()
-midpoint = (lower + upper) / 2
-plt.axvline(x=midpoint, color='w' if darkmode else 'black',
-            linewidth=1.0, linestyle='--')
+if dashed:
+    midpoint = (lower + upper) / 2
+    plt.axvline(x=midpoint, color='w' if darkmode else 'black',
+                linewidth=1.0, linestyle='--')
 
 # Map range to numbers to be plotted
 baselines = [50, 64.1, 56.63, 53.9, 55.8, 50, 50, 50]
@@ -101,15 +104,24 @@ thresholds = [
 means, errors = np.mean(thresholds, 1), np.std(thresholds, 1)
 plt.errorbar(targets_scaled, means, yerr=errors, color='C2', linestyle='--')
 
+targets = [9, 10, 11, 12, 14, 15, 16, 17]
+baselines = [99, 95.4, 92.4, 91.2, 90.2, 97, 98.4, 99.6]
+n_eff = [find_n_eff(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[13], baselines[i] / 100) for i in range(len(targets))]
+# n_eff = [find_n_eff(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[13],
+                    # baselines[i] / 100) for i in range(len(targets))]
+print(["%.2f" % x for x in n_eff])
+print(np.mean(n_eff[:4]), np.mean(n_eff[4:]))
+print("Neff for threshold:", np.mean(n_eff))
+
 if add_legend:
     # Custom legend
-    meta_patch = mpatches.Patch(color='C0', label=r'$Acc_{meta-classifier}$')
-    baseline_patch = mpatches.Patch(color='C1', label=r'$Acc_{loss test}$')
-    threshold_patch = mpatches.Patch(color='C2', label=r'$Acc_{threshold test}$')
+    meta_patch = mpatches.Patch(color='C0', label='Meta-Classifier')
+    baseline_patch = mpatches.Patch(color='C1', label='Loss Test')
+    threshold_patch = mpatches.Patch(color='C2', label='Threshold Test')
     plt.legend(handles=[meta_patch, baseline_patch,
                         threshold_patch], prop={'size': 13})
 
 # Make sure axis label not cut off
 plt.tight_layout()
 
-sns_plot.figure.savefig("./meta_boxplot.png")
+sns_plot.figure.savefig("./meta_boxplot.pdf")

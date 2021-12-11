@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import argparse
 from utils import flash_utils
 import numpy as np
+from data_utils import find_n_eff, compute_bound, PARAM_MAPPING
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
@@ -26,7 +27,7 @@ if __name__ == "__main__":
         # Set dark background
         plt.style.use('dark_background')
 
-    targets = ["9", "10", "11", "12", "14", "15", "16", "17"]
+    targets = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
 
     fill_data = np.zeros((len(targets), len(targets)))
     mask = np.ones((len(targets), len(targets)), dtype=bool)
@@ -173,8 +174,31 @@ if __name__ == "__main__":
             mask[i][j+i+1] = False
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
 
+    #track max values
+    max_values = np.zeros_like(fill_data)
+    eff_vals = np.zeros_like(fill_data)
+    for i in range(len(targets)):
+        for j in range(len(targets)-(i+1)):
+            max_values[i][j+i+1] = max(raw_data_loss[i]
+                                       [j], max(raw_data_threshold[i][j]))
+            max_values[i][j+i+1] = max(max_values[i]
+                                       [j], max(raw_data_meta[i][j]))
+
+            n_eff = find_n_eff(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[int(targets[i+j+1])], max_values[i][j+i+1] / 100)
+            # n_eff = find_n_eff(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[int(targets[i+j+1])], raw_data_loss[i][j] / 100)
+            eff_vals[i][j] = np.abs(n_eff)
+            print(targets[i], targets[i+j+1], eff_vals[i][j])
+            bound_computed = compute_bound(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[int(targets[j])], n_eff)
+
+    eff_vals_mean = eff_vals.flatten()
+    # Look at only 13 rows, cols
+    eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]
+    eff_vals_mean = eff_vals_mean[eff_vals_mean > 0]
+    print("Mean N_leaked value: %.2f" % np.mean(eff_vals_mean))
+    print("Median N_leaked value: %.2f" % np.median(eff_vals_mean))
+
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
                            annot=annot_data, mask=mask, fmt="^",
                            vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./arxiv_heatmap_%s.png" % (args.mode))
+    sns_plot.figure.savefig("./arxiv_heatmap_%s.pdf" % (args.mode))
