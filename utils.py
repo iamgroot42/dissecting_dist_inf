@@ -1,4 +1,3 @@
-from html.entities import name2codepoint
 import torch as ch
 import numpy as np
 from collections import OrderedDict
@@ -955,11 +954,12 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True, 
         images, labels = images.cuda(), labels.cuda()
         N = images.size(0)
 
-        optimizer.zero_grad()
-
         if adv_train is False:
+            # Clear accumulated gradients
+            optimizer.zero_grad()
             outputs = model(images)[:, 0]
         else:
+            # Adversarial inputs
             adv_x = projected_gradient_descent(
                 model, images, eps=adv_train['eps'],
                 eps_iter=adv_train['eps_iter'],
@@ -967,7 +967,11 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True, 
                 norm=adv_train['norm'],
                 clip_min=adv_train['clip_min'],
                 clip_max=adv_train['clip_max'],
-                random_restarts=adv_train['random_restarts'])
+                random_restarts=adv_train['random_restarts'],
+                binary_sigmoid=True)
+            # Important to zero grad after above call, else model gradients
+            # get accumulated over attack too
+            optimizer.zero_grad()
             outputs = model(adv_x)[:, 0]
 
         loss = criterion(outputs, labels.float())
@@ -1008,7 +1012,8 @@ def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False):
                     norm=adv_train['norm'],
                     clip_min=adv_train['clip_min'],
                     clip_max=adv_train['clip_max'],
-                    random_restarts=adv_train['random_restarts'])
+                    random_restarts=adv_train['random_restarts'],
+                    binary_sigmoid=True)
                 outputs_adv = model(adv_x)[:, 0]
                 prediction_adv = (outputs_adv >= 0)
 
@@ -1059,6 +1064,7 @@ def train(model, loaders, lr=1e-3, epoch_num=10,
         _, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch,
                               verbose=verbose, adv_train=adv_train)
+
         vloss, vacc = validate_epoch(
             val_loader, model, criterion, verbose=verbose,
             adv_train=adv_train)

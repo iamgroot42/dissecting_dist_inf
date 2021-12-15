@@ -125,7 +125,7 @@ def get_model(path, use_prefix=True, parallel=False, fake_relu=False, latent_foc
 def save_model(model, split, property, ratio,
                name, dataparallel=False, is_adv=False):
     if is_adv:
-        savepath = os.path.join(split, property, ratio, name, "adv")
+        savepath = os.path.join(split, property, "adv_train", ratio, name)
     else:
         savepath = os.path.join(split, property, ratio, name)
     # Make sure directory exists
