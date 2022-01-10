@@ -10,3 +10,5 @@ images/
 log/
 do*.sh
 *.out
+try.py
+/try

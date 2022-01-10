@@ -71,7 +71,7 @@ def load_model(path: str, fake_relu: bool = False,
                latent_focus: int = None, cpu: bool = False):
     model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
     if cpu:
-        model.load_state_dict(ch.load(path, map_location=ch.device('cpu')))
+        model.load_state_dict(ch.load(path))
     else:
         model.load_state_dict(ch.load(path))
 

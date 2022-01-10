@@ -114,7 +114,6 @@ def gen_optimal(models, labels, sample_shape, n_samples,
         print(models[0](x_rand_data, latent=latent_focus).shape[1:])
 
     x_rand_data_start = x_rand_data.clone().detach()
-
     iterator = tqdm(range(n_steps))
     # Focus on latent=4 for now
     for i in iterator:
@@ -171,6 +170,7 @@ def get_all_models(dir, n_models, latent_focus, fake_relu, shuffle=False):
     files = os.listdir(dir)
     if shuffle:
         np.random.permutation(files)
+    files = [x for x in files if os.path.isfile(os.path.join(dir,x))]
     files = files[:n_models]
     for pth in tqdm(files):
         m = get_model(os.path.join(dir, pth), fake_relu=fake_relu,
@@ -206,7 +206,6 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
     else:
         _, test_loader = ds.get_loaders(100, eval_shuffle=True)
         normal_data = next(iter(test_loader))[0].cuda()
-
     if args.use_natural:
         x_use = ordered_samples(X_train_1, X_train_2, test_loader, args)
     else:
@@ -233,8 +232,8 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
             best_id = np.argmin(losses)
             x_opt = x_opt[best_id:best_id+1]
 
-        # x_opt = ch.cat(x_opt, 0)
-        x_opt = normal_data
+        x_opt = ch.cat(x_opt, 0)
+        #x_opt = normal_data
 
         if args.upscale:
             x_use = resize(x_opt, (218, 178))

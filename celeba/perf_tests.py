@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         help='task to focus on')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
-    parser.add_argument('--testing', action='store_false',
+    parser.add_argument('--testing', action='store_true',
                         help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
     args = parser.parse_args()
