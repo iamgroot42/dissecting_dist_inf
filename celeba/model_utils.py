@@ -123,9 +123,10 @@ def get_model(path, use_prefix=True, parallel=False, fake_relu=False, latent_foc
 
 
 def save_model(model, split, property, ratio,
-               name, dataparallel=False, is_adv=False):
+               name, dataparallel=False, is_adv=False,
+               adv_folder_name="adv_train"):
     if is_adv:
-        savepath = os.path.join(split, property, "adv_train", ratio, name)
+        savepath = os.path.join(split, property, ratio, adv_folder_name, name)
     else:
         savepath = os.path.join(split, property, ratio, name)
     # Make sure directory exists
@@ -196,6 +197,10 @@ def get_model_features(model_dir, max_read=None,
         iterator = iterator[:max_read]
 
     for mpath in tqdm(iterator):
+        # Folder for adv models (or others): skip
+        if os.path.isdir(os.path.join(model_dir, mpath)):
+            continue
+
         model = get_model(os.path.join(model_dir, mpath))
 
         if focus in ["all", "combined"]:

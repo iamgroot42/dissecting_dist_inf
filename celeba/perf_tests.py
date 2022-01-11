@@ -16,6 +16,10 @@ def get_models(folder_path, n_models=1000):
 
     models = []
     for mpath in tqdm(paths):
+        # Folder for adv models (or others): skip
+        if os.path.isdir(os.path.join(folder_path, mpath)):
+            continue
+
         model = get_model(os.path.join(folder_path, mpath))
         models.append(model)
     return models
@@ -42,6 +46,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--filter', help='alter ratio for this attribute',
+                        default="Male",
                         required=True, choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--task', default="Smiling",
                         choices=SUPPORTED_PROPERTIES,
@@ -51,6 +56,10 @@ if __name__ == "__main__":
     parser.add_argument('--testing', action='store_false',
                         help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -69,25 +78,38 @@ if __name__ == "__main__":
         ds_2.get_loaders(args.batch_size, shuffle=False)[1]
     ]
 
+    train_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.ratio_1))
+    train_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.ratio_2))
+    test_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.ratio_1))
+    test_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.ratio_2))
+
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+        train_dir_1 = os.path.join(train_dir_1, "adv_train")
+        train_dir_2 = os.path.join(train_dir_2, "adv_train")
+
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
+        test_dir_1 = os.path.join(test_dir_1, "adv_train")
+        test_dir_2 = os.path.join(test_dir_2, "adv_train")
+
     # Load victim models
     print("Loading models")
     if args.testing:
-        models_victim_1 = get_models(os.path.join(
-            BASE_MODELS_DIR, "victim", args.filter, args.ratio_1),50)
-        models_victim_2 = get_models(os.path.join(
-            BASE_MODELS_DIR, "victim", args.filter, args.ratio_2),50)
+        models_victim_1 = get_models(test_dir_1, 50)
+        models_victim_2 = get_models(test_dir_2, 50)
     else:
-        models_victim_1 = get_models(os.path.join(
-            BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
-        models_victim_2 = get_models(os.path.join(
-            BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
+        models_victim_1 = get_models(test_dir_1)
+        models_victim_2 = get_models(test_dir_2)
 
     # Load adv models
     total_models = args.total_models
-    models_1 = get_models(os.path.join(
-        BASE_MODELS_DIR, "adv", args.filter, args.ratio_1), total_models // 2)
-    models_2 = get_models(os.path.join(
-        BASE_MODELS_DIR, "adv", args.filter, args.ratio_2), total_models // 2)
+    models_1 = get_models(train_dir_1, total_models // 2)
+    models_2 = get_models(train_dir_2, total_models // 2)
 
     allaccs_1, allaccs_2 = [], []
     vic_accs, adv_accs = [], []

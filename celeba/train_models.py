@@ -75,4 +75,5 @@ if __name__ == "__main__":
     save_name = save_name + ".pth"
     save_model(model, args.split, args.filter, str(
         args.ratio), save_name, dataparallel=args.parallel,
-        is_adv=args.adv_train)
+        is_adv=args.adv_train,
+        adv_folder_name="adv_train_8")

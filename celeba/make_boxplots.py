@@ -244,6 +244,48 @@ if __name__ == "__main__":
             [72.45, 72.4, 69.05]
         ]
 
+        thresholds_adv_robust = [
+            [50],
+            [50],
+            [50],
+            [50],
+            [51],
+            [56],
+            [55.0],
+            [50],
+            [50],
+            [50]
+        ]
+        baselines_adv_robust = [52, 51.52, 50, 50, 50, 50, 50, 50, 52, 51]
+
+        thresholds_victim_robust = [
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+        ]
+        baselines_victim_robust = [50, 50, 50, 50, 50, 50, 50, 50, 77, 54]
+
+        thresholds_both_robust = [
+            [83, 84],
+            [84, 74],
+            [60, 68],
+            [67, 64],
+            [54, 58],
+            [54, 55],
+            [64, 64],
+            [64, 59],
+            [73, 71],
+            [51, 55],
+        ]
+        baselines_both_robust = [50, 50, 50, 50, 50, 52, 50, 50, 50, 54]
+
         if args.multimode:
             fc_perf = fc_perf[::-1]
             for i in range(len(fc_perf)):

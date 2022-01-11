@@ -13,6 +13,10 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=150)
     parser.add_argument('--train_sample', type=int, default=800)
     parser.add_argument('--val_sample', type=int, default=0)
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--epochs', type=int, default=100)
@@ -43,6 +47,16 @@ if __name__ == "__main__":
         BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.first))
     test_dir_2 = os.path.join(
         BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.second))
+
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+        train_dir_1 = os.path.join(train_dir_1, "adv_train")
+        train_dir_2 = os.path.join(train_dir_2, "adv_train")
+
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
+        test_dir_1 = os.path.join(test_dir_1, "adv_train")
+        test_dir_2 = os.path.join(test_dir_2, "adv_train")
 
     if args.conv_custom is not None:
         args.conv_custom = [int(x) for x in args.conv_custom.split(",")]
