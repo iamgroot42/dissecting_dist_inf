@@ -194,7 +194,6 @@ def get_model_features(model_dir, max_read=None,
     iterator = os.listdir(model_dir)
     if max_read is not None:
         np.random.shuffle(iterator)
-        iterator = iterator[:max_read]
 
     for mpath in tqdm(iterator):
         # Folder for adv models (or others): skip
@@ -227,6 +226,9 @@ def get_model_features(model_dir, max_read=None,
                 custom_layers=fc_custom,
                 start_n=start_n_fc)
             vecs.append(fvec)
+
+        if len(vecs) == max_read:
+            break
 
     if focus in ["all", "combined"]:
         return (dims_conv, dims_fc), vecs
