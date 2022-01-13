@@ -8,17 +8,15 @@ Note that pruners use masks to simulate the real pruning. In order to obtain a r
 You can also try auto_pruners_torch.py to see the usage of some automatic pruning algorithms.
 '''
 
-
 import argparse
 import os
 import sys
 import torch
-from torch.optim.lr_scheduler import StepLR, MultiStepLR
-from torchvision import datasets, transforms
+# from torch.optim.lr_scheduler import StepLR, MultiStepLR
+
 import utils
 from data_utils import BoneWrapper, get_df, get_features
-
-
+from model_utils import load_model, BASE_MODELS_DIR
 
 from nni.compression.pytorch.utils.counter import count_flops_params
 
@@ -37,25 +35,23 @@ from nni.algorithms.compression.pytorch.pruning import (
 )
 
 
-
 str2pruner = {
-    'level': LevelPruner,
-    'l1filter': L1FilterPruner,
-    'l2filter': L2FilterPruner,
-    'slim': SlimPruner,
-    'agp': AGPPruner,
-    'fpgm': FPGMPruner,
-    'mean_activation': ActivationMeanRankFilterPruner,
-    'apoz': ActivationAPoZRankFilterPruner,
-    'taylorfo': TaylorFOWeightFilterPruner
+    'level': LevelPruner, # Linear support
+    'l1filter': L1FilterPruner,  # Conv-layers only
+    'l2filter': L2FilterPruner, # Conv-layers only
+    'slim': SlimPruner,  # Conv-layers only
+    'agp': AGPPruner,  # Linear support only with level
+    'fpgm': FPGMPruner,  # Conv-layers only
+    'mean_activation': ActivationMeanRankFilterPruner, # Conv-layers only
+    'apoz': ActivationAPoZRankFilterPruner,  # Conv-layers only
+    'taylorfo': TaylorFOWeightFilterPruner  # Conv-layers only
+
+    # TODO: Look into SimulatedAnnealing, LotteryTicketPruner, AutoCompress
 }
 
+
 def get_dummy_input(args, device):
-    if args.dataset == 'mnist':
-        dummy_input = torch.randn([args.test_batch_size, 1, 28, 28]).to(device)
-    elif args.dataset in ['cifar10', 'imagenet']:
-        dummy_input = torch.randn([args.test_batch_size, 3, 32, 32]).to(device)
-    elif args.dataset == 'boneage':
+    if args.dataset == 'boneage':
         dummy_input = torch.randn([args.test_batch_size, 1024]).to(device)
     return dummy_input
 
@@ -73,66 +69,41 @@ def get_data(dataset, data_dir, batch_size, test_batch_size):
 
         # Get data with ratio
         df_1 = utils.heuristic(
-            df_val, filter, float(args.ratio), 200,
+            df_train, filter, float(args.ratio), 200,
             class_imbalance=1.0, n_tries=300)
 
         df_2 = utils.heuristic(
-        df_train, filter, float(args.ratio), 700,
-        class_imbalance=1.0, n_tries=300)
-        
-        ds_1 = BoneWrapper(df_2, df_1, features=features)
+            df_val, filter, float(args.ratio), 700,
+            class_imbalance=1.0, n_tries=300)
+
+        ds_1 = BoneWrapper(df_1, df_2, features=features)
 
         train_loader, test_loader = ds_1.get_loaders(args.batch_size, shuffle=False)
         criterion = torch.nn.BCEWithLogitsLoss()
 
     return train_loader, test_loader, criterion
 
-def get_model_optimizer_scheduler(args, device, train_loader, test_loader, criterion):
-    if args.model == 'bonemodel':
-        from model_utils import BoneModel
-        model = BoneModel(1024)
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3,weight_decay=0)
-        scheduler = None
-    else:
-        raise ValueError("model not recognized")
 
-    if args.pretrained_model_dir is None:
-        print('start pre-training...')
-        best_acc = 0
-        for epoch in range(args.pretrain_epochs):
-            train(args, model, device, train_loader, criterion, optimizer, epoch)
-            scheduler.step()
-            acc = test(args, model, device, criterion, test_loader)
-            if acc > best_acc:
-                best_acc = acc
-                state_dict = model.state_dict()
+def get_model_optimizer_scheduler(path):
+    # Load model
+    model = load_model(path, cpu=False)
+    model.train()
+    scheduler = None
 
-        model.load_state_dict(state_dict)
-        acc = best_acc
-
-        torch.save(state_dict, os.path.join(args.experiment_data_dir, f'pretrain_{args.dataset}_{args.model}.pth'))
-        print('Model trained saved to %s' % args.experiment_data_dir)
-
-    else:
-        model.load_state_dict(torch.load(args.pretrained_model_dir + '/' + os.listdir(args.pretrained_model_dir)[0]))
-        best_acc = test(args, model, device, criterion, test_loader)
-
-    # setup new opotimizer for pruning
+    # setup new optimizer for pruning
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    scheduler = MultiStepLR(optimizer, milestones=[int(args.pretrain_epochs * 0.5), int(args.pretrain_epochs * 0.75)], gamma=0.1)
+    scheduler = None
 
-    print('Pretrained model acc:', best_acc)
     return model, optimizer, scheduler
+
 
 def train(args, model, device, train_loader, criterion, optimizer, epoch):
     model.train()
-    model.to(device)
     for batch_idx, (data, target, _) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        print(data)
-        print(model)
         target = target.float()
+        target = target.unsqueeze(1)
         output = model(data)
         loss = criterion(output, target)
         loss.backward()
@@ -145,18 +116,17 @@ def train(args, model, device, train_loader, criterion, optimizer, epoch):
                 break
 
 def test(args, model, device, criterion, test_loader):
-    
     model.eval()
     test_loss = 0
     correct = 0
     with torch.no_grad():
         for data, target, _ in test_loader:
             data, target = data.to(device), target.to(device)
-            #target = target.unsqueeze(1)
             target = target.float()
+            target = target.unsqueeze(1)
             output = model(data)
             test_loss += criterion(output, target).item()
-            pred = output.argmax(dim=1, keepdim=True)
+            pred = (output > 0).float()
             correct += pred.eq(target.view_as(pred)).sum().item()
     test_loss /= len(test_loader.dataset)
     acc = 100 * correct / len(test_loader.dataset)
@@ -173,8 +143,14 @@ def main(args):
     # prepare model and data
     train_loader, test_loader, criterion = get_data(args.dataset, args.data_dir, args.batch_size, args.test_batch_size)
 
-    model, optimizer, _ = get_model_optimizer_scheduler(args, device, train_loader, test_loader, criterion)
+    basepath = os.path.join(BASE_MODELS_DIR, "adv/%s/" % args.ratio)
+    some_file_path = os.listdir(basepath)[42]
+    model, optimizer, _ = get_model_optimizer_scheduler(os.path.join(basepath, some_file_path))
+
+    # Shift model to device
     model.to(device)
+
+    # Get dummy input (for computing FLOPS etc)
     dummy_input = get_dummy_input(args, device)
     flops, params, _ = count_flops_params(model, dummy_input)
     print(f"FLOPs: {flops}, params: {params}")
@@ -189,7 +165,7 @@ def main(args):
     kw_args = {}
     config_list = [{
         'sparsity': args.sparsity,
-        'op_types': ['Conv2d']
+        'op_types': ['Linear']
     }]
 
     if args.pruner == 'level':
@@ -222,32 +198,9 @@ def main(args):
             kw_args['sparsifying_training_epochs'] = 1
 
         if args.pruner == 'agp':
-            kw_args['pruning_algorithm'] = 'l1'
-            kw_args['num_iterations'] = 2
+            kw_args['pruning_algorithm'] = 'level'
+            kw_args['num_iterations'] = 10
             kw_args['epochs_per_iteration'] = 1
-
-        # Reproduced result in paper 'PRUNING FILTERS FOR EFFICIENT CONVNETS',
-        # Conv_1, Conv_8, Conv_9, Conv_10, Conv_11, Conv_12 are pruned with 50% sparsity, as 'VGG-16-pruned-A'
-        # If you want to skip some layer, you can use 'exclude' like follow.
-        if args.pruner == 'slim':
-            config_list = [{
-                'sparsity': args.sparsity,
-                'op_types': ['BatchNorm2d'],
-            }]
-        elif args.model == 'resnet18':
-            config_list = [{
-                'sparsity': args.sparsity,
-                'op_types': ['Conv2d']
-            }, {
-                'exclude': True,
-                'op_names': ['layer1.0.conv1', 'layer1.0.conv2']
-            }]
-        else:
-            config_list = [{
-                'sparsity': args.sparsity,
-                'op_types': ['Conv2d'],
-                'op_names': ['feature.0', 'feature.24', 'feature.27', 'feature.30', 'feature.34', 'feature.37']
-            }]
 
     pruner = pruner_cls(model, config_list, **kw_args)
 
@@ -255,12 +208,7 @@ def main(args):
     model = pruner.compress()
     pruner.get_pruned_weights()
 
-    # export the pruned model masks for model speedup
-    model_path = os.path.join(args.experiment_data_dir, 'pruned_{}_{}_{}.pth'.format(
-        args.model, args.dataset, args.pruner))
-    mask_path = os.path.join(args.experiment_data_dir, 'mask_{}_{}_{}.pth'.format(
-        args.model, args.dataset, args.pruner))
-    pruner.export_model(model_path=model_path, mask_path=mask_path)
+    print("Pruning complete")
 
     if args.test_only:
         test(args, model, device, criterion, test_loader)
@@ -275,14 +223,12 @@ def main(args):
 
     # Optimizer used in the pruner might be patched, so recommend to new an optimizer for fine-tuning stage.
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
-    scheduler = MultiStepLR(optimizer, milestones=[int(args.pretrain_epochs * 0.5), int(args.pretrain_epochs * 0.75)], gamma=0.1)
 
     best_top1 = 0
     save_path = os.path.join(args.experiment_data_dir, f'finetuned.pth')
     for epoch in range(args.fine_tune_epochs):
         print('# Epoch {} #'.format(epoch))
         train(args, model, device, train_loader, criterion, optimizer, epoch)
-        scheduler.step()
         top1 = test(args, model, device, criterion, test_loader)
         if top1 > best_top1:
             best_top1 = top1
@@ -294,22 +240,21 @@ def main(args):
     if args.nni:
         nni.report_final_result(best_top1)
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='PyTorch Example for model comporession')
 
     # dataset and model
-    parser.add_argument('--dataset', type=str, default='cifar10',
+    parser.add_argument('--dataset', type=str, default='boneage',
                         help='dataset to use, mnist, cifar10 or imagenet')
     parser.add_argument('--data-dir', type=str, default='./data/',
                         help='dataset directory')
-    parser.add_argument('--model', type=str, default='vgg16',
+    parser.add_argument('--model', type=str, default='bonemodel',
                         choices=['lenet', 'vgg16', 'vgg19', 'resnet18','bonemodel'],
                         help='model to use')
     parser.add_argument('--pretrained-model-dir', type=str, default=None,
                         help='path to pretrained model')
-    parser.add_argument('--pretrain-epochs', type=int, default=160,
-                        help='number of epochs to pretrain the model')
     parser.add_argument('--batch-size', type=int, default=128,
                         help='input batch size for training')
     parser.add_argument('--test-batch-size', type=int, default=200,
@@ -320,11 +265,11 @@ if __name__ == '__main__':
                         help='how many batches to wait before logging training status')
     parser.add_argument('--dry-run', action='store_true', default=False,
                         help='quickly check a single pass')
+    parser.add_argument('--test-only', action='store_true', default=False,
+                        help='get perf on test data')
     parser.add_argument('--multi-gpu', action='store_true', default=False,
                         help='run on mulitple gpus')
-    parser.add_argument('--test-only', action='store_true', default=False,
-                        help='run test only')
-    parser.add_argument('--ratio', type=float, default=1.0,
+    parser.add_argument('--ratio', type=float, default=0.2,
                         help='ratio of dataset')
 
     # pruner
@@ -344,7 +289,7 @@ if __name__ == '__main__':
                         help='Whether to speed-up the pruned model')
 
     # fine-tuning
-    parser.add_argument('--fine-tune-epochs', type=int, default=160,
+    parser.add_argument('--fine-tune-epochs', type=int, default=0,
                         help='epochs to fine tune')
 
     parser.add_argument('--nni', action='store_true', default=False,
