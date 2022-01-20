@@ -105,15 +105,14 @@ def gen_optimal(models, labels, sample_shape, n_samples,
                         upscale, sample_shape[2] // upscale)
         x_rand_data = ch.rand(*((n_samples,) + actual_shape)).cuda()
         x_eff = resize(x_rand_data, (sample_shape[1], sample_shape[2]))
-        print(models[0](x_eff, latent=latent_focus).shape[1:])
     else:
         if use_normal is None:
             x_rand_data = ch.rand(*((n_samples,) + sample_shape)).cuda()
         else:
             x_rand_data = use_normal.clone().cuda()
-        print(models[0](x_rand_data, latent=latent_focus).shape[1:])
 
     x_rand_data_start = x_rand_data.clone().detach()
+
     iterator = tqdm(range(n_steps))
     # Focus on latent=4 for now
     for i in iterator:
@@ -123,28 +122,46 @@ def gen_optimal(models, labels, sample_shape, n_samples,
             x_use = resize(x_rand, (sample_shape[1], sample_shape[2]))
         else:
             x_use = x_rand
-
+        
         # Get representations from all models
         reprs = ch.stack([m(x_use, latent=latent_focus) for m in models], 0)
+        
         reprs_z = ch.mean(reprs[labels == 0], 2)
+        
         reprs_o = ch.mean(reprs[labels == 1], 2)
-        # const = 2.
-        const = 1.
-        const_neg = 0.5
-        loss = ch.mean((const - reprs_z) ** 2) + \
-            ch.mean((const_neg + reprs_o) ** 2)
-        # loss = ch.mean((const_neg + reprs_z) ** 2) + ch.mean((const - reprs_o) ** 2)
+        # If latent_focus is None, simply maximize difference in prediction probs
+        if latent_focus is None:
+            reprs_o = ch.sigmoid(reprs_o)
+            reprs_z = ch.sigmoid(reprs_z)
+            loss = 1 - ch.mean((reprs_o - reprs_z) ** 2)# +0.1*ch.std(reprs_o)+0.1*ch.std(reprs_z)
+        else:
+            # const = 2.
+            const = 1.
+            const_neg = 0.5
+            loss = ch.mean((const - reprs_z) ** 2) + \
+                ch.mean((const_neg + reprs_o) ** 2)
+            # loss = ch.mean((const_neg + reprs_z) ** 2) + ch.mean((const - reprs_o) ** 2)
+
+        # Compute gradient
         grad = ch.autograd.grad(loss, [x_rand])
 
         with ch.no_grad():
-            zero_acts = ch.sum(1. * (reprs[labels == 0] > 0), 2)
-            one_acts = ch.sum(1. * (reprs[labels == 1] > 0), 2)
-            l1 = ch.mean((const - reprs_z) ** 2)
-            l2 = ch.mean((const_neg + reprs_o) ** 2)
-            # l1 = ch.mean((const_neg + reprs_z) ** 2)
-            # l2 = ch.mean((const - reprs_o) ** 2)
-            iterator.set_description("Loss: %.3f | ZA: %.1f | OA: %.1f | Loss(1): %.3f | Loss(2): %.3f" % (
-                loss.item(), zero_acts.mean(), one_acts.mean(), l1, l2))
+            if latent_focus is None:
+                preds_z = reprs[labels == 0] > 0
+                preds_o = reprs[labels == 1] > 0
+                # Count mismatch in predictions
+                n_mismatch = ch.mean(1. * (preds_z != preds_o))
+                iterator.set_description(
+                    "Loss: %.4f | Mismatch ratio: %.4f" % (loss.item(), n_mismatch))
+            else:
+                zero_acts = ch.sum(1. * (reprs[labels == 0] > 0), 2)
+                one_acts = ch.sum(1. * (reprs[labels == 1] > 0), 2)
+                l1 = ch.mean((const - reprs_z) ** 2)
+                l2 = ch.mean((const_neg + reprs_o) ** 2)
+                # l1 = ch.mean((const_neg + reprs_z) ** 2)
+                # l2 = ch.mean((const - reprs_o) ** 2)
+                iterator.set_description("Loss: %.3f | ZA: %.1f | OA: %.1f | Loss(1): %.3f | Loss(2): %.3f" % (
+                    loss.item(), zero_acts.mean(), one_acts.mean(), l1, l2))
 
         with ch.no_grad():
             x_intermediate = x_rand_data - step_size * grad[0]
@@ -162,6 +179,8 @@ def gen_optimal(models, labels, sample_shape, n_samples,
                 x_rand_data = x_intermediate
             x_rand_data = ch.clamp(x_rand_data, -1, 1)
 
+    if latent_focus is None:
+        return x_rand.clone().detach(), loss.item()
     return x_rand.clone().detach(), (l1 + l2).item()
 
 
@@ -344,7 +363,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Celeb-A')
     parser.add_argument('--n_samples', type=int, default=5)
-    parser.add_argument('--latent_focus', type=int, default=4)
+    parser.add_argument('--latent_focus', type=int, default=None)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--steps', type=int, default=500)
