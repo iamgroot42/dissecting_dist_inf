@@ -1,5 +1,6 @@
-from model_utils import BoneModel, BoneFullModel, save_model
+from model_utils import BoneModel, BoneFullModel, save_model, check_if_exists
 from data_utils import BoneWrapper, get_df, get_features
+import os
 import utils
 
 
@@ -35,6 +36,9 @@ if __name__ == "__main__":
         n_train, n_test = 1400, 400
 
     for i in range(args.num):
+        # Check if model exists- skip if it does
+        if check_if_exists(i+1, args.split, args.full_model):
+            continue
 
         df_train_processed = utils.heuristic(
             df_train, filter, args.ratio,

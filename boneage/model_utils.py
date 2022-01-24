@@ -151,3 +151,16 @@ def get_pre_processor():
     # Extract only features
     model.classifier = nn.Identity()
     return model
+
+
+# Check with this model number exists
+def check_if_exists(model_id, split, full_model=False):
+    if full_model:
+        model_check_path = os.path.join(
+            BASE_MODELS_DIR, split, "full")
+    else:
+        model_check_path = os.path.join(BASE_MODELS_DIR, split)
+    for model_name in os.listdir(model_check_path):
+        if ("%d_" % model_id) in model_name:
+            return True
+    return False
