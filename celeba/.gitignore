@@ -4,5 +4,4 @@ celeba_models_split/*
 *.out
 *.pdf
 images/
-log/
 do*.sh

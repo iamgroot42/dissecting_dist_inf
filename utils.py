@@ -389,6 +389,7 @@ def get_weight_layers(m, normalize=False, transpose=True,
     custom_layers = sorted(custom_layers) if custom_layers is not None else None
 
     track = 0
+    scale = 1.
     for name, param in m.named_parameters():
         if "weight" in name:
 
@@ -401,6 +402,8 @@ def get_weight_layers(m, normalize=False, transpose=True,
 
             if transpose:
                 param_data = param_data.T
+
+            # Experimental: if scale invariance requested, scale weights 
             weights.append(param_data)
             if conv:
                 dims.append(weights[-1].shape[2])
@@ -470,11 +473,15 @@ def get_weight_layers(m, normalize=False, transpose=True,
 
 
 class PermInvConvModel(nn.Module):
-    def __init__(self, dim_channels, dim_kernels, inside_dims=[64, 8], n_classes=2, dropout=0.5, only_latent=False):
+    def __init__(self, dim_channels, dim_kernels,
+                 inside_dims=[64, 8], n_classes=2,
+                 dropout=0.5, only_latent=False,
+                 scale_invariance=False):
         super(PermInvConvModel, self).__init__()
         self.dim_channels = dim_channels
         self.dim_kernels = dim_kernels
         self.only_latent = only_latent
+        self.scale_invariance = scale_invariance
 
         assert len(dim_channels) == len(
             dim_kernels), "Kernel size information missing!"
@@ -515,15 +522,26 @@ class PermInvConvModel(nn.Module):
 
         self.layers = nn.ModuleList(self.layers)
 
+        # Experimental param: if scale invariance, also store overall scale multiplier
+        dim_for_scale_invariance = 1 if self.scale_invariance else 0
+
         # Final network to combine them all
         # layer representations together
         if not self.only_latent:
             self.rho = nn.Linear(
-                inside_dims[-1] * len(self.dim_channels), n_classes)
+                inside_dims[-1] * len(self.dim_channels), #+ dim_for_scale_invariance,
+                n_classes)
 
     def forward(self, params):
         reps = []
         for_prev = None
+
+        if self.scale_invariance:
+            # Keep track of multiplier (with respect to smallest nonzero weight) across layers
+            # For ease of computation, we will store in log scale
+            scale_invariance_multiplier = ch.ones((params[0].shape[0]))
+            # Shift to appropriate device
+            scale_invariance_multiplier = scale_invariance_multiplier.to(params[0].device)
 
         for param, layer in zip(params, self.layers):
             # shape: (n_samples, n_pixels_in_kernel, channels_out, channels_in)
@@ -534,6 +552,17 @@ class PermInvConvModel(nn.Module):
 
             # shape: (n_samples, channels_out, n_pixels_in_kernel * channels_in)
             param = ch.flatten(param, 2)
+
+            if self.scale_invariance:
+                # TODO: Vectorize
+                for i in range(param.shape[0]):
+                    # Scaling mechanism- pick largest weight, scale weights
+                    # such that largest weight becomes 1
+                    scale_factor = ch.max(ch.abs(param[i]))
+                    scale_invariance_multiplier[i] += ch.log(scale_factor)
+                    # Scale parameter matrix (if it's not all zeros)
+                    if scale_factor != 0:
+                        param[i] /= scale_factor
 
             if for_prev is None:
                 param_eff = param
@@ -565,6 +594,12 @@ class PermInvConvModel(nn.Module):
             reps.append(processed)
 
         reps = ch.cat(reps, 1)
+
+        # Add invariance multiplier
+        # if self.scale_invariance:
+        #     scale_invariance_multiplier = ch.unsqueeze(scale_invariance_multiplier, 1)
+        #     reps = ch.cat((reps, scale_invariance_multiplier), 1)
+
         if self.only_latent:
             return reps
 
@@ -573,7 +608,8 @@ class PermInvConvModel(nn.Module):
 
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims, inside_dims=[64, 8], n_classes=2, dropout=0.5, only_latent=False):
+    def __init__(self, dims, inside_dims=[64, 8],
+                n_classes=2, dropout=0.5, only_latent=False):
         super(PermInvModel, self).__init__()
         self.dims = dims
         self.dropout = dropout

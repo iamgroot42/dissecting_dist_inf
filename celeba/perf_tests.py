@@ -56,6 +56,12 @@ if __name__ == "__main__":
     parser.add_argument('--testing', action='store_false',
                         help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
+    parser.add_argument('--adv_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for adv")
+    parser.add_argument('--victim_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for victim")
     parser.add_argument('--use_adv_for_adv', action="store_true",
                         help="Use adv-trained models for adv's models")
     parser.add_argument('--use_adv_for_victim', action="store_true",
@@ -89,13 +95,13 @@ if __name__ == "__main__":
 
     if args.use_adv_for_adv:
         print("Using adv-trained models for adv's models")
-        train_dir_1 = os.path.join(train_dir_1, "adv_train")
-        train_dir_2 = os.path.join(train_dir_2, "adv_train")
+        train_dir_1 = os.path.join(train_dir_1, args.adv_adv_prefix)
+        train_dir_2 = os.path.join(train_dir_2, args.adv_adv_prefix)
 
     if args.use_adv_for_victim:
         print("Using adv-trained models for victim's models")
-        test_dir_1 = os.path.join(test_dir_1, "adv_train")
-        test_dir_2 = os.path.join(test_dir_2, "adv_train")
+        test_dir_1 = os.path.join(test_dir_1, args.victim_adv_prefix)
+        test_dir_2 = os.path.join(test_dir_2, args.victim_adv_prefix)
 
     # Load victim models
     print("Loading models")

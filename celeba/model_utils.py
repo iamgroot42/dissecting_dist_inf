@@ -126,16 +126,18 @@ def save_model(model, split, property, ratio,
                name, dataparallel=False, is_adv=False,
                adv_folder_name="adv_train"):
     if is_adv:
-        savepath = os.path.join(split, property, ratio, adv_folder_name, name)
+        subfolder_prefix = os.path.join(split, property, ratio, adv_folder_name)
     else:
-        savepath = os.path.join(split, property, ratio, name)
+        subfolder_prefix = os.path.join(split, property, ratio)
+
     # Make sure directory exists
-    ensure_dir_exists(savepath)
+    ensure_dir_exists(os.path.join(BASE_MODELS_DIR, subfolder_prefix))
+
     if dataparallel:
         state_dict = model.module.state_dict()
     else:
         state_dict = model.state_dict()
-    ch.save(state_dict, os.path.join(BASE_MODELS_DIR, savepath))
+    ch.save(state_dict, os.path.join(BASE_MODELS_DIR, subfolder_prefix, name))
 
 
 def get_latents(mainmodel, dataloader, method_type, to_normalize=False):
@@ -195,6 +197,9 @@ def get_model_features(model_dir, max_read=None,
     if max_read is not None:
         np.random.shuffle(iterator)
 
+    print("Found %d models to read in %s" % (len(iterator), model_dir))
+
+    dims, dims_fc, dims_conv = None, None, None
     for mpath in tqdm(iterator):
         # Folder for adv models (or others): skip
         if os.path.isdir(os.path.join(model_dir, mpath)):
@@ -207,26 +212,27 @@ def get_model_features(model_dir, max_read=None,
                 model.features, first_n=first_n_conv, conv=True,
                 start_n=start_n_conv,
                 custom_layers=conv_custom,
-                include_all=focus == "combined")
+                include_all=focus == "combined",)
             dims_fc, fvec_fc = get_weight_layers(
                 model.classifier, first_n=first_n_fc,
                 custom_layers=fc_custom,
-                start_n=start_n_fc)
+                start_n=start_n_fc,)
 
             vecs.append(fvec_conv + fvec_fc)
         elif focus == "conv":
             dims, fvec = get_weight_layers(
                 model.features, first_n=first_n_conv,
                 custom_layers=conv_custom,
-                start_n=start_n_conv, conv=True)
+                start_n=start_n_conv, conv=True,)
             vecs.append(fvec)
         else:
             dims, fvec = get_weight_layers(
                 model.classifier, first_n=first_n_fc,
                 custom_layers=fc_custom,
-                start_n=start_n_fc)
+                start_n=start_n_fc,)
             vecs.append(fvec)
 
+        # Number of requested models read- break
         if len(vecs) == max_read:
             break
 

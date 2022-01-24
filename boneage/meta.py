@@ -33,17 +33,21 @@ if __name__ == "__main__":
     # Load models, convert to features
     dims, vecs_train_1 = get_model_features(
         train_dir_1, first_n=args.first_n,
-        start_n=args.start_n, prune_ratio=args.prune_ratio)
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
     _, vecs_train_2 = get_model_features(
         train_dir_2, first_n=args.first_n,
-        start_n=args.start_n, prune_ratio=args.prune_ratio)
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
 
     _, vecs_test_1 = get_model_features(
         test_dir_1, first_n=args.first_n,
-        start_n=args.start_n, prune_ratio=args.prune_ratio)
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
     _, vecs_test_2 = get_model_features(
         test_dir_2, first_n=args.first_n,
-        start_n=args.start_n, prune_ratio=args.prune_ratio)
+        start_n=args.start_n, prune_ratio=args.prune_ratio,
+        max_read=1000)
 
     vecs_train_1 = np.array(vecs_train_1)
     vecs_train_2 = np.array(vecs_train_2)

@@ -1,4 +1,4 @@
-from model_utils import BoneModel, save_model
+from model_utils import BoneModel, BoneFullModel, save_model
 from data_utils import BoneWrapper, get_df, get_features
 import utils
 
@@ -7,7 +7,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--split', choices=["victim", "adv"])
-    parser.add_argument('--batch_size', type=int, default=256*32)
+    parser.add_argument('--full_model', action="store_true",
+                        help="Train E2E model")
+    parser.add_argument('--verbose', action="store_true",
+                        help="Train model-wise epoch stats")
     parser.add_argument('--ratio', type=float, default=0.5,
                         help='what ratio of the new sampled dataset should be true')
     parser.add_argument('--num', type=int, default=1000,
@@ -19,7 +22,11 @@ if __name__ == "__main__":
 
     # Ready data
     df_train, df_val = get_df(args.split)
-    features = get_features(args.split)
+
+    # Load pre-processed features if model not end to end
+    features = None
+    if not args.full_model:
+        features = get_features(args.split)
 
     # Subsample to make sure dataset sizes are comparable across ratios
     # All while maintaining class balance
@@ -38,26 +45,42 @@ if __name__ == "__main__":
             n_test, class_imbalance=1.0, n_tries=300)
 
         # Define model
-        model = BoneModel(1024)
+        if args.full_model:
+            model = BoneFullModel()
+            batch_size = 40
+            learning_rate = 2e-5
+            epochs = 8
+            weight_decay = 0.05
+            augment = True
+        else:
+            model = BoneModel(1024)
+            batch_size = 256*32
+            learning_rate = 2e-3
+            epochs = 20
+            weight_decay = 0.02
+            augment = False
         model = model.cuda()
 
         # Process datasets and get features
         ds = BoneWrapper(
             df_train_processed,
             df_val_processed,
-            features=features)
+            features=features,
+            augment=augment)
 
         # Shuffle data, since will be used for training now
         train_loader, val_loader = ds.get_loaders(
-            args.batch_size, shuffle=True)
+            batch_size, shuffle=True)
 
-        # Train model
         vloss, vacc = utils.train(model, (train_loader, val_loader),
-                                  lr=2e-3, epoch_num=20,
-                                  weight_decay=0.02,
-                                  verbose=False)
+                                  lr=learning_rate,
+                                  epoch_num=epochs,
+                                  weight_decay=weight_decay,
+                                  verbose=args.verbose)
 
         # Save model
-        save_model(model, "%d_%.3f.pth" % (i+1, vacc))
+        save_model(model, args.split, "%d_%.3f.pth" %
+                   (i+1, vacc),
+                   full_model=args.full_model)
 
         print("[Status] %d/%d" % (i+1, args.num))

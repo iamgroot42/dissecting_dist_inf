@@ -8,5 +8,4 @@ LOG_*
 RUN*
 images/
 *.out
-log/
 do*.sh
