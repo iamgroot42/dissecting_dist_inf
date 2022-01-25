@@ -2,7 +2,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
-from utils import flash_utils
+from utils import flash_utils, get_n_effective
 import numpy as np
 from data_utils import SUPPORTED_PROPERTIES
 import matplotlib.patches as mpatches
@@ -23,6 +23,8 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         default="Male",
                         help='name for subfolder to save/load data from')
+    parser.add_argument('--dash', action="store_true",
+                        help='Add dashed line midway?')
     args = parser.parse_args()
     flash_utils(args)
 
@@ -43,7 +45,7 @@ if __name__ == "__main__":
 
     data = []
     columns = [
-        r'Female proportion of training data ($\alpha$)',
+        r'Female proportion of training data ($\alpha_1$)',
         "Accuracy (%)",
         "Feature-extraction method"
     ]
@@ -52,7 +54,7 @@ if __name__ == "__main__":
                "0.4", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
     if args.filter == "Young":
-        columns[0] = r'Old proportion of training data ($\alpha$)'
+        columns[0] = r'Old proportion of training data ($\alpha_1$)'
         fc_perf = [
             [80.05, 74.6, 79.2, 76.95, 78.15],
             [71.05, 70.77, 68.85, 70.87, 71.59],
@@ -242,6 +244,48 @@ if __name__ == "__main__":
             [72.45, 72.4, 69.05]
         ]
 
+        thresholds_adv_robust = [
+            [50],
+            [50],
+            [50],
+            [50],
+            [51],
+            [56],
+            [55.0],
+            [50],
+            [50],
+            [50]
+        ]
+        baselines_adv_robust = [52, 51.52, 50, 50, 50, 50, 50, 50, 52, 51]
+
+        thresholds_victim_robust = [
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+            [50],
+        ]
+        baselines_victim_robust = [50, 50, 50, 50, 50, 50, 50, 50, 77, 54]
+
+        thresholds_both_robust = [
+            [83, 84],
+            [84, 74],
+            [60, 68],
+            [67, 64],
+            [54, 58],
+            [54, 55],
+            [64, 64],
+            [64, 59],
+            [73, 71],
+            [51, 55],
+        ]
+        baselines_both_robust = [50, 50, 50, 50, 50, 52, 50, 50, 50, 54]
+
         if args.multimode:
             fc_perf = fc_perf[::-1]
             for i in range(len(fc_perf)):
@@ -281,10 +325,11 @@ if __name__ == "__main__":
 
     # Add dividing line in centre
     lower, upper = plt.gca().get_xlim()
-    midpoint = (lower + upper) / 2
-    plt.axvline(x=midpoint,
-                color='white' if args.darkplot else 'black',
-                linewidth=1.0, linestyle='--')
+    if args.dash:
+        midpoint = (lower + upper) / 2
+        plt.axvline(x=midpoint,
+                    color='white' if args.darkplot else 'black',
+                    linewidth=1.0, linestyle='--')
 
     # This data was for 1-ratio, so flip before plotting
     baselines = baselines[::-1]
@@ -299,11 +344,27 @@ if __name__ == "__main__":
         means, errors = np.mean(thresholds, 1), np.std(thresholds, 1)
         plt.errorbar(targets_scaled, means, yerr=errors, color='C2', linestyle='--')
 
+    fc_perf = np.mean(fc_perf, 1)
+    conv_perf = np.mean(conv_perf, 1)
+    combined_perf = np.mean(combined_perf, 1)
+    thresholds = np.mean(thresholds, 1)
+    ratios = [0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 1.0]
+    fc_n_eff = np.mean([get_n_effective(fc_perf[i] / 100, 0.5, ratios[i]) for i in range(len(ratios))])
+    conv_n_eff = np.mean([get_n_effective(conv_perf[i] / 100, 0.5, ratios[i]) for i in range(len(ratios))])
+    combined_n_eff = np.mean([get_n_effective(combined_perf[i] / 100, 0.5, ratios[i]) for i in range(len(ratios))])
+    threshold_n_eff = np.mean([get_n_effective(thresholds[i] / 100, 0.5, ratios[i]) for i in range(len(ratios))])
+    baselines_n_eff = np.mean([get_n_effective(baselines[i] / 100, 0.5, ratios[i]) for i in range(len(ratios))])
+    print(fc_n_eff)
+    print(conv_n_eff)
+    print(combined_n_eff)
+    print(threshold_n_eff)
+    print(baselines_n_eff)
+
     # Custom legend
     if args.legend and not args.multimode:
-        meta_patch = mpatches.Patch(color='C0', label=r'$Acc_{meta-classifier}$')
-        baseline_patch = mpatches.Patch(color='C1', label=r'$Acc_{loss-test}$')
-        threshold_patch = mpatches.Patch(color='C2', label=r'$Acc_{threshold-test}$')
+        meta_patch = mpatches.Patch(color='C0', label='Meta-Classifier')
+        baseline_patch = mpatches.Patch(color='C1', label='Loss Test')
+        threshold_patch = mpatches.Patch(color='C2', label='Threshold Test')
         plt.legend(handles=[meta_patch, baseline_patch, threshold_patch])
 
     if args.novtitle:
@@ -314,5 +375,5 @@ if __name__ == "__main__":
 
     # Save plot
     suffix = "_multi" if args.multimode else ""
-    sns_plot.figure.savefig("./celeba_meta_boxplot_%s%s.png" %
+    sns_plot.figure.savefig("./celeba_meta_boxplot_%s%s.pdf" %
                             (args.filter, suffix))

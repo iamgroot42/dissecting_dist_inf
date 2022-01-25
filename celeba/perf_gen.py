@@ -213,9 +213,9 @@ if __name__ == "__main__":
     parser.add_argument('--gpu', 
                         default='0', help="device number")
     parser.add_argument('--r', type=float,
-                        default=1.0, help="ratio of model to use to generate samples")  
+                        default=1.0, help="step-random, ratio of model to use to generate samples")  
     parser.add_argument('--r2', type=float,
-                        default=1.0, help="ratio of model to use to generate samples each datum")                    
+                        default=1.0, help="step-fixed,ratio of model to use to generate samples each datum")                    
     args = parser.parse_args()
     flash_utils(args)
     #ch.cuda.set_device(args.gpu)

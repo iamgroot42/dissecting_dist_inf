@@ -4,6 +4,7 @@ from torchvision import models
 import numpy as np
 from tqdm import tqdm
 import torch.nn.utils.prune as prune
+from torchvision.models import densenet121
 from utils import get_weight_layers, ensure_dir_exists, BasicWrapper, FakeReluWrapper
 import os
 
@@ -58,12 +59,37 @@ class BoneModel(nn.Module):
                 return x
 
 
+class BoneFullModel(nn.Module):
+    def __init__(self,
+                 fake_relu: bool = False,
+                 latent_focus: int = None):
+        # TODO: Implement latent focus
+        # TODO: Implement fake_relu
+        super(BoneFullModel, self).__init__()
+
+        # Densenet
+        self.model = densenet121(pretrained=True)
+        self.model.classifier = nn.Linear(1024, 1)
+
+        # TODO: Implement fake_relu 
+
+    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
+        # TODO: Implement latent functionality
+        return self.model(x)
+
+
 # Save model in specified directory
-def save_model(model, split, prop_and_name):
-    savepath = os.path.join(split, prop_and_name)
+def save_model(model, split, prop_and_name, full_model=False):
+    if full_model:
+        subfolder_prefix = os.path.join(split, "full")
+    else:
+        subfolder_prefix = split
+
     # Make sure directory exists
-    ensure_dir_exists(savepath)
-    ch.save(model.state_dict(), os.path.join(BASE_MODELS_DIR, savepath))
+    ensure_dir_exists(os.path.join(BASE_MODELS_DIR, subfolder_prefix))
+
+    ch.save(model.state_dict(), os.path.join(
+        BASE_MODELS_DIR, subfolder_prefix, prop_and_name))
 
 
 # Load model from given directory
@@ -125,3 +151,16 @@ def get_pre_processor():
     # Extract only features
     model.classifier = nn.Identity()
     return model
+
+
+# Check with this model number exists
+def check_if_exists(model_id, split, full_model=False):
+    if full_model:
+        model_check_path = os.path.join(
+            BASE_MODELS_DIR, split, "full")
+    else:
+        model_check_path = os.path.join(BASE_MODELS_DIR, split)
+    for model_name in os.listdir(model_check_path):
+        if ("%d_" % model_id) in model_name:
+            return True
+    return False

@@ -133,7 +133,7 @@ def gen_optimal(models, labels, sample_shape, n_samples,
         if latent_focus is None:
             reprs_o = ch.sigmoid(reprs_o)
             reprs_z = ch.sigmoid(reprs_z)
-            loss = 1 - ch.mean((reprs_o - reprs_z) ** 2)# +0.1*ch.std(reprs_o)+0.1*ch.std(reprs_z)
+            loss = 1 - ch.mean((reprs_o - reprs_z) ** 2)
         else:
             # const = 2.
             const = 1.
@@ -192,9 +192,17 @@ def get_all_models(dir, n_models, latent_focus, fake_relu, shuffle=False):
     files = [x for x in files if os.path.isfile(os.path.join(dir,x))]
     files = files[:n_models]
     for pth in tqdm(files):
+        # Folder for adv models (or others): skip
+        if os.path.isdir(os.path.join(dir, pth)):
+            continue
+
         m = get_model(os.path.join(dir, pth), fake_relu=fake_relu,
                       latent_focus=latent_focus)
         models.append(m)
+
+        if len(models) == n_models:
+            break
+
     return models
 
 
@@ -216,7 +224,10 @@ def get_patterns(X_1, X_2, data, normal_data, args):
     return (reprs_0_use, reprs_1_use)
 
 
-def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
+def specific_case(
+    X_train_1, X_train_2,
+    Y_train, ratio, args,
+    datum_shape=(3, 218, 178)):
     # Get some normal data for estimates of activation values
     ds = CelebaWrapper(args.filter, ratio, "adv")
     if args.use_normal:
@@ -238,7 +249,7 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
             # Get optimal point based on local set
             x_opt_, loss_ = gen_optimal(
                 X_train_1 + X_train_2, Y_train,
-                (3, 218, 178), 1,
+                datum_shape, 1,
                 args.steps, args.step_size,
                 args.latent_focus, args.upscale,
                 use_normal=normal_data[i:i +
@@ -255,7 +266,7 @@ def specific_case(X_train_1, X_train_2, Y_train, ratio, args):
         #x_opt = normal_data
 
         if args.upscale:
-            x_use = resize(x_opt, (218, 178))
+            x_use = resize(x_opt, datum_shape[1:])
         else:
             x_use = x_opt
 

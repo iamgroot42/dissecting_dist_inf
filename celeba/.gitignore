@@ -2,6 +2,6 @@ __pycache__/*
 celeba_models/*
 celeba_models_split/*
 *.out
+*.pdf
 images/
-log/
 do*.sh

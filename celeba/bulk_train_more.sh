@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {1001..2000}
+for (( i = 2001; i <= 2000+$3; i++ )) 
 do
-    python train_models.py --split $1 --filter $2 --ratio $3 --name $i --task Male
+    python train_models.py --split $1 --filter Male --ratio $2 --name $i --adv_train --eps 0.031
 done

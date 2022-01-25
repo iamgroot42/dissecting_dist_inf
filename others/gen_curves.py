@@ -917,16 +917,17 @@ def find_n_eff(points_x, points_y, ratio):
 
 if __name__ == "__main__":
     plt.rcParams.update({'font.size': 20})
-    plt.rc('xtick', labelsize=15)
-    plt.rc('ytick', labelsize=15)
-    plt.rc('axes', labelsize=15)
+    plt.rc('xtick', labelsize=12)
+    plt.rc('ytick', labelsize=13)
+    plt.rc('axes', labelsize=14)
 
     # plt.style.use('dark_background')
 
     # Plot curves corresponding to ratios
     picked_ratio = 0.2
     colors = ['blue', 'orange', 'green', 'lightcoral', 'purple']
-    curve_colors = ['mediumpurple', 'olive', 'firebrick']
+    # curve_colors = ['mediumpurple', 'olive', 'firebrick']
+    curve_colors = ['mediumpurple', 'darkgray', 'lightgray']
     n_effs = []
     x_axis = np.linspace(0, 1, 1000)
 
@@ -1021,7 +1022,10 @@ if __name__ == "__main__":
     n_effs = sorted(n_effs)[::-1]
 
     for cc, n_eff in zip(curve_colors, n_effs):
-        plt.plot(x_axis, [bound(x_, picked_ratio, n_eff) for x_ in x_axis], color=cc, label=r"$n_{effective}=%d$" % n_eff)
+        if n_eff == 37:
+            continue
+        plt.plot(x_axis, [bound(x_, picked_ratio, n_eff)
+                          for x_ in x_axis], '--', color=cc, label=r"$n_{leaked}=%d$" % n_eff)
 
     # Trick to get desired legend
     plt.plot([], [], color=colors[0], marker="D", ms=10, ls="", label="RSNA Bone Age")
@@ -1030,7 +1034,7 @@ if __name__ == "__main__":
     plt.plot([], [], color=colors[3], marker="s", ms=10, ls="", label="Census (female)")
     plt.plot([], [], color=colors[4], marker="s", ms=10, ls="", label="Census (white)")
 
-    plt.xlabel(r'$\alpha_0$')
+    plt.xlabel(r'$\alpha_1$')
     plt.ylabel(r'Accuracy')
     plt.ylim(0.5, 1)
     plt.xticks(np.arange(min(x), max(x)+0.1, 0.1))

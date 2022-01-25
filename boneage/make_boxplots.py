@@ -16,6 +16,8 @@ if __name__ == "__main__":
                         help='Add legend to plots')
     parser.add_argument('--novtitle', action="store_true",
                         help='Remove Y-axis label')
+    parser.add_argument('--dash', action="store_true",
+                        help='Add dashed line midway?')
     args = parser.parse_args()
 
     first_cat = " 0.5"
@@ -29,7 +31,7 @@ if __name__ == "__main__":
 
     data = []
     columns = [
-        r'Female proportion of training data ($\alpha$)',
+        r'Female proportion of training data ($\alpha_1$)',
         "Accuracy (%)"
     ]
 
@@ -58,9 +60,10 @@ if __name__ == "__main__":
 
     # Add dividing line in centre
     lower, upper = plt.gca().get_xlim()
-    midpoint = (lower + upper) / 2
-    plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
-                linewidth=1.0, linestyle='--')
+    if args.dash:
+        midpoint = (lower + upper) / 2
+        plt.axvline(x=midpoint, color='white' if args.darkplot else 'black',
+                    linewidth=1.0, linestyle='--')
 
     # Map range to numbers to be plotted
     baselines = [64.9, 64.3, 59.0, 57.0, 56.8, 66.9]
@@ -89,4 +92,4 @@ if __name__ == "__main__":
     # Make sure axis label not cut off
     plt.tight_layout()
 
-    sns_plot.figure.savefig("./meta_boxplot.png")
+    sns_plot.figure.savefig("./meta_boxplot.pdf")

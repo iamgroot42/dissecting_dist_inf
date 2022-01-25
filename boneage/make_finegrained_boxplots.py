@@ -1,7 +1,7 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
-from utils import flash_utils
+from utils import flash_utils, get_n_effective, bound
 import numpy as np
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
@@ -134,23 +134,42 @@ if __name__ == "__main__":
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
 
     #track max values
-    from utils import get_n_effective, bound
     max_values = np.zeros_like(fill_data)
     eff_vals = np.zeros_like(fill_data)
+    wanted = []
     for i in range(len(targets)):
         for j in range(len(targets)-(i+1)):
+            n_eff_loss = get_n_effective(
+                raw_data_loss[i][j] / 100, float(targets[i]), float(targets[i+j+1]))
+                # max(raw_data_threshold[i][j]) / 100, float(targets[i]), float(targets[i+j+1]))
+            if float(targets[i]) == 0.5:
+                wanted.append(n_eff_loss)
+                print(n_eff_loss, targets[i+j+1])
+            if float(targets[i+j+1]) == 0.5:
+                wanted.append(n_eff_loss)
+                print(n_eff_loss, targets[i])
             max_values[i][j+i+1] = max(raw_data_loss[i]
                                        [j], max(raw_data_threshold[i][j]))
             max_values[i][j+i+1] = max(max_values[i]
                                        [j], max(raw_data[i][j]))
             n_eff = get_n_effective(
-                max_values[i][j+i+1] / 100, float(targets[i]), float(targets[j]))
+                max_values[i][j+i+1] / 100, float(targets[i]), float(targets[i+j+1]))
             eff_vals[i][j] = np.abs(n_eff)
-            print(i, j, bound(float(targets[i]), float(targets[j]), n_eff))
-    print(eff_vals)
+            # print(targets[i], targets[i+j+1], eff_vals[i][j], bound(float(targets[i]), float(targets[j]), n_eff))
+    print("Median", np.median(wanted))
+    # exit(0)
+    # print(eff_vals)
+    # print(max_values)
+    exit(0)
+
+    eff_vals_mean = eff_vals.flatten()
+    eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]
+    eff_vals_mean = eff_vals_mean[eff_vals_mean > 0]
+    print("Mean N_leaked value: %.2f" % np.mean(eff_vals_mean))
+    print("Median N_leaked value: %.2f" % np.median(eff_vals_mean))
 
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
                            annot=annot_data, mask=mask, fmt="^",
                            vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./boneage_heatmap_%s.png" % (args.mode))
+    sns_plot.figure.savefig("./boneage_heatmap_%s.pdf" % (args.mode))

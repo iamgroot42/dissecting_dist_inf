@@ -13,9 +13,22 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=150)
     parser.add_argument('--train_sample', type=int, default=800)
     parser.add_argument('--val_sample', type=int, default=0)
+    parser.add_argument('--adv_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for adv")
+    parser.add_argument('--victim_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for victim")
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")
+    parser.add_argument('--scale_invariance', action="store_true",
+                        help="Use scale-invariant version of model")
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--start_n_conv', type=int, default=0,
                         help="Only consider starting from this layer of conv part")
     parser.add_argument('--first_n_conv', type=int, default=np.inf,
@@ -44,6 +57,16 @@ if __name__ == "__main__":
     test_dir_2 = os.path.join(
         BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.second))
 
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+        train_dir_1 = os.path.join(train_dir_1, args.adv_adv_prefix)
+        train_dir_2 = os.path.join(train_dir_2, args.adv_adv_prefix)
+
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
+        test_dir_1 = os.path.join(test_dir_1, args.victim_adv_prefix)
+        test_dir_2 = os.path.join(test_dir_2, args.victim_adv_prefix)
+
     if args.conv_custom is not None:
         args.conv_custom = [int(x) for x in args.conv_custom.split(",")]
     if args.fc_custom is not None:
@@ -55,26 +78,34 @@ if __name__ == "__main__":
         start_n_conv=args.start_n_conv,
         start_n_fc=args.start_n_fc,
         conv_custom=args.conv_custom, fc_custom=args.fc_custom,
-        first_n_fc=args.first_n_fc, focus=args.focus)
+        first_n_fc=args.first_n_fc, focus=args.focus,
+        # max_read=100
+        )
     _, vecs_train_2 = get_model_features(
         train_dir_2, first_n_conv=args.first_n_conv,
         start_n_conv=args.start_n_conv,
         start_n_fc=args.start_n_fc,
         conv_custom=args.conv_custom, fc_custom=args.fc_custom,
-        first_n_fc=args.first_n_fc, focus=args.focus)
+        first_n_fc=args.first_n_fc, focus=args.focus,
+        # max_read=100
+        )
 
     _, vecs_test_1 = get_model_features(
         test_dir_1, first_n_conv=args.first_n_conv,
         start_n_conv=args.start_n_conv,
         start_n_fc=args.start_n_fc,
         conv_custom=args.conv_custom, fc_custom=args.fc_custom,
-        first_n_fc=args.first_n_fc, focus=args.focus)
+        first_n_fc=args.first_n_fc, focus=args.focus,
+        max_read=1000
+        )
     _, vecs_test_2 = get_model_features(
         test_dir_2, first_n_conv=args.first_n_conv,
         start_n_conv=args.start_n_conv,
         start_n_fc=args.start_n_fc,
         conv_custom=args.conv_custom, fc_custom=args.fc_custom,
-        first_n_fc=args.first_n_fc, focus=args.focus)
+        first_n_fc=args.first_n_fc, focus=args.focus,
+        max_read=1000
+        )
 
     vecs_train_1 = np.array(vecs_train_1, dtype='object')
     vecs_train_2 = np.array(vecs_train_2, dtype='object')
@@ -136,7 +167,9 @@ if __name__ == "__main__":
         elif args.focus == "conv":
             # 590225 params
             dim_channels, dim_kernels = dims
-            metamodel = utils.PermInvConvModel(dim_channels, dim_kernels)
+            metamodel = utils.PermInvConvModel(
+                dim_channels, dim_kernels,
+                scale_invariance=args.scale_invariance)
         else:
             # 204721 params
             metamodel = utils.PermInvModel(dims)
@@ -151,7 +184,7 @@ if __name__ == "__main__":
             (X_train, Y_train),
             (X_test, Y_test),
             epochs=args.epochs, binary=True,
-            lr=0.001, batch_size=args.batch_size,
+            lr=args.lr, batch_size=args.batch_size,
             val_data=val_data, combined=True,
             eval_every=10, gpu=True)
         accs.append(test_acc)

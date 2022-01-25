@@ -1,3 +1,4 @@
+import numpy as np
 from model_utils import create_model, save_model
 from data_utils import SUPPORTED_PROPERTIES, CelebaWrapper
 from utils import flash_utils, train, extract_adv_params
@@ -17,6 +18,8 @@ if __name__ == "__main__":
     parser.add_argument('--split', choices=['victim', 'adv'], required=True)
     parser.add_argument('--bs', type=int, default=128, help='batch size')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
+    parser.add_argument('--eps', type=float, default=0.063,
+                        help='epsilon for adversarial training')
     parser.add_argument('--augment', action="store_true",
                         help='use data augmentations when training models?')
     parser.add_argument('--adv_train', action="store_true",
@@ -42,11 +45,15 @@ if __name__ == "__main__":
     # Get adv params
     adv_params = False
     if args.adv_train:
-        eps = 2.0
-        nb_iter = 20
+        # Given the way scaling is done, eps (passed as argument) should be
+        # 2^(1/p) for L_p norm
+        eps = 2 * args.eps
+        norm = np.inf
+        nb_iter = 7
+        # Adv acc seems to be too high- investigate what's going on
         adv_params = extract_adv_params(
             eps=eps, eps_iter=(2.5 * eps / nb_iter), nb_iter=nb_iter,
-            norm=2, random_restarts=5,
+            norm=norm, random_restarts=1,
             clip_min=-1, clip_max=1)
 
     # Create model
@@ -67,4 +74,6 @@ if __name__ == "__main__":
     # Save model
     save_name = save_name + ".pth"
     save_model(model, args.split, args.filter, str(
-        args.ratio), save_name, dataparallel=args.parallel)
+        args.ratio), save_name, dataparallel=args.parallel,
+        is_adv=args.adv_train,
+        adv_folder_name="adv_train_8")

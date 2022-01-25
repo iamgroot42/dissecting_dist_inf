@@ -251,7 +251,7 @@ class CelebaWrapper:
             prop, ratio, cwise_sample[1],
             transform=test_transforms)
 
-    def get_loaders(self, batch_size, shuffle=True, eval_shuffle=False):
+    def get_loaders(self, batch_size, shuffle=True, eval_shuffle=False, val_factor=2):
         num_workers = 16
         pff = 20
         train_loader = DataLoader(
@@ -262,7 +262,7 @@ class CelebaWrapper:
         # If train mode can handle BS (weight + gradient)
         # No-grad mode can surely hadle 2 * BS?
         test_loader = DataLoader(
-            self.ds_val, batch_size=batch_size * 2,
+            self.ds_val, batch_size=batch_size * val_factor,
             shuffle=eval_shuffle, num_workers=num_workers,
             worker_init_fn=worker_init_fn,
             prefetch_factor=pff)

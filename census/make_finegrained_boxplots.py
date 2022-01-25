@@ -1,7 +1,7 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
-from utils import flash_utils
+from utils import flash_utils, get_n_effective, bound
 import numpy as np
 from data_utils import SUPPORTED_PROPERTIES
 import matplotlib as mpl
@@ -398,7 +398,6 @@ if __name__ == "__main__":
             mask[i][i] = False
             annot_data[i][i] = "N.A."
  
-    # from utils import get_n_effective, bound
     # max_values = np.zeros_like(fill_data)
     # eff_vals = np.zeros_like(fill_data)
     # for i in range(len(targets)):
@@ -420,6 +419,45 @@ if __name__ == "__main__":
     # for v in eff_vals:
     #     print(" , ".join(["%.2f" % vv for vv in v]))
     # exit(0)
+
+    #track max values
+    max_values = np.zeros_like(fill_data)
+    eff_vals = np.zeros_like(fill_data)
+    wanted = []
+    for i in range(len(targets)):
+        for j in range(len(targets)-(i+1)):
+            # n_eff_loss = get_n_effective(raw_data_loss[i][j] / 100, float(targets[i]), float(targets[i+j+1]))
+            n_eff_loss = get_n_effective(
+                max(raw_data_meta[i][j]) / 100, float(targets[i]), float(targets[i+j+1]))
+            if float(targets[i]) == 0.5:
+                wanted.append(n_eff_loss)
+                print(n_eff_loss, targets[i+j+1])
+            if float(targets[i+j+1]) == 0.5:
+                wanted.append(n_eff_loss)
+                print(n_eff_loss, targets[i])
+            max_values[i][j+i+1] = max(raw_data_loss[i]
+                                       [j], max(raw_data_threshold[i][j]))
+            max_values[i][j+i+1] = max(max_values[i]
+                                       [j], max(raw_data_meta[i][j]))
+            n_eff = get_n_effective(
+                max_values[i][j+i+1] / 100, float(targets[i]), float(targets[i+j+1]))
+            eff_vals[i][j] = np.abs(n_eff)
+            # print(targets[i], targets[i+j+1], eff_vals[i][j],
+            #       bound(float(targets[i]), float(targets[j]), n_eff))
+    # print("Average", np.mean(wanted))
+    wanted = np.array(wanted)
+    wanted = wanted[np.abs(wanted) != np.inf]
+    print("Median:", np.median(wanted))
+    print(np.min(wanted), np.max(wanted))
+    exit(0)
+    for i in range(len(targets)):
+        print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
+
+    eff_vals_mean = eff_vals.flatten()
+    eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]
+    eff_vals_mean = eff_vals_mean[eff_vals_mean > 0]
+    print("Mean N_leaked value: %.2f" % np.mean(eff_vals_mean))
+    print("Median N_leaked value: %.2f" % np.median(eff_vals_mean))
 
     sns_plot = sns.heatmap(fill_data, xticklabels=targets, yticklabels=targets,
                            annot=annot_data, mask=mask,
