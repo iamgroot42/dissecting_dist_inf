@@ -122,12 +122,13 @@ def gen_optimal(models, labels, sample_shape, n_samples,
             x_use = resize(x_rand, (sample_shape[1], sample_shape[2]))
         else:
             x_use = x_rand
-
+        
         # Get representations from all models
         reprs = ch.stack([m(x_use, latent=latent_focus) for m in models], 0)
+        
         reprs_z = ch.mean(reprs[labels == 0], 2)
+        
         reprs_o = ch.mean(reprs[labels == 1], 2)
-
         # If latent_focus is None, simply maximize difference in prediction probs
         if latent_focus is None:
             reprs_o = ch.sigmoid(reprs_o)
@@ -188,6 +189,8 @@ def get_all_models(dir, n_models, latent_focus, fake_relu, shuffle=False):
     files = os.listdir(dir)
     if shuffle:
         np.random.permutation(files)
+    files = [x for x in files if os.path.isfile(os.path.join(dir,x))]
+    files = files[:n_models]
     for pth in tqdm(files):
         # Folder for adv models (or others): skip
         if os.path.isdir(os.path.join(dir, pth)):
@@ -233,7 +236,6 @@ def specific_case(
     else:
         _, test_loader = ds.get_loaders(100, eval_shuffle=True)
         normal_data = next(iter(test_loader))[0].cuda()
-
     if args.use_natural:
         x_use = ordered_samples(X_train_1, X_train_2, test_loader, args)
     else:
@@ -260,8 +262,8 @@ def specific_case(
             best_id = np.argmin(losses)
             x_opt = x_opt[best_id:best_id+1]
 
-        # x_opt = ch.cat(x_opt, 0)
-        x_opt = normal_data
+        x_opt = ch.cat(x_opt, 0)
+        #x_opt = normal_data
 
         if args.upscale:
             x_use = resize(x_opt, datum_shape[1:])
@@ -372,7 +374,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Celeb-A')
     parser.add_argument('--n_samples', type=int, default=5)
-    parser.add_argument('--latent_focus', type=int, default=4)
+    parser.add_argument('--latent_focus', type=int, default=None)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--steps', type=int, default=500)

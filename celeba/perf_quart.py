@@ -16,7 +16,7 @@ def get_models(folder_path, n_models=1000):
     return (folder_path,np.random.permutation(os.listdir(folder_path))[:n_models])
 
 mpl.rcParams['figure.dpi'] = 200
-ch.cuda.set_device(3)
+
 
 def get_preds(loader,ms):
     
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     flash_utils(args)
     lst = [0.05,0.1,0.2,0.3,0.4,0.5,1.0] #ratio of data points to try
-    
+    ch.cuda.set_device(3)
     
     # Load victim models
     print("Loading models")

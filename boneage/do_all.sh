@@ -1,5 +1,4 @@
-for i in 0.7 0.8
+for i in $1
 do
-python perf_quart.py --ratio_1 0.5 --ratio_2 $i
+python perf_all.py  --ratio_1 0.5 --ratio_2 $i --gpu $2
 done
-python quart_boxplot.py  --ratio 0.5

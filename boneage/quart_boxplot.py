@@ -11,7 +11,7 @@ mpl.rcParams['figure.dpi'] = 200
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ratio', default = 0.5,
+    parser.add_argument('--ratio', default = '0.5',
                         help='test ratio')
     args = parser.parse_args()
     flash_utils(args)

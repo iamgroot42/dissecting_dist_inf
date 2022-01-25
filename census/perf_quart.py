@@ -27,7 +27,7 @@ def get_pred(data, models):
     for model in tqdm(models):
         preds.append(model.predict(data))
 
-    return np.transpose(np.array(preds))
+    return np.squeeze(np.transpose(np.array(preds)))
 
 def select_points(model1,model2,x,Y):
     models = list(zip(model1,model2))
@@ -55,6 +55,8 @@ if __name__ == "__main__":
     parser.add_argument('--ratio_2', help="ratios for D_2")
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
+    parser.add_argument('--loss_t', action='store_true',
+                        help="use loss test as well")                    
     args = parser.parse_args()
     flash_utils(args)
     lst = [0.05,0.1,0.2,0.3,0.4,0.5,1.0] #ratio of data points to try
@@ -66,10 +68,11 @@ if __name__ == "__main__":
     each_thre = []
     each_adv = []
     avg_thre = []
-    
+    avgb = []
     for _ in range(args.tries):
         thresholds = []
         adv_thresholds = []
+        basic = []
         # Load adv models
         total_models = 100
         models_1 = get_models(get_models_path(
@@ -98,13 +101,13 @@ if __name__ == "__main__":
         # Fetch test data from both ratios
             _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
             _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
-        #y_te_1 = y_te_1.ravel()
-        #y_te_2 = y_te_2.ravel()
+        
         re1 = select_points(models_1,models_2,x_te_1,y_te_1)
         re2 = select_points(models_1,models_2,x_te_2,y_te_2)
         x1,y1 = re1[:,:-2], re1[:,-2]
         x2,y2 = re2[:,:-2], re2[:,-2]
         yg = (y1,y2)
+        
         p1 = (get_pred(x1,models_1), get_pred(x2,models_1))
         p2 = (get_pred(x1,models_2), get_pred(x2,models_2))
         pv1 = (get_pred(x1,models_victim_1), get_pred(x2,models_victim_1))
@@ -115,7 +118,7 @@ if __name__ == "__main__":
             break
         for ratio in lst:
             f_accs = []
-            
+            allaccs_1, allaccs_2 = [], []
             adv_accs = []
              #tr,rl = [],[]
             
@@ -144,7 +147,8 @@ if __name__ == "__main__":
             # Look at [0, 100]
                 accs_victim_1 *= 100
                 accs_victim_2 *= 100
-
+                allaccs_1.append(accs_victim_1)
+                allaccs_2.append(accs_victim_2)
             # Threshold based on adv models
                 combined = np.concatenate((accs_victim_1, accs_victim_2))
                 classes = np.concatenate(
@@ -160,19 +164,37 @@ if __name__ == "__main__":
             ind = np.argmax(adv_accs)
             thresholds.append(f_accs[ind])
             adv_thresholds.append(adv_accs[ind])
+            allaccs_1 = np.array(allaccs_1)
+            allaccs_2 = np.array(allaccs_2)
+
+            preds_1 = (allaccs_1[0, :] > allaccs_1[1, :])
+            preds_2 = (allaccs_2[0, :] <= allaccs_2[1, :])
+            basic.append(100*(np.mean(preds_1) + np.mean(preds_2)) / 2)
         each_adv.append(adv_thresholds)
         each_thre.append(thresholds)
+        avgb.append(basic)
+    avgb = np.array(avgb)
     each_adv = np.array(each_adv)
     each_thre = np.array(each_thre)
     avg_thre = np.mean(each_adv[:,:-1],axis=0)
+    avgb = np.mean(avgb,axis=0)
+    bestl = np.argmax(avgb[:-1])
     best= np.argmax(avg_thre)
     content = 'At {}, best thresholds accuracy: {}\nAt {}, thresholds accuracy: {}'.format(lst[best],each_thre[:,best],1.0,each_thre[:,-1])
     print(content)
-    log_path = os.path.join(BASE_MODELS_DIR, args.filter,"perf_quart:"+args.ratio_1)
+    log_path = os.path.join('./log', args.filter,"perf_quart:"+args.ratio_1)
     if not os.path.isdir(log_path):
          os.makedirs(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(content)
+    log_path = os.path.join('./log', args.filter,"selective_loss:"+args.ratio_1)
+    if args.loss_t:
+        cl = 'At {}, best basline accuracy: {}\nAt {}, baseline accuracy: {}'.format(lst[bestl],avgb[bestl],1.0,avgb[-1])
+        print(cl)
+        if not os.path.isdir(log_path):
+             os.makedirs(log_path)
+        with open(os.path.join(log_path,args.ratio_2),"w") as wr:
+            wr.write(cl)
       
     
    
