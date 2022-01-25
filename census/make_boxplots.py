@@ -157,4 +157,4 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     # Save plot
-    sns_plot.figure.savefig("./meta_boxplot_%s.pdf" % args.filter)
+    sns_plot.figure.savefig("./plots/meta_boxplot_%s.pdf" % args.filter)

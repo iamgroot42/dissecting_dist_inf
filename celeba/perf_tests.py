@@ -1,4 +1,4 @@
-from model_utils import get_model, BASE_MODELS_DIR
+from model_utils import get_models, BASE_MODELS_DIR
 from data_utils import CelebaWrapper, SUPPORTED_PROPERTIES
 import torch.nn as nn
 import numpy as np
@@ -9,20 +9,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_models(folder_path, n_models=1000):
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        # Folder for adv models (or others): skip
-        if os.path.isdir(os.path.join(folder_path, mpath)):
-            continue
-
-        model = get_model(os.path.join(folder_path, mpath))
-        models.append(model)
-    return models
 
 
 def get_accs(val_loader, models):

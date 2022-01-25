@@ -463,5 +463,5 @@ if __name__ == "__main__":
                            annot=annot_data, mask=mask,
                            fmt="^", vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./meta_heatmap_%s_%s.png" %
+    sns_plot.figure.savefig("./plots/meta_heatmap_%s_%s.png" %
                             (args.filter, args.mode))

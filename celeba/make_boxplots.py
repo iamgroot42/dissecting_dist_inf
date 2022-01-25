@@ -375,5 +375,5 @@ if __name__ == "__main__":
 
     # Save plot
     suffix = "_multi" if args.multimode else ""
-    sns_plot.figure.savefig("./celeba_meta_boxplot_%s%s.pdf" %
+    sns_plot.figure.savefig("./plots/celeba_meta_boxplot_%s%s.pdf" %
                             (args.filter, suffix))

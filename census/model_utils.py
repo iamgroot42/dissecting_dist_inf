@@ -6,7 +6,9 @@ from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
-BASE_MODELS_DIR = '/u/pdz6an/git/census/50_50_new'
+
+# BASE_MODELS_DIR = '/u/pdz6an/git/census/50_50_new'
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
 
 
 def layer_output(data, MLP, layer=0, get_all=False):
@@ -59,6 +61,16 @@ def get_model(max_iter=40,
     clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes,
                         max_iter=max_iter)
     return clf
+
+
+def get_models(folder_path, n_models=1000):
+    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
+
+    models = []
+    for mpath in tqdm(paths):
+        model = load_model(os.path.join(folder_path, mpath))
+        models.append(model)
+    return models
 
 
 def save_model(clf, path):

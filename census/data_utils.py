@@ -6,10 +6,12 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
-BASE_DATA_DIR = "/u/pdz6an/git/census"
-#BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
-SUPPORTED_PROPERTIES = ["sex", "race", "none","bothfw","bothmw","bothfn","bothmn","two_attr"]
-PROPERTY_FOCUS = {"sex": "Female", "race": "White","bothfw":"both f and w","bothmw":"both m and w","bothfn":"both f and n","bothmn":"both m and n","two_attr":"f and w"}
+# BASE_DATA_DIR = "/u/pdz6an/git/census"
+BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
+SUPPORTED_PROPERTIES = ["sex", "race", "none",
+                        "bothfw", "bothmw", "bothfn", "bothmn", "two_attr"]
+PROPERTY_FOCUS = {"sex": "Female", "race": "White", "bothfw": "both f and w",
+                  "bothmw": "both m and w", "bothfn": "both f and n", "bothmn": "both m and n", "two_attr": "f and w"}
 
 
 # US Income dataset
@@ -81,8 +83,7 @@ class CensusIncome:
             cols = X.columns
             X = X.to_numpy()
             return (X.astype(float), np.expand_dims(Y, 1), cols)
-    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
-        
+    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):        
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -160,8 +161,8 @@ class CensusIncome:
 class CensusTwo(CensusIncome):
     def __init__(self):
         super().__init__()
+
     def get_data(self, split, ratio1,ratio2):
-        
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data

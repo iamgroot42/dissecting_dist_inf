@@ -389,7 +389,6 @@ def get_weight_layers(m, normalize=False, transpose=True,
     custom_layers = sorted(custom_layers) if custom_layers is not None else None
 
     track = 0
-    scale = 1.
     for name, param in m.named_parameters():
         if "weight" in name:
 
@@ -403,7 +402,6 @@ def get_weight_layers(m, normalize=False, transpose=True,
             if transpose:
                 param_data = param_data.T
 
-            # Experimental: if scale invariance requested, scale weights 
             weights.append(param_data)
             if conv:
                 dims.append(weights[-1].shape[2])
@@ -529,7 +527,7 @@ class PermInvConvModel(nn.Module):
         # layer representations together
         if not self.only_latent:
             self.rho = nn.Linear(
-                inside_dims[-1] * len(self.dim_channels), #+ dim_for_scale_invariance,
+                inside_dims[-1] * len(self.dim_channels) + dim_for_scale_invariance,
                 n_classes)
 
     def forward(self, params):
@@ -558,7 +556,7 @@ class PermInvConvModel(nn.Module):
                 for i in range(param.shape[0]):
                     # Scaling mechanism- pick largest weight, scale weights
                     # such that largest weight becomes 1
-                    scale_factor = ch.max(ch.abs(param[i]))
+                    scale_factor = ch.norm(param[i])
                     scale_invariance_multiplier[i] += ch.log(scale_factor)
                     # Scale parameter matrix (if it's not all zeros)
                     if scale_factor != 0:
@@ -596,9 +594,9 @@ class PermInvConvModel(nn.Module):
         reps = ch.cat(reps, 1)
 
         # Add invariance multiplier
-        # if self.scale_invariance:
-        #     scale_invariance_multiplier = ch.unsqueeze(scale_invariance_multiplier, 1)
-        #     reps = ch.cat((reps, scale_invariance_multiplier), 1)
+        if self.scale_invariance:
+            scale_invariance_multiplier = ch.unsqueeze(scale_invariance_multiplier, 1)
+            reps = ch.cat((reps, scale_invariance_multiplier), 1)
 
         if self.only_latent:
             return reps
@@ -1432,31 +1430,34 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
     return best_acc, best_threshold, best_rule
 
 
-def get_threshold_pred(X,Y,threshold,rule):
-    if (X.shape[1] != Y.shape[0]) or (X.shape[0]!=threshold.shape[0]):
+def get_threshold_pred(X, Y, threshold, rule):
+    if (X.shape[1] != Y.shape[0]) or (X.shape[0] != threshold.shape[0]):
         raise ValueError('dimension mismatch')
     res = []
     for i in range(X.shape[1]):
-        res.append(np.average(((X[:,i]<=threshold)==rule))>=0.5)
+        res.append(np.average(((X[:, i] <= threshold) == rule)) >= 0.5)
     res = np.array(res)
-    return np.mean(res==Y)
+    return np.mean(res == Y)
 
-def find_threshold_pred(pred_1,pred_2,granularity=0.005):
+
+def find_threshold_pred(pred_1, pred_2, granularity=0.005):
     if pred_1.shape[0] != pred_2.shape[0]:
         raise ValueError('dimension mismatch')
-    thres,rules = [],[]
-    g= granularity
+    thres, rules = [], []
+    g = granularity
     for i in tqdm(range(pred_1.shape[0])):
-        _,t,r = find_threshold_acc(pred_1[i],pred_2[i],g)
+        _, t, r = find_threshold_acc(pred_1[i], pred_2[i], g)
         while r is None:
-            g=g/10
-            _,t,r = find_threshold_acc(pred_1[i],pred_2[i],g)
+            g = g/10
+            _, t, r = find_threshold_acc(pred_1[i], pred_2[i], g)
         thres.append(t)
         rules.append(r-1)
     thres = np.array(thres)
     rules = np.array(rules)
-    acc = get_threshold_pred(np.concatenate((pred_1,pred_2),axis=1),np.concatenate((np.zeros(pred_1.shape[1]),np.ones(pred_2.shape[1]))),thres,rules)
-    return acc, thres,rules
+    acc = get_threshold_pred(np.concatenate((pred_1, pred_2), axis=1), np.concatenate(
+        (np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1]))), thres, rules)
+    return acc, thres, rules
+
 
 # Fix for repeated random augmentation issue
 # https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/

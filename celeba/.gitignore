@@ -5,3 +5,4 @@ celeba_models_split/*
 *.pdf
 images/
 do*.sh
+plots/*

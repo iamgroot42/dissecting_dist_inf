@@ -1,4 +1,4 @@
-from model_utils import get_models_path, load_model, BASE_MODELS_DIR
+from model_utils import get_models_path, get_models, BASE_MODELS_DIR
 from data_utils import CensusTwo, CensusWrapper, SUPPORTED_PROPERTIES
 import numpy as np
 from tqdm import tqdm
@@ -8,17 +8,6 @@ from utils import get_threshold_acc, find_threshold_acc, flash_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_models(folder_path, n_models=1000):
-   
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        model = load_model(os.path.join(folder_path, mpath))
-        models.append(model)
-    return models
 
 
 def get_accs(data, models):

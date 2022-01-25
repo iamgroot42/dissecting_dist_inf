@@ -98,4 +98,4 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     sns_plot.figure.savefig(
-        "./meta_boxplot_varying_n_%s_%s.png" % (args.filter, str(args.focus_n)))
+        "./plots/meta_boxplot_varying_n_%s_%s.png" % (args.filter, str(args.focus_n)))

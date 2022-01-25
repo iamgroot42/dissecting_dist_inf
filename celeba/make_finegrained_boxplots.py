@@ -470,4 +470,4 @@ if __name__ == "__main__":
     print("Median N_leaked value: %.2f" % np.median(eff_vals_mean))
 
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./meta_heatmap_%s_%s.png" % (args.filter, args.mode))
+    sns_plot.figure.savefig("./plots/meta_heatmap_%s_%s.png" % (args.filter, args.mode))
