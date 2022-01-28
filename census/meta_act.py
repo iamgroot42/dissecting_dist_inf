@@ -3,7 +3,7 @@
 """
 import utils
 from data_utils import SUPPORTED_PROPERTIES, CensusWrapper
-from model_utils import get_models_path, get_models, layer_output, load_model
+from model_utils import get_models_path, get_models, layer_output
 from data_utils import CensusWrapper
 import argparse
 from tqdm import tqdm
@@ -110,6 +110,8 @@ if __name__ == "__main__":
     # Batch up data
     pos_w_test = utils.prepare_batched_data(pos_w_test)
 
+    reduction_dims = [8, 4, 2, 1]
+
     data = []
     for tg in targets:
         tgt_data = []
@@ -176,7 +178,7 @@ if __name__ == "__main__":
 
             metamodel = utils.ActivationMetaClassifier(
                 n_samples, dims,
-                reduction_dims=[8, 4, 2, 1])
+                reduction_dims=reduction_dims)
             metamodel = metamodel.cuda()
             metamodel = ch.nn.DataParallel(metamodel)
 
@@ -194,7 +196,7 @@ if __name__ == "__main__":
                 print("Bad seed- retrying training")
                 metamodel = utils.ActivationMetaClassifier(
                     n_samples, dims,
-                    reduction_dims=[8, 4, 2, 1])
+                    reduction_dims=reduction_dims)
                 metamodel = metamodel.cuda()
                 metamodel = ch.nn.DataParallel(metamodel)
                 clf, tacc = utils.train_meta_model(
