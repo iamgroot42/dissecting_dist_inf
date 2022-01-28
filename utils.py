@@ -85,8 +85,6 @@ class CIFAR10(DataPaths):
     def __init__(self, data_path=None):
         self.dataset_type = CIFAR
         datapath = "/p/adversarialml/as9rw/datasets/cifar10" if data_path is None else data_path
-        # print(datapath, "wtf?!")
-        # exit(0)
         super(CIFAR10, self).__init__('cifar10',
                                       datapath,
                                       "/p/adversarialml/as9rw/cifar10_stats/")
@@ -433,6 +431,10 @@ def get_weight_layers(m, normalize=False, transpose=True,
             else:
                 # Specified layer was found, increase count
                 j += 1
+
+            # Break if all layers were processed
+            if len(custom_layers) == j // 2:
+                break
 
     if custom_layers is not None and len(custom_layers) != j // 2:
         raise ValueError("Custom layers requested do not match actual model")
@@ -918,13 +920,15 @@ def get_outputs(model, X, no_grad=False):
     return outputs[:, 0]
 
 
-def prepare_batched_data(X):
+def prepare_batched_data(X, reduce=False):
     inputs = [[] for _ in range(len(X[0]))]
-    for x in X:
+    for x in tqdm(X, desc="Batching data"):
         for i, l in enumerate(x):
             inputs[i].append(l)
 
     inputs = np.array([ch.stack(x, 0) for x in inputs], dtype='object')
+    if reduce:
+        inputs = [x.view(-1, x.shape[-1]) for x in inputs]
     return inputs
 
 
@@ -1222,7 +1226,8 @@ def train_meta_model(model, train_data, test_data,
                      epochs, lr, eval_every=5,
                      binary=True, regression=False,
                      val_data=None, batch_size=1000,
-                     gpu=False, combined=False):
+                     gpu=False, combined=False,
+                     shuffle=True):
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
 
     if regression:
@@ -1259,12 +1264,13 @@ def train_meta_model(model, train_data, test_data,
         model.train()
 
         # Shuffle train data
-        rp_tr = np.random.permutation(y.shape[0])
-        if not combined:
-            params, y = params[rp_tr], y[rp_tr]
-        else:
-            y = y[rp_tr]
-            params = [x[rp_tr] for x in params]
+        if shuffle:
+            rp_tr = np.random.permutation(y.shape[0])
+            if not combined:
+                params, y = params[rp_tr], y[rp_tr]
+            else:
+                y = y[rp_tr]
+                params = [x[rp_tr] for x in params]
 
         # Batch data to fit on GPU
         running_acc, loss, num_samples = 0, 0, 0
@@ -1564,3 +1570,180 @@ def extract_adv_params(
     adv_params["random_restarts"] = random_restarts
 
     return adv_params
+
+
+class ActivationMetaClassifier(nn.Module):
+    def __init__(self, n_samples, dims, reduction_dims,
+                 inside_dims=[64, 16],
+                 n_classes=2, dropout=0.2):
+        super(ActivationMetaClassifier, self).__init__()
+        self.n_samples = n_samples
+        self.dims = dims
+        self.reduction_dims = reduction_dims
+        self.dropout = dropout
+        self.layers = []
+
+        assert len(dims) == len(reduction_dims), "dims and reduction_dims must be same length"
+
+        # If binary, need only one output
+        if n_classes == 2:
+            n_classes = 1
+
+        def make_mini(y, last_dim):
+            layers = [
+                nn.Linear(y, inside_dims[0]),
+                nn.ReLU()
+            ]
+            for i in range(1, len(inside_dims)):
+                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
+                layers.append(nn.ReLU())
+            layers.append(
+                nn.Linear(inside_dims[len(inside_dims)-1], last_dim))
+            layers.append(nn.ReLU())
+
+            return nn.Sequential(*layers)
+
+        # Reducing each activation into smaller representations
+        for ld, dim in zip(self.reduction_dims, self.dims):
+            self.layers.append(make_mini(dim, ld))
+
+        self.layers = nn.ModuleList(self.layers)
+
+        # Final layer to concatenate all representations across examples
+        self.rho = nn.Sequential(
+            nn.Linear(sum(self.reduction_dims) * self.n_samples, 256),
+            nn.ReLU(),
+            nn.Dropout(self.dropout),
+            nn.Linear(256, 64),
+            nn.ReLU(),
+            nn.Dropout(self.dropout),
+            nn.Linear(64, 8),
+            nn.ReLU(),
+            nn.Linear(8, n_classes),
+        )
+
+    def forward(self, params):
+        reps = []
+        for param, layer in zip(params, self.layers):
+            processed = layer(param.view(-1, param.shape[2]))
+            # Store this layer's representation
+            reps.append(processed)
+
+        reps_c = ch.cat(reps, 1)
+        reps_c = reps_c.view(-1, self.n_samples * sum(self.reduction_dims))
+
+        logits = self.rho(reps_c)
+        return logits
+
+
+def op_solution(x, y):
+    """
+        Return the optimal rotation to apply to x so that it aligns with y.
+    """
+    u, s, vh = np.linalg.svd(x.T @ y)
+    optimal_x_to_y = u @ vh
+    return optimal_x_to_y
+
+
+def align_all_features(reference_point, features):
+    """
+        Perform layer-wise alignment of given features, using
+        reference point. Return aligned features.
+    """
+    aligned_features = []
+    for feature in tqdm(features, desc="Aligning features"):
+        inside_feature = []
+        for (ref_i, x_i) in zip(reference_point, feature):
+            aligned_feature = x_i @ op_solution(x_i, ref_i)
+            inside_feature.append(aligned_feature)
+        aligned_features.append(inside_feature)
+    return np.array(aligned_features, dtype=object)
+
+
+def wrap_data_for_act_meta_clf(models_pos, models_neg,
+                               data, get_activation_fn):
+    """
+        Given models from two different distributions, get their
+        activations on given data and activation-extraction function, and
+        combine them into data-label format for a meta-classifier.
+    """
+    pos_w, pos_labels, _ = get_activation_fn(models_pos, data, 0)
+    neg_w, neg_labels, _ = get_activation_fn(models_neg, data, 1)
+    pp_x = prepare_batched_data(pos_w)
+    np_x = prepare_batched_data(neg_w)
+    X = [ch.cat((x, y), 0) for x, y in zip(pp_x, np_x)]
+    Y = ch.cat((pos_labels, neg_labels))
+    return X, Y.float()
+
+
+def coordinate_descent(models_train, models_val,
+                       models_test, dims, reduction_dims,
+                       get_activation_fn,
+                       sample_shape, n_samples,
+                       meta_train_args,
+                       gen_optimal_fn, seed_data=None,
+                       n_times=10, **kwargs):
+    """
+        Coordinate descent- optimize to find good data points, followed by
+        training of meta-classifier model.
+        Parameters:
+            models_train: Tuple of (pos, neg) models to train.
+            models_test: Tuple of (pos, neg) models to test.
+            dims: Dimensions of feature activations.
+            reduction_dims: Dimensions for meta-classifier internal models.
+            gen_optimal_fn: Function that generates optimal data points.
+            seed_data: Seed data to get activations for. If None (default),
+                generate data before training meta-classifier.
+            n_times: Number of times to run gradient descent.
+            meta_train_args: Argument dict for meta-classifier training
+            kwargs: To be used when generating data.
+    """
+    # Generate data if not provided
+    if seed_data is None:
+        seed_data = gen_optimal_fn(
+            models_train[0], models_train[1],
+            sample_shape, n_samples, **kwargs)
+
+    # Define meta-classifier model
+    metamodel = ActivationMetaClassifier(
+                    n_samples, dims,
+                    reduction_dims=reduction_dims)
+    metamodel = metamodel.cuda()
+    metamodel = ch.nn.DataParallel(metamodel)
+
+    best_clf, best_tacc = None, 0
+    for i in range(n_times):
+        # Get activations for data
+        X_tr, Y_tr = wrap_data_for_act_meta_clf(
+            models_train[0], models_train[1], seed_data, get_activation_fn)
+        X_te, Y_te = wrap_data_for_act_meta_clf(
+            models_test[0], models_test[1], seed_data, get_activation_fn)
+        if models_val is not None:
+            val_data = wrap_data_for_act_meta_clf(
+                models_val[0], models_val[1], seed_data, get_activation_fn)
+
+        # Train meta-classifier for a few epochs
+        clf, tacc = train_meta_model(
+                    metamodel,
+                    (X_tr, Y_tr), (X_te, Y_te),
+                    epochs=meta_train_args['epochs'],
+                    binary=True, lr=1e-3,
+                    regression=False,
+                    batch_size=meta_train_args['batch_size'],
+                    val_data=val_data, combined=True,
+                    eval_every=10, gpu=True)
+
+        # Keep track of best model and latest model
+        if tacc > best_tacc:
+            best_tacc = tacc
+            best_clf = clf
+
+        # Generate new data starting from previous data
+        seed_data = gen_optimal_fn(
+            models_train[0], models_train[1],
+            sample_shape, n_samples,
+            use_normal=seed_data,
+            **kwargs)
+
+    # Return best and latest models
+    return (best_tacc, best_clf), (tacc, clf)

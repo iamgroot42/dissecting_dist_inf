@@ -63,8 +63,11 @@ def get_model(max_iter=40,
     return clf
 
 
-def get_models(folder_path, n_models=1000):
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
+def get_models(folder_path, n_models=1000, shuffle=True):
+    paths = os.listdir(folder_path)
+    if shuffle:
+        paths = np.random.permutation(paths)
+    paths = paths[:n_models]
 
     models = []
     for mpath in tqdm(paths):

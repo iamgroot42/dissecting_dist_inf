@@ -27,8 +27,9 @@ def get_preds(l, m):
 
 
 def gen_optimal(m1, m2, sample_shape, n_samples,
-                n_steps, step_size, latent_focus, upscale,
-                use_normal=None, constrained=False, model_ratio=1.0):
+                n_steps=100, step_size=1e2, latent_focus=None, upscale=1,
+                use_normal=None, constrained=False, model_ratio=1.0,
+                clamp=False):
     # Generate set of query points such that
     # Their outputs (or simply activations produced by model)
     # Help an adversary differentiate between models
@@ -119,7 +120,8 @@ def gen_optimal(m1, m2, sample_shape, n_samples,
                 x_rand_data = x_rand_data_start - difference_norm
             else:
                 x_rand_data = x_intermediate
-            x_rand_data = ch.clamp(x_rand_data, -1, 1)
+            if clamp:
+                x_rand_data = ch.clamp(x_rand_data, -1, 1)
 
     if latent_focus is None:
         return x_rand.clone().detach(), loss.item()
@@ -154,7 +156,8 @@ def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
                     use_normal=normal_data[i:i +
                                            1] if (args.use_normal or args.start_natural) else None,
                     constrained=args.constrained,
-                    model_ratio=args.r)
+                    model_ratio=args.r,
+                    clamp=args.clamp)
             else:
                 random.shuffle(X_train_1)
                 random.shuffle(X_train_2)
@@ -167,7 +170,8 @@ def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
                     use_normal=normal_data[i:i +
                                            1] if (args.use_normal or args.start_natural) else None,
                     constrained=args.constrained,
-                    model_ratio=args.r)
+                    model_ratio=args.r,
+                    clamp=args.clamp)
             x_opt.append(x_opt_)
             losses.append(loss_)
 
@@ -210,22 +214,22 @@ if __name__ == "__main__":
                         help="Use lowest-loss example instead of all of them")
     parser.add_argument('--upscale', type=int,
                         default=1, help="optimize and upscale")
+    parser.add_argument('--clamp', 
+                        action="store_true", help="clamp data when generating")
     parser.add_argument('--use_natural', action="store_true",
                         help="Pick from actual images")
     parser.add_argument('--constrained', action="store_true",
                         help="Constrain amount of noise added")
     parser.add_argument('--start_natural', action="store_true",
                         help="Start with natural images, but better criteria")
-    parser.add_argument('--gpu',
-                        default='0', help="device number")
     parser.add_argument('--r', type=float,
                         default=1.0, help="step-random, ratio of model to use to generate samples")
     parser.add_argument('--r2', type=float,
                         default=1.0, help="step-fixed,ratio of model to use to generate samples each datum")
     args = parser.parse_args()
     flash_utils(args)
-    #ch.cuda.set_device(args.gpu)
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+
+
     if args.use_natural:
         latent_focus = None
         fake_relu = False

@@ -83,7 +83,8 @@ class CensusIncome:
             cols = X.columns
             X = X.to_numpy()
             return (X.astype(float), np.expand_dims(Y, 1), cols)
-    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):        
+
+    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -166,8 +167,8 @@ class CensusTwo(CensusIncome):
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
-            TRAIN_DF = get_filter2(TRAIN_DF, ratio1,ratio2, is_test=0)
-            TEST_DF = get_filter2(TEST_DF, ratio1,ratio2,is_test=1)
+            TRAIN_DF = get_filter2(TRAIN_DF, ratio1, ratio2, is_test=0)
+            TEST_DF = get_filter2(TEST_DF, ratio1, ratio2, is_test=1)
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
                 TRAIN_DF), self.get_x_y(TEST_DF)
@@ -231,7 +232,6 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
             "bothfn": (210, 100),
             "bothmn": (260, 130),
             "bothmw": (2000,960),
-            
         },
         "victim": {
             "sex": (1100, 500),
@@ -240,9 +240,6 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
             "bothfn": (210, 100),
             "bothmn": (260, 130),
             "bothmw": (2000,960),
-            
-            
-            
         },
     }
 

@@ -8,7 +8,6 @@ census_data/*
 train_fix*.sh
 SEX_*
 images/
-log/
 do*.sh
 *.out
 try.py
