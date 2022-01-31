@@ -10,7 +10,7 @@ from utils import worker_init_fn
 
 
 if utils.check_if_inside_cluster():
-    BASE_DATA_DIR = "/scratch/as9rw/data/celeba"
+    BASE_DATA_DIR = "/scratch/as9rw/datasets/celeba"
 else:
     BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba"
 

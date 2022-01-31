@@ -1751,6 +1751,6 @@ def check_if_inside_cluster():
     """
         Check if current code is being run inside a cluster.
     """
-    if environ.get('ISRIVANNA') == 1:
+    if environ.get('ISRIVANNA') == "1":
         return True
     return False
