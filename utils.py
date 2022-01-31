@@ -1,5 +1,6 @@
 import torch as ch
 import numpy as np
+from os import environ
 from collections import OrderedDict
 import torch.nn as nn
 import torch.optim as optim
@@ -1673,36 +1674,33 @@ def wrap_data_for_act_meta_clf(models_pos, models_neg,
     np_x = prepare_batched_data(neg_w)
     X = [ch.cat((x, y), 0) for x, y in zip(pp_x, np_x)]
     Y = ch.cat((pos_labels, neg_labels))
-    return X, Y.float()
+    return X, Y.cuda().float()
 
 
 def coordinate_descent(models_train, models_val,
                        models_test, dims, reduction_dims,
                        get_activation_fn,
-                       sample_shape, n_samples,
-                       meta_train_args,
+                       n_samples, meta_train_args,
                        gen_optimal_fn, seed_data=None,
-                       n_times=10, **kwargs):
+                       n_times=10):
     """
-        Coordinate descent- optimize to find good data points, followed by
-        training of meta-classifier model.
-        Parameters:
-            models_train: Tuple of (pos, neg) models to train.
-            models_test: Tuple of (pos, neg) models to test.
-            dims: Dimensions of feature activations.
-            reduction_dims: Dimensions for meta-classifier internal models.
-            gen_optimal_fn: Function that generates optimal data points.
-            seed_data: Seed data to get activations for. If None (default),
-                generate data before training meta-classifier.
-            n_times: Number of times to run gradient descent.
-            meta_train_args: Argument dict for meta-classifier training
-            kwargs: To be used when generating data.
+    Coordinate descent- optimize to find good data points, followed by
+    training of meta-classifier model.
+    Parameters:
+        models_train: Tuple of (pos, neg) models to train.
+        models_test: Tuple of (pos, neg) models to test.
+        dims: Dimensions of feature activations.
+        reduction_dims: Dimensions for meta-classifier internal models.
+        gen_optimal_fn: Function that generates optimal data points.
+        seed_data: Seed data to get activations for. If None (default),
+            generate data before training meta-classifier.
+        n_times: Number of times to run gradient descent.
+        meta_train_args: Argument dict for meta-classifier training
     """
     # Generate data if not provided
     if seed_data is None:
         seed_data = gen_optimal_fn(
-            models_train[0], models_train[1],
-            sample_shape, n_samples, **kwargs)
+            models_train[0], models_train[1], None)
 
     # Define meta-classifier model
     metamodel = ActivationMetaClassifier(
@@ -1712,6 +1710,8 @@ def coordinate_descent(models_train, models_val,
     metamodel = ch.nn.DataParallel(metamodel)
 
     best_clf, best_tacc = None, 0
+    val_data = None
+    all_accs = []
     for i in range(n_times):
         # Get activations for data
         X_tr, Y_tr = wrap_data_for_act_meta_clf(
@@ -1732,6 +1732,7 @@ def coordinate_descent(models_train, models_val,
                     batch_size=meta_train_args['batch_size'],
                     val_data=val_data, combined=True,
                     eval_every=10, gpu=True)
+        all_accs.append(tacc)
 
         # Keep track of best model and latest model
         if tacc > best_tacc:
@@ -1740,10 +1741,16 @@ def coordinate_descent(models_train, models_val,
 
         # Generate new data starting from previous data
         seed_data = gen_optimal_fn(
-            models_train[0], models_train[1],
-            sample_shape, n_samples,
-            use_normal=seed_data,
-            **kwargs)
+            models_train[0], models_train[1], seed_data)
 
     # Return best and latest models
-    return (best_tacc, best_clf), (tacc, clf)
+    return (best_tacc, best_clf), (tacc, clf), all_accs
+
+
+def check_if_inside_cluster():
+    """
+        Check if current code is being run inside a cluster.
+    """
+    if environ.get('ISRIVANNA') == 1:
+        return True
+    return False

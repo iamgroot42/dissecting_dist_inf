@@ -10,6 +10,7 @@ from sklearn.neural_network._base import ACTIVATIONS
 
 # BASE_MODELS_DIR = '/u/pdz6an/git/census/50_50_new'
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
+ACTIVATION_DIMS = [32, 16, 8, 1]
 
 
 class PortedMLPClassifier(nn.Module):
@@ -26,21 +27,29 @@ class PortedMLPClassifier(nn.Module):
         ]
         self.layers = nn.Sequential(*layers)
 
-    def forward(self, x: ch.Tensor, latent: int = None):
-        if latent is None:
+    def forward(self, x: ch.Tensor, latent: int = None, get_all: bool = False):
+        if latent is None and not get_all:
             return self.layers(x)
 
-        if latent not in [0, 1, 2]:
+        if latent not in [0, 1, 2] and not get_all:
             raise ValueError("Invald interal layer requested")
 
-        # First three hidden layers correspond to outputs of
-        # Model layers 1, 3, 5
-        latent = (latent * 2) + 1
+        if latent is not None:
+            # First three hidden layers correspond to outputs of
+            # Model layers 1, 3, 5
+            latent = (latent * 2) + 1
+        valid_for_all = [1, 3, 5, 6]
 
+        latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)
+            # Append activations for all layers (post-activation only)
+            if get_all and i in valid_for_all:
+                latents.append(x.detach())
             if i == latent:
                 return x
+
+        return latents
 
 
 def port_mlp_to_ch(clf):
@@ -59,6 +68,14 @@ def port_mlp_to_ch(clf):
 
     nn_model = nn_model.cuda()
     return nn_model
+
+
+def convert_to_torch(clfs):
+    """
+        Port given list of MLPClassifier models to
+        PyTorch models
+    """
+    return np.array([port_mlp_to_ch(clf) for clf in clfs], dtype=object)
 
 
 def layer_output(data, MLP, layer=0, get_all=False):

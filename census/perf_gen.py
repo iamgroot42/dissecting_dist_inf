@@ -1,4 +1,4 @@
-from model_utils import get_models, get_models_path, port_mlp_to_ch
+from model_utils import get_models, get_models_path, convert_to_torch
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import numpy as np
 from utils import get_threshold_pred, find_threshold_pred, flash_utils
@@ -6,13 +6,6 @@ from tqdm import tqdm
 import torch as ch
 import os
 import random
-
-
-def convert_to_torch(clfs):
-    nn_models = []
-    for clf in tqdm(clfs, desc="Porting to PyTorch models"):
-        nn_models.append(port_mlp_to_ch(clf))
-    return nn_models
 
 
 def get_differences(models, x_use, latent_focus, reduce=True):
@@ -66,7 +59,7 @@ def get_preds(data, models):
 def gen_optimal(m1, m2, sample_shape, n_samples,
                 n_steps, step_size, latent_focus,
                 use_normal=None, constrained=False,
-                model_ratio=1.0):
+                model_ratio=1.0, verbose=True):
     # Generate set of query points such that
     # Their outputs (or simply activations produced by model)
     # Help an adversary differentiate between models
@@ -80,8 +73,10 @@ def gen_optimal(m1, m2, sample_shape, n_samples,
 
     x_rand_data_start = x_rand_data.clone().detach()
 
-    iterator = tqdm(range(n_steps))
-    # Focus on latent=4 for now
+    iterator = range(n_steps)
+    if verbose:
+        iterator = tqdm(iterator)
+
     for i in iterator:
         x_rand = ch.autograd.Variable(x_rand_data.clone(), requires_grad=True)
 
@@ -123,15 +118,17 @@ def gen_optimal(m1, m2, sample_shape, n_samples,
                 preds_o = reprs2 > 0.5
                 # Count mismatch in predictions
                 n_mismatch = ch.mean(1.0*preds_z)-ch.mean(1.0*preds_o)
-                iterator.set_description(
-                    "Loss: %.4f | Mean diff in pred: %.4f" % (loss.item(), n_mismatch))
+                if verbose:
+                    iterator.set_description(
+                        "Loss: %.4f | Mean diff in pred: %.4f" % (loss.item(), n_mismatch))
             else:
                 zero_acts = ch.sum(1. * (reprs1 > 0), 2)
                 one_acts = ch.sum(1. * (reprs2 > 0), 2)
                 l1 = ch.mean((const - reprs_z) ** 2)
                 l2 = ch.mean((const_neg + reprs_o) ** 2)
-                iterator.set_description("Loss: %.3f | ZA: %.1f | OA: %.1f | Loss(1): %.3f | Loss(2): %.3f" % (
-                    loss.item(), zero_acts.mean(), one_acts.mean(), l1, l2))
+                if verbose:
+                    iterator.set_description("Loss: %.3f | ZA: %.1f | OA: %.1f | Loss(1): %.3f | Loss(2): %.3f" % (
+                        loss.item(), zero_acts.mean(), one_acts.mean(), l1, l2))
 
         with ch.no_grad():
             x_intermediate = x_rand_data - step_size * grad[0]
@@ -152,14 +149,15 @@ def gen_optimal(m1, m2, sample_shape, n_samples,
     return x_rand.clone().detach(), (l1 + l2).item()
 
 
-def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
+def generate_data(X_train_1, X_train_2, ratio, args,
+                  shuffle=True, verbose=True, seed_data=None):
     # Prepare data wrappers
     ds = CensusWrapper(
         filter_prop=args.filter,
         ratio=float(ratio), split="adv")
 
     # Fetch test data from ratio, convert to Tensor
-    _, (x_te, _), _ = ds.load_data(custom_limit=10000)
+    _, (x_te, _), _ = ds.load_data(custom_limit=int(args.n_samples // 4))
     x_te = ch.from_numpy(x_te)
 
     if args.use_normal:
@@ -179,10 +177,21 @@ def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
             normal_data = ordered_samples(
                 X_train_1, X_train_2, test_loader, args)
             print("Starting with natural data")
+        elif seed_data is not None:
+            # Use seed data as normal data
+            normal_data = seed_data
 
         x_opt, losses = [], []
-        for i in range(args.n_samples):
-            print('Gradient ascent')
+        iterator = range(args.n_samples)
+        if not verbose:
+            # Not verbose for each datapoint- be verbose on overall
+            # generation instead
+            iterator = tqdm(iterator)
+        for i in iterator:
+            if verbose:
+                print('Gradient ascent')
+
+            normal_data_condition = (args.use_normal and args.use_natural) or (seed_data is not None)
             # Get optimal point based on local set
             if args.r2 == 1.0:
                 x_opt_, loss_ = gen_optimal(
@@ -191,9 +200,10 @@ def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
                     args.steps, args.step_size,
                     args.latent_focus,
                     use_normal=normal_data[i:i +
-                                           1].cuda() if (args.use_normal or args.start_natural) else None,
+                                           1].cuda() if normal_data_condition else None,
                     constrained=args.constrained,
-                    model_ratio=args.r)
+                    model_ratio=args.r,
+                    verbose=verbose)
             else:
                 random.shuffle(X_train_1)
                 random.shuffle(X_train_2)
@@ -204,11 +214,15 @@ def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
                     args.steps, args.step_size,
                     args.latent_focus,
                     use_normal=normal_data[i:i +
-                                           1] if (args.use_normal or args.start_natural) else None,
+                                           1] if normal_data_condition else None,
                     constrained=args.constrained,
-                    model_ratio=args.r)
+                    model_ratio=args.r,
+                    verbose=verbose)
             x_opt.append(x_opt_)
             losses.append(loss_)
+
+            if not verbose:
+                iterator.set_description("Loss: %.3f" % np.mean(losses))
 
         if args.use_best:
             best_id = np.argmin(losses)
@@ -218,7 +232,6 @@ def generate_data(X_train_1, X_train_2, ratio, args, shuffle=True):
         #x_opt = normal_data
 
     x_use = x_opt
-    x_use = x_use.cuda()
     return x_use.cpu()
 
 
@@ -275,7 +288,7 @@ if __name__ == "__main__":
         "adv", args.filter, args.ratio_2),
         n_models=n_models_per_dist, shuffle=True)
 
-    # Try converting to Torch model
+    # Convert to PyTorch models
     X_train_1 = convert_to_torch(X_train_1)
     X_train_2 = convert_to_torch(X_train_2)
 

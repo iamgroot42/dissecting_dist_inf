@@ -9,8 +9,11 @@ import pandas as pd
 from utils import worker_init_fn
 
 
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba"
-# BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/"
+if utils.check_if_inside_cluster():
+    BASE_DATA_DIR = "/scratch/as9rw/data/celeba"
+else:
+    BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba"
+
 PRESERVE_PROPERTIES = ['Smiling', 'Young', 'Male', 'Attractive']
 SUPPORTED_PROPERTIES = [
     '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',

@@ -124,4 +124,4 @@ if add_legend:
 # Make sure axis label not cut off
 plt.tight_layout()
 
-sns_plot.figure.savefig("./meta_boxplot.pdf")
+sns_plot.figure.savefig("./plots/meta_boxplot.pdf")

@@ -24,6 +24,8 @@ if __name__ == "__main__":
                         help='use data augmentations when training models?')
     parser.add_argument('--adv_train', action="store_true",
                         help='use adversarial training?')
+    parser.add_argument('--adv_name', required=True,
+                        help='folder name for storing adversarially trained models')
     parser.add_argument('--task', default="Smiling",
                         choices=SUPPORTED_PROPERTIES,
                         help='task to focus on')
@@ -76,4 +78,4 @@ if __name__ == "__main__":
     save_model(model, args.split, args.filter, str(
         args.ratio), save_name, dataparallel=args.parallel,
         is_adv=args.adv_train,
-        adv_folder_name="adv_train_8")
+        adv_folder_name=args.adv_name)

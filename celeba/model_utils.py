@@ -4,10 +4,13 @@ import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
 from sklearn.preprocessing import normalize
-from utils import ensure_dir_exists, get_weight_layers, FakeReluWrapper, BasicWrapper
+from utils import check_if_inside_cluster, ensure_dir_exists, get_weight_layers, FakeReluWrapper, BasicWrapper
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_celeba/75_25"
+if check_if_inside_cluster():
+    BASE_MODELS_DIR = "/scratch/as9rw/models_celeba/75_25"
+else:
+    BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_celeba/75_25"
 
 
 class MyAlexNet(nn.Module):
