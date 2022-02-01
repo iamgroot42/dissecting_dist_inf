@@ -40,6 +40,7 @@ if __name__ == "__main__":
     if check_if_exists(args.name, args.ratio, args.filter,
                        args.split, args.adv_train, args.adv_name):
         print("Already trained model exists. Skipping training.")
+        exit(0)
 
     # CelebA dataset
     ds = CelebaWrapper(args.filter, args.ratio,

@@ -3,13 +3,17 @@ from tqdm import tqdm
 import torch as ch
 import torch.nn as nn
 import os
+from utils import check_if_inside_cluster
 from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
 
 # BASE_MODELS_DIR = '/u/pdz6an/git/census/50_50_new'
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
+if check_if_inside_cluster():
+    BASE_MODELS_DIR = "/scratch/as9rw/models_census/50_50_new"
+else:
+    BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_census/50_50_new"
 ACTIVATION_DIMS = [32, 16, 8, 1]
 
 
@@ -27,7 +31,17 @@ class PortedMLPClassifier(nn.Module):
         ]
         self.layers = nn.Sequential(*layers)
 
-    def forward(self, x: ch.Tensor, latent: int = None, get_all: bool = False):
+    def forward(self, x: ch.Tensor,
+                latent: int = None,
+                get_all: bool = False,
+                detach_before_return: bool = True):
+        """
+        Args:
+            x: Input tensor of shape (batch_size, 42)
+            latent: If not None, return only the latent representation. Else, get requested latent layer's output
+            get_all: If True, return all activations
+            detach_before_return: If True, detach the latent representation before returning it
+        """
         if latent is None and not get_all:
             return self.layers(x)
 
@@ -45,7 +59,10 @@ class PortedMLPClassifier(nn.Module):
             x = layer(x)
             # Append activations for all layers (post-activation only)
             if get_all and i in valid_for_all:
-                latents.append(x.detach())
+                if detach_before_return:
+                    latents.append(x.detach())
+                else:
+                    latents.append(x)
             if i == latent:
                 return x
 

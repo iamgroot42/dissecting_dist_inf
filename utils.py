@@ -921,9 +921,12 @@ def get_outputs(model, X, no_grad=False):
     return outputs[:, 0]
 
 
-def prepare_batched_data(X, reduce=False):
+def prepare_batched_data(X, reduce=False, verbose=True):
     inputs = [[] for _ in range(len(X[0]))]
-    for x in tqdm(X, desc="Batching data"):
+    iterator = X
+    if verbose:
+        iterator = tqdm(iterator, desc="Batching data")
+    for x in iterator:
         for i, l in enumerate(x):
             inputs[i].append(l)
 
@@ -1661,18 +1664,20 @@ def align_all_features(reference_point, features):
     return np.array(aligned_features, dtype=object)
 
 
-def wrap_data_for_act_meta_clf(models_pos, models_neg,
+def wrap_data_for_act_meta_clf(models_neg, models_pos,
                                data, get_activation_fn,
-                               detach=True):
+                               detach: bool = True):
     """
         Given models from two different distributions, get their
         activations on given data and activation-extraction function, and
         combine them into data-label format for a meta-classifier.
     """
-    pos_w, pos_labels, _ = get_activation_fn(models_pos, data, 0, detach)
-    neg_w, neg_labels, _ = get_activation_fn(models_neg, data, 1, detach)
-    pp_x = prepare_batched_data(pos_w)
-    np_x = prepare_batched_data(neg_w)
+    neg_w, neg_labels, _ = get_activation_fn(
+        models_pos, data, 1, detach, verbose=False)
+    pos_w, pos_labels, _ = get_activation_fn(
+        models_neg, data, 0, detach, verbose=False)
+    pp_x = prepare_batched_data(pos_w, verbose=False)
+    np_x = prepare_batched_data(neg_w, verbose=False)
     X = [ch.cat((x, y), 0) for x, y in zip(pp_x, np_x)]
     Y = ch.cat((pos_labels, neg_labels))
     return X, Y.cuda().float()
@@ -1682,7 +1687,7 @@ def coordinate_descent(models_train, models_val,
                        models_test, dims, reduction_dims,
                        get_activation_fn,
                        n_samples, meta_train_args,
-                       gen_optimal_fn, seed_data=None,
+                       gen_optimal_fn, seed_data,
                        n_times=10):
     """
     Coordinate descent- optimize to find good data points, followed by
@@ -1693,8 +1698,7 @@ def coordinate_descent(models_train, models_val,
         dims: Dimensions of feature activations.
         reduction_dims: Dimensions for meta-classifier internal models.
         gen_optimal_fn: Function that generates optimal data points.
-        seed_data: Seed data to get activations for. If None (default),
-            generate data before training meta-classifier.
+        seed_data: Seed data to get activations for.
         n_times: Number of times to run gradient descent.
         meta_train_args: Argument dict for meta-classifier training
     """
@@ -1720,6 +1724,8 @@ def coordinate_descent(models_train, models_val,
                 models_val[0], models_val[1], seed_data, get_activation_fn)
 
         # Train meta-classifier for a few epochs
+        # Make sure meta-classifier is in train mode
+        metamodel.train()
         clf, tacc = train_meta_model(
                     metamodel,
                     (X_tr, Y_tr), (X_te, Y_te),
@@ -1738,7 +1744,7 @@ def coordinate_descent(models_train, models_val,
 
         # Generate new data starting from previous data
         seed_data = gen_optimal_fn(metamodel,
-                                   X_tr[Y_tr == 0], X_tr[Y_tr == 1],
+                                   models_train[0], models_train[1],
                                    seed_data, get_activation_fn)
 
     # Return best and latest models

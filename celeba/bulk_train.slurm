@@ -28,4 +28,8 @@
 # Time limit (go for max allowed: 3 days for GPU)
 #SBATCH --time=3-00:00:00
 
+# Output file paths
+#SBATCH --output=logs/%x-%j.out
+#SBATCH --error=logs/%x-%j.err
+
 CUDA_VISIBLE_DEVICES=0 knocky bash bulk_train.sh $SPLIT $RATIO
