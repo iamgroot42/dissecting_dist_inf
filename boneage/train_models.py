@@ -1,6 +1,5 @@
 from model_utils import BoneModel, BoneFullModel, save_model, check_if_exists
 from data_utils import BoneWrapper, get_df, get_features
-import os
 import utils
 
 
@@ -83,7 +82,8 @@ if __name__ == "__main__":
                                   verbose=args.verbose)
 
         # Save model
-        save_model(model, args.split, "%d_%.3f.pth" %
+        save_model(model, args.split, args.ratio,
+                   "%d_%.3f.pth" %
                    (i+1, vacc),
                    full_model=args.full_model)
 

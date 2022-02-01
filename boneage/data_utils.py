@@ -8,7 +8,11 @@ import os
 import utils
 
 
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/rsnabone/data"
+if utils.check_if_inside_cluster():
+    BASE_DATA_DIR = "/scratch/as9rw/datasets/rsnabone/data"
+else:
+    BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/rsnabone/data"
+SUPPORTED_RATIOS = ["0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"]
 
 
 class BoneDataset(Dataset):

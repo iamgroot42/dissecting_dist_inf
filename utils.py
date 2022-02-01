@@ -1662,14 +1662,15 @@ def align_all_features(reference_point, features):
 
 
 def wrap_data_for_act_meta_clf(models_pos, models_neg,
-                               data, get_activation_fn):
+                               data, get_activation_fn,
+                               detach=True):
     """
         Given models from two different distributions, get their
         activations on given data and activation-extraction function, and
         combine them into data-label format for a meta-classifier.
     """
-    pos_w, pos_labels, _ = get_activation_fn(models_pos, data, 0)
-    neg_w, neg_labels, _ = get_activation_fn(models_neg, data, 1)
+    pos_w, pos_labels, _ = get_activation_fn(models_pos, data, 0, detach)
+    neg_w, neg_labels, _ = get_activation_fn(models_neg, data, 1, detach)
     pp_x = prepare_batched_data(pos_w)
     np_x = prepare_batched_data(neg_w)
     X = [ch.cat((x, y), 0) for x, y in zip(pp_x, np_x)]
@@ -1697,10 +1698,6 @@ def coordinate_descent(models_train, models_val,
         n_times: Number of times to run gradient descent.
         meta_train_args: Argument dict for meta-classifier training
     """
-    # Generate data if not provided
-    if seed_data is None:
-        seed_data = gen_optimal_fn(
-            models_train[0], models_train[1], None)
 
     # Define meta-classifier model
     metamodel = ActivationMetaClassifier(
@@ -1740,8 +1737,9 @@ def coordinate_descent(models_train, models_val,
             best_clf = clf
 
         # Generate new data starting from previous data
-        seed_data = gen_optimal_fn(
-            models_train[0], models_train[1], seed_data)
+        seed_data = gen_optimal_fn(metamodel,
+                                   X_tr[Y_tr == 0], X_tr[Y_tr == 1],
+                                   seed_data, get_activation_fn)
 
     # Return best and latest models
     return (best_tacc, best_clf), (tacc, clf), all_accs

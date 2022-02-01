@@ -256,3 +256,17 @@ def get_model_features(model_dir, max_read=None,
     if focus in ["all", "combined"]:
         return (dims_conv, dims_fc), vecs
     return dims, vecs
+
+
+# Check with this model number exists
+def check_if_exists(model_id, ratio, filter, split, is_adv, adv_folder_name):
+    # Get folder of models to check
+    if is_adv:
+        subfolder_prefix = os.path.join(split, filter, ratio, adv_folder_name)
+    else:
+        subfolder_prefix = os.path.join(split, filter, ratio)
+    model_check_path = os.path.join(BASE_MODELS_DIR, subfolder_prefix)
+    for model_name in os.listdir(model_check_path):
+        if ("%d_" % model_id) in model_name:
+            return True
+    return False

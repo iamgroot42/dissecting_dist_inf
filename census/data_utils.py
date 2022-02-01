@@ -6,8 +6,12 @@ import pandas as pd
 import os
 from tqdm import tqdm
 
-# BASE_DATA_DIR = "/u/pdz6an/git/census"
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
+
+if utils.check_if_inside_cluster():
+    BASE_DATA_DIR = "/scratch/as9rw/datasets/census"
+else:
+    BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census"
+
 SUPPORTED_PROPERTIES = ["sex", "race", "none",
                         "bothfw", "bothmw", "bothfn", "bothmn", "two_attr"]
 PROPERTY_FOCUS = {"sex": "Female", "race": "White", "bothfw": "both f and w",

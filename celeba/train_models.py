@@ -1,5 +1,5 @@
 import numpy as np
-from model_utils import create_model, save_model
+from model_utils import create_model, save_model, check_if_exists
 from data_utils import SUPPORTED_PROPERTIES, CelebaWrapper
 from utils import flash_utils, train, extract_adv_params
 
@@ -36,6 +36,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     flash_utils(args)
 
+    # Check if model exists- skip if it does
+    if check_if_exists(args.name, args.ratio, args.filter,
+                       args.split, args.adv_train, args.adv_name):
+        print("Already trained model exists. Skipping training.")
+
     # CelebA dataset
     ds = CelebaWrapper(args.filter, args.ratio,
                        args.split, augment=args.augment,
@@ -52,7 +57,6 @@ if __name__ == "__main__":
         eps = 2 * args.eps
         norm = np.inf
         nb_iter = 7
-        # Adv acc seems to be too high- investigate what's going on
         adv_params = extract_adv_params(
             eps=eps, eps_iter=(2.5 * eps / nb_iter), nb_iter=nb_iter,
             norm=norm, random_restarts=1,
