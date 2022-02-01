@@ -262,9 +262,9 @@ def get_model_features(model_dir, max_read=None,
 def check_if_exists(model_id, ratio, filter, split, is_adv, adv_folder_name):
     # Get folder of models to check
     if is_adv:
-        subfolder_prefix = os.path.join(split, filter, ratio, adv_folder_name)
+        subfolder_prefix = os.path.join(split, filter, str(ratio), adv_folder_name)
     else:
-        subfolder_prefix = os.path.join(split, filter, ratio)
+        subfolder_prefix = os.path.join(split, filter, str(ratio))
     model_check_path = os.path.join(BASE_MODELS_DIR, subfolder_prefix)
     for model_name in os.listdir(model_check_path):
         if ("%d_" % model_id) in model_name:
