@@ -5,11 +5,14 @@ import numpy as np
 from tqdm import tqdm
 import torch.nn.utils.prune as prune
 from torchvision.models import densenet121
-from utils import get_weight_layers, ensure_dir_exists, BasicWrapper, FakeReluWrapper
+from utils import get_weight_layers, ensure_dir_exists, BasicWrapper, FakeReluWrapper, check_if_inside_cluster
 import os
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_boneage/"
+if check_if_inside_cluster():
+    BASE_MODELS_DIR = "/scratch/as9rw/models_boneage/"
+else:
+    BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_boneage/"
 
 
 class BoneModel(nn.Module):
@@ -47,7 +50,7 @@ class BoneModel(nn.Module):
             return self.layers(x)
 
         if latent not in [0, 1]:
-            raise ValueError("Invald interal layer requested")
+            raise ValueError("Invalid interal layer requested")
 
         # First, second hidden layers correspond to outputs of
         # Model layers 1, 3
@@ -79,11 +82,10 @@ class BoneFullModel(nn.Module):
 
 
 # Save model in specified directory
-def save_model(model, split, prop_and_name, full_model=False):
+def save_model(model, split, ratio, prop_and_name, full_model=False):
+    subfolder_prefix = os.path.join(split, ratio)
     if full_model:
-        subfolder_prefix = os.path.join(split, "full")
-    else:
-        subfolder_prefix = split
+        subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
     # Make sure directory exists
     ensure_dir_exists(os.path.join(BASE_MODELS_DIR, subfolder_prefix))
@@ -94,8 +96,12 @@ def save_model(model, split, prop_and_name, full_model=False):
 
 # Load model from given directory
 def load_model(path: str, fake_relu: bool = False,
-               latent_focus: int = None, cpu: bool = False):
-    model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
+               latent_focus: int = None, cpu: bool = False,
+               full_model: bool = False):
+    if full_model:
+        model = BoneFullModel(fake_relu=fake_relu, latent_focus=latent_focus)
+    else:
+        model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
     if cpu:
         model.load_state_dict(ch.load(path))
     else:
@@ -106,7 +112,9 @@ def load_model(path: str, fake_relu: bool = False,
 
 
 # Get model path, given perameters
-def get_model_folder_path(split, ratio):
+def get_model_folder_path(split, ratio, full_model=False):
+    if full_model:
+        return os.path.join(BASE_MODELS_DIR, split, "full", ratio)
     return os.path.join(BASE_MODELS_DIR, split, ratio)
 
 
