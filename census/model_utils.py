@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+from typing import List
 import torch as ch
 import torch.nn as nn
 import os
@@ -34,13 +35,15 @@ class PortedMLPClassifier(nn.Module):
     def forward(self, x: ch.Tensor,
                 latent: int = None,
                 get_all: bool = False,
-                detach_before_return: bool = True):
+                detach_before_return: bool = True,
+                on_cpu: bool = False):
         """
         Args:
             x: Input tensor of shape (batch_size, 42)
             latent: If not None, return only the latent representation. Else, get requested latent layer's output
             get_all: If True, return all activations
             detach_before_return: If True, detach the latent representation before returning it
+            on_cpu: If True, return the latent representation on CPU
         """
         if latent is None and not get_all:
             return self.layers(x)
@@ -60,11 +63,20 @@ class PortedMLPClassifier(nn.Module):
             # Append activations for all layers (post-activation only)
             if get_all and i in valid_for_all:
                 if detach_before_return:
-                    latents.append(x.detach())
+                    if on_cpu:
+                        latents.append(x.detach().cpu())
+                    else:
+                        latents.append(x.detach())
                 else:
-                    latents.append(x)
+                    if on_cpu:
+                        latents.append(x.cpu())
+                    else:
+                        latents.append(x)
             if i == latent:
-                return x
+                if on_cpu:
+                    return x.cpu()
+                else:
+                    return x
 
         return latents
 
@@ -176,3 +188,30 @@ def get_models_path(property, split, value=None):
     if value is None:
         return os.path.join(BASE_MODELS_DIR, property, split)
     return os.path.join(BASE_MODELS_DIR,  property, split, value)
+
+
+def get_model_activation_representations(
+        models: List[PortedMLPClassifier],
+        data, label, detach: bool = True,
+        verbose: bool = True):
+    w = []
+    iterator = models
+    if verbose:
+        iterator = tqdm(iterator)
+    for model in iterator:
+        activations = model(data, get_all=True,
+                            detach_before_return=detach)
+        # Skip last feature (logit)
+        activations = activations[:-1]
+
+        w.append([act.float() for act in activations])
+    labels = np.array([label] * len(w))
+    labels = ch.from_numpy(labels)
+
+    # Make numpy object (to support sequence-based indexing)
+    w = np.array(w, dtype=object)
+
+    # Get dimensions of feature representations
+    dims = [x.shape[1] for x in w[0]]
+
+    return w, labels, dims

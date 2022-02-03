@@ -62,6 +62,16 @@ if __name__ == "__main__":
     parser.add_argument('--ratio_1', help="ratios for D_1")
     parser.add_argument('--ratio_2', help="ratios for D_2")
     parser.add_argument('--total_models', type=int, default=100)
+    parser.add_argument('--adv_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for adv")
+    parser.add_argument('--victim_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for victim")
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")
     args = parser.parse_args()
@@ -70,11 +80,28 @@ if __name__ == "__main__":
     ch.cuda.set_device(3)
 
     # Load victim models
+    train_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.ratio_1))
+    train_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.ratio_2))
+    test_dir_1 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.ratio_1))
+    test_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.ratio_2))
+
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+        train_dir_1 = os.path.join(train_dir_1, args.adv_adv_prefix)
+        train_dir_2 = os.path.join(train_dir_2, args.adv_adv_prefix)
+
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
+        test_dir_1 = os.path.join(test_dir_1, args.victim_adv_prefix)
+        test_dir_2 = os.path.join(test_dir_2, args.victim_adv_prefix)
+
     print("Loading models")
-    models_victim_1 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_1))
-    models_victim_2 = get_models(os.path.join(
-        BASE_MODELS_DIR, "victim", args.filter, args.ratio_2))
+    models_victim_1 = get_models(test_dir_1)
+    models_victim_2 = get_models(test_dir_2)
 
     # Load adv models
     total_models = args.total_models
@@ -111,10 +138,8 @@ if __name__ == "__main__":
         adv_thresholds = []
         yg = [[], []]
         # Load adv models
-        models_1 = get_models(os.path.join(
-            BASE_MODELS_DIR, "adv", args.filter, args.ratio_1), total_models // 2)
-        models_2 = get_models(os.path.join(
-            BASE_MODELS_DIR, "adv", args.filter, args.ratio_2), total_models // 2)
+        models_1 = get_models(train_dir_1, total_models // 2)
+        models_2 = get_models(train_dir_2, total_models // 2)
 
         pv1, pv2 = [[], []], [[], []]
         p1 = [get_preds(loaders[0], models_1), get_preds(loaders[1], models_1)]

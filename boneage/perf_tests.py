@@ -1,22 +1,20 @@
 from model_utils import load_model, get_model_folder_path
-from data_utils import BoneWrapper, get_df, get_features
+from data_utils import BoneWrapper, get_df, get_features, SUPPORTED_RATIOS
 import torch.nn as nn
 import numpy as np
 import utils
 from tqdm import tqdm
 import os
 from scipy.stats import norm
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
 
 
-def get_models(folder_path, n_models=1000):
+def get_models(folder_path, n_models: int = 1000, full_model: bool = False):
     paths = np.random.permutation(os.listdir(folder_path))[:n_models]
 
     models = []
     for mpath in tqdm(paths):
-        model = load_model(os.path.join(folder_path, mpath))
+        model = load_model(os.path.join(folder_path, mpath),
+                           full_model=full_model)
         models.append(model)
     return models
 
@@ -40,8 +38,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, default=256*32)
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
-    parser.add_argument('--ratio_2', help="ratio for D_2")
-    parser.add_argument('--plot', action="store_true")
+    parser.add_argument('--ratio_2', help="ratio for D_2", required=True,
+                        choices=SUPPORTED_RATIOS)
+    parser.add_argument('--victim_full', action="store_true",
+                        help="Use full BoneAge Densenet models for victim models")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -71,10 +71,22 @@ if __name__ == "__main__":
         ds_1.get_loaders(args.batch_size, shuffle=False)[1],
         ds_2.get_loaders(args.batch_size, shuffle=False)[1]
     ]
+    # If victim model is full, get image-level dataset for same df
+    if args.victim_full:
+        ds_1_full = BoneWrapper(df_1, df_1)
+        ds_2_full = BoneWrapper(df_2, df_2)
+        loaders_full = [
+            ds_1_full.get_loaders(80, shuffle=False)[1],
+            ds_2_full.get_loaders(80, shuffle=False)[1]
+        ]
 
     # Load victim models
-    models_victim_1 = get_models(get_model_folder_path("victim", args.ratio_1))
-    models_victim_2 = get_models(get_model_folder_path("victim", args.ratio_2))
+    models_victim_1 = get_models(get_model_folder_path(
+        "victim", args.ratio_1, full_model=args.victim_full),
+        full_model=args.victim_full)
+    models_victim_2 = get_models(get_model_folder_path(
+        "victim", args.ratio_2, full_model=args.victim_full),
+        full_model=args.victim_full)
 
     # Load adv models
     total_models = 100
@@ -85,7 +97,7 @@ if __name__ == "__main__":
 
     allaccs_1, allaccs_2 = [], []
     vic_accs, adv_accs = [], []
-    for loader in loaders:
+    for i, loader in enumerate(loaders):
         accs_1 = get_accs(loader, models_1)
         accs_2 = get_accs(loader, models_2)
 
@@ -99,8 +111,12 @@ if __name__ == "__main__":
         adv_accs.append(tracc)
 
         # Compute accuracies on this data for victim
-        accs_victim_1 = get_accs(loader, models_victim_1)
-        accs_victim_2 = get_accs(loader, models_victim_2)
+        if args.victim_full:
+            accs_victim_1 = get_accs(loaders_full[i], models_victim_1)
+            accs_victim_2 = get_accs(loaders_full[i], models_victim_2)
+        else:
+            accs_victim_1 = get_accs(loader, models_victim_1)
+            accs_victim_2 = get_accs(loader, models_victim_2)
 
         # Look at [0, 100]
         accs_victim_1 *= 100
@@ -139,8 +155,3 @@ if __name__ == "__main__":
     # and pick the better one
     print("Threshold-Test accuracy: %.3f" %
           (100 * vic_accs[np.argmax(adv_accs)]))
-
-    if args.plot:
-        plt.plot(np.arange(len(accs_1)), np.sort(accs_1))
-        plt.plot(np.arange(len(accs_2)), np.sort(accs_2))
-        plt.savefig("./quick_see.png")

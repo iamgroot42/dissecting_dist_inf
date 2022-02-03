@@ -214,7 +214,7 @@ if __name__ == "__main__":
                         help="Use lowest-loss example instead of all of them")
     parser.add_argument('--upscale', type=int,
                         default=1, help="optimize and upscale")
-    parser.add_argument('--clamp', 
+    parser.add_argument('--clamp',
                         action="store_true", help="clamp data when generating")
     parser.add_argument('--use_natural', action="store_true",
                         help="Pick from actual images")
@@ -226,9 +226,18 @@ if __name__ == "__main__":
                         default=1.0, help="step-random, ratio of model to use to generate samples")
     parser.add_argument('--r2', type=float,
                         default=1.0, help="step-fixed,ratio of model to use to generate samples each datum")
+    parser.add_argument('--adv_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for adv")
+    parser.add_argument('--victim_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for victim")
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")
     args = parser.parse_args()
     flash_utils(args)
-
 
     if args.use_natural:
         latent_focus = None
@@ -236,16 +245,26 @@ if __name__ == "__main__":
     else:
         latent_focus = args.latent_focus
         fake_relu = True
+
     train_dir_1 = os.path.join(
         BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.ratio_1))
     train_dir_2 = os.path.join(
         BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, args.ratio_2))
     test_dir_1 = os.path.join(
         BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.ratio_1))
-    test_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/%s/" %
-                              (args.filter, args.ratio_2))
-    print("Loading models")
+    test_dir_2 = os.path.join(
+        BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, args.ratio_2))
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+        train_dir_1 = os.path.join(train_dir_1, args.adv_adv_prefix)
+        train_dir_2 = os.path.join(train_dir_2, args.adv_adv_prefix)
 
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
+        test_dir_1 = os.path.join(test_dir_1, args.victim_adv_prefix)
+        test_dir_2 = os.path.join(test_dir_2, args.victim_adv_prefix)
+
+    print("Loading models")
     X_train_1 = get_all_models(
         train_dir_1, args.n_models, latent_focus, fake_relu,
         shuffle=True)

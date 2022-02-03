@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male",
-                        required=True, choices=SUPPORTED_PROPERTIES)
+                        choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--task', default="Smiling",
                         choices=SUPPORTED_PROPERTIES,
                         help='task to focus on')

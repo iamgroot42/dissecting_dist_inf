@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     for i in range(args.num):
         # Check if model exists- skip if it does
-        if check_if_exists(i+1, args.split, args.full_model):
+        if check_if_exists(i+1, args.split, args.ratio, args.full_model):
             continue
 
         df_train_processed = utils.heuristic(

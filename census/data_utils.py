@@ -80,13 +80,13 @@ class CensusIncome:
         return df
 
     # Return data with desired property ratios
-    def get_x_y(self,P):
-            # Scale X values
-            Y = P['income'].to_numpy()
-            X = P.drop(columns='income', axis=1)
-            cols = X.columns
-            X = X.to_numpy()
-            return (X.astype(float), np.expand_dims(Y, 1), cols)
+    def get_x_y(self, P):
+        # Scale X values
+        Y = P['income'].to_numpy()
+        X = P.drop(columns='income', axis=1)
+        cols = X.columns
+        X = X.to_numpy()
+        return (X.astype(float), np.expand_dims(Y, 1), cols)
 
     def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
 
@@ -216,7 +216,6 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
             a = x['sex:Female'] == 0
             b = x['race:White'] == 1
             return a & b
-        
     elif filter_prop =="bothfn":
         def lambda_fn(x): 
             a = x['sex:Female'] == 1
@@ -341,11 +340,10 @@ def heuristic2(df,  ratio1,ratio2, cwise_sample,class_imbalance=3.0,n_tries=100,
             iterator.set_description(
                 "r1:%.4f;r2:%.4f" % (vals[i][0],vals[i][1]))
 
-    
     # Pick the one closest to desired ratios
     picked_df = pckds[np.argmin(err)]
     return picked_df.reset_index(drop=True)
-    
+
 # Wrapper for easier access to dataset
 class CensusWrapper:
     def __init__(self, filter_prop="none", ratio=0.5, split="all"):
@@ -359,4 +357,3 @@ class CensusWrapper:
                                 prop_ratio=self.ratio,
                                 filter_prop=self.filter_prop,
                                 custom_limit=custom_limit)
-
