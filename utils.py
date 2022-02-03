@@ -609,12 +609,14 @@ class PermInvConvModel(nn.Module):
 
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims, inside_dims=[64, 8],
-                n_classes=2, dropout=0.5, only_latent=False):
+    def __init__(self, dims: List[int], inside_dims: List[int] = [64, 8],
+                 n_classes: int = 2, dropout: float = 0.5,
+                 only_latent: bool = False):
         super(PermInvModel, self).__init__()
         self.dims = dims
         self.dropout = dropout
         self.only_latent = only_latent
+        self.final_act_size = inside_dims[-1] * len(dims)
         self.layers = []
         prev_layer = 0
 
@@ -646,9 +648,9 @@ class PermInvModel(nn.Module):
 
         if not self.only_latent:
             # Final network to combine them all together
-            self.rho = nn.Linear(inside_dims[-1] * len(dims), n_classes)
+            self.rho = nn.Linear(self.final_act_size, n_classes)
 
-    def forward(self, params):
+    def forward(self, params) -> ch.Tensor:
         reps = []
         prev_layer_reps = None
         is_batched = len(params[0].shape) > 2
@@ -1183,8 +1185,12 @@ def compute_metrics(dataset_true, dataset_pred,
 @ch.no_grad()
 def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
               binary=True, regression=False, gpu=False,
-              combined=False):
+              combined=False, X_acts=None):
     model.eval()
+    use_acts = (X_acts is not None)
+    # Activations must be provided if not combined
+    assert (not use_acts) or (
+        combined), "Activations must be provided if not combined"
 
     # Batch data to fit on GPU
     loss, num_samples, running_acc = 0, 0, 0
@@ -1211,13 +1217,21 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
         # Model features stored as normal list
         else:
             param_batch = [x[i:i+batch_size] for x in X]
+            if use_acts:
+                acts_batch = X_acts[i:i+batch_size]
             if gpu:
                 param_batch = [a.cuda() for a in param_batch]
 
             if binary or regression:
-                outputs.append(model(param_batch)[:, 0])
+                if use_acts:
+                    outputs.append(model(param_batch, acts_batch)[:, 0])
+                else:
+                    outputs.append(model(param_batch)[:, 0])
             else:
-                outputs.append(model(param_batch))
+                if use_acts:
+                    outputs.append(model(param_batch, acts_batch))
+                else:
+                    outputs.append(model(param_batch))
 
         outputs = ch.cat(outputs, 0)
 
@@ -1239,8 +1253,18 @@ def train_meta_model(model, train_data, test_data,
                      binary=True, regression=False,
                      val_data=None, batch_size=1000,
                      gpu=False, combined=False,
-                     shuffle=True):
+                     shuffle=True, train_acts=None,
+                     test_acts=None, val_acts=None):
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
+
+    # Make sure both weights and activations available if val requested
+    assert (val_data is None) == (
+        val_acts is None), "Weights or activations for validation data must be provided"
+
+    use_acts = (train_acts is not None)
+    # Activations must be provided if not combined
+    assert (not use_acts) or (
+        combined), "Activations must be provided if not combined"
 
     if regression:
         loss_fn = nn.MSELoss()
@@ -1283,6 +1307,8 @@ def train_meta_model(model, train_data, test_data,
             else:
                 y = y[rp_tr]
                 params = [x[rp_tr] for x in params]
+            if use_acts:
+                train_acts = train_acts[rp_tr]
 
         # Batch data to fit on GPU
         running_acc, loss, num_samples = 0, 0, 0
@@ -1310,13 +1336,21 @@ def train_meta_model(model, train_data, test_data,
             # Model features stored as normal list
             else:
                 param_batch = [x[i:i+batch_size] for x in params]
+                if use_acts:
+                    acts_batch = train_acts[i:i+batch_size]
                 if gpu:
                     param_batch = [a.cuda() for a in param_batch]
 
                 if binary or regression:
-                    outputs.append(model(param_batch)[:, 0])
+                    if use_acts:
+                        outputs.append(model(param_batch, acts_batch)[:, 0])
+                    else:
+                        outputs.append(model(param_batch)[:, 0])
                 else:
-                    outputs.append(model(param_batch))
+                    if use_acts:
+                        outputs.append(model(param_batch, acts_batch))
+                    else:
+                        outputs.append(model(param_batch))
 
             outputs = ch.cat(outputs, 0)
 
@@ -1353,7 +1387,8 @@ def train_meta_model(model, train_data, test_data,
             v_acc, val_loss = test_meta(model, loss_fn, params_val,
                                         y_val, batch_size, acc_fn,
                                         binary=binary, regression=regression,
-                                        gpu=gpu, combined=combined)
+                                        gpu=gpu, combined=combined,
+                                        X_acts=val_acts)
             if val_loss < best_loss:
                 best_loss = val_loss
                 best_model = deepcopy(model)
@@ -1371,7 +1406,8 @@ def train_meta_model(model, train_data, test_data,
             t_acc, t_loss = test_meta(model, loss_fn, params_test,
                                       y_test, batch_size, acc_fn,
                                       binary=binary, regression=regression,
-                                      gpu=gpu, combined=combined)
+                                      gpu=gpu, combined=combined,
+                                      X_acts=test_acts)
             print_acc = ""
             if not regression:
                 print_acc = ", Accuracy: %.2f" % (t_acc)
@@ -1385,7 +1421,8 @@ def train_meta_model(model, train_data, test_data,
         t_acc, t_loss = test_meta(best_model, loss_fn, params_test,
                                   y_test, batch_size, acc_fn,
                                   binary=binary, regression=regression,
-                                  gpu=gpu, combined=combined)
+                                  gpu=gpu, combined=combined,
+                                  X_acts=test_acts)
         model = deepcopy(best_model)
 
     # Make sure model is in evaluation mode
@@ -1776,10 +1813,14 @@ def check_if_inside_cluster():
 
 
 class AffinityMetaClassifier(nn.Module):
-    def __init__(self, num_dim: int, numlayers: int):
+    def __init__(self, num_dim: int, numlayers: int,
+                 num_final: int = 16, only_latent: bool = False):
         super(AffinityMetaClassifier, self).__init__()
         self.num_dim = num_dim
         self.numlayers = numlayers
+        self.only_latent = only_latent
+        self.num_final = num_final
+        self.final_act_size = num_final * self.numlayers
         self.models = []
 
         def make_small_model():
@@ -1790,12 +1831,13 @@ class AffinityMetaClassifier(nn.Module):
                 nn.ReLU(),
                 nn.Linear(256, 64),
                 nn.ReLU(),
-                nn.Linear(64, 16),
+                nn.Linear(64, self.num_final),
             )
         for _ in range(numlayers):
             self.models.append(make_small_model())
         self.models = nn.ModuleList(self.models)
-        self.final_layer = nn.Linear(16 * self.numlayers, 1)
+        if not self.only_latent:
+            self.final_layer = nn.Linear(self.num_final * self.numlayers, 1)
 
     def forward(self, x) -> ch.Tensor:
         # Get intermediate activations for each layer
@@ -1804,6 +1846,9 @@ class AffinityMetaClassifier(nn.Module):
         for i, model in enumerate(self.models):
             all_acts.append(model(x[:, i]))
         all_accs = ch.cat(all_acts, 1)
+        # Return pre-logit activations if requested
+        if self.only_latent:
+            return all_accs
         return self.final_layer(all_accs)
 
 
@@ -1876,10 +1921,12 @@ def coordinate_descent_new(models_train, models_val,
         # Get activations for data
         train_loader = get_features(
             models_train[0], models_train[1],
-            seed_data, meta_train_args['batch_size'])
+            seed_data, meta_train_args['batch_size'],
+            use_logit=meta_train_args['use_logit'])
         val_loader = get_features(
             models_val[0], models_val[1],
-            seed_data, meta_train_args['batch_size'])
+            seed_data, meta_train_args['batch_size'],
+            use_logit=meta_train_args['use_logit'])
 
         # Re-init meta-classifier if requested
         if restart_meta:
@@ -1901,3 +1948,30 @@ def coordinate_descent_new(models_train, models_val,
 
     # Return all accuracies
     return all_accs
+
+
+class WeightAndActMeta(nn.Module):
+    """
+        Combined meta-classifier that uses model weights as well as activation
+        trends for property prediction.
+    """
+    def __init__(self, dims: List[int], num_dims: int, num_layers: int):
+        super(WeightAndActMeta, self).__init__()
+        self.dims = dims
+        self.num_dims = num_dims
+        self.num_layers = num_layers
+        self.act_clf = AffinityMetaClassifier(
+            num_dims, num_layers, only_latent=True)
+        self.weights_clf = PermInvModel(dims, only_latent=True)
+        self.final_act_size = self.act_clf.final_act_size + \
+            self.weights_clf.final_act_size
+        self.combination_layer = nn.Linear(self.final_act_size, 1)
+
+    def forward(self, w, x) -> ch.Tensor:
+        # Output for weights
+        weights = self.weights_clf(w)
+        # Output for activations
+        act = self.act_clf(x)
+        # Combine them
+        all_acts = ch.cat([act, weights], 1)
+        return self.combination_layer(all_acts)

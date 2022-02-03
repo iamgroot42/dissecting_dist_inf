@@ -4,7 +4,7 @@
 """
 import utils
 from data_utils import SUPPORTED_PROPERTIES
-from model_utils import get_models_path, get_models, convert_to_torch
+from model_utils import get_models_path, get_models, convert_to_torch, make_activation_data
 from data_utils import CensusWrapper
 import argparse
 from tqdm import tqdm
@@ -12,26 +12,13 @@ import numpy as np
 import torch as ch
 
 
-def make_activation_data(models_pos, models_neg, seed_data, detach=True, verbose=True):
-    # Construct affinity graphs
-    pos_model_scores = utils.make_affinity_features(
-        models_pos, seed_data,
-        detach=detach, verbose=verbose)
-    neg_model_scores = utils.make_affinity_features(
-        models_neg, seed_data,
-        detach=detach, verbose=verbose)
-    # Convert all this data to loaders
-    X = ch.cat((pos_model_scores, neg_model_scores), 0)
-    Y = ch.cat((ch.ones(len(pos_model_scores)),
-                ch.zeros(len(neg_model_scores))))
-    return X, Y
-
-
 def convert_to_loaders_wrapper(models_pos, models_neg, seed_data,
                                batch_size=64, shuffle=True,
-                               verbose=True, detach=True):
+                               verbose=True, detach=True,
+                               use_logit=False):
     X, Y = make_activation_data(
-        models_pos, models_neg, seed_data, verbose=verbose, detach=detach)
+        models_pos, models_neg, seed_data, verbose=verbose,
+        detach=detach, use_logit=use_logit)
     dataset = ch.utils.data.TensorDataset(X, Y)
     loader = ch.utils.data.DataLoader(
         dataset, batch_size=batch_size, shuffle=shuffle,)
@@ -39,7 +26,7 @@ def convert_to_loaders_wrapper(models_pos, models_neg, seed_data,
 
 
 def optimal_data_for_meta(meta, models_pos, models_neg,
-                          data, steps, step_size):
+                          data, steps, step_size, use_logit=False):
     """
         Generate data that leads to maximum accuracy
         for given meta-classifier, using current models
@@ -62,7 +49,7 @@ def optimal_data_for_meta(meta, models_pos, models_neg,
         # Get activation representations for each model
         X_all, y_all = make_activation_data(
             models_pos, models_neg, data_copy, detach=False,
-            verbose=False)
+            verbose=False, use_logit=use_logit)
 
         # Sample 90% of the models at random
         ratio = 0.9
@@ -117,6 +104,8 @@ if __name__ == "__main__":
                         help='Use coordinate descent')
     parser.add_argument('--testing', action="store_true",
                         help='Testing mode')
+    parser.add_argument('--use_logit', action="store_true",
+                        help='Also use logits as features')
     parser.add_argument('--coordinate_steps', type=int, default=10)
     args = parser.parse_args()
     utils.flash_utils(args)
@@ -124,7 +113,11 @@ if __name__ == "__main__":
     if args.testing:
         num_train, num_test = 60, 10
     else:
-        num_train, num_test = 2000, 1000
+        num_train, num_test = 1000, 1000
+
+    num_layers = 4 if args.use_logit else 3
+    num_features = int((args.n_samples) * (args.n_samples - 1) / 2)
+    print("Number of features for activation metaclf: %d" % num_features)
 
     d_0 = args.d_0
     if args.trg is None:
@@ -156,7 +149,8 @@ if __name__ == "__main__":
     # Wrapper for optimal data
     def optimal_data_wrapper(meta, models_pos, models_neg, data):
         return optimal_data_for_meta(meta, models_pos, models_neg,
-                                     data, args.steps, args.step_size)
+                                     data, args.steps, args.step_size,
+                                     use_logit=args.use_logit)
 
     data = []
     for tg in targets:
@@ -200,7 +194,7 @@ if __name__ == "__main__":
             neg_models_train = neg_models[shuffled_2[:args.train_sample]]
 
             # Make a basic meta-classifier
-            meta_clf = utils.AffinityMetaClassifier(3160, 3)
+            meta_clf = utils.AffinityMetaClassifier(num_features, num_layers)
             meta_clf = meta_clf.cuda()
 
             # Coordinate descent training
@@ -208,10 +202,11 @@ if __name__ == "__main__":
                 all_accs = utils.coordinate_descent_new(
                     (pos_models_train, neg_models_train),
                     (pos_models_test, neg_models_test),
-                    num_features=3160, num_layers=3,
+                    num_features=num_features, num_layers=num_layers,
                     get_features=convert_to_loaders_wrapper,
                     meta_train_args={"epochs": args.epochs,
-                                     "batch_size": args.batch_size},
+                                     "batch_size": args.batch_size,
+                                     "use_logit": args.use_logit},
                     gen_optimal_fn=optimal_data_wrapper,
                     seed_data=seed_data,
                     n_times=args.coordinate_steps,
@@ -222,9 +217,11 @@ if __name__ == "__main__":
             else:
                 # Construct affinity graphs
                 train_loader = convert_to_loaders_wrapper(
-                    pos_models_train, neg_models_train, seed_data)
+                    pos_models_train, neg_models_train, seed_data,
+                    use_logit=args.use_logit)
                 test_loader = convert_to_loaders_wrapper(
-                    pos_models_test, neg_models_test, seed_data)
+                    pos_models_test, neg_models_test, seed_data,
+                    use_logit=args.use_logit)
 
                 # Train meta_clf
                 _, acc = utils.train(meta_clf, (train_loader, test_loader),

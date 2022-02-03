@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Only look at multiples of 0.10
     # targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
     #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
-    if args.trg == None:
+    if args.trg is None:
         targets = sorted(['0.2,0.5', '0.5,0.2', '0.1,0.5'])
     else:
         lst = eval(args.trg)
@@ -71,18 +71,18 @@ if __name__ == "__main__":
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
-        get_models_path(args.filter, "adv", d_0), 1, args.first_n)
+        get_models_path("adv", args.filter, d_0), 1, args.first_n)
     pos_w_test, pos_labels_test, dims = get_model_representations(
-        get_models_path(args.filter, "victim", d_0), 1, args.first_n)
+        get_models_path("victim", args.filter, d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
         tgt_data = []
         # Load up negative-label train, test data
         neg_w, neg_labels, _ = get_model_representations(
-            get_models_path(args.filter, "adv", tg), 0, args.first_n)
+            get_models_path("adv", args.filter, tg), 0, args.first_n)
         neg_w_test, neg_labels_test, _ = get_model_representations(
-            get_models_path(args.filter, "victim", tg), 0, args.first_n)
+            get_models_path("victim", args.filter, tg), 0, args.first_n)
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))

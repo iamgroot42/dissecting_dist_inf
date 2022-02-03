@@ -13,6 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('--darkplot', action="store_true",
                         help='Use dark background for plotting results')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
+                        required=True,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--mode', choices=["meta", "threshold"],
                         default="meta",

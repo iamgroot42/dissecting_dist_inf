@@ -22,6 +22,10 @@ def get_model_activation_representations(models, data, label):
     w = []
     for model in tqdm(models):
         activations = layer_output(data, model, layer=4, get_all=True)
+
+        # Skip last layer
+        activations = activations[:-1]
+
         w.append([ch.from_numpy(act).float() for act in activations])
     labels = np.array([label] * len(w))
     labels = ch.from_numpy(labels)
@@ -53,6 +57,8 @@ if __name__ == "__main__":
                         help='name for subfolder to save/load data from')
     parser.add_argument('--d_0', default="0.5", help='ratios to use for D_0')
     parser.add_argument('--trg', default=None, help='target ratios')
+    parser.add_argument('--n_samples', default=256,
+                        help='number of examples to use for activations')
     parser.add_argument('--no_alignment', action="store_true",
                         help='do not align features across models')
     args = parser.parse_args()
@@ -84,7 +90,8 @@ if __name__ == "__main__":
     ds = CensusWrapper(
             filter_prop=args.filter,
             ratio=0.5, split="adv")
-    _, (data_for_features, _), _ = ds.load_data(custom_limit=64)
+    _, (data_for_features, _), _ = ds.load_data(
+        custom_limit=args.n_samples // 4)
     n_samples = len(data_for_features)
     print(f"Using {n_samples} samples to compute activations")
 
@@ -110,7 +117,9 @@ if __name__ == "__main__":
     # Batch up data
     pos_w_test = utils.prepare_batched_data(pos_w_test)
 
-    reduction_dims = [8, 4, 2, 1]
+    # Skip last layer
+    # reduction_dims = [8, 4, 2, 1]
+    reduction_dims = [8, 4, 2]
 
     data = []
     for tg in targets:

@@ -4,7 +4,7 @@ from typing import List
 import torch as ch
 import torch.nn as nn
 import os
-from utils import check_if_inside_cluster
+from utils import check_if_inside_cluster, make_affinity_features
 from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
@@ -125,12 +125,19 @@ def layer_output(data, MLP, layer=0, get_all=False):
 
 
 # Load models from directory, return feature representations
-def get_model_representations(folder_path, label, first_n=np.inf, start_n=0):
+def get_model_representations(folder_path, label, first_n=np.inf,
+                              n_models=1000, start_n=0, fetch_models=False):
     models_in_folder = os.listdir(folder_path)
-    # np.random.shuffle(models_in_folder)
-    w, labels = [], []
+    # Shuffle
+    np.random.shuffle(models_in_folder)
+    # Pick only N models
+    models_in_folder = models_in_folder[:n_models]
+
+    w, labels, clfs = [], [], []
     for path in tqdm(models_in_folder):
         clf = load_model(os.path.join(folder_path, path))
+        if fetch_models:
+            clfs.append(clf)
 
         # Extract model parameters
         weights = [ch.from_numpy(x) for x in clf.coefs_]
@@ -153,6 +160,8 @@ def get_model_representations(folder_path, label, first_n=np.inf, start_n=0):
     w = np.array(w, dtype=object)
     labels = ch.from_numpy(labels)
 
+    if clfs:
+        return w, labels, dims, clfs
     return w, labels, dims
 
 
@@ -215,3 +224,21 @@ def get_model_activation_representations(
     dims = [x.shape[1] for x in w[0]]
 
     return w, labels, dims
+
+
+def make_activation_data(models_pos, models_neg, seed_data,
+                         detach=True, verbose=True, use_logit=False):
+    # Construct affinity graphs
+    pos_model_scores = make_affinity_features(
+        models_pos, seed_data,
+        detach=detach, verbose=verbose,
+        use_logit=use_logit)
+    neg_model_scores = make_affinity_features(
+        models_neg, seed_data,
+        detach=detach, verbose=verbose,
+        use_logit=use_logit)
+    # Convert all this data to loaders
+    X = ch.cat((pos_model_scores, neg_model_scores), 0)
+    Y = ch.cat((ch.ones(len(pos_model_scores)),
+                ch.zeros(len(neg_model_scores))))
+    return X, Y
