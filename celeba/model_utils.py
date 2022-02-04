@@ -267,6 +267,6 @@ def check_if_exists(model_id, ratio, filter, split, is_adv, adv_folder_name):
         subfolder_prefix = os.path.join(split, filter, str(ratio))
     model_check_path = os.path.join(BASE_MODELS_DIR, subfolder_prefix)
     for model_name in os.listdir(model_check_path):
-        if model_id in model_name:
+        if model_name.startswith(model_id + "_"):
             return True
     return False
