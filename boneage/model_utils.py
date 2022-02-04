@@ -172,6 +172,6 @@ def check_if_exists(model_id, split, ratio, full_model=False):
     else:
         model_check_path = os.path.join(BASE_MODELS_DIR, split, str(ratio))
     for model_name in os.listdir(model_check_path):
-        if ("%d_" % model_id) in model_name:
+        if model_name.startswith("%d_" % model_id):
             return True
     return False

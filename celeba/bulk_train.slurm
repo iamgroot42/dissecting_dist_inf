@@ -23,13 +23,13 @@
 
 # Request specific number of CPUs for the task
 # Maximum 10 cores per job allowed
-#SBATCH --cpus-per-task=10
+#SBATCH --cpus-per-task=16
 
 # Time limit (go for max allowed: 3 days for GPU)
 #SBATCH --time=3-00:00:00
 
 # Output file paths
-#SBATCH --output=logs/%x-%j.out
-#SBATCH --error=logs/%x-%j.err
+#SBATCH --output=log/training/%x-%j.out
+#SBATCH --error=log/training/%x-%j.err
 
 CUDA_VISIBLE_DEVICES=0 knocky bash bulk_train.sh $SPLIT $RATIO

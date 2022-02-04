@@ -1258,8 +1258,7 @@ def train_meta_model(model, train_data, test_data,
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
 
     # Make sure both weights and activations available if val requested
-    assert (val_data is None) == (
-        val_acts is None), "Weights or activations for validation data must be provided"
+    assert (val_data is not None or val_acts is None), "Weights or activations for validation data must be provided"
 
     use_acts = (train_acts is not None)
     # Activations must be provided if not combined
@@ -1865,9 +1864,10 @@ def make_affinity_feature(model, data, use_logit=False, detach=True, verbose=Tru
     model_features = model(data, get_all=True, detach_before_return=detach)
     layerwise_features = []
     for i, feature in enumerate(model_features):
+        # Old (before 2/4)
         # Skip logits if asked not to use (default)
-        if not use_logit and i == (len(model_features) - 1):
-            break
+        # if not use_logit and i == (len(model_features) - 1):
+            # break
         scores = []
         # Pair-wise iteration of all data
         for i in range(len(data)-1):
@@ -1875,7 +1875,16 @@ def make_affinity_feature(model, data, use_logit=False, detach=True, verbose=Tru
             scores += cos(ch.unsqueeze(feature[i], 0), others)
         layerwise_features.append(ch.stack(scores, 0))
 
-    return ch.stack(layerwise_features, 0)
+    # New (2/4)
+    # If asked to use logits, convert them to probability scores
+    # And then consider them as-it-is (instead of pair-wise comparison)
+    if use_logit:
+        logits = model_features[-1]
+        probs = ch.sigmoid(logits)
+        layerwise_features.append(probs)
+
+    concatenated_features = ch.stack(layerwise_features, 0)
+    return concatenated_features
 
 
 def make_affinity_features(models, data, use_logit=False, detach=True, verbose=True):
