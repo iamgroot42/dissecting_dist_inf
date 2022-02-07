@@ -5,7 +5,6 @@ import numpy as np
 import utils
 from tqdm import tqdm
 import os
-from scipy.stats import norm
 
 
 def get_models(folder_path, n_models: int = 1000, full_model: bool = False):
@@ -13,6 +12,10 @@ def get_models(folder_path, n_models: int = 1000, full_model: bool = False):
 
     models = []
     for mpath in tqdm(paths):
+        # Skip if mpath is a directory
+        if os.path.isdir(os.path.join(folder_path, mpath)):
+            continue
+
         model = load_model(os.path.join(folder_path, mpath),
                            full_model=full_model)
         models.append(model)

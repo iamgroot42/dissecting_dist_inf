@@ -1,11 +1,8 @@
 import pandas as pd
 import seaborn as sns
-import matplotlib.pyplot as plt
 import argparse
 import os
-from utils import flash_utils, log
-import numpy as np
-from model_utils import BASE_MODELS_DIR
+from utils import flash_utils
 from data_utils import PROPERTY_FOCUS, SUPPORTED_PROPERTIES
 import matplotlib.patches as mpatches
 import matplotlib as mpl
@@ -97,5 +94,3 @@ if __name__ == "__main__":
             data=df)
     sns_plot.set(ylim=(35, 101))
     sns_plot.figure.savefig("./images/census_{}_{}".format(args.t,args.filter))
-
-

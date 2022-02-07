@@ -114,7 +114,7 @@ def load_model(path: str, fake_relu: bool = False,
 # Get model path, given perameters
 def get_model_folder_path(split, ratio, full_model=False):
     if full_model:
-        return os.path.join(BASE_MODELS_DIR, split, "full", ratio)
+        return os.path.join(BASE_MODELS_DIR, split, ratio, "full")
     return os.path.join(BASE_MODELS_DIR, split, ratio)
 
 
@@ -127,6 +127,10 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0, prun
         iterator = iterator[:max_read]
 
     for mpath in tqdm(iterator):
+        # Skip if path is directory
+        if os.path.isdir(os.path.join(model_dir, mpath)):
+            continue
+
         model = load_model(os.path.join(model_dir, mpath))
 
         prune_mask = []
