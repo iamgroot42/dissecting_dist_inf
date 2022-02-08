@@ -3,7 +3,7 @@
 """
 import utils
 from data_utils import SUPPORTED_PROPERTIES
-from model_utils import get_models_path, get_model_representations, BASE_MODELS_DIR, save_model
+from model_utils import get_models_path, get_model_representations, save_model
 import argparse
 import numpy as np
 import torch as ch

@@ -103,7 +103,7 @@ def load_model(path: str, fake_relu: bool = False,
     else:
         model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
     if cpu:
-        model.load_state_dict(ch.load(path))
+        model.load_state_dict(ch.load(path, map_location=ch.device("cpu")))
     else:
         model.load_state_dict(ch.load(path))
 
@@ -119,7 +119,8 @@ def get_model_folder_path(split, ratio, full_model=False):
 
 
 # Function to extract model weights for all models in given directory
-def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0, prune_ratio=None):
+def get_model_features(model_dir, max_read=None, first_n=np.inf,
+                       start_n=0, prune_ratio=None, shift_to_gpu=True):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -131,7 +132,7 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0, prun
         if os.path.isdir(os.path.join(model_dir, mpath)):
             continue
 
-        model = load_model(os.path.join(model_dir, mpath))
+        model = load_model(os.path.join(model_dir, mpath), cpu=not shift_to_gpu)
 
         prune_mask = []
         # Prune weight layers, if requested
@@ -147,7 +148,10 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf, start_n=0, prun
         dims, fvec = get_weight_layers(
             model, first_n=first_n, start_n=start_n,
             prune_mask=prune_mask)
-        fvec = [x.cuda() for x in fvec]
+        if shift_to_gpu:
+            fvec = [x.cuda() for x in fvec]
+        else:
+            fvec = [x.cpu() for x in fvec]
 
         vecs.append(fvec)
 

@@ -16,7 +16,8 @@ SUPPORTED_PROPERTIES = ["sex", "race", "none",
                         "bothfw", "bothmw", "bothfn", "bothmn", "two_attr"]
 PROPERTY_FOCUS = {"sex": "Female", "race": "White", "bothfw": "both f and w",
                   "bothmw": "both m and w", "bothfn": "both f and n", "bothmn": "both m and n", "two_attr": "f and w"}
-
+SUPPORTED_RATIOS = ["0.0", "0.1", "0.2", "0.3",
+                    "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
 # US Income dataset
 class CensusIncome:
