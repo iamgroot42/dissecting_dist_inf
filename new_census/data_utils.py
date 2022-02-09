@@ -160,3 +160,18 @@ if __name__ == "__main__":
     test = np.hstack((X_test,y_test[...,None]))
     pickle.dump( train, open('./train.p', "wb" ) )
     pickle.dump( test, open( './test.p', "wb" ) )
+    dt = CensusIncome()
+    def fe(x):
+        return x['sex']==1
+    def ra(x):
+        return x['race'] ==0
+    adv_tr,adv_te,vic_tr,vic_te = dt.train_df_adv,dt.test_df_adv,dt.train_df_victim,dt.test_df_victim
+    print('adv train female and male: {}'.format(cal_q(adv_tr,fe)))
+    print('adv test female and male: {}'.format(cal_q(adv_te,fe)))
+    print('vic train female and male: {}'.format(cal_q(vic_tr,fe)))
+    print('vic test female and male: {}'.format(cal_q(vic_te,fe)))
+    
+    print('adv train white and non: {}'.format(cal_q(adv_tr,ra)))
+    print('adv test white and non: {}'.format(cal_q(adv_te,ra)))
+    print('vic train white and non: {}'.format(cal_q(vic_tr,ra)))
+    print('vic test white and non: {}'.format(cal_q(vic_te,ra)))
