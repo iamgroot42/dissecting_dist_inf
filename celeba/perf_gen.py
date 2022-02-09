@@ -215,7 +215,17 @@ if __name__ == "__main__":
     parser.add_argument('--r', type=float,
                         default=1.0, help="step-random, ratio of model to use to generate samples")  
     parser.add_argument('--r2', type=float,
-                        default=1.0, help="step-fixed,ratio of model to use to generate samples each datum")                    
+                        default=1.0, help="step-fixed,ratio of model to use to generate samples each datum")      
+    parser.add_argument('--adv_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for adv")
+    parser.add_argument('--victim_adv_prefix', type=str,
+                        default="adv_train",
+                        help="Prefix for adversarial models for victim")
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")              
     args = parser.parse_args()
     flash_utils(args)
     #ch.cuda.set_device(args.gpu)
@@ -235,7 +245,15 @@ if __name__ == "__main__":
     test_dir_2 = os.path.join(BASE_MODELS_DIR, "victim/%s/%s/" %
                               (args.filter, args.ratio_2))
     print("Loading models")
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+        train_dir_1 = os.path.join(train_dir_1, args.adv_adv_prefix)
+        train_dir_2 = os.path.join(train_dir_2, args.adv_adv_prefix)
 
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
+        test_dir_1 = os.path.join(test_dir_1, args.victim_adv_prefix)
+        test_dir_2 = os.path.join(test_dir_2, args.victim_adv_prefix)
     X_train_1 = get_all_models(
         train_dir_1, args.n_models, latent_focus, fake_relu,
         shuffle=True)
@@ -277,7 +295,7 @@ if __name__ == "__main__":
     del X_test_2
     ch.cuda.empty_cache()
     for j in range(2):
-        adv_accs,threshold, rule = find_threshold_pred(
+        adv_acc,threshold, rule = find_threshold_pred(
                 # accs_1, accs_2, granularity=0.01)
             p1[j], p2[j], granularity=0.005)
         combined = np.concatenate((pv1[j], pv2[j]),axis=1)
@@ -286,7 +304,7 @@ if __name__ == "__main__":
         specific_acc = get_threshold_pred(combined, classes, threshold, rule)
         
         vic_accs.append(specific_acc)
-
+        adv_accs.append(adv_acc)
         # Collect all accuracies for basic baseline
         
 

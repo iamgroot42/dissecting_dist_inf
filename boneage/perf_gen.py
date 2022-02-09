@@ -320,7 +320,7 @@ if __name__ == "__main__":
     
     
     for j in range(2):
-        adv_accs,threshold, rule = find_threshold_pred(
+        adv_acc,threshold, rule = find_threshold_pred(
                 # accs_1, accs_2, granularity=0.01)
             p1[j], p2[j], granularity=0.005)
         combined = np.concatenate((pv1[j], pv2[j]),axis=1)
@@ -329,7 +329,7 @@ if __name__ == "__main__":
         specific_acc = get_threshold_pred(combined, classes, threshold, rule)
         
         vic_accs.append(specific_acc)
-
+        adv_accs.append(adv_acc)
         # Collect all accuracies for basic baseline
         
 

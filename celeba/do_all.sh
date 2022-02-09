@@ -1,11 +1,11 @@
 
-#mkdir -p ./log/gen/perpoint_Male\:0.5/$i
-#nohup python perf_gen.py --filter Male --ratio_2 0.2 --use_normal --n_models 100 --steps 20 --n_samples 500 --r 0.2 --gpu 2 > ./log/gen/perpoint_Male\:0.5/o0.2/500sam_20step_100m_20r.out 2>&1 &
-#nohup python perf_gen.py --filter Male --ratio_2 0.2 --use_normal --n_models 100 --steps 20 --n_samples 500 --r2 0.2 --gpu 3 > ./log/gen/perpoint_Male\:0.5/o0.2/500sam_20step_100m_20r2.out 2>&1 &
-
-p=./log/gen/perpoint_Male\:0.5/
-#[ ! -d $p ] && mkdir -p $p
-nohup python perf_gen.py --filter Male --ratio_2 0.6 --use_normal --n_models 200 --steps 50 --n_samples 500 --r 0.2 --gpu 0 > $p/0.6/500sam_50step_20r.out 2>&1 &
-nohup python perf_gen.py --filter Male --ratio_2 0.7 --use_normal --n_models 200 --steps 50 --n_samples 500 --r 0.2 --gpu 1 > $p/0.7/500sam_50step_20r.out 2>&1 &
-
+declare -i j=0
+p=./log/robust/gen/perpoint_Male\:0.5
+for i in $1
+do
+#mkdir -p $p/$i
+nohup python perf_gen.py --filter Male --ratio_2 $i --use_normal --n_models 200 --steps 50 --n_samples 500 --r 0.2 --use_adv_for_adv --use_adv_for_victim --adv_adv_prefix adv_train_8 --victim_adv_prefix adv_train_8 --gpu $j > $p/$i/robust8.out 2>&1 &
+j=$((j+1))
+done
+wait
 
