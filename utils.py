@@ -1484,14 +1484,17 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
     return best_acc, best_threshold, best_rule
 
 
-def get_threshold_pred(X, Y, threshold, rule):
+def get_threshold_pred(X, Y, threshold, rule, get_pred: bool = False):
     if (X.shape[1] != Y.shape[0]) or (X.shape[0] != threshold.shape[0]):
         raise ValueError('dimension mismatch')
     res = []
     for i in range(X.shape[1]):
         res.append(np.average(((X[:, i] <= threshold) == rule)) >= 0.5)
     res = np.array(res)
-    return np.mean(res == Y)
+    acc = np.mean(res == Y)
+    if get_pred:
+        return res, acc
+    return acc
 
 
 def find_threshold_pred(pred_1, pred_2, granularity=0.005):

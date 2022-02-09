@@ -6,3 +6,5 @@ celeba_models_split/*
 images/
 do*.sh
 plots/*
+# Torch weight files
+*.pth

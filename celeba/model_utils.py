@@ -110,13 +110,20 @@ def create_model(parallel=False, fake_relu=False, latent_focus=None):
     return model
 
 
-def get_model(path, use_prefix=True, parallel=False, fake_relu=False, latent_focus=None):
+def get_model(path, use_prefix=True, parallel: bool = False,
+              fake_relu: bool = False, latent_focus=None,
+              cpu: bool = False):
     if use_prefix:
         path = os.path.join(BASE_MODELS_DIR, path)
 
     model = create_model(
         parallel=parallel, fake_relu=fake_relu, latent_focus=latent_focus)
-    model.load_state_dict(ch.load(path), strict=False)
+
+    if cpu:
+        model.load_state_dict(
+            ch.load(path, map_location=ch.device("cpu")), strict=False)
+    else:
+        model.load_state_dict(ch.load(path), strict=False)
 
     if parallel:
         model = nn.DataParallel(model)
@@ -208,7 +215,7 @@ def get_model_features(model_dir, max_read=None,
                        start_n_conv=0, first_n_conv=np.inf,
                        start_n_fc=0, first_n_fc=np.inf,
                        conv_custom=None, fc_custom=None,
-                       focus="all"):
+                       focus="all", shift_to_gpu=True):
     vecs = []
     iterator = os.listdir(model_dir)
     if max_read is not None:
@@ -222,7 +229,7 @@ def get_model_features(model_dir, max_read=None,
         if os.path.isdir(os.path.join(model_dir, mpath)):
             continue
 
-        model = get_model(os.path.join(model_dir, mpath))
+        model = get_model(os.path.join(model_dir, mpath), cpu=not shift_to_gpu)
 
         if focus in ["all", "combined"]:
             dims_conv, fvec_conv = get_weight_layers(

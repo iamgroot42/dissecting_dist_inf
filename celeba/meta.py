@@ -159,6 +159,7 @@ if __name__ == "__main__":
             metamodel = utils.CombinedPermInvModel(
                 dims_fc, dim_channels, dim_kernels)
         elif args.focus == "combined":
+            # This the good one
             # 827713 params
             dims_conv, dims_fc = dims
             dim_channels, dim_kernels, middle_dim = dims_conv

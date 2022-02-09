@@ -13,3 +13,5 @@ do*.sh
 try.py
 /try
 
+# Model weight files
+*.pth

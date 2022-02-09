@@ -24,7 +24,7 @@ if __name__ == "__main__":
                         help='use data augmentations when training models?')
     parser.add_argument('--adv_train', action="store_true",
                         help='use adversarial training?')
-    parser.add_argument('--adv_name', required=True,
+    parser.add_argument('--adv_name', default=None,
                         help='folder name for storing adversarially trained models')
     parser.add_argument('--task', default="Smiling",
                         choices=SUPPORTED_PROPERTIES,
@@ -41,6 +41,10 @@ if __name__ == "__main__":
                        args.split, args.adv_train, args.adv_name):
         print("Already trained model exists. Skipping training.")
         exit(0)
+    
+    # Make sure adv_name is provided if adv_train is True
+    if args.adv_train and args.adv_name is None:
+        raise ValueError("Must provide adv_name if adv_train is True")
 
     # CelebA dataset
     ds = CelebaWrapper(args.filter, args.ratio,
