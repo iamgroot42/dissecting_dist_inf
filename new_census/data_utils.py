@@ -8,8 +8,9 @@ from tqdm import tqdm
 import pickle
 from sklearn.model_selection import train_test_split
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
-#SUPPORTED_PROPERTIES = ["sex", "race", "none","bothfw","bothmw","bothfn","bothmn","two_attr"]
-#PROPERTY_FOCUS = {"sex": "Female", "race": "White","bothfw":"both f and w","bothmw":"both m and w","bothfn":"both f and n","bothmn":"both m and n","two_attr":"f and w"}
+SUPPORTED_PROPERTIES = ["sex", "race"]
+PROPERTY_FOCUS = {"sex": 1, "race": 0} # in original dataset, 0 for male, 1 for female; 0 for white
+
 
 
 # US Income dataset
@@ -18,7 +19,7 @@ class CensusIncome:
         
         self.columns = [
             "age", "workClass", "education-attainment",
-            "marital-status", "race-code", "sex","cognitive-difficulty",
+            "marital-status", "race", "sex","cognitive-difficulty",
             "ambulatory-difficulty","hearing-difficulty","vision-difficulty",
             "work-hour","world-area-of-birth","state-code","income"
         ]
@@ -26,10 +27,7 @@ class CensusIncome:
         # self.load_data(test_ratio=0.4)
         self.load_data(test_ratio=0.5)
 
-    # Process, handle one-hot conversion of data etc
-    def process_df(self, df):
-
-        pass
+    
 
     # Return data with desired property ratios
     def get_x_y(self,P):
@@ -70,6 +68,14 @@ class CensusIncome:
         test_data = pickle.load(open('./train.p'), 'rb')
         self.train_df = pd.DataFrame(train_data,self.columns)
         self.test_df = pd.DataFrame(test_data,self.columns)
+        '''
+        #set race to binary: 0 for white, 1 for the rest
+        self.train_df['race'] = (self.train_df['race'] != 0).astype(int)
+        self.test_df['race'] = (self.test_df['race'] != 0).astype(int)
+        #set sex columns to int, 0 for male, 1 for female
+        self.train_df['sex'] = self.train_df['sex'].astype(int)
+        self.test_df['sex'] = self.test_df['sex'].astype(int)
+        '''
         def s_split(this_df, rs=random_state):
             sss = StratifiedShuffleSplit(n_splits=1,
                                          test_size=test_ratio,
@@ -78,7 +84,7 @@ class CensusIncome:
             # so that adv/victim split does not introduce
             # unintended distributional shift
             splitter = sss.split(
-                this_df, this_df[["sex:Female", "race:White", "income"]])
+                this_df, this_df[["sex", "race", "income"]])
             split_1, split_2 = next(splitter)
             return this_df.iloc[split_1], this_df.iloc[split_2]
 
@@ -94,30 +100,21 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
-        def lambda_fn(x): return x['sex:Female'] == 1
+        def lambda_fn(x): return x['sex'] == 1
     elif filter_prop == "race":
-        def lambda_fn(x): return x['race:White'] == 1
+        def lambda_fn(x): return x['race'] == 0
     
+    #these ratio need to be checked with new dataset
     prop_wise_subsample_sizes = {
         "adv": {
             "sex": (1100, 500),
             "race": (2000, 1000),
-            "bothfw": (900, 400),
-            "bothfn": (210, 100),
-            "bothmn": (260, 130),
-            "bothmw": (2000,960),
             
         },
         "victim": {
             "sex": (1100, 500),
             "race": (2000, 1000),
-            "bothfw": (900, 400),
-            "bothfn": (210, 100),
-            "bothmn": (260, 130),
-            "bothmw": (2000,960),
-            
-            
-            
+
         },
     }
 
