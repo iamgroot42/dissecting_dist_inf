@@ -14,7 +14,7 @@ BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
 
 # US Income dataset
 class CensusIncome:
-    def __init__(self, path=BASE_DATA_DIR):
+    def __init__(self):
         
         self.columns = [
             "age", "workClass", "education-attainment",
@@ -22,37 +22,14 @@ class CensusIncome:
             "ambulatory-difficulty","hearing-difficulty","vision-difficulty",
             "work-hour","world-area-of-birth","state-code","income"
         ]
-        self.path = path
+        
         # self.load_data(test_ratio=0.4)
         self.load_data(test_ratio=0.5)
 
     # Process, handle one-hot conversion of data etc
     def process_df(self, df):
-        df['income'] = df['income'].apply(lambda x: 1 if '>50K' in x else 0)
 
-        def oneHotCatVars(x, colname):
-            df_1 = x.drop(columns=colname, axis=1)
-            df_2 = pd.get_dummies(x[colname], prefix=colname, prefix_sep=':')
-            return (pd.concat([df_1, df_2], axis=1, join='inner'))
-
-        colnames = ['workClass', 'occupation', 'race', 'sex',
-                    'marital-status', 'relationship']
-        # Drop columns that do not help with task
-        df = df.drop(columns=self.dropped_cols, axis=1)
-        # Club categories not directly relevant for property inference
-        df["race"] = df["race"].replace(
-            ['Asian-Pac-Islander', 'Amer-Indian-Eskimo'], 'Other')
-        for colname in colnames:
-            df = oneHotCatVars(df, colname)
-        # Drop features pruned via feature engineering
-        prune_feature = [
-            "workClass:Never-worked",
-            "workClass:Without-pay",
-            "occupation:Priv-house-serv",
-            "occupation:Armed-Forces"
-        ]
-        df = df.drop(columns=prune_feature, axis=1)
-        return df
+        pass
 
     # Return data with desired property ratios
     def get_x_y(self,P):
@@ -88,39 +65,11 @@ class CensusIncome:
     # Create adv/victim splits, normalize data, etc
     def load_data(self, test_ratio, random_state=42):
         # Load train, test data
-        train_data = pd.read_csv(os.path.join(self.path, 'adult.data'),
-                                 names=self.columns, sep=' *, *',
-                                 na_values='?', engine='python')
-        test_data = pd.read_csv(os.path.join(self.path, 'adult.test'),
-                                names=self.columns, sep=' *, *', skiprows=1,
-                                na_values='?', engine='python')
+        train_data = pickle.load(open('./train.p'), 'rb')
 
-        # Add field to identify train/test, process together
-        train_data['is_train'] = 1
-        test_data['is_train'] = 0
-        df = pd.concat([train_data, test_data], axis=0)
-        df = self.process_df(df)
-
-        # Take note of columns to scale with Z-score
-        z_scale_cols = ["fnlwgt", "capital-gain", "capital-loss"]
-        for c in z_scale_cols:
-            # z-score normalization
-            df[c] = (df[c] - df[c].mean()) / df[c].std()
-
-        # Take note of columns to scale with min-max normalization
-        minmax_scale_cols = ["age",  "hours-per-week", "education-num"]
-        for c in minmax_scale_cols:
-            # z-score normalization
-            df[c] = (df[c] - df[c].min()) / df[c].max()
-
-        # Split back to train/test data
-        self.train_df, self.test_df = df[df['is_train']
-                                         == 1], df[df['is_train'] == 0]
-
-        # Drop 'train/test' columns
-        self.train_df = self.train_df.drop(columns=['is_train'], axis=1)
-        self.test_df = self.test_df.drop(columns=['is_train'], axis=1)
-
+        test_data = pickle.load(open('./train.p'), 'rb')
+        self.train_df = pd.DataFrame(train_data,self.columns)
+        self.test_df = pd.DataFrame(test_data,self.columns)
         def s_split(this_df, rs=random_state):
             sss = StratifiedShuffleSplit(n_splits=1,
                                          test_size=test_ratio,
