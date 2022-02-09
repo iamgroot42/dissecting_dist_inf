@@ -63,11 +63,11 @@ class CensusIncome:
     # Create adv/victim splits, normalize data, etc
     def load_data(self, test_ratio, random_state=42):
         # Load train, test data
-        train_data = pickle.load(open('./train.p'), 'rb')
+        train_data = pickle.load(open('./train.p', 'rb'))
 
-        test_data = pickle.load(open('./train.p'), 'rb')
-        self.train_df = pd.DataFrame(train_data,self.columns)
-        self.test_df = pd.DataFrame(test_data,self.columns)
+        test_data = pickle.load(open('./train.p', 'rb'))
+        self.train_df = pd.DataFrame(train_data,columns=self.columns)
+        self.test_df = pd.DataFrame(test_data,columns=self.columns)
         '''
         #set race to binary: 0 for white, 1 for the rest
         self.train_df['race'] = (self.train_df['race'] != 0).astype(int)
