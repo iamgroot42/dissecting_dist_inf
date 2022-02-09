@@ -65,7 +65,7 @@ class CensusIncome:
         # Load train, test data
         train_data = pickle.load(open('./train.p', 'rb'))
 
-        test_data = pickle.load(open('./train.p', 'rb'))
+        test_data = pickle.load(open('./test.p', 'rb'))
         self.train_df = pd.DataFrame(train_data,columns=self.columns)
         self.test_df = pd.DataFrame(test_data,columns=self.columns)
         '''
