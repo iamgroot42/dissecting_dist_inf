@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import argparse
-from utils import get_threshold_acc, find_threshold_acc, get_threshold_pred, find_threshold_pred, flash_utils
+from utils import get_threshold_acc, find_threshold_acc, get_threshold_pred, find_threshold_pred, flash_utils, order_points
 from perf_quart import get_models
 
 
@@ -15,12 +15,6 @@ def get_preds(x, ms):
         p = m.predict_proba(x)[:, 1]
         ps.append(p)
     return np.squeeze(np.array(ps))
-
-
-def order_points(p1s, p2s):
-    abs_dif = np.absolute(np.sum(p1s, axis=0)-np.sum(p2s, axis=0))
-    inds = np.argsort(abs_dif)
-    return inds
 
 
 def cal_acc(p, y):
@@ -83,7 +77,7 @@ if __name__ == "__main__":
                 filter_prop=args.filter,
                 ratio=float(args.ratio_2), split="adv")
 
-        # Fetch test data from both ratios
+            # Fetch test data from both ratios
             _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
             _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
 
@@ -130,7 +124,7 @@ if __name__ == "__main__":
                 accs_1 = cal_acc(p1[j][:leng], yg[j][:leng])
                 accs_2 = cal_acc(p2[j][:leng], yg[j][:leng])
 
-            # Look at [0, 100]
+                # Look at [0, 100]
                 accs_1 *= 100
                 accs_2 *= 100
                 tracc, threshold, rule = find_threshold_acc(
@@ -150,7 +144,7 @@ if __name__ == "__main__":
                 accs_victim_1 = cal_acc(pv1[j][:leng], yg[j][:leng])
                 accs_victim_2 = cal_acc(pv2[j][:leng], yg[j][:leng])
 
-            # Look at [0, 100]
+                # Look at [0, 100]
                 accs_victim_1 *= 100
                 accs_victim_2 *= 100
                 allaccs_1.append(accs_victim_1)

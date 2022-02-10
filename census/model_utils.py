@@ -126,10 +126,14 @@ def layer_output(data, MLP, layer=0, get_all=False):
 
 # Load models from directory, return feature representations
 def get_model_representations(folder_path, label, first_n=np.inf,
-                              n_models=1000, start_n=0, fetch_models=False):
+                              n_models=1000, start_n=0, fetch_models=False,
+                              shuffle=True):
     models_in_folder = os.listdir(folder_path)
-    # Shuffle
-    np.random.shuffle(models_in_folder)
+
+    if shuffle:
+        # Shuffle
+        np.random.shuffle(models_in_folder)
+
     # Pick only N models
     models_in_folder = models_in_folder[:n_models]
 

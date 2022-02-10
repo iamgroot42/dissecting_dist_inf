@@ -3,7 +3,7 @@ import numpy as np
 import os
 import argparse
 from model_utils import get_model_features, BASE_MODELS_DIR
-from utils import PermInvModel, train_meta_model
+from utils import PermInvModel, train_meta_model, flash_utils
 from data_utils import SUPPORTED_RATIOS
 
 
@@ -24,13 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('--first_n', type=int, default=3,
                         help="Only consider first N layers")
     args = parser.parse_args()
-    print(args)
-
-    # Keep track of ratios to be used
-    train_dirs = [
-        os.path.join(BASE_MODELS_DIR, "victim/%s/" % z) for z in SUPPORTED_RATIOS]
-    test_dirs = [
-        os.path.join(BASE_MODELS_DIR, "adv/%s/" % z) for z in SUPPORTED_RATIOS]
+    flash_utils(args)
 
     if args.testing:
         num_train, num_val = 3, 2
@@ -91,6 +85,6 @@ if __name__ == "__main__":
     # Save meta-model
     ch.save(metamodel.state_dict(), "./metamodel_%d_%.3f.pth" %
             (args.first_n, tloss))
-    
-    # Train: 0.00048, 
-    # Test: 0.00386 , 
+
+    # Train: 0.00048, 0.00067, 0.00049, 0.00070, 0.00027
+    # Test: 0.0036, 0.0034, 0.0034, 0.00577, 0.00255

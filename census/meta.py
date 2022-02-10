@@ -42,7 +42,7 @@ if __name__ == "__main__":
                         help='name for subfolder to save/load data from')
     parser.add_argument('--d_0', default="0.5", help='ratios to use for D_0')
     parser.add_argument('--trg', default=None, help='target ratios')
-    parser.add_argument('--save', action="store_false",
+    parser.add_argument('--save', action="store_true",
                         help='save model or not')
     args = parser.parse_args()
     utils.flash_utils(args)
@@ -134,7 +134,6 @@ if __name__ == "__main__":
 
             metamodel = utils.PermInvModel(dims, dropout=0.5)
             metamodel = metamodel.cuda()
-            metamodel = ch.nn.DataParallel(metamodel)
 
             # Float data
             Y_tr = Y_tr.float()
@@ -159,8 +158,8 @@ if __name__ == "__main__":
                     [args.d_0, str(args.start_n), str(args.first_n)]), tg)
                 if not os.path.isdir(save_path):
                     os.makedirs(save_path)
-                save_model(clf, os.path.join(save_path, str(i) +
-                                             "_%.2f" % tacc))
+                # Save meta classifier (torch model)
+                ch.save(clf.state_dict(), os.path.join(save_path, "run%s_%.2f.pth" % (i+1, tacc)))
             tgt_data.append(tacc)
             print("Test accuracy: %.3f" % tacc)
         data.append(tgt_data)
