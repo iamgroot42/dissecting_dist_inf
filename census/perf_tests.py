@@ -116,7 +116,6 @@ if __name__ == "__main__":
             # Collect all accuracies for basic baseline
             allaccs_1.append(accs_victim_1)
             allaccs_2.append(accs_victim_2)
-        
 
         # Basic baseline: look at model performance on test sets from both G_b
         # Predict b for whichever b it is higher
@@ -139,9 +138,7 @@ if __name__ == "__main__":
         thresholds.append(f_accs[np.argmax(adv_accs)])
        # tr = tr[np.argmax(adv_accs)]
        # rl = rl[np.argmax(adv_accs)]
-        
 
-   
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
     log_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_result:"+args.ratio_1)

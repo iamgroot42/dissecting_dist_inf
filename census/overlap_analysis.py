@@ -42,16 +42,19 @@ def get_best_blackbox_results(adv_1, adv_2, vic_1, vic_2, args):
     preds_1 = [get_preds(x_te_1, adv_1), get_preds(x_te_1, adv_2)]
     preds_2 = [get_preds(x_te_2, adv_1), get_preds(x_te_2, adv_2)]
     # Get predictions on victim's models
-    preds_vic_1 = [get_preds(x_te_1, vic_1), get_preds(x_te_1, vic_1)]
+    preds_vic_1 = [get_preds(x_te_1, vic_1), get_preds(x_te_1, vic_2)]
     preds_vic_2 = [get_preds(x_te_2, vic_1), get_preds(x_te_2, vic_2)]
 
     # Get predictions using perpoint-threshold test
-    ratios = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0]
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.4] #, 0.5] #, 1.0]
     (vic_acc, vic_preds), _ = utils.perpoint_threshold_test(
         (preds_1, preds_2),
         (preds_vic_1, preds_vic_2),
-        (y_te_1, y_te_2),
         ratios, granularity=0.005)
+
+    # Black-box preds aim for first half as 0s, we aim for other direction
+    # So flip predictions
+    vic_preds = 1. - vic_preds
 
     return vic_preds, vic_acc
 
@@ -128,12 +131,14 @@ if __name__ == "__main__":
     white_right_black_wrong = np.sum(white_right & np.logical_not(black_right))
     white_right_black_right = np.sum(
         (white_preds == ground_truth) & (black_preds == ground_truth))
-    max_together = np.sum(white_right) + np.sum(black_right) - white_right_black_right
+    max_together = np.sum(white_right) + \
+        np.sum(black_right) - white_right_black_right
 
     print("White-box accuracy", np.mean(ground_truth == white_preds))
     print("Black-box accuracy",np.mean(ground_truth == black_preds))
-    print("Maximim possible accuracy (%) on combining both", max_together / len(ground_truth))
+    print("Maximim possible accuracy (%) on combining both",
+          100 * max_together / len(ground_truth))
 
     gain = (max_together - max(np.sum(white_right),
                                np.sum(black_right))) / len(ground_truth)
-    print("Potential accuracy gain (%) in combining both accuracies:", gain)
+    print("Potential accuracy gain (%) in combining both accuracies:", 100 * gain)

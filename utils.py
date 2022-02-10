@@ -1473,6 +1473,7 @@ def find_threshold_acc(accs_1, accs_2, granularity=0.1):
     lower = min(np.min(accs_1), np.min(accs_2))
     upper = max(np.max(accs_1), np.max(accs_2))
     combined = np.concatenate((accs_1, accs_2))
+    # Want to predict first set as 0s, second set as 1s
     classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
     best_acc = 0.0
     best_threshold = 0
@@ -2035,12 +2036,15 @@ def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
     combined = np.concatenate((preds_1, preds_2), axis=1)
 
     # Compute accuracy for given predictions, thresholds, and rules
-    preds, acc = get_threshold_pred(combined, classes, threshold, rule, get_pred=True)
+    preds, acc = get_threshold_pred(
+        combined, classes, threshold, rule, get_pred=True)
 
     return 100 * acc, preds
 
 
-def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List, y_gt: np.ndarray, ratios: List = [1.], granularity: float = 0.005):
+def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List,
+                                     ratios: List = [1.],
+                                     granularity: float = 0.005):
     """
         Compute thresholds (based on probabilities) for each given datapoint,
         search for thresholds using given adv model's predictions.
@@ -2062,28 +2066,31 @@ def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List, y_gt: 
     p2 = np.transpose(p2)[order][::-1]
     pv1 = np.transpose(pv1)[order][::-1]
     pv2 = np.transpose(pv2)[order][::-1]
-    yg = y_gt[order][::-1]
 
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=granularity)
 
     # Ground truth
-    classes_adv = np.concatenate((np.zeros(p1.shape[1]), np.ones(p2.shape[1])))
-    classes_victim = np.concatenate((np.zeros(pv1.shape[1]), np.ones(pv2.shape[1])))
+    classes_adv = np.concatenate(
+        (np.zeros(p1.shape[1]), np.ones(p2.shape[1])))
+    classes_victim = np.concatenate(
+        (np.zeros(pv1.shape[1]), np.ones(pv2.shape[1])))
 
     adv_accs, victim_accs, victim_preds = [], [], []
     for ratio in ratios:
         # Get first <ratio> percentile of points
         leng = int(ratio * p1.shape[0])
-        p1_use, p2_use, yg_use  = p1[:leng], p2[:leng], yg[:leng]
+        p1_use, p2_use  = p1[:leng], p2[:leng]
         pv1_use, pv2_use = pv1[:leng], pv2[:leng]
         thres_use, rs_use = thres[:leng], rs[:leng]
 
         # Compute accuracy for given data size on adversary's models
-        adv_acc, _ = _perpoint_threshold_on_ratio(p1_use, p2_use, classes_adv, thres_use, rs_use)
+        adv_acc, _ = _perpoint_threshold_on_ratio(
+            p1_use, p2_use, classes_adv, thres_use, rs_use)
         adv_accs.append(adv_acc)
         # Compute accuracy for given data size on victim's models
-        victim_acc, victim_pred = _perpoint_threshold_on_ratio(pv1_use, pv2_use, classes_victim, thres_use, rs_use)
+        victim_acc, victim_pred = _perpoint_threshold_on_ratio(
+            pv1_use, pv2_use, classes_victim, thres_use, rs_use)
         victim_accs.append(victim_acc)
         # Keep track of predictions on victim's models
         victim_preds.append(victim_pred)
@@ -2094,15 +2101,16 @@ def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List, y_gt: 
     return adv_accs, victim_accs, victim_preds
 
 
-def perpoint_threshold_test(preds_adv: List, preds_victim: List, y_gt: List, ratios: List = [1.], granularity: float = 0.005):
+def perpoint_threshold_test(preds_adv: List, preds_victim: List,
+                            ratios: List = [1.], granularity: float = 0.005):
     """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
     """
     # Get data for first distribution
-    adv_accs_1, victim_accs_1, victim_preds_1 = perpoint_threshold_test_per_dist(preds_adv[0], preds_victim[0], y_gt[0], ratios, granularity)
+    adv_accs_1, victim_accs_1, victim_preds_1 = perpoint_threshold_test_per_dist(preds_adv[0], preds_victim[0], ratios, granularity)
     # Get data for second distribution
-    adv_accs_2, victim_accs_2, victim_preds_2 = perpoint_threshold_test_per_dist(preds_adv[1], preds_victim[1], y_gt[1], ratios, granularity)
+    adv_accs_2, victim_accs_2, victim_preds_2 = perpoint_threshold_test_per_dist(preds_adv[1], preds_victim[1], ratios, granularity)
 
     # Get best adv accuracies for both distributions and compare
     which_dist = 0
@@ -2111,7 +2119,7 @@ def perpoint_threshold_test(preds_adv: List, preds_victim: List, y_gt: List, rat
     else:
         adv_accs_use, victim_accs_use, victim_preds_use =  adv_accs_2, victim_accs_2, victim_preds_2
         which_dist = 1
-    
+
     # Out of the best distribution, pick best ratio according to accuracy on adversary's models
     ind = np.argmax(adv_accs_use)
     victim_acc_use = victim_accs_use[ind]
