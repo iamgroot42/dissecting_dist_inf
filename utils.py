@@ -2063,14 +2063,14 @@ def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List, y_gt: 
     pv1 = np.transpose(pv1)[order][::-1]
     pv2 = np.transpose(pv2)[order][::-1]
     yg = y_gt[order][::-1]
-    
+
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=granularity)
 
     # Ground truth
     classes_adv = np.concatenate((np.zeros(p1.shape[1]), np.ones(p2.shape[1])))
     classes_victim = np.concatenate((np.zeros(pv1.shape[1]), np.ones(pv2.shape[1])))
-    
+
     adv_accs, victim_accs, victim_preds = [], [], []
     for ratio in ratios:
         # Get first <ratio> percentile of points

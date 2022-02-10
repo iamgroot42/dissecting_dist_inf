@@ -46,8 +46,7 @@ def get_best_blackbox_results(adv_1, adv_2, vic_1, vic_2, args):
     preds_vic_2 = [get_preds(x_te_2, vic_1), get_preds(x_te_2, vic_2)]
 
     # Get predictions using perpoint-threshold test
-    # ratios = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0]
-    ratios = [0.05, 0.1, 0.2]
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 1.0]
     (vic_acc, vic_preds), _ = utils.perpoint_threshold_test(
         (preds_1, preds_2),
         (preds_vic_1, preds_vic_2),
@@ -115,12 +114,10 @@ if __name__ == "__main__":
                                                pos_models_vic, neg_models_vic,
                                                args)
 
-    print(black_preds.shape)
     # Get meta-classifier predictions
     print("Getting predictions for white-box test")
     white_preds = get_best_whitebox_results(
         dims, pos_w_test, neg_w_test, args)
-    print(white_preds.shape)
 
     ground_truth = np.concatenate((pos_labels_test, neg_labels_test))
 
