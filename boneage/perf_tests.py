@@ -27,12 +27,15 @@ def get_accs(val_loader, models):
 
     criterion = nn.BCEWithLogitsLoss().cuda()
     for model in tqdm(models):
+        # Shift model to GPU
         model = model.cuda()
 
         vloss, vacc = utils.validate_epoch(
             val_loader, model, criterion, verbose=False)
         accs.append(vacc)
 
+        # Bring back to CPU (save GPU memory)
+        model = model.cpu()
     return np.array(accs)
 
 
@@ -45,8 +48,19 @@ if __name__ == "__main__":
                         choices=SUPPORTED_RATIOS)
     parser.add_argument('--victim_full', action="store_true",
                         help="Use full BoneAge Densenet models for victim models")
+    parser.add_argument('--testing', action="store_true",
+                        help="Testing mode")
+    parser.add_argument('--total_models', type=int, default=100,
+                        help="Total number of models adversary uses for attack")
     args = parser.parse_args()
     utils.flash_utils(args)
+
+    if args.testing:
+        total_models = 3
+        n_test_models = 3
+    else:
+        total_models = args.total_models
+        n_test_models = 1000
 
     def filter(x): return x["gender"] == 1
 
@@ -79,20 +93,21 @@ if __name__ == "__main__":
         ds_1_full = BoneWrapper(df_1, df_1)
         ds_2_full = BoneWrapper(df_2, df_2)
         loaders_full = [
-            ds_1_full.get_loaders(80, shuffle=False)[1],
-            ds_2_full.get_loaders(80, shuffle=False)[1]
+            ds_1_full.get_loaders(args.batch_size, shuffle=False)[1],
+            ds_2_full.get_loaders(args.batch_size, shuffle=False)[1]
         ]
 
     # Load victim models
     models_victim_1 = get_models(get_model_folder_path(
         "victim", args.ratio_1, full_model=args.victim_full),
+        n_models=n_test_models,
         full_model=args.victim_full)
     models_victim_2 = get_models(get_model_folder_path(
         "victim", args.ratio_2, full_model=args.victim_full),
+        n_models=n_test_models,
         full_model=args.victim_full)
 
     # Load adv models
-    total_models = 100
     models_1 = get_models(get_model_folder_path(
         "adv", args.ratio_1), total_models // 2)
     models_2 = get_models(get_model_folder_path(

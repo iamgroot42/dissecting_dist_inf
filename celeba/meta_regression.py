@@ -103,3 +103,10 @@ if __name__ == "__main__":
     # Save meta-model
     ch.save(metamodel.state_dict(), "./metamodel_%s_%.3f.pth" %
             (args.filter, tloss))
+
+    # Male
+    # Train: 0.00092, 0.00062, 0.00055, 0.00063, 0.00048
+    # Test: 0.66619, 0.42054, 0.39416, 0.41067, 0.45654
+    # Young
+    # Train: 0.00074, 0.00067, 0.00104, 0.00068
+    # Test: 0.5301, 0.50441, 0.64415, 0.51595

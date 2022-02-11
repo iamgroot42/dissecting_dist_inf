@@ -126,9 +126,17 @@ def layer_output(data, MLP, layer=0, get_all=False):
 
 # Load models from directory, return feature representations
 def get_model_representations(folder_path, label, first_n=np.inf,
-                              n_models=1000, start_n=0, fetch_models=False,
-                              shuffle=True):
-    models_in_folder = os.listdir(folder_path)
+                              n_models=1000, start_n=0,
+                              fetch_models: bool = False,
+                              shuffle: bool = True,
+                              models_provided: bool = False):
+    """
+        If models_provided is True, folder_path will actually be a list of models.
+    """
+    if models_provided:
+        models_in_folder = folder_path
+    else:
+        models_in_folder = os.listdir(folder_path)
 
     if shuffle:
         # Shuffle
@@ -139,7 +147,10 @@ def get_model_representations(folder_path, label, first_n=np.inf,
 
     w, labels, clfs = [], [], []
     for path in tqdm(models_in_folder):
-        clf = load_model(os.path.join(folder_path, path))
+        if models_provided:
+            clf = path
+        else:
+            clf = load_model(os.path.join(folder_path, path))
         if fetch_models:
             clfs.append(clf)
 
