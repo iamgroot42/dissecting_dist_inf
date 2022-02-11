@@ -1,7 +1,7 @@
 import utils
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
-import requests
+import argparse
 import pandas as pd
 import os
 from tqdm import tqdm
@@ -150,16 +150,21 @@ class CensusWrapper:
                                 custom_limit=custom_limit)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--split',action='store_true',
+                        help='create test and train split')
+    args = parser.parse_args()
     #create test and train split
-    x = pickle.load(open(os.path.join(BASE_DATA_DIR,'census_features.p'), 'rb'))
-    y = pickle.load(open(os.path.join(BASE_DATA_DIR,'census_labels.p'), 'rb'))
-    x = np.array(x, dtype=np.float32)
-    y = np.array(y, dtype=np.int32)
-    X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.33)
-    train = np.hstack((X_train,y_train[...,None]))
-    test = np.hstack((X_test,y_test[...,None]))
-    pickle.dump( train, open('./train.p', "wb" ) )
-    pickle.dump( test, open( './test.p', "wb" ) )
+    if args.split:
+        x = pickle.load(open(os.path.join(BASE_DATA_DIR,'census_features.p'), 'rb'))
+        y = pickle.load(open(os.path.join(BASE_DATA_DIR,'census_labels.p'), 'rb'))
+        x = np.array(x, dtype=np.float32)
+        y = np.array(y, dtype=np.int32)
+        X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.33)
+        train = np.hstack((X_train,y_train[...,None]))
+        test = np.hstack((X_test,y_test[...,None]))
+        pickle.dump( train, open('./train.p', "wb" ) )
+        pickle.dump( test, open( './test.p', "wb" ) )
     dt = CensusIncome()
     def fe(x):
         return x['sex']==1
