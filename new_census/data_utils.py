@@ -4,10 +4,10 @@ from sklearn.model_selection import StratifiedShuffleSplit
 import argparse
 import pandas as pd
 import os
-from tqdm import tqdm
 import pickle
 from sklearn.model_selection import train_test_split
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
+# BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
+BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 PROPERTY_FOCUS = {"sex": 1, "race": 0} # in original dataset, 0 for male, 1 for female; 0 for white
 
@@ -16,18 +16,16 @@ PROPERTY_FOCUS = {"sex": 1, "race": 0} # in original dataset, 0 for male, 1 for 
 # US Income dataset
 class CensusIncome:
     def __init__(self):
-        
+
         self.columns = [
             "age", "workClass", "education-attainment",
             "marital-status", "race", "sex","cognitive-difficulty",
             "ambulatory-difficulty","hearing-difficulty","vision-difficulty",
             "work-hour","world-area-of-birth","state-code","income"
         ]
-        
-        # self.load_data(test_ratio=0.4)
-        self.load_data(test_ratio=0.5)
 
-    
+        self.load_data(test_ratio=0.4)
+        # self.load_data(test_ratio=0.5)
 
     # Return data with desired property ratios
     def get_x_y(self,P):
@@ -37,8 +35,9 @@ class CensusIncome:
             cols = X.columns
             X = X.to_numpy()
             return (X.astype(float), np.expand_dims(Y, 1), cols)
+
     def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
-        
+
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -63,9 +62,8 @@ class CensusIncome:
     # Create adv/victim splits, normalize data, etc
     def load_data(self, test_ratio, random_state=42):
         # Load train, test data
-        train_data = pickle.load(open('./train.p', 'rb'))
-
-        test_data = pickle.load(open('./test.p', 'rb'))
+        train_data = pickle.load(open(os.path.join(BASE_DATA_DIR, "data", 'train.p'), 'rb'))
+        test_data = pickle.load(open(os.path.join(BASE_DATA_DIR, "data", 'test.p'), 'rb'))
         self.train_df = pd.DataFrame(train_data,columns=self.columns)
         self.test_df = pd.DataFrame(test_data,columns=self.columns)
         '''
@@ -93,8 +91,6 @@ class CensusIncome:
         self.test_df_victim, self.test_df_adv = s_split(self.test_df)
 
 
-
-
 # Fet appropriate filter with sub-sampling according to ratio and property
 def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     if filter_prop == "none":
@@ -103,18 +99,16 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
         def lambda_fn(x): return x['sex'] == 1
     elif filter_prop == "race":
         def lambda_fn(x): return x['race'] == 0
-    
-    #these ratio need to be checked with new dataset
+
+    # For 1-year Census data
     prop_wise_subsample_sizes = {
         "adv": {
-            "sex": (1100, 500),
-            "race": (2000, 1000),
-            
+            "sex": (30000, 19000),
+            "race": (19000, 10500),
         },
         "victim": {
-            "sex": (1100, 500),
-            "race": (2000, 1000),
-
+            "sex": (40000, 29000),
+            "race": (24000, 16200),
         },
     }
 
@@ -149,12 +143,14 @@ class CensusWrapper:
                                 filter_prop=self.filter_prop,
                                 custom_limit=custom_limit)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--split',action='store_true',
                         help='create test and train split')
     args = parser.parse_args()
     #create test and train split
+    # Do not run with 'split' for 1 year (already generated splits)
     if args.split:
         x = pickle.load(open(os.path.join(BASE_DATA_DIR,'census_features.p'), 'rb'))
         y = pickle.load(open(os.path.join(BASE_DATA_DIR,'census_labels.p'), 'rb'))
@@ -172,11 +168,10 @@ if __name__ == "__main__":
         return x['race'] ==0
     adv_tr,adv_te,vic_tr,vic_te = dt.train_df_adv,dt.test_df_adv,dt.train_df_victim,dt.test_df_victim
     print('adv train female and male: {}'.format(cal_q(adv_tr,fe)))
-    print('adv test female and male: {}'.format(cal_q(adv_te,fe)))
+    print('adv test female and male: {}\n'.format(cal_q(adv_te,fe)))
     print('vic train female and male: {}'.format(cal_q(vic_tr,fe)))
-    print('vic test female and male: {}'.format(cal_q(vic_te,fe)))
-    
+    print('vic test female and male: {}\n'.format(cal_q(vic_te,fe)))
     print('adv train white and non: {}'.format(cal_q(adv_tr,ra)))
-    print('adv test white and non: {}'.format(cal_q(adv_te,ra)))
+    print('adv test white and non: {}\n'.format(cal_q(adv_te,ra)))
     print('vic train white and non: {}'.format(cal_q(vic_tr,ra)))
     print('vic test white and non: {}'.format(cal_q(vic_te,ra)))
