@@ -6,7 +6,8 @@ from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
-BASE_MODELS_DIR = './models'
+
+BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_new_census/60_40"
 
 
 def layer_output(data, MLP, layer=0, get_all=False):
