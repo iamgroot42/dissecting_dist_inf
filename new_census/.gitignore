@@ -14,4 +14,5 @@ do*.sh
 try.py
 /try
 *.p
+models/*
 

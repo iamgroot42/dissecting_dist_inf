@@ -6,7 +6,7 @@ from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.neural_network._base import ACTIVATIONS
 
-BASE_MODELS_DIR = './'
+BASE_MODELS_DIR = './models'
 
 
 def layer_output(data, MLP, layer=0, get_all=False):
