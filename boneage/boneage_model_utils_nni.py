@@ -38,12 +38,11 @@ from nni.algorithms.compression.pytorch.pruning import (
 )
 
 
-logging.getLogger("nni.algorithms.compression.pytorch.pruning.iterative_pruner").setLevel(
-    logging.WARNING)  # Supress info
-logging.getLogger("nni.compression.pytorch.compressor").setLevel(
-    logging.WARNING)  # Supress info
+logging.getLogger("nni.algorithms.compression.pytorch.pruning.iterative_pruner").setLevel(logging.WARNING) #Supress info
+logging.getLogger("nni.compression.pytorch.compressor").setLevel(logging.WARNING) #Supress info
 
 BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_boneage/"
+
 
 
 class BoneModel(nn.Module):
@@ -81,7 +80,7 @@ class BoneModel(nn.Module):
             return self.layers(x)
 
         if latent not in [0, 1]:
-            raise ValueError("Invald interal layer requested")
+            raise ValueError("Invalid interal layer requested")
 
         # First, second hidden layers correspond to outputs of
         # Model layers 1, 3
@@ -105,7 +104,7 @@ class BoneFullModel(nn.Module):
         self.model = densenet121(pretrained=True)
         self.model.classifier = nn.Linear(1024, 1)
 
-        # TODO: Implement fake_relu
+        # TODO: Implement fake_relu 
 
     def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
         # TODO: Implement latent functionality
@@ -113,11 +112,10 @@ class BoneFullModel(nn.Module):
 
 
 # Save model in specified directory
-def save_model(model, split, prop_and_name, full_model=False):
+def save_model(model, split, ratio, prop_and_name, full_model=False):
+    subfolder_prefix = os.path.join(split, str(ratio))
     if full_model:
-        subfolder_prefix = os.path.join(split, "full")
-    else:
-        subfolder_prefix = split
+        subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
     # Make sure directory exists
     ensure_dir_exists(os.path.join(BASE_MODELS_DIR, subfolder_prefix))
@@ -128,8 +126,12 @@ def save_model(model, split, prop_and_name, full_model=False):
 
 # Load model from given directory
 def load_model(path: str, fake_relu: bool = False,
-               latent_focus: int = None, cpu: bool = False):
-    model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
+               latent_focus: int = None, cpu: bool = False,
+               full_model: bool = False):
+    if full_model:
+        model = BoneFullModel(fake_relu=fake_relu, latent_focus=latent_focus)
+    else:
+        model = BoneModel(1024, fake_relu=fake_relu, latent_focus=latent_focus)
     if cpu:
         model.load_state_dict(ch.load(path))
     else:
@@ -140,12 +142,13 @@ def load_model(path: str, fake_relu: bool = False,
 
 
 # Get model path, given perameters
-def get_model_folder_path(split, ratio):
+def get_model_folder_path(split, ratio, full_model=False):
+    if full_model:
+        return os.path.join(BASE_MODELS_DIR, split, ratio, "full")
     return os.path.join(BASE_MODELS_DIR, split, ratio)
 
+
 #For pruning
-
-
 def get_data(dataset, data_dir, batch_size, test_batch_size, ratio):
     kwargs = {'num_workers': 1, 'pin_memory': True} if torch.cuda.is_available() else {
     }
@@ -174,8 +177,6 @@ def get_data(dataset, data_dir, batch_size, test_batch_size, ratio):
     return train_loader, test_loader, criterion
 
 #For pruning
-
-
 def test(model, device, criterion, test_loader):
     model.eval()
     test_loss = 0
@@ -197,8 +198,6 @@ def test(model, device, criterion, test_loader):
     return acc
 
 #For pruning
-
-
 def train(model, device, train_loader, criterion, optimizer, epoch):
     model.train()
     for batch_idx, (data, target, _) in enumerate(train_loader):
@@ -211,9 +210,10 @@ def train(model, device, train_loader, criterion, optimizer, epoch):
         loss.backward()
         optimizer.step()
         #if batch_idx % 100 == 0: #Set log-interval argument to 100
-        #print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #    epoch, batch_idx * len(data), len(train_loader.dataset),
-        #    100. * batch_idx / len(train_loader), loss.item()))
+            #print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            #    epoch, batch_idx * len(data), len(train_loader.dataset),
+            #    100. * batch_idx / len(train_loader), loss.item()))
+
 
 
 # Function to extract model weights for all models in given directory
@@ -227,38 +227,40 @@ def get_model_features(model_dir, sparsity, fine_tune_epochs, ratio, max_read=No
 
     #For pruning
     str2pruner = {
-        'level': LevelPruner,  # Linear support
-        'l1filter': L1FilterPruner,  # Conv-layers only
-        'l2filter': L2FilterPruner,  # Conv-layers only
-        'slim': SlimPruner,  # Conv-layers only
-        'agp': AGPPruner,  # Linear support only with level
-        'fpgm': FPGMPruner,  # Conv-layers only
-        'mean_activation': ActivationMeanRankFilterPruner,  # Conv-layers only
-        'apoz': ActivationAPoZRankFilterPruner,  # Conv-layers only
-        'taylorfo': TaylorFOWeightFilterPruner  # Conv-layers only
+    'level': LevelPruner, # Linear support
+    'l1filter': L1FilterPruner,  # Conv-layers only
+    'l2filter': L2FilterPruner, # Conv-layers only
+    'slim': SlimPruner,  # Conv-layers only
+    'agp': AGPPruner,  # Linear support only with level
+    'fpgm': FPGMPruner,  # Conv-layers only
+    'mean_activation': ActivationMeanRankFilterPruner, # Conv-layers only
+    'apoz': ActivationAPoZRankFilterPruner,  # Conv-layers only
+    'taylorfo': TaylorFOWeightFilterPruner  # Conv-layers only
 
-        # TODO: Look into SimulatedAnnealing, LotteryTicketPruner, AutoCompress
-    }
+    # TODO: Look into SimulatedAnnealing, LotteryTicketPruner, AutoCompress
+}
+
 
     vecs = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     os.makedirs(experiment_data_dir, exist_ok=True)
 
     # prepare model and data
-    train_loader, test_loader, criterion = get_data(
-        dataset, data_dir, batch_size, test_batch_size, ratio=ratio)
+    train_loader, test_loader, criterion = get_data(dataset, data_dir, batch_size, test_batch_size, ratio=ratio)
 
-    iterator = os.listdir(model_dir)[:1]
+    iterator = os.listdir(model_dir)#[:1] #For testing
     if max_read is not None:
         np.random.shuffle(iterator)
         iterator = iterator[:max_read]
 
     for mpath in tqdm(iterator):
+        # Skip if path is directory
+        if os.path.isdir(os.path.join(model_dir, mpath)):
+            continue
         model = load_model(os.path.join(model_dir, mpath))
-
+        
         ############################################################
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
         # Shift model to device
         model.to(device)
 
@@ -312,14 +314,13 @@ def get_model_features(model_dir, sparsity, fine_tune_epochs, ratio, max_read=No
 
         #print("Pruning complete")
 
-        if True:  # Replaced args.test_only with True
+        if True: #Replaced args.test_only with True
             test(model, device, criterion, test_loader)
 
         #print('start finetuning...')
 
         # Optimizer used in the pruner might be patched, so recommend to new an optimizer for fine-tuning stage.
-        optimizer = torch.optim.SGD(
-            model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
         all_accs = []
         true_accs = []
         best_top1 = 0
@@ -334,6 +335,7 @@ def get_model_features(model_dir, sparsity, fine_tune_epochs, ratio, max_read=No
                 best_top1 = top1
                 torch.save(model.state_dict(), save_path)
 
+
         flops, params, results = count_flops_params(model, dummy_input)
         #print(f'Finetuned model FLOPs {flops/1e6:.2f} M, #Params: {params/1e6:.2f}M, Accuracy: {best_top1: .2f}')
         print(all_accs)
@@ -341,6 +343,8 @@ def get_model_features(model_dir, sparsity, fine_tune_epochs, ratio, max_read=No
         #    print('{}: {}'.format(name, para.shape))
         #    print('Sum: {}'.format(torch.sum(torch.square(para))))
         #print(model.state_dict())
+
+
 
         '''
         prune_mask = []
@@ -353,9 +357,11 @@ def get_model_features(model_dir, sparsity, fine_tune_epochs, ratio, max_read=No
                         layer, name='weight', amount=prune_ratio)
                     prune_mask.append(layer.weight_mask.data.detach().cpu())'''
 
-        # Get model params, shift to GPU
+        prune_mask = []
+         # Get model params, shift to GPU
         dims, fvec = get_weight_layers(
-            model, first_n=first_n, start_n=start_n)
+            model, first_n=first_n, start_n=start_n,
+            prune_mask=prune_mask)
         fvec = [x.cuda() for x in fvec]
 
         vecs.append(fvec)
@@ -375,13 +381,16 @@ def get_pre_processor():
 
 
 # Check with this model number exists
-def check_if_exists(model_id, split, full_model=False):
+def check_if_exists(model_id, split, ratio, full_model=False):
     if full_model:
         model_check_path = os.path.join(
-            BASE_MODELS_DIR, split, "full")
+            BASE_MODELS_DIR, split, str(ratio), "full")
+        # If this directory does not exist, we know adv models don't either
+        if not os.path.exists(model_check_path):
+            return False
     else:
-        model_check_path = os.path.join(BASE_MODELS_DIR, split)
+        model_check_path = os.path.join(BASE_MODELS_DIR, split, str(ratio))
     for model_name in os.listdir(model_check_path):
-        if ("%d_" % model_id) in model_name:
+        if model_name.startswith("%d_" % model_id):
             return True
     return False
