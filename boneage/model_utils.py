@@ -74,7 +74,7 @@ class BoneFullModel(nn.Module):
         self.model = densenet121(pretrained=True)
         self.model.classifier = nn.Linear(1024, 1)
 
-        # TODO: Implement fake_relu 
+        # TODO: Implement fake_relu
 
     def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
         # TODO: Implement latent functionality
@@ -96,7 +96,8 @@ def save_model(model, split, ratio, prop_and_name, full_model=False):
 
 # Load model from given directory
 def load_model(path: str, fake_relu: bool = False,
-               latent_focus: int = None, cpu: bool = False,
+               latent_focus: int = None,
+               cpu: bool = False,
                full_model: bool = False):
     if full_model:
         model = BoneFullModel(fake_relu=fake_relu, latent_focus=latent_focus)
@@ -120,19 +121,36 @@ def get_model_folder_path(split, ratio, full_model=False):
 
 # Function to extract model weights for all models in given directory
 def get_model_features(model_dir, max_read=None, first_n=np.inf,
-                       start_n=0, prune_ratio=None, shift_to_gpu=True):
-    vecs = []
-    iterator = os.listdir(model_dir)
-    if max_read is not None:
+                       start_n=0, prune_ratio=None,
+                       shift_to_gpu: bool = True,
+                       fetch_models: bool = False,
+                       models_provided: bool = False,
+                       shuffle: bool = False):
+    vecs, clfs = [], []
+
+    if models_provided:
+        iterator = model_dir
+    else:
+        iterator = os.listdir(model_dir)
+
+    if shuffle:
         np.random.shuffle(iterator)
+
+    if max_read is not None:
         iterator = iterator[:max_read]
 
     for mpath in tqdm(iterator):
-        # Skip if path is directory
-        if os.path.isdir(os.path.join(model_dir, mpath)):
-            continue
+        if models_provided:
+            model = mpath
+        else:
+            # Skip if path is directory
+            if os.path.isdir(os.path.join(model_dir, mpath)):
+                continue
+        
+            model = load_model(os.path.join(model_dir, mpath), cpu=not shift_to_gpu)
 
-        model = load_model(os.path.join(model_dir, mpath), cpu=not shift_to_gpu)
+        if fetch_models:
+            clfs.append(model)
 
         prune_mask = []
         # Prune weight layers, if requested
@@ -154,7 +172,9 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf,
             fvec = [x.cpu() for x in fvec]
 
         vecs.append(fvec)
-
+    
+    if fetch_models:
+        return dims, vecs, clfs
     return dims, vecs
 
 
@@ -183,3 +203,27 @@ def check_if_exists(model_id, split, ratio, full_model=False):
         if model_name.startswith("%d_" % model_id):
             return True
     return False
+
+
+def get_models(folder_path, n_models: int = 1000,
+               full_model: bool = False,
+               cpu: bool = False,
+               shuffle: bool = True):
+    """
+        Load all models from a given directory
+    """
+    paths = os.listdir(folder_path)
+    if shuffle:
+        paths = np.random.permutation(paths)
+    paths = paths[:n_models]
+
+    models = []
+    for mpath in tqdm(paths):
+        # Skip if mpath is a directory
+        if os.path.isdir(os.path.join(folder_path, mpath)):
+            continue
+
+        model = load_model(os.path.join(folder_path, mpath),
+                           full_model=full_model, cpu=cpu)
+        models.append(model)
+    return models

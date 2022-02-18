@@ -31,17 +31,24 @@ if __name__ == "__main__":
                         help='task to focus on')
     parser.add_argument('--parallel', action="store_true",
                         help='use multiple GPUs to train?')
+    parser.add_argument('--is_large', action="store_true",
+                        help='use Inceptionv3 instead of AlexNet')
     parser.add_argument('--verbose', action="store_true",
                         help='print out epoch-wise statistics?')
     args = parser.parse_args()
     flash_utils(args)
 
+    # Large model AND adversarial training not supported
+    if args.is_large and args.adv_train:
+        raise ValueError("Large model and adversarial training not supported together")
+
     # Check if model exists- skip if it does
     if check_if_exists(args.name, args.ratio, args.filter,
-                       args.split, args.adv_train, args.adv_name):
+                       args.split, args.adv_train, args.adv_name,
+                       args.is_large):
         print("Already trained model exists. Skipping training.")
         exit(0)
-    
+
     # Make sure adv_name is provided if adv_train is True
     if args.adv_train and args.adv_name is None:
         raise ValueError("Must provide adv_name if adv_train is True")
@@ -68,7 +75,7 @@ if __name__ == "__main__":
             clip_min=-1, clip_max=1)
 
     # Create model
-    model = create_model(parallel=args.parallel)
+    model = create_model(parallel=args.parallel, is_large=args.is_large)
 
     # Train model
     model, (vloss, vacc) = train(model, (train_loader, test_loader),
@@ -87,4 +94,5 @@ if __name__ == "__main__":
     save_model(model, args.split, args.filter, str(
         args.ratio), save_name, dataparallel=args.parallel,
         is_adv=args.adv_train,
-        adv_folder_name=args.adv_name)
+        adv_folder_name=args.adv_name,
+        is_large=args.is_large)

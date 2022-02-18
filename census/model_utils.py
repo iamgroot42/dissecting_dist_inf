@@ -175,7 +175,7 @@ def get_model_representations(folder_path, label, first_n=np.inf,
     w = np.array(w, dtype=object)
     labels = ch.from_numpy(labels)
 
-    if clfs:
+    if fetch_models:
         return w, labels, dims, clfs
     return w, labels, dims
 
@@ -206,7 +206,6 @@ def save_model(clf, path):
 
 def load_model(path):
     return load(path)
-
 
 def get_models_path(property, split, value=None):
     if value is None:

@@ -47,14 +47,14 @@ def get_best_blackbox_results(adv_1, adv_2, vic_1, vic_2, args):
     preds_vic_2 = [get_preds(x_te_2, vic_1), get_preds(x_te_2, vic_2)]
 
     # Get predictions using perpoint-threshold test
-    ratios = [0.05, 0.1, 0.2, 0.3, 0.4] #, 0.5] #, 1.0]
+    ratios = [0.05, 0.1, 0.2, 0.3, 0.4]  #, 0.5] #, 1.0]
     (vic_acc, vic_preds), (adv_acc, adv_preds), _ = utils.perpoint_threshold_test(
         (preds_1, preds_2),
         (preds_vic_1, preds_vic_2),
         ratios, granularity=0.005)
 
     if not args.train_meta:
-        vic_preds = (vic_preds >= 0.5) # Treat as usual 0/1 predictions
+        vic_preds = (vic_preds >= 0.5)  # Treat as usual 0/1 predictions
 
     # Black-box preds aim for first half as 0s, we aim for other direction
     # So flip predictions
@@ -170,28 +170,45 @@ if __name__ == "__main__":
         ground_truth_adv = np.concatenate((pos_labels_train, neg_labels_train))
 
         # Train meta-classifier
-        meta_meta_clf = RandomForestClassifier(max_depth=3)
+        meta_meta_clf = RandomForestClassifier(
+            max_depth=1, n_estimators=100, max_samples=0.4)
         meta_meta_clf.fit(X_train, ground_truth_adv)
         # Print train score
-        print("Train score: {:.4f}".format(meta_meta_clf.score(X_train, ground_truth_adv)))
+        print("Train score: {:.4f}".format(
+            meta_meta_clf.score(X_train, ground_truth_adv)))
         # Print test score
-        print("Test score: {:.4f}".format(meta_meta_clf.score(X_test, ground_truth_vic)))
-    else:
-        white_right = (white_vic_preds == ground_truth_vic)
-        black_right = (black_vic_preds == ground_truth_vic)
+        print("Test score: {:.4f}\n".format(
+            meta_meta_clf.score(X_test, ground_truth_vic)))
 
-        white_wrong_black_right = np.sum(np.logical_not(white_right) & black_right)
-        white_right_black_wrong = np.sum(white_right & np.logical_not(black_right))
-        white_right_black_right = np.sum(
-            (white_vic_preds == ground_truth_vic) & (black_vic_preds == ground_truth_vic))
-        max_together = np.sum(white_right) + \
-            np.sum(black_right) - white_right_black_right
+        white_vic_preds = (white_vic_preds >= 0.5)
+        black_vic_preds = (black_vic_preds >= 0.5)
 
-        print("White-box accuracy", np.mean(ground_truth_vic == white_vic_preds))
-        print("Black-box accuracy",np.mean(ground_truth_vic == black_vic_preds))
-        print("Maximim possible accuracy (%) on combining both",
-              100 * max_together / len(ground_truth_vic))
+    white_right = (white_vic_preds == ground_truth_vic)
+    black_right = (black_vic_preds == ground_truth_vic)
 
-        gain = (max_together - max(np.sum(white_right),
-                                   np.sum(black_right))) / len(ground_truth_vic)
-        print("Potential accuracy gain (%) in combining both accuracies:", 100 * gain)
+    white_wrong_black_right = np.sum(np.logical_not(white_right) & black_right)
+    white_right_black_wrong = np.sum(white_right & np.logical_not(black_right))
+    white_right_black_right = np.sum(
+        (white_vic_preds == ground_truth_vic) & (black_vic_preds == ground_truth_vic))
+    max_together = np.sum(white_right) + \
+        np.sum(black_right) - white_right_black_right
+
+    # Combine accuracy if "only when both agree" models is followed
+    when_both_agree = (white_vic_preds == black_vic_preds)
+    both_agree_acc = np.mean(
+        white_vic_preds[when_both_agree] == ground_truth_vic[when_both_agree])
+    print("Accuracy when both agree: {:.4f}".format(both_agree_acc))
+    print("Rejection rate (%) for this scenario: {:.2f}".format(
+          100 * (1 - np.mean(when_both_agree))))
+
+    # Compute upper bound (based on current accuracies) on using both methods
+    print("White-box accuracy", np.mean(ground_truth_vic == white_vic_preds))
+    print("Black-box accuracy", np.mean(ground_truth_vic == black_vic_preds))
+    print("Maximim possible accuracy (%) on combining both",
+          100 * max_together / len(ground_truth_vic))
+
+    # Absolute gain in said combined method
+    gain = (max_together - max(np.sum(white_right),
+                               np.sum(black_right))) / len(ground_truth_vic)
+    print("Potential accuracy gain (%) in combining both accuracies: {:.2f}".format(
+        100 * gain))

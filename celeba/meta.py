@@ -10,9 +10,7 @@ from model_utils import get_model_features, BASE_MODELS_DIR
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Celeb-A')
     parser.add_argument('--n_tries', type=int, default=5)
-    parser.add_argument('--batch_size', type=int, default=150)
-    parser.add_argument('--train_sample', type=int, default=800)
-    parser.add_argument('--val_sample', type=int, default=0)
+    # Related to using adversarial models
     parser.add_argument('--adv_adv_prefix', type=str,
                         default="adv_train",
                         help="Prefix for adversarial models for adv")
@@ -23,12 +21,9 @@ if __name__ == "__main__":
                         help="Use adv-trained models for adv's models")
     parser.add_argument('--use_adv_for_victim', action="store_true",
                         help="Use adv-trained models for victim's models")
+    # Special flags for meta-classifier architecture
     parser.add_argument('--scale_invariance', action="store_true",
                         help="Use scale-invariant version of model")
-    parser.add_argument('--filter', help='alter ratio for this attribute',
-                        default="Male", choices=SUPPORTED_PROPERTIES)
-    parser.add_argument('--epochs', type=int, default=100)
-    parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--start_n_conv', type=int, default=0,
                         help="Only consider starting from this layer of conv part")
     parser.add_argument('--first_n_conv', type=int, default=np.inf,
@@ -41,10 +36,22 @@ if __name__ == "__main__":
                         help="Only consider first N layers of fc part")
     parser.add_argument('--fc_custom', default=None,
                         help="Comma-separated list of layers wanted (overrides first/last N) for FC")
-    parser.add_argument('--first', help="Ratio for D_0", default="0.5")
-    parser.add_argument('--second', required=True, help="Ratio for D_1")
     parser.add_argument('--focus', choices=["fc", "conv", "all", "combined"],
                         required=True, help="Which layer paramters to use")
+    # Flags for training meta-classifier
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--batch_size', type=int, default=150)
+    parser.add_argument('--train_sample', type=int, default=800)
+    parser.add_argument('--val_sample', type=int, default=0)
+    parser.add_argument('--save', action="store_true",
+                        help='save meta-classifier?')
+    # Flags to specify which models to use
+    parser.add_argument('--filter', help='alter ratio for this attribute',
+                        default="Male", choices=SUPPORTED_PROPERTIES)
+    parser.add_argument('--first', help="Ratio for D_0", default="0.5")
+    parser.add_argument('--second', required=True, help="Ratio for D_1")
+
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -180,7 +187,7 @@ if __name__ == "__main__":
         metamodel = metamodel.cuda()
 
         # Train PIM model
-        _, test_acc = utils.train_meta_model(
+        metamodel, test_acc = utils.train_meta_model(
             metamodel,
             (X_train, Y_train),
             (X_test, Y_test),
@@ -190,5 +197,14 @@ if __name__ == "__main__":
             eval_every=10, gpu=True)
         accs.append(test_acc)
         print("Run %d: %.2f" % (i+1, test_acc))
+
+        if args.save:
+            save_path = os.path.join("log/meta/", args.filter, "meta_model", "-".join(
+                [args.first, args.focus]), args.second)
+            if not os.path.isdir(save_path):
+                os.makedirs(save_path)
+            # Save meta classifier (torch model)
+            ch.save(metamodel.state_dict(), os.path.join(
+                save_path, "run%d_%.2f.pth" % (i+1, test_acc)))
 
     print(accs)

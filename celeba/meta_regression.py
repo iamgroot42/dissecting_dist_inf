@@ -17,6 +17,8 @@ if __name__ == "__main__":
                         default="Male", choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--lr', type=float, default=1e-3)
+    parser.add_argument('--focus', choices=["fc", "conv", "combined"],
+                        required=True, help="Which layer paramters to use")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -40,11 +42,11 @@ if __name__ == "__main__":
         # Load models, convert to features
         dims, vecs_train_and_val = get_model_features(
             train_dir, max_read=n_models,
-            focus="combined",
+            focus=args.focus,
             shift_to_gpu=False)
         _, vecs_test = get_model_features(
             test_dir, max_read=n_models,
-            focus="combined",
+            focus=args.focus,
             shift_to_gpu=False)
 
         vecs_train_and_val = np.array(vecs_train_and_val, dtype='object')
@@ -81,10 +83,17 @@ if __name__ == "__main__":
     X_test = utils.prepare_batched_data(X_test)
 
     # Train meta-classifier model
-    dims_conv, dims_fc = dims
-    dim_channels, dim_kernels, middle_dim = dims_conv
-    metamodel = utils.FullPermInvModel(
-        dims_fc, middle_dim, dim_channels, dim_kernels,)
+    if args.focus == "conv":
+        dim_channels, dim_kernels = dims
+        metamodel = utils.PermInvConvModel(
+            dim_channels, dim_kernels)
+    elif args.focus == "fc":
+        metamodel = utils.PermInvModel(dims)
+    else:
+        dims_conv, dims_fc = dims
+        dim_channels, dim_kernels, middle_dim = dims_conv
+        metamodel = utils.FullPermInvModel(
+            dims_fc, middle_dim, dim_channels, dim_kernels,)
     metamodel = metamodel.cuda()
 
     # Train PIM
@@ -105,8 +114,17 @@ if __name__ == "__main__":
             (args.filter, tloss))
 
     # Male
+    # All
     # Train: 0.00092, 0.00062, 0.00055, 0.00063, 0.00048
     # Test: 0.66619, 0.42054, 0.39416, 0.41067, 0.45654
+    # Conv
+    # Train: 0.00059, 0.00045, 0.00049, 0.00058, 0.00051
+    # Test: 0.47972, 0.39712, 0.32094, 0.37900, 0.26586
+
     # Young
+    # All
     # Train: 0.00074, 0.00067, 0.00104, 0.00068
     # Test: 0.5301, 0.50441, 0.64415, 0.51595
+    # FC
+    # Train: 0.00070, 0.00059, 0.00098, 0.00106, 0.00068
+    # Test:  0.52710, 0.51089, 0.49209, 0.54871, 0.48593

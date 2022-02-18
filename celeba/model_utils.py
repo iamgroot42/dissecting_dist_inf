@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch.nn as nn
 from tqdm import tqdm
+from torchvision.models import inception_v3, densenet121
 from sklearn.preprocessing import normalize
 from utils import check_if_inside_cluster, ensure_dir_exists, get_weight_layers, FakeReluWrapper, BasicWrapper
 
@@ -11,6 +12,18 @@ if check_if_inside_cluster():
     BASE_MODELS_DIR = "/scratch/as9rw/models_celeba/75_25"
 else:
     BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_celeba/75_25"
+
+
+class InceptionModel(nn.Module):
+    def __init__(self,
+                 num_classes: int = 1,
+                 fake_relu: bool = False,
+                 latent_focus: int = None) -> None:
+        super(InceptionModel, self).__init__()
+        self.model = densenet121(num_classes=num_classes) #, aux_logits=False)
+
+    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
+        return self.model(x)
 
 
 class MyAlexNet(nn.Module):
@@ -103,8 +116,16 @@ class MyAlexNet(nn.Module):
                     return x
 
 
-def create_model(parallel=False, fake_relu=False, latent_focus=None):
-    model = MyAlexNet(fake_relu=fake_relu, latent_focus=latent_focus).cuda()
+def create_model(parallel=False, fake_relu=False,
+                 latent_focus=None, is_large=False):
+    """
+        Create and return a model.
+    """
+    if is_large:
+        model = InceptionModel(fake_relu=fake_relu, latent_focus=latent_focus)
+    else:
+        model = MyAlexNet(fake_relu=fake_relu, latent_focus=latent_focus)
+    model = model.cuda()
     if parallel:
         model = nn.DataParallel(model)
     return model
@@ -148,9 +169,13 @@ def get_models(folder_path, n_models=1000):
 
 def save_model(model, split, property, ratio,
                name, dataparallel=False, is_adv=False,
-               adv_folder_name="adv_train"):
+               adv_folder_name="adv_train",
+               is_large=False):
     if is_adv:
-        subfolder_prefix = os.path.join(split, property, ratio, adv_folder_name)
+        subfolder_prefix = os.path.join(
+            split, property, ratio, adv_folder_name)
+    elif is_large:
+        subfolder_prefix = os.path.join(split, property, ratio, "inception")
     else:
         subfolder_prefix = os.path.join(split, property, ratio)
 
@@ -215,8 +240,9 @@ def get_model_features(model_dir, max_read=None,
                        start_n_conv=0, first_n_conv=np.inf,
                        start_n_fc=0, first_n_fc=np.inf,
                        conv_custom=None, fc_custom=None,
-                       focus="all", shift_to_gpu=True):
-    vecs = []
+                       focus="all", shift_to_gpu=True,
+                       get_stats=False):
+    vecs, stats = [], []
     iterator = os.listdir(model_dir)
     if max_read is not None:
         np.random.shuffle(iterator)
@@ -228,6 +254,16 @@ def get_model_features(model_dir, max_read=None,
         # Folder for adv models (or others): skip
         if os.path.isdir(os.path.join(model_dir, mpath)):
             continue
+
+        if get_stats:
+            # Get test acc (and robustness) if requested
+            numbers = mpath.replace(".pth", "").split("_")[1:]
+            stat = [float(numbers[0])]
+            if "adv" in mpath:
+                # Extract two numbers
+                adv_acc = float(numbers[2].replace("adv", ""))
+                stat.append(adv_acc)
+            stats.append(stat)
 
         model = get_model(os.path.join(model_dir, mpath), cpu=not shift_to_gpu)
 
@@ -261,15 +297,21 @@ def get_model_features(model_dir, max_read=None,
             break
 
     if focus in ["all", "combined"]:
+        if get_stats:
+            return (dims_conv, dims_fc), vecs, stats
         return (dims_conv, dims_fc), vecs
+    if get_stats:
+        return dims, vecs, stats
     return dims, vecs
 
 
 # Check with this model number exists
-def check_if_exists(model_id, ratio, filter, split, is_adv, adv_folder_name):
+def check_if_exists(model_id, ratio, filter, split, is_adv, adv_folder_name, is_large=False):
     # Get folder of models to check
     if is_adv:
         subfolder_prefix = os.path.join(split, filter, str(ratio), adv_folder_name)
+    elif is_large:
+        subfolder_prefix = os.path.join(split, filter, str(ratio), "inception")
     else:
         subfolder_prefix = os.path.join(split, filter, str(ratio))
     model_check_path = os.path.join(BASE_MODELS_DIR, subfolder_prefix)

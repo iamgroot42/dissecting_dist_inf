@@ -22,6 +22,8 @@ if __name__ == "__main__":
     parser.add_argument(
         '--prune_ratio', type=float, default=None,
         help="Prune models before training meta-models")
+    parser.add_argument('--save', action="store_true",
+                        help='save model or not')
     args = parser.parse_args()
     flash_utils(args)
 
@@ -90,7 +92,7 @@ if __name__ == "__main__":
         metamodel = metamodel.cuda()
 
         # Train PIM model
-        _, test_acc = train_meta_model(
+        metamodel, test_acc = train_meta_model(
             metamodel,
             (X_train, Y_train),
             (X_test, Y_test),
@@ -99,6 +101,14 @@ if __name__ == "__main__":
             val_data=val_data,
             eval_every=10, gpu=True)
         accs.append(test_acc)
+
+        if args.save:
+            save_path = os.path.join(f"log/meta/meta_model-{args.first}", args.second)
+            if not os.path.isdir(save_path):
+                os.makedirs(save_path)
+            # Save meta classifier (torch model)
+            ch.save(metamodel.state_dict(), os.path.join(save_path, "run%s_%.2f.pth" % (i+1, test_acc)))
+
         print("Run %d: %.2f" % (i+1, test_acc))
 
     print(accs)

@@ -1,25 +1,10 @@
-from model_utils import load_model, get_model_folder_path
+from model_utils import load_model, get_model_folder_path, get_models
 from data_utils import BoneWrapper, get_df, get_features, SUPPORTED_RATIOS
 import torch.nn as nn
 import numpy as np
 import utils
 from tqdm import tqdm
 import os
-
-
-def get_models(folder_path, n_models: int = 1000, full_model: bool = False):
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        # Skip if mpath is a directory
-        if os.path.isdir(os.path.join(folder_path, mpath)):
-            continue
-
-        model = load_model(os.path.join(folder_path, mpath),
-                           full_model=full_model)
-        models.append(model)
-    return models
 
 
 def get_accs(val_loader, models):

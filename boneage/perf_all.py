@@ -12,6 +12,8 @@ import matplotlib as mpl
 from perf_tests import get_models
 from perf_quart import order_points, cal_acc
 mpl.rcParams['figure.dpi'] = 200
+
+
 def get_preds(loader,ms):
     
     ps = []
@@ -36,6 +38,7 @@ def get_preds(loader,ms):
     #ps = np.array(ps)
     ps = ch.stack(ps,0)
     return ps.to(ch.device('cpu')).numpy()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
