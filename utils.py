@@ -1190,7 +1190,8 @@ def compute_metrics(dataset_true, dataset_pred,
 @ch.no_grad()
 def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
               binary=True, regression=False, gpu=False,
-              combined=False, X_acts=None):
+              combined=False, X_acts=None,
+              element_wise=False):
     model.eval()
     use_acts = (X_acts is not None)
     # Activations must be provided if not combined
@@ -1198,7 +1199,9 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
         combined), "Activations must be provided if not combined"
 
     # Batch data to fit on GPU
-    loss, num_samples, running_acc = 0, 0, 0
+    num_samples, running_acc = 0, 0
+    loss = [] if element_wise else 0
+
     i = 0
 
     if combined:
@@ -1241,15 +1244,23 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
         outputs = ch.cat(outputs, 0)
 
         num_samples += outputs.shape[0]
-        loss += loss_fn(outputs,
-                        Y[i:i+batch_size]).item() * num_samples
+        if element_wise:
+            loss.append(loss_fn(outputs, Y[i:i+batch_size]).detach().cpu())
+        else:
+            loss += loss_fn(outputs,
+                            Y[i:i+batch_size]).item() * num_samples
         if not regression:
             running_acc += accuracy(outputs, Y[i:i+batch_size]).item()
 
         # Next batch
         i += batch_size
 
-    return 100 * running_acc / num_samples, loss / num_samples
+    if element_wise:
+        loss = ch.cat(loss, 0)
+    else:
+        loss /= num_samples
+
+    return 100 * running_acc / num_samples, loss
 
 
 # Function to train meta-classifier

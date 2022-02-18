@@ -26,6 +26,9 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
+    parser.add_argument('--eval_only', action="store_true",
+                        help="Only loading up model and evaluating")
+    parser.add_argument('--model_path', help="Path to saved model")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -42,62 +45,82 @@ if __name__ == "__main__":
     Y_train, Y_test = [], []
     for ratio in SUPPORTED_RATIOS:
         # Load up data for this ratio
-        train_and_val_w, _, dims = get_model_representations(
-            get_models_path("adv", args.filter, ratio), 0, args.first_n,
-            n_models=n_models)
-        test_w, _, _ = get_model_representations(
+        if not args.eval_only:
+            train_and_val_w, _, dims = get_model_representations(
+                get_models_path("adv", args.filter, ratio), 0, args.first_n,
+                n_models=n_models)
+            # Shuffle and divide train data into train and val
+            shuffled = np.random.permutation(len(train_and_val_w))
+            train_w = train_and_val_w[shuffled[:num_train]]
+            val_w = train_and_val_w[shuffled[num_train:num_train+num_val]]
+
+            X_train.append(train_w)
+            X_val.append(val_w)
+            Y_train += [float(ratio)] * len(train_w)
+            Y_val += [float(ratio)] * len(val_w)
+
+        test_w, _, dims = get_model_representations(
             get_models_path("victim", args.filter, ratio), 0, args.first_n,
             n_models=n_models)
-
-        # Shuffle and divide train data into train and val
-        shuffled = np.random.permutation(len(train_and_val_w))
-        train_w = train_and_val_w[shuffled[:num_train]]
-        val_w = train_and_val_w[shuffled[num_train:num_train+num_val]]
-
-        # Keep collecting data...
-        X_train.append(train_w)
-        X_val.append(val_w)
         X_test.append(test_w)
-
-        # ...and labels
-        Y_train += [float(ratio)] * len(train_w)
-        Y_val += [float(ratio)] * len(val_w)
         Y_test += [float(ratio)] * len(test_w)
 
     # Prepare for PIM
-    X_train = np.concatenate(X_train)
-    X_val = np.concatenate(X_val)
-    X_test = np.concatenate(X_test)
+    if not args.eval_only:
+        X_train = np.concatenate(X_train)
+        X_val = np.concatenate(X_val)
+        Y_train = ch.from_numpy(np.array(Y_train)).float()
+        Y_val = ch.from_numpy(np.array(Y_val)).float()
 
-    Y_train = ch.from_numpy(np.array(Y_train)).float()
-    Y_val = ch.from_numpy(np.array(Y_val)).float()
+    X_test = np.concatenate(X_test)
     Y_test = ch.from_numpy(np.array(Y_test)).float()
 
     # Batch layer-wise inputs
     print("Batching data: hold on")
-    X_train = utils.prepare_batched_data(X_train)
-    X_val = utils.prepare_batched_data(X_val)
+    if not args.eval_only:
+        X_train = utils.prepare_batched_data(X_train)
+        X_val = utils.prepare_batched_data(X_val)
     X_test = utils.prepare_batched_data(X_test)
 
     # Train meta-classifier model
     metamodel = utils.PermInvModel(dims, dropout=0.5)
-    metamodel = metamodel.cuda()
 
-    # Train PIM
-    batch_size = 10 if args.testing else args.batch_size
-    _, tloss = utils.train_meta_model(
-        metamodel,
-        (X_train, Y_train), (X_test, Y_test),
-        epochs=args.epochs,
-        binary=True, lr=0.001,
-        regression=True,
-        batch_size=batch_size,
-        val_data=(X_val, Y_val), combined=True,
-        eval_every=10, gpu=True)
-    print("Test loss %.4f" % (tloss))
+    if args.eval_only:
+        # Load model
+        metamodel.load_state_dict(ch.load(args.model_path))
+        # Evaluate
+        metamodel = metamodel.cuda()
+        loss_fn = ch.nn.MSELoss(reduction='none')
+        _, losses = utils.test_meta(
+            metamodel, loss_fn, X_test, Y_test.cuda(),
+            args.batch_size, None,
+            binary=True, regression=True, gpu=True,
+            combined=True, element_wise=True)
+        y_np = Y_test.numpy()
+        losses = losses.numpy()
+        # Get all unique ratios in GT, and their average losses from model
+        ratios = np.unique(y_np)
+        losses_dict = {}
+        for ratio in ratios:
+            losses_dict[ratio] = np.mean(losses[y_np == ratio])
+        print(losses_dict)
+    else:
+        metamodel = metamodel.cuda()
+        # Train PIM
+        batch_size = 10 if args.testing else args.batch_size
+        _, tloss = utils.train_meta_model(
+            metamodel,
+            (X_train, Y_train), (X_test, Y_test),
+            epochs=args.epochs,
+            binary=True, lr=0.001,
+            regression=True,
+            batch_size=batch_size,
+            val_data=(X_val, Y_val), combined=True,
+            eval_every=10, gpu=True)
+        print("Test loss %.4f" % (tloss))
 
-    # Save meta-model
-    ch.save(metamodel.state_dict(), "./metamodel_%s_%.3f.pth" % (args.filter, tloss))
+        # Save meta-model
+        ch.save(metamodel.state_dict(), "./metamodel_%s_%.3f.pth" % (args.filter, tloss))
 
     # Results seem to get better as batch size increases
     # Sex
