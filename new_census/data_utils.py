@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 # BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
-PROPERTY_FOCUS = {"sex": 1, "race": 0} # in original dataset, 0 for male, 1 for female; 0 for white
+PROPERTY_FOCUS = {"sex": 'female', "race": 'white'} # in original dataset, 0 for male, 1 for female; 0 for white
 
 
 
