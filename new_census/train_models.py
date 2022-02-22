@@ -3,7 +3,7 @@ import os
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import model_utils
 import utils
-from sklearn.utils.testing import ignore_warnings
+from sklearn.utils._testing import ignore_warnings
 from sklearn.exceptions import ConvergenceWarning
 
 
@@ -60,9 +60,6 @@ if __name__ == "__main__":
             model.fit(x_tr, y_tr.ravel())
             return model
 
-        # TODO (for later): Adjust model dirs to be different
-        # if drop_senstive_cols is True
-
         clf = train(clf)
         train_acc = 100 * clf.score(x_tr, y_tr.ravel())
         test_acc = 100 * clf.score(x_te, y_te.ravel())
@@ -71,6 +68,8 @@ if __name__ == "__main__":
                   (i, train_acc, test_acc))
         save_path = model_utils.get_models_path(
             args.filter, args.split, args.ratio)
+        if args.drop_senstive_cols:
+            save_path = os.path.join(save_path,"drop")
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
         model_utils.save_model(clf, os.path.join(save_path,

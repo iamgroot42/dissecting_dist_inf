@@ -40,6 +40,7 @@ if __name__ == "__main__":
     parser.add_argument('--d_0', default="0.5", help='ratios to use for D_0')
     parser.add_argument('--trg', default=None, help='target ratios')
     parser.add_argument('--save', action="store_false", help='save model or not')
+    parser.add_argument('--drop', action="store_true")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -66,18 +67,31 @@ if __name__ == "__main__":
     # targets = sorted(list(targets))
 
     # Load up positive-label test, test data
-    pos_w, pos_labels, _ = get_model_representations(
+    if args.drop:
+        pos_w, pos_labels, _ = get_model_representations(
+        os.path.join(get_models_path(args.filter, "adv", d_0),'drop'), 1, args.first_n)
+        pos_w_test, pos_labels_test, dims = get_model_representations(
+        os.path.join(get_models_path(args.filter, "victim", d_0),'drop'), 1, args.first_n)
+    else:
+        pos_w, pos_labels, _ = get_model_representations(
         get_models_path(args.filter, "adv", d_0), 1, args.first_n)
-    pos_w_test, pos_labels_test, dims = get_model_representations(
+        pos_w_test, pos_labels_test, dims = get_model_representations(
         get_models_path(args.filter, "victim", d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
         tgt_data = []
         # Load up negative-label train, test data
-        neg_w, neg_labels, _ = get_model_representations(
+        if args.drop:
+
+            neg_w, neg_labels, _ = get_model_representations(
+                os.path.join(get_models_path(args.filter, "adv", tg),'drop'), 0, args.first_n)
+            neg_w_test, neg_labels_test, _ = get_model_representations(
+                os.path.join(get_models_path(args.filter, "victim", tg),'drop'), 0, args.first_n)
+        else:
+            neg_w, neg_labels, _ = get_model_representations(
                 get_models_path(args.filter, "adv", tg), 0, args.first_n)
-        neg_w_test, neg_labels_test, _ = get_model_representations(
+            neg_w_test, neg_labels_test, _ = get_model_representations(
             get_models_path(args.filter, "victim", tg), 0, args.first_n)
 
         # Generate test set
@@ -163,6 +177,8 @@ if __name__ == "__main__":
 
     # Print data
     log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
+    if args.drop:
+        log_path = os.path.join(log_path,'drop')
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
