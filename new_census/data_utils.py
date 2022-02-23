@@ -39,16 +39,18 @@ class CensusIncome:
             X = X.to_numpy()
             return (X.astype(float), np.expand_dims(Y, 1), cols)
 
-    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None):
+    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None,scale=1.0):
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
             TRAIN_DF = get_filter(TRAIN_DF, filter_prop,
                                   split, prop_ratio, is_test=0,
-                                  custom_limit=custom_limit)
+                                  custom_limit=custom_limit,
+                                  scale=scale)
             TEST_DF = get_filter(TEST_DF, filter_prop,
                                  split, prop_ratio, is_test=1,
-                                 custom_limit=custom_limit)
+                                 custom_limit=custom_limit,
+                                 scale=scale)
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
                 TRAIN_DF), self.get_x_y(TEST_DF)
@@ -96,7 +98,7 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
+def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,scale=1.0):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
@@ -118,6 +120,7 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
 
     if custom_limit is None:
         subsample_size = prop_wise_subsample_sizes[split][filter_prop][is_test]
+        subsample_size = int(scale*subsample_size)
     else:
         subsample_size = custom_limit
     return utils.heuristic(df, lambda_fn, ratio,
@@ -147,17 +150,21 @@ class CensusWrapper:
                  filter_prop="none",
                  ratio=0.5,
                  split="all",
-                 drop_senstive_cols=False):
+                 drop_senstive_cols=False,
+                 scale=1.0
+                 ):
         self.ds = CensusIncome(drop_senstive_cols=drop_senstive_cols)
         self.split = split
         self.ratio = ratio
         self.filter_prop = filter_prop
+        self.scale=scale
+        
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
                                 filter_prop=self.filter_prop,
-                                custom_limit=custom_limit)
+                                custom_limit=custom_limit,scale=self.scale)
 
 
 if __name__ == "__main__":

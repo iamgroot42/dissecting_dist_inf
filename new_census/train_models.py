@@ -29,6 +29,7 @@ if __name__ == "__main__":
                         help='drop age/sex attributes during training?')
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
+    parser.add_argument('--scale', type=float, default=1.0)
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -36,7 +37,8 @@ if __name__ == "__main__":
         filter_prop=args.filter,
         ratio=float(args.ratio),
         split=args.split,
-        drop_senstive_cols=args.drop_senstive_cols)
+        drop_senstive_cols=args.drop_senstive_cols,
+        scale=args.scale)
 
     iterator = range(1, args.num + 1)
     if not args.verbose:
@@ -68,6 +70,8 @@ if __name__ == "__main__":
                   (i, train_acc, test_acc))
         save_path = model_utils.get_models_path(
             args.filter, args.split, args.ratio)
+        if args.scale != 1.0:
+            save_path = os.path.join(save_path,"sample_size_scale:{}".format(args.scale))
         if args.drop_senstive_cols:
             save_path = os.path.join(save_path,"drop")
         if not os.path.isdir(save_path):
