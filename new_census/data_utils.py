@@ -128,7 +128,7 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,scale=1
                            class_imbalance=1.38,  # Calculated based on original distribution
                            n_tries=100,
                            class_col='income',
-                           verbose=False)
+                           verbose=True)
 
 
 def cal_q(df, condition):

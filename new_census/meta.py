@@ -41,6 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--trg', default=None, help='target ratios')
     parser.add_argument('--save', action="store_false", help='save model or not')
     parser.add_argument('--drop', action="store_true")
+    parser.add_argument('--scale',type=float,default=1.0)
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -73,10 +74,18 @@ if __name__ == "__main__":
         pos_w_test, pos_labels_test, dims = get_model_representations(
         os.path.join(get_models_path(args.filter, "victim", d_0),'drop'), 1, args.first_n)
     else:
-        pos_w, pos_labels, _ = get_model_representations(
-        get_models_path(args.filter, "adv", d_0), 1, args.first_n)
-        pos_w_test, pos_labels_test, dims = get_model_representations(
-        get_models_path(args.filter, "victim", d_0), 1, args.first_n)
+        if args.scale != 1:
+            pos_w, pos_labels, _ = get_model_representations(
+            os.path.join(get_models_path(args.filter, "adv", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
+            pos_w_test, pos_labels_test, dims = get_model_representations(
+            os.path.join(get_models_path(args.filter, "victim", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
+        
+        else:
+
+            pos_w, pos_labels, _ = get_model_representations(
+            get_models_path(args.filter, "adv", d_0), 1, args.first_n)
+            pos_w_test, pos_labels_test, dims = get_model_representations(
+            get_models_path(args.filter, "victim", d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
@@ -89,10 +98,19 @@ if __name__ == "__main__":
             neg_w_test, neg_labels_test, _ = get_model_representations(
                 os.path.join(get_models_path(args.filter, "victim", tg),'drop'), 0, args.first_n)
         else:
-            neg_w, neg_labels, _ = get_model_representations(
+            if args.scale != 1:
+                neg_w, neg_labels, _ = get_model_representations(
+                os.path.join(get_models_path(args.filter, "adv", tg),'sample_size_scale:{}'.format(args.scale)), 0, args.first_n)
+                neg_w_test, neg_labels_test, dims = get_model_representations(
+                os.path.join(get_models_path(args.filter, "victim", tg),'sample_size_scale:{}'.format(args.scale)), 0, args.first_n)
+        
+            else:
+
+                neg_w, neg_labels, _ = get_model_representations(
                 get_models_path(args.filter, "adv", tg), 0, args.first_n)
-            neg_w_test, neg_labels_test, _ = get_model_representations(
-            get_models_path(args.filter, "victim", tg), 0, args.first_n)
+                neg_w_test, neg_labels_test, dims = get_model_representations(
+                get_models_path(args.filter, "victim", tg), 0, args.first_n)
+
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
@@ -179,6 +197,8 @@ if __name__ == "__main__":
     log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
     if args.drop:
         log_path = os.path.join(log_path,'drop')
+    if args.scale != 1.0:
+        log_path = os.path.join(log_path,"sample_size_scale:{}".format(args.scale))
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
