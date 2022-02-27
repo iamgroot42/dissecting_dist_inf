@@ -6,7 +6,7 @@ import pandas as pd
 import os
 import pickle
 from sklearn.model_selection import train_test_split
-
+from torch.utils.data import   Dataset
 # BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
@@ -128,7 +128,7 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,scale=1
                            class_imbalance=1.38,  # Calculated based on original distribution
                            n_tries=100,
                            class_col='income',
-                           verbose=True)
+                           verbose=False)
 
 
 def cal_q(df, condition):
@@ -166,7 +166,20 @@ class CensusWrapper:
                                 filter_prop=self.filter_prop,
                                 custom_limit=custom_limit,scale=self.scale)
 
-
+class CensusSet(Dataset):
+    def __init__(self, data, targets):
+        self.data = data
+        self.targets = targets.ravel()
+        
+        
+    def __getitem__(self, index):
+        x = self.data[index]
+        y = self.targets[index]
+        
+        return x, y,0#zero because no property label to return, but compatible with methods from utils
+    
+    def __len__(self):
+        return len(self.data)    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--split', action='store_true',
@@ -203,3 +216,4 @@ if __name__ == "__main__":
     print('adv test white and non: {}\n'.format(cal_q(adv_te, ra)))
     print('vic train white and non: {}'.format(cal_q(vic_tr, ra)))
     print('vic test white and non: {}'.format(cal_q(vic_te, ra)))
+   
