@@ -208,3 +208,11 @@ if __name__ == "__main__":
                 save_path, "run%d_%.2f.pth" % (i+1, test_acc)))
 
     print(accs)
+
+    # Write data to file
+    log_path = os.path.join("log/meta/", args.filter, "meta_result")
+    # Make sure directory exists
+    if not os.path.isdir(log_path):
+        os.makedirs(log_path)
+    with open(os.path.join(log_path, "-".join([args.filter, args.first, args.second, args.focus])), "a") as wr:
+        wr.write(",".join([str(x) for x in accs]) + "\n")

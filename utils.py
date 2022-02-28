@@ -1189,9 +1189,9 @@ def compute_metrics(dataset_true, dataset_pred,
 
 @ch.no_grad()
 def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
-              binary=True, regression=False, gpu=False,
-              combined=False, X_acts=None,
-              element_wise=False):
+              binary: bool = True, regression=False, gpu: bool = False,
+              combined: bool = False, X_acts=None,
+              element_wise=False, get_preds: bool = False):
     model.eval()
     use_acts = (X_acts is not None)
     # Activations must be provided if not combined
@@ -1201,6 +1201,7 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
     # Batch data to fit on GPU
     num_samples, running_acc = 0, 0
     loss = [] if element_wise else 0
+    all_outputs = []
 
     i = 0
 
@@ -1242,6 +1243,8 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
                     outputs.append(model(param_batch))
 
         outputs = ch.cat(outputs, 0)
+        if get_preds:
+            all_outputs.append(outputs.cpu().detach().numpy())
 
         num_samples += outputs.shape[0]
         if element_wise:
@@ -1259,6 +1262,10 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
         loss = ch.cat(loss, 0)
     else:
         loss /= num_samples
+    
+    if get_preds:
+        all_outputs = np.concatenate(all_outputs, axis=0)
+        return 100 * running_acc / num_samples, loss, all_outputs
 
     return 100 * running_acc / num_samples, loss
 

@@ -36,6 +36,7 @@ if __name__ == "__main__":
     X_train, X_test = [], []
     X_val, Y_val = [], []
     Y_train, Y_test = [], []
+    num_per_dist = None
     for ratio in SUPPORTED_RATIOS:
         train_dir = os.path.join(
             BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, ratio))
@@ -68,6 +69,11 @@ if __name__ == "__main__":
         vecs_test = np.array(vecs_test, dtype='object')
         X_test.append(vecs_test)
         Y_test += [float(ratio)] * len(vecs_test)
+
+        # Make sure same number of models read per distribution
+        if num_per_dist:
+            assert num_per_dist == len(vecs_test)
+        num_per_dist = len(vecs_test)
 
     # Prepare for PIM
     if not args.eval_only:
@@ -105,19 +111,41 @@ if __name__ == "__main__":
         # Evaluate
         metamodel = metamodel.cuda()
         loss_fn = ch.nn.MSELoss(reduction='none')
-        _, losses = utils.test_meta(
+        _, losses, preds = utils.test_meta(
                         metamodel, loss_fn, X_test, Y_test.cuda(),
                         args.batch_size, None,
                         binary=True, regression=True, gpu=True,
-                        combined=True, element_wise=True)
+                        combined=True, element_wise=True,
+                        get_preds=True)
         y_np = Y_test.numpy()
         losses = losses.numpy()
+        print("Mean loss: %.4f" % np.mean(losses))
         # Get all unique ratios in GT, and their average losses from model
         ratios = np.unique(y_np)
         losses_dict = {}
         for ratio in ratios:
             losses_dict[ratio] = np.mean(losses[y_np == ratio])
         print(losses_dict)
+        # Conctruct a matrix where every (i, j) entry is the accuracy
+        # for ratio[i] v/s ratio [j], where whichever ratio is closer to the 
+        # ratios is considered the "correct" one
+        # Assume equal number of models per ratio, stored in order of
+        # SUPPORTED_RATIOS
+        acc_mat = np.zeros((len(ratios), len(ratios)))
+        for i in range(acc_mat.shape[0]):
+            for j in range(i + 1, acc_mat.shape[0]):
+                # Get relevant GT for ratios[i] (0) v/s ratios[j] (1)
+                gt_z = (Y_test[num_per_dist * i:num_per_dist * (i + 1)].numpy() == float(ratios[j]))
+                gt_o = (Y_test[num_per_dist * j:num_per_dist * (j + 1)].numpy() == float(ratios[j]))
+                # Get relevant preds
+                pred_z = preds[num_per_dist * i:num_per_dist * (i + 1)]
+                pred_o = preds[num_per_dist * j:num_per_dist * (j + 1)]
+                pred_z = (pred_z >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+                pred_o = (pred_o >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+                # Compute accuracies and store
+                acc = np.concatenate((gt_z, gt_o), 0) == np.concatenate((pred_z, pred_o), 0)
+                acc_mat[i, j] = np.mean(acc)
+        print(acc_mat)
     else:
         metamodel = metamodel.cuda()
         # Train PIM

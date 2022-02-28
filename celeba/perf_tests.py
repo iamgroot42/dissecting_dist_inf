@@ -39,6 +39,8 @@ if __name__ == "__main__":
                         help='task to focus on')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
+    parser.add_argument('--num_workers', type=int,
+                        default=16, help="Number of workers for dataloaders")
     parser.add_argument('--testing', action='store_true',
                         help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
@@ -66,8 +68,10 @@ if __name__ == "__main__":
 
     # Get loaders
     loaders = [
-        ds_1.get_loaders(args.batch_size, shuffle=False)[1],
-        ds_2.get_loaders(args.batch_size, shuffle=False)[1]
+        ds_1.get_loaders(args.batch_size, shuffle=False,
+                         num_workers=args.num_workers)[1],
+        ds_2.get_loaders(args.batch_size, shuffle=False,
+                         num_workers=args.num_workers)[1]
     ]
 
     train_dir_1 = os.path.join(
@@ -92,16 +96,16 @@ if __name__ == "__main__":
     # Load victim models
     print("Loading models")
     if args.testing:
-        models_victim_1 = get_models(test_dir_1, 50)
-        models_victim_2 = get_models(test_dir_2, 50)
+        models_victim_1 = get_models(test_dir_1, 50, cpu=True)
+        models_victim_2 = get_models(test_dir_2, 50, cpu=True)
     else:
-        models_victim_1 = get_models(test_dir_1)
-        models_victim_2 = get_models(test_dir_2)
+        models_victim_1 = get_models(test_dir_1, cpu=True)
+        models_victim_2 = get_models(test_dir_2, cpu=True)
 
     # Load adv models
     total_models = args.total_models
-    models_1 = get_models(train_dir_1, total_models // 2)
-    models_2 = get_models(train_dir_2, total_models // 2)
+    models_1 = get_models(train_dir_1, total_models // 2, cpu=True)
+    models_2 = get_models(train_dir_2, total_models // 2, cpu=True)
 
     allaccs_1, allaccs_2 = [], []
     vic_accs, adv_accs = [], []

@@ -116,8 +116,9 @@ class MyAlexNet(nn.Module):
                     return x
 
 
-def create_model(parallel=False, fake_relu=False,
-                 latent_focus=None, is_large=False):
+def create_model(parallel: bool = False, fake_relu: bool = False,
+                 latent_focus=None, is_large: bool = False,
+                 cpu: bool = False):
     """
         Create and return a model.
     """
@@ -125,7 +126,8 @@ def create_model(parallel=False, fake_relu=False,
         model = InceptionModel(fake_relu=fake_relu, latent_focus=latent_focus)
     else:
         model = MyAlexNet(fake_relu=fake_relu, latent_focus=latent_focus)
-    model = model.cuda()
+    if not cpu:
+        model = model.cuda()
     if parallel:
         model = nn.DataParallel(model)
     return model
@@ -138,7 +140,8 @@ def get_model(path, use_prefix=True, parallel: bool = False,
         path = os.path.join(BASE_MODELS_DIR, path)
 
     model = create_model(
-        parallel=parallel, fake_relu=fake_relu, latent_focus=latent_focus)
+        parallel=parallel, fake_relu=fake_relu,
+        latent_focus=latent_focus, cpu=cpu)
 
     if cpu:
         model.load_state_dict(
@@ -153,7 +156,7 @@ def get_model(path, use_prefix=True, parallel: bool = False,
     return model
 
 
-def get_models(folder_path, n_models=1000):
+def get_models(folder_path, n_models: int = 1000, cpu: bool = False):
     paths = np.random.permutation(os.listdir(folder_path))[:n_models]
 
     models = []
@@ -162,7 +165,7 @@ def get_models(folder_path, n_models=1000):
         if os.path.isdir(os.path.join(folder_path, mpath)):
             continue
 
-        model = get_model(os.path.join(folder_path, mpath))
+        model = get_model(os.path.join(folder_path, mpath), cpu=cpu)
         models.append(model)
     return models
 
