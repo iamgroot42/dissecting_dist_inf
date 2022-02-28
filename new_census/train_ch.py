@@ -55,6 +55,11 @@ if __name__ == "__main__":
 
         (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
         clf = ch_model.get_model(n_inp=x_tr.shape[1])
+        
+        ch_model.validate_model(clf)
+        ch_model.opacus_stuff(clf, ((x_tr.astype(np.float32), y_tr.astype(np.float32)), (x_te.astype(np.float32), y_te.astype(np.float32))))
+        
+        """
         vloss, tacc,vacc = ch_model.train(clf,((x_tr.astype(np.float32), y_tr.astype(np.float32)), (x_te.astype(np.float32), y_te.astype(np.float32))))
         if args.verbose:
             print("Classifier %d : loss %.2f , Tran acc %.2f, Test acc %.2f\n" %
@@ -69,4 +74,4 @@ if __name__ == "__main__":
             os.makedirs(save_path)
         ch_model.save_model(clf, os.path.join(save_path,
                                                  str(i + args.offset) + "_%.2f" % vacc))
-              
+        """

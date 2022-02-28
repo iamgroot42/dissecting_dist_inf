@@ -11,6 +11,14 @@ from copy import deepcopy
 from data_utils import CensusSet
 from torch.utils.data import   DataLoader
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
+
+
+from opacus.validators import ModuleValidator
+#Constants
+import warnings
+warnings.simplefilter("ignore")
+
+
 BM = os.path.join(BASE_MODELS_DIR,"ch")
 class MLP(nn.Module):
     def __init__(self,n_inp:int,num_classes: int = 2):
@@ -47,14 +55,13 @@ def get_models_path(property, split, value=None):
     if value is None:
         return os.path.join(BM, property, split)
     return os.path.join(BM,  property, split, value)
-
-
+'''
 def train(clf,loaders):
     (vloss,tacc, vacc) = _train(clf,(DataLoader(CensusSet(loaders[0][0],loaders[0][1]),batch_size=200),DataLoader(CensusSet(loaders[1][0],loaders[1][1]),batch_size=200)),
     epoch_num=40,
     verbose=False
     )
-    return vloss,tacc,vacc
+    return vloss,tacc,vacc'''
 #method copied from utils, almost the same, might need modification for differential privacy
 def train_epoch(train_loader, model, criterion, optimizer, epoch, verbose=True, adv_train=False):
     model.train()
@@ -198,3 +205,144 @@ def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False):
     if adv_train is False:
         return val_loss.avg, val_acc.avg
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
+
+
+#Check if opacus compatible
+def validate_model(model):
+
+    #model = ModuleValidator.fix(model)
+    #ModuleValidator.validate(model, strict=False)
+    print("Validating model...")
+    errors = ModuleValidator.validate(model, strict=False)
+    print(str(errors[-5:]))
+    if(errors == []):
+        print("Validated")
+
+
+def opacus_stuff(model, loaders, lr=1e-3, weight_decay=0):
+    MAX_GRAD_NORM = 1.2
+    EPSILON = 50.0
+    DELTA = 1e-5
+    EPOCHS = 20
+
+    LR = 1e-3
+    #memory management
+    BATCH_SIZE = 512
+    MAX_PHYSICAL_BATCH_SIZE = 128
+    device = ch.device("cpu")#"cuda" if ch.cuda.is_available() else "cpu")
+    model = model.to(device)
+
+    #optimizer and criterion taken from utils
+    optimizer = ch.optim.Adam(
+    model.parameters(), lr=lr,
+    weight_decay=weight_decay)
+    criterion = nn.BCEWithLogitsLoss().cuda()
+
+
+    def accuracy(preds, labels):
+        return (preds == labels).mean()
+
+    
+    from opacus import PrivacyEngine
+    privacy_engine = PrivacyEngine()
+    
+    train_loader = DataLoader(CensusSet(loaders[0][0],loaders[0][1]),batch_size=200)
+    test_loader = DataLoader(CensusSet(loaders[1][0],loaders[1][1]),batch_size=200)
+
+    model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
+        module=model,
+        optimizer=optimizer,
+        data_loader=train_loader,
+        epochs=EPOCHS,
+        target_epsilon=EPSILON,
+        target_delta=DELTA,
+        max_grad_norm=MAX_GRAD_NORM,
+    )
+
+    print(f"Using sigma={optimizer.noise_multiplier} and C={MAX_GRAD_NORM}")
+
+
+
+    import numpy as np
+    from opacus.utils.batch_memory_manager import BatchMemoryManager
+
+
+    def train_opacus(model, train_loader, optimizer, epoch, device):
+        model.train()
+        criterion = nn.CrossEntropyLoss()
+
+        losses = []
+        top1_acc = []
+        
+        with BatchMemoryManager(
+            data_loader=train_loader, 
+            max_physical_batch_size=MAX_PHYSICAL_BATCH_SIZE, 
+            optimizer=optimizer
+        ) as memory_safe_data_loader:
+
+            for i, (images, target, _) in enumerate(memory_safe_data_loader):   
+                optimizer.zero_grad()
+                images = images.to(device)
+                target = target.to(device)
+                target = target.type(ch.LongTensor)
+
+                # compute output
+                output = model(images)
+                loss = criterion(output, target)
+
+                preds = np.argmax(output.detach().cpu().numpy(), axis=1)
+                labels = target.detach().cpu().numpy()
+
+                # measure accuracy and record loss
+                acc = accuracy(preds, labels)
+
+                losses.append(loss.item())
+                top1_acc.append(acc)
+
+                loss.backward()
+                optimizer.step()
+
+                if (i+1) % 200 == 0:
+                    epsilon = privacy_engine.get_epsilon(DELTA)
+                    print(
+                        f"\tTrain Epoch: {epoch} \t"
+                        f"Loss: {np.mean(losses):.6f} "
+                        f"Acc@1: {np.mean(top1_acc) * 100:.6f} "
+                        f"(ε = {epsilon:.2f}, δ = {DELTA})"
+                    )
+
+    def test_opacus(model, test_loader, device):
+        model.eval()
+        criterion = nn.CrossEntropyLoss()
+        losses = []
+        top1_acc = []
+
+        with ch.no_grad():
+            for images, target,_ in test_loader:
+                images = images.to(device)
+                target = target.to(device)
+                target = target.type(ch.LongTensor)
+
+                output = model(images)
+                loss = criterion(output, target)
+                preds = np.argmax(output.detach().cpu().numpy(), axis=1)
+                labels = target.detach().cpu().numpy()
+                acc = accuracy(preds, labels)
+
+                losses.append(loss.item())
+                top1_acc.append(acc)
+
+        top1_avg = np.mean(top1_acc)
+
+        print(
+            f"\tTest set:"
+            f"Loss: {np.mean(losses):.6f} "
+            f"Acc: {top1_avg * 100:.6f} "
+        )
+        return np.mean(top1_acc)
+    
+    #EPOCHS
+    for epoch in tqdm(range(1), desc="Epoch", unit="epoch"):
+        train_opacus(model, train_loader, optimizer, epoch + 1, device)
+
+    top1_acc = test_opacus(model, test_loader, device)
