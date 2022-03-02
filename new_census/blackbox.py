@@ -60,10 +60,14 @@ if __name__ == "__main__":
             args.filter, "adv", args.ratio_2), total_models // 2)
         ds_1 = CensusWrapper(
                 filter_prop=args.filter,
-                ratio=float(args.ratio_1), split="adv")
+                ratio=float(args.ratio_1), split="adv",
+                drop_senstive_cols=args.drop,
+        scale=args.scale)
         ds_2 = CensusWrapper(
                 filter_prop=args.filter,
-                ratio=float(args.ratio_2), split="adv")
+                ratio=float(args.ratio_2), split="adv",
+                drop_senstive_cols=args.drop,
+        scale=args.scale)
 
         # Fetch test data from both ratios
         _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
