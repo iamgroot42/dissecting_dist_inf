@@ -55,9 +55,9 @@ if __name__ == "__main__":
         # Load adv models
         total_models = 100
         models_1 = get_models(get_models_path(
-            args.filter, "adv", args.ratio_1), total_models // 2)
+            args.filter, "adv", args.ratio_1,drop=args.drop,scale=args.scale), total_models // 2)
         models_2 = get_models(get_models_path(
-            args.filter, "adv", args.ratio_2), total_models // 2)
+            args.filter, "adv", args.ratio_2,drop=args.drop,scale=args.scale), total_models // 2)
         ds_1 = CensusWrapper(
                 filter_prop=args.filter,
                 ratio=float(args.ratio_1), split="adv",
