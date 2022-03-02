@@ -33,7 +33,6 @@ def get_models(folder_path, n_models=1000):
     return models
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batch_size', type=int, default=256*32)
     parser.add_argument('--ratio_1', help="ratios for D_1")
     parser.add_argument('--ratio_2', help="ratios for D_2")
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
