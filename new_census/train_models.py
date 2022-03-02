@@ -76,5 +76,5 @@ if __name__ == "__main__":
             save_path = os.path.join(save_path,"drop")
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
-        model_utils.save_model(clf, os.path.join(save_path,
-                                                 str(i + args.offset) + "_%.2f" % test_acc))
+        #model_utils.save_model(clf, os.path.join(save_path,
+         #                                        str(i + args.offset) + "_%.2f" % test_acc))
