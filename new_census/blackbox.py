@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import os
 import argparse
-from utils import perpoint_threshold_test,threshold_and_loss_test,flash_utils
+from utils import perpoint_threshold_test,threshold_and_loss_test,flash_utils,ensure_dir_exists
 
 def get_preds(x,ms):
     
@@ -40,15 +40,17 @@ if __name__ == "__main__":
                         required=True,
                         help='name for subfolder to save/load data from')
     parser.add_argument('--tries', type=int,
-                        default=5, help="number of trials")                 
+                        default=5, help="number of trials")  
+    parser.add_argument('--drop', action="store_true")
+    parser.add_argument('--scale',type=float,default=1.0)               
     args = parser.parse_args()
     flash_utils(args)
     ratios = [0.05,0.1,0.2,0.3,0.4,0.5,1.0] #ratio of data points to try
     
     models_victim_1 = get_models(
-        get_models_path(args.filter, "victim", args.ratio_1))
+        get_models_path(args.filter, "victim", args.ratio_1,drop=args.drop,scale=args.scale))
     models_victim_2 = get_models(
-        get_models_path(args.filter, "victim", args.ratio_2))
+        get_models_path(args.filter, "victim", args.ratio_2,drop=args.drop,scale=args.scale))
     thre, perp,bas = [],[],[]
     for _ in range(args.tries):
         # Load adv models
@@ -85,34 +87,35 @@ if __name__ == "__main__":
         bas.append(ba)
         
 
-        
+    l="./log"
+    if args.scale!=1:
+        l=os.path.join(l,'sample_size_scale:{}'.format(args.scale))
+    if args.drop:
+        l=os.path.join(l,'drop')
     content = 'Perpoint thresholds accuracy: {}'.format(perp)
     print(content)
-    '''
-    log_path = os.path.join('./log',"perf_perpoint:{}".format(args.ratio_1))
-    if not os.path.isdir(log_path):
-         os.makedirs(log_path)
+    
+    log_path = os.path.join(l,"perf_perpoint:{}".format(args.ratio_1))
+    ensure_dir_exists(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(content)
-    log_path = os.path.join('./log',"selective_loss:{}".format(args.ratio_1))
-    '''
+    log_path = os.path.join(l,"selective_loss:{}".format(args.ratio_1))
+    
     cl = 'basline accuracy: {}'.format(bas)
     print(cl)
-    '''
-    if not os.path.isdir(log_path):
-         os.makedirs(log_path)
+    
+    ensure_dir_exists(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(cl)
-    '''
+    
     content = 'thresholds accuracy: {}'.format(thre)
     print(content)
-    '''
-    log_path = os.path.join('./log',"perf_quart:{}".format(args.ratio_1))
-    if not os.path.isdir(log_path):
-         os.makedirs(log_path)
+    
+    log_path = os.path.join(l,"perf_quart:{}".format(args.ratio_1))
+    ensure_dir_exists(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(content)
-    '''
+    
     
    
     

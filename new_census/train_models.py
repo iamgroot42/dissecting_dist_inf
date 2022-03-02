@@ -1,6 +1,7 @@
 from tqdm import tqdm
 import os
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
+from git.property_inference.utils import ensure_dir_exists
 import model_utils
 import utils
 from sklearn.utils._testing import ignore_warnings
@@ -25,7 +26,7 @@ if __name__ == "__main__":
                         help='which split of data to use')
     parser.add_argument('--verbose', action="store_true",
                         help='print out per-classifier stats?')
-    parser.add_argument('--drop_senstive_cols', action="store_true",
+    parser.add_argument('--drop_sensitive_cols', action="store_true",
                         help='drop age/sex attributes during training?')
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
@@ -69,12 +70,7 @@ if __name__ == "__main__":
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
         save_path = model_utils.get_models_path(
-            args.filter, args.split, args.ratio)
-        if args.scale != 1.0:
-            save_path = os.path.join(save_path,"sample_size_scale:{}".format(args.scale))
-        if args.drop_senstive_cols:
-            save_path = os.path.join(save_path,"drop")
-        if not os.path.isdir(save_path):
-            os.makedirs(save_path)
-        #model_utils.save_model(clf, os.path.join(save_path,
-         #                                        str(i + args.offset) + "_%.2f" % test_acc))
+            args.filter, args.split, args.ratio,drop=args.drop_sensitive_cols,scale=args.scale)
+        utils.ensure_dir_exists(save_path)
+        model_utils.save_model(clf, os.path.join(save_path,
+                                                str(i + args.offset) + "_%.2f" % test_acc))

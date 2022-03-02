@@ -70,7 +70,12 @@ def load_model(path):
     return load(path)
 
 
-def get_models_path(property, split, value=None):
+def get_models_path(property, split, value=None,drop:bool=False,scale:float=1.0):
     if value is None:
         return os.path.join(BASE_MODELS_DIR, property, split)
-    return os.path.join(BASE_MODELS_DIR,  property, split, value)
+    p = os.path.join(BASE_MODELS_DIR,  property, split, value)
+    if scale!=1:
+        p=os.path.join(p,"sample_size_scale:{}".format(scale))
+    if drop:
+        p=os.path.join(p,'drop')
+    return p

@@ -195,12 +195,13 @@ if __name__ == "__main__":
 
     # Print data
     log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
-    if args.drop:
-        log_path = os.path.join(log_path,'drop')
+
     if args.scale != 1.0:
         log_path = os.path.join(log_path,"sample_size_scale:{}".format(args.scale))
-    if not os.path.isdir(log_path):
-        os.makedirs(log_path)
+
+    if args.drop:
+        log_path = os.path.join(log_path,'drop')
+    utils.ensure_dir_exists(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
         for i, tup in enumerate(data):
             print(targets[i], tup)
