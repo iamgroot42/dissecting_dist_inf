@@ -98,11 +98,11 @@ if __name__ == "__main__":
     content = 'Perpoint thresholds accuracy: {}'.format(perp)
     print(content)
     
-    log_path = os.path.join(l,"perf_perpoint:{}".format(args.ratio_1))
+    log_path = os.path.join(l,"perf_perpoint_{}:{}".format(args.filter,args.ratio_1))
     ensure_dir_exists(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(content)
-    log_path = os.path.join(l,"selective_loss:{}".format(args.ratio_1))
+    log_path = os.path.join(l,"selective_loss_{}:{}".format(args.filter,args.ratio_1))
     
     cl = 'basline accuracy: {}'.format(bas)
     print(cl)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     content = 'thresholds accuracy: {}'.format(thre)
     print(content)
     
-    log_path = os.path.join(l,"perf_quart:{}".format(args.ratio_1))
+    log_path = os.path.join(l,"perf_quart_{}:{}".format(args.filter,args.ratio_1))
     ensure_dir_exists(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(content)
