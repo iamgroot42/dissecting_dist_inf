@@ -72,10 +72,10 @@ if __name__ == "__main__":
         # Fetch test data from both ratios
         _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
         _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
-        p1 = [get_preds(x_te_1,models_1), get_preds(x_te_2,models_1)]
-        p2 = [get_preds(x_te_1,models_2), get_preds(x_te_2,models_2)]
-        pv1 = [get_preds(x_te_1,models_victim_1), get_preds(x_te_2,models_victim_1)]
-        pv2 = [get_preds(x_te_1,models_victim_2), get_preds(x_te_2,models_victim_2)]
+        p1 = [get_preds(x_te_1,models_1), get_preds(x_te_1,models_2)]
+        p2 = [get_preds(x_te_2,models_1), get_preds(x_te_2,models_2)]
+        pv1 = [get_preds(x_te_1,models_victim_1), get_preds(x_te_1,models_victim_2)]
+        pv2 = [get_preds(x_te_2,models_victim_1), get_preds(x_te_2,models_victim_2)]
         (vpacc,_),_=perpoint_threshold_test( (p1, p2),
         (pv1, pv2),
         (y_te_1, y_te_2),
