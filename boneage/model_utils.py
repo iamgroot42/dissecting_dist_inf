@@ -136,8 +136,7 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf,
     if shuffle:
         np.random.shuffle(iterator)
 
-    if max_read is not None:
-        iterator = iterator[:max_read]
+    encountered = 0
 
     for mpath in tqdm(iterator):
         if models_provided:
@@ -146,7 +145,7 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf,
             # Skip if path is directory
             if os.path.isdir(os.path.join(model_dir, mpath)):
                 continue
-        
+
             model = load_model(os.path.join(model_dir, mpath), cpu=not shift_to_gpu)
 
         if fetch_models:
@@ -172,7 +171,10 @@ def get_model_features(model_dir, max_read=None, first_n=np.inf,
             fvec = [x.cpu() for x in fvec]
 
         vecs.append(fvec)
-    
+        encountered += 1
+        if encountered == max_read:
+            break
+
     if fetch_models:
         return dims, vecs, clfs
     return dims, vecs
@@ -199,6 +201,10 @@ def check_if_exists(model_id, split, ratio, full_model=False):
             return False
     else:
         model_check_path = os.path.join(BASE_MODELS_DIR, split, str(ratio))
+    # Return false if no directory exists
+    if not os.path.exists(model_check_path):
+        return False
+    # If it does, check for models inside
     for model_name in os.listdir(model_check_path):
         if model_name.startswith("%d_" % model_id):
             return True
@@ -215,7 +221,7 @@ def get_models(folder_path, n_models: int = 1000,
     paths = os.listdir(folder_path)
     if shuffle:
         paths = np.random.permutation(paths)
-    paths = paths[:n_models]
+    encountered = 0
 
     models = []
     for mpath in tqdm(paths):
@@ -226,4 +232,7 @@ def get_models(folder_path, n_models: int = 1000,
         model = load_model(os.path.join(folder_path, mpath),
                            full_model=full_model, cpu=cpu)
         models.append(model)
+        encountered += 1
+        if encountered == n_models:
+            break
     return models

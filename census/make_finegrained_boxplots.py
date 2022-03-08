@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--mode', choices=["meta", "threshold"],
+    parser.add_argument('--mode', choices=["meta", "threshold", "regress"],
                         default="meta",
                         help='name for subfolder to save/load data from')
     args = parser.parse_args()
@@ -453,8 +453,12 @@ if __name__ == "__main__":
     else:
         exit(0)
 
-    if args.mode == "meta":
-        data_use = raw_data_meta
+    if args.mode in ["meta", "regress"]:
+        if args.mode == "regress":
+            print("Using regression data")
+            data_use = raw_data_regress
+        else:
+            data_use = raw_data_meta
     else:
         data_use = raw_data_threshold
 
@@ -465,7 +469,7 @@ if __name__ == "__main__":
             mask[i][j+i+1] = False
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
 
-    if args.mode != "meta":
+    if args.mode not in ["meta", "regress"]:
         for i in range(len(targets)):
             for j in range(len(targets)-(i+1)):
                 fill_data[j+i+1][i] = raw_data_loss[i][j]
@@ -528,9 +532,16 @@ if __name__ == "__main__":
     wanted = wanted[np.abs(wanted) != np.inf]
     print("Median:", np.median(wanted))
     print(np.min(wanted), np.max(wanted))
-    exit(0)
-    for i in range(len(targets)):
-        print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
+    # exit(0)
+    # for i in range(len(targets) - 1):
+    #     print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
+    
+    for a in fill_data:
+        a_wanted = [x for x in a if x > 0]
+        if len(a_wanted) == 0:
+            continue
+        print("[" + ",".join(["r'%d $\pm$ %d'" % (np.mean(x), np.std(x))
+                              for x in a_wanted]) + "]")
 
     eff_vals_mean = eff_vals.flatten()
     eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]
@@ -542,5 +553,5 @@ if __name__ == "__main__":
                            annot=annot_data, mask=mask,
                            fmt="^", vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./plots/meta_heatmap_%s_%s.png" %
+    sns_plot.figure.savefig("./plots/meta_heatmap_%s_%s.pdf" %
                             (args.filter, args.mode))

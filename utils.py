@@ -2161,3 +2161,55 @@ def perpoint_threshold_test(preds_adv: List, preds_victim: List,
     adv_pred_use = adv_preds_use[ind]
 
     return (victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), (which_dist, ind)
+
+
+def get_ratio_info_for_reg_meta(metamodel, X, Y, num_per_dist, batch_size, combined: bool = True):
+    """
+        Get MSE and actual predictions for each
+        ratio given in Y, using a trained metamodel.
+        Returnse MSE per ratio, actual predictions per ratio, and
+        predictions for each ratio a v/s be using regression
+        meta-classifier for binary classification.
+    """
+    # Evaluate
+    metamodel = metamodel.cuda()
+    loss_fn = ch.nn.MSELoss(reduction='none')
+    _, losses, preds = test_meta(
+        metamodel, loss_fn, X, Y.cuda(),
+        batch_size, None,
+        binary=True, regression=True, gpu=True,
+        combined=combined, element_wise=True,
+        get_preds=True)
+    y_np = Y.numpy()
+    losses = losses.numpy()
+    # Get all unique ratios (sorted) in GT, and their average losses from model
+    ratios = np.unique(y_np)
+    losses_dict = {}
+    ratio_wise_preds = {}
+    for ratio in ratios:
+        losses_dict[ratio] = np.mean(losses[y_np == ratio])
+        ratio_wise_preds[ratio] = preds[y_np == ratio]
+    # Conctruct a matrix where every (i, j) entry is the accuracy
+    # for ratio[i] v/s ratio [j], where whichever ratio is closer to the
+    # ratios is considered the "correct" one
+    # Assume equal number of models per ratio, stored in order of
+    # ratios
+    acc_mat = np.zeros((len(ratios), len(ratios)))
+    for i in range(acc_mat.shape[0]):
+        for j in range(i + 1, acc_mat.shape[0]):
+            # Get relevant GT for ratios[i] (0) v/s ratios[j] (1)
+            gt_z = (y_np[num_per_dist * i:num_per_dist * (i + 1)]
+                    == float(ratios[j]))
+            gt_o = (y_np[num_per_dist * j:num_per_dist * (j + 1)]
+                    == float(ratios[j]))
+            # Get relevant preds
+            pred_z = preds[num_per_dist * i:num_per_dist * (i + 1)]
+            pred_o = preds[num_per_dist * j:num_per_dist * (j + 1)]
+            pred_z = (pred_z >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+            pred_o = (pred_o >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+            # Compute accuracies and store
+            acc = np.concatenate((gt_z, gt_o), 0) == np.concatenate(
+                (pred_z, pred_o), 0)
+            acc_mat[i, j] = np.mean(acc)
+
+    return losses_dict, acc_mat, ratio_wise_preds

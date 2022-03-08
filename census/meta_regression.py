@@ -29,13 +29,19 @@ if __name__ == "__main__":
     parser.add_argument('--eval_only', action="store_true",
                         help="Only loading up model and evaluating")
     parser.add_argument('--model_path', help="Path to saved model")
+    parser.add_argument('--ratios', help="Ratios to use", default=None)
     args = parser.parse_args()
     utils.flash_utils(args)
+
+    if args.ratios is None:
+        ratios_to_use = SUPPORTED_RATIOS
+    else:
+        ratios_to_use = args.ratios.strip().split(',')
 
     if args.testing:
         num_train, num_val = 3, 2
         n_models = 5
-        SUPPORTED_RATIOS = SUPPORTED_RATIOS[:3]
+        ratios_to_use = ratios_to_use[:3]
     else:
         num_train, num_val = args.train_sample, args.val_sample
         n_models = 1000
@@ -44,7 +50,7 @@ if __name__ == "__main__":
     X_val, Y_val = [], []
     Y_train, Y_test = [], []
     num_per_dist = None
-    for ratio in SUPPORTED_RATIOS:
+    for ratio in ratios_to_use:
         # Load up data for this ratio
         if not args.eval_only:
             train_and_val_w, _, dims = get_model_representations(
@@ -94,43 +100,12 @@ if __name__ == "__main__":
     if args.eval_only:
         # Load model
         metamodel.load_state_dict(ch.load(args.model_path))
-        # Evaluate
+        # Send to GPU
         metamodel = metamodel.cuda()
-        loss_fn = ch.nn.MSELoss(reduction='none')
-        _, losses, preds = utils.test_meta(
-            metamodel, loss_fn, X_test, Y_test.cuda(),
-            args.batch_size, None,
-            binary=True, regression=True, gpu=True,
-            combined=True, element_wise=True,
-            get_preds=True)
-        y_np = Y_test.numpy()
-        losses = losses.numpy()
-        print("Mean loss: %.4f" % np.mean(losses))
-        # Get all unique ratios in GT, and their average losses from model
-        ratios = np.unique(y_np)
-        losses_dict = {}
-        for ratio in ratios:
-            losses_dict[ratio] = np.mean(losses[y_np == ratio])
+        losses_dict, acc_mat, preds = utils.get_ratio_info_for_reg_meta(
+            metamodel, X_test, Y_test, num_per_dist, args.batch_size)
+        print("Mean loss: %.4f" % np.mean(list(losses_dict.values())))
         print(losses_dict)
-        # Conctruct a matrix where every (i, j) entry is the accuracy
-        # for ratio[i] v/s ratio [j], where whichever ratio is closer to the 
-        # ratios is considered the "correct" one
-        # Assume equal number of models per ratio, stored in order of
-        # SUPPORTED_RATIOS
-        acc_mat = np.zeros((len(ratios), len(ratios)))
-        for i in range(acc_mat.shape[0]):
-            for j in range(i + 1, acc_mat.shape[0]):
-                # Get relevant GT for ratios[i] (0) v/s ratios[j] (1)
-                gt_z = (Y_test[num_per_dist * i:num_per_dist * (i + 1)].numpy() == float(ratios[j]))
-                gt_o = (Y_test[num_per_dist * j:num_per_dist * (j + 1)].numpy() == float(ratios[j]))
-                # Get relevant preds
-                pred_z = preds[num_per_dist * i:num_per_dist * (i + 1)]
-                pred_o = preds[num_per_dist * j:num_per_dist * (j + 1)]
-                pred_z = (pred_z >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
-                pred_o = (pred_o >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
-                # Compute accuracies and store
-                acc = np.concatenate((gt_z, gt_o), 0) == np.concatenate((pred_z, pred_o), 0)
-                acc_mat[i, j] = np.mean(acc)
         print(acc_mat)
     else:
         metamodel = metamodel.cuda()
@@ -159,3 +134,10 @@ if __name__ == "__main__":
     # Race
     # Train: 0.01823, 0.01609, 0.01897, 0.01824, 0.01297
     # Test: 0.29089, 0.30709, 0.33302, 0.31789, 0.30140
+
+
+# {0.05: 0.102851726, 0.15: 0.06716994, 0.25: 0.03514659, 0.35: 0.017141145, 0.45: 0.010566757, 0.55: 0.015116533, 0.65: 0.028954461, 0.75: 0.052992325, 0.85: 0.093665466, 0.95: 0.14292617}
+# {0.05: 0.10695195, 0.15: 0.06464738, 0.25: 0.03480771, 0.35: 0.01760117, 0.45: 0.009475663, 0.55: 0.0147306835, 0.65: 0.030373525, 0.75: 0.05458484, 0.85: 0.09899691, 0.95: 0.14231028}
+# {0.05: 0.065843485, 0.15: 0.03332633, 0.25: 0.01638305, 0.35: 0.009151945, 0.45: 0.01600699, 0.55: 0.030280838, 0.65: 0.060107674, 0.75: 0.095794655, 0.85: 0.15012148, 0.95: 0.2056271}
+# {0.05: 0.077312775, 0.15: 0.042384267, 0.25: 0.019417726, 0.35: 0.011193615, 0.45: 0.01370551, 0.55: 0.025156423, 0.65: 0.05084286, 0.75: 0.078828804, 0.85: 0.13509224, 0.95: 0.19092354}
+# {0.05: 0.08933806, 0.15: 0.051382955, 0.25: 0.027421732, 0.35: 0.015518009, 0.45: 0.011174267, 0.55: 0.018451028, 0.65: 0.037941586, 0.75: 0.064566374, 0.85: 0.111383684, 0.95: 0.15135933}

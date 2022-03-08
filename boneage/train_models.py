@@ -1,12 +1,13 @@
-from model_utils import BoneModel, BoneFullModel, save_model, check_if_exists
+from model_utils import BoneModel, BoneFullModel, save_model, check_if_exists, BASE_MODELS_DIR
 from data_utils import BoneWrapper, get_df, get_features
 import utils
+import os
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--split', choices=["victim", "adv"])
+    parser.add_argument('--split', choices=["victim", "adv"], required=True)
     parser.add_argument('--full_model', action="store_true",
                         help="Train E2E model")
     parser.add_argument('--verbose', action="store_true",
@@ -81,6 +82,10 @@ if __name__ == "__main__":
                                   weight_decay=weight_decay,
                                   verbose=args.verbose)
 
+        # Make sure directory exists
+        model_dir_path = os.path.join(BASE_MODELS_DIR, args.split, str(args.ratio))
+        if not os.path.exists(model_dir_path):
+            os.makedirs(model_dir_path)
         # Save model
         save_model(model, args.split, args.ratio,
                    "%d_%.3f.pth" %

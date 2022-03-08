@@ -182,12 +182,18 @@ def get_model_representations(folder_path, label, first_n=np.inf,
 
 def get_model(max_iter=40,
               hidden_layer_sizes=(32, 16, 8),):
+    """
+        Create new MLPClassifier model
+    """
     clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes,
                         max_iter=max_iter)
     return clf
 
 
 def get_models(folder_path, n_models=1000, shuffle=True):
+    """
+        Load models from given directory.
+    """
     paths = os.listdir(folder_path)
     if shuffle:
         paths = np.random.permutation(paths)
@@ -206,6 +212,7 @@ def save_model(clf, path):
 
 def load_model(path):
     return load(path)
+
 
 def get_models_path(property, split, value=None):
     if value is None:

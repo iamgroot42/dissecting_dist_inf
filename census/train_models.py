@@ -10,11 +10,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--filter', type=str,
                         choices=data_utils.SUPPORTED_PROPERTIES,
+                        required=True,
                         help='while filter to use')
-    parser.add_argument('--ratio',default=0.5, help='what ratio of the new sampled dataset should be true')
+    parser.add_argument('--ratio', default=0.5,
+                        help='what ratio of the new sampled dataset')
     parser.add_argument('--num', type=int, default=1000,
                         help='how many classifiers to train?')
     parser.add_argument('--split', choices=["adv", "victim"],
+                        required=True,
                         help='which split of data to use')
     parser.add_argument('--verbose', action="store_true",
                         help='print out per-classifier stats?')
@@ -23,8 +26,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     utils.flash_utils(args)
     if args.filter == 'two_attr':
-        [r1,r2] = args.ratio.split(',')
-        r1,r2 = float(r1),float(r2)
+        [r1, r2] = args.ratio.split(',')
+        r1, r2 = float(r1), float(r2)
         ds = data_utils.CensusTwo()
     else:
         # Census Income dataset
@@ -43,7 +46,7 @@ if __name__ == "__main__":
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
         if args.filter == 'two_attr':
-            (x_tr, y_tr), (x_te, y_te), cols = ds.get_data(args.split,r1,r2)
+            (x_tr, y_tr), (x_te, y_te), cols = ds.get_data(args.split, r1, r2)
         else:
             (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
 
@@ -54,8 +57,10 @@ if __name__ == "__main__":
         if args.verbose:
             print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
                   (i, train_acc, test_acc))
-        save_path = model_utils.get_models_path(args.filter,args.split,args.ratio)
+        save_path = model_utils.get_models_path(
+            args.split, args.filter, args.ratio)
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
+        print("Saving model to %s" % os.path.join(save_path, str(i + args.offset) + "_%.2f" % test_acc))
         model_utils.save_model(clf, os.path.join(save_path,
             str(i + args.offset) + "_%.2f" % test_acc))

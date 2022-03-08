@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
                         default="Male",
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--mode', choices=["meta", "threshold"],
+    parser.add_argument('--mode', choices=["meta", "threshold", "regress"],
                         default="meta")
     args = parser.parse_args()
     flash_utils(args)
@@ -441,6 +441,84 @@ if __name__ == "__main__":
                 [49.85, 52.75, 52.45, 49.8, 51.3]
             ]
         ]
+
+        raw_data_regress = [
+            [
+                [50.1, 50.2, 51.55, 52.85, 50.1],
+                [50.7, 53.1, 56.95, 57.95, 52.25],
+                [52.45, 58.6, 65.55, 67.7, 63.05],
+                [56.95, 63.65, 73.25, 75.85, 70.1],
+                [63.9, 71.05, 78.45, 82, 77.3],
+                [70.1, 77.2, 83.15, 85.65, 81.25],
+                [76.45, 84.05, 87.75, 89.05, 84.8],
+                [82.85, 88.65, 91.95, 91.8, 87.9],
+                [89.5, 93.45, 94.3, 92.95, 90.8],
+                [93.25, 95.7, 94.65, 93.5, 91.4]
+            ],
+            [
+                [50.45, 53.2, 53.85, 55.05, 53.5],
+                [52.5, 56.05, 59.15, 63.05, 60.6],
+                [56.9, 61.75, 66.6, 70.4, 66.3],
+                [61.6, 66.9, 72.75, 76.05, 70.65],
+                [67.4, 73.35, 79.2, 80.9, 75.1],
+                [73.1, 80, 82.5, 84.95, 79.85],
+                [79.3, 85.35, 87.25, 87.95, 84.35],
+                [85.5, 89.9, 91.1, 89.6, 87.35],
+                [88.45, 92.7, 91.75, 91, 89.65]
+            ],
+            [
+                [52.35, 53.3, 54.85, 56.2, 55.6],
+                [55.5, 58.65, 62.15, 65.15, 60.25],
+                [59.5, 63.4, 66.6, 71.15, 65.1],
+                [64.6, 68.85, 74.0, 76.5, 70.6],
+                [69.2, 75.15, 77.8, 80.3, 76],
+                [75.6, 80.35, 83.4, 83.65, 81.45],
+                [82.05, 85.85, 86.5, 85.55, 83.7],
+                [86.6, 89.5, 88.4, 86.7, 84.85]
+            ],
+            [
+                [53, 55, 55.9, 57.6, 54.75],
+                [56.2, 59.6, 61.1, 64.15, 60.55],
+                [61.7, 65.25, 69.4, 69.45, 66.5],
+                [65.45, 71.25, 73.7, 74.0, 70.8],
+                [71.9, 77.7, 78.65, 77.4, 75.85],
+                [78.1, 82.3, 82.15, 80.55, 78.4],
+                [82.7, 85.8, 84.8, 82.25, 80.45]
+            ],
+            [
+                [52.05, 55.45, 55.7, 56.85, 54.75],
+                [58.5, 60.8, 63.85, 62.55, 61.15],
+                [62.75, 66.3, 67.35, 68.0, 65.85],
+                [68.45, 72.15, 73.45, 73.45, 71.55],
+                [74.3, 78.15, 76.9, 75.75, 74.15],
+                [79.8, 82.2, 79.75, 77.0, 75.1]
+            ],
+            [
+                [54.65, 56.6, 65.66, 55.85, 57.2],
+                [58, 61.05, 61.1, 58.55, 62.15],
+                [64.5, 66.85, 66.7, 65.25, 66.85],
+                [70.25, 71.9, 69.8, 66.05, 70.5],
+                [75.1, 75.9, 71.8, 68.95, 73.5]
+            ],
+            [
+                [53.35, 54.75, 55.3, 54.75, 53.4],
+                [59.85, 60.06, 60.2, 60.25, 58.7],
+                [64.45, 65.15, 64.15, 63.45, 60.3],
+                [68.85, 68.75, 67.25, 65.05, 62.75]
+            ],
+            [
+                [56.5, 56.25, 54.55, 54.7, 56.25],
+                [59.3, 60.75, 59, 58.2, 56.15],
+                [60.2, 63.05, 61.15, 58.9, 56.2]
+            ],
+            [
+                [52.85, 54.75, 53.35, 53.45, 51.2],
+                [50, 56.35, 53.45, 53.75, 52.6]
+            ],
+            [
+                [50, 52.45, 50.55, 51.3, 50.45]
+            ]
+        ]
         # # OLD
         # raw_data_meta = [
         #     [
@@ -613,7 +691,10 @@ if __name__ == "__main__":
         raise ValueError("Unknown filter: {}".format(args.filter))
 
     fill_data_new = np.zeros((len(targets), len(targets)))
-    if args.mode == "meta":
+    if args.mode in ["meta", "regress"]:
+        if args.mode == "regress":
+            print("Using regression data")
+            raw_data_meta = raw_data_regress
         for i in range(len(targets)):
             for j in range(len(targets)-(i+1)):
                 m, s = np.mean(raw_data_meta[i][j]), np.std(raw_data_meta[i][j])
@@ -699,20 +780,20 @@ if __name__ == "__main__":
             #       bound(float(targets[i]), float(targets[j]), n_eff))
     print("Median", np.median(wanted))
 
-    # for i in range(len(targets)):
-    #     print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
-    # for a in fill_data:
-    #     a_wanted = [x for x in a if x > 0]
-    #     if len(a_wanted) == 0:
-    #         continue
-    #     print("[" + ",".join(["r'%d $\pm$ %d'" % (np.mean(x), np.std(x))
-    #                           for x in a_wanted]) + "]")
+    for i in range(len(targets)):
+        print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
+    for a in fill_data:
+        a_wanted = [x for x in a if x > 0]
+        if len(a_wanted) == 0:
+            continue
+        print("[" + ",".join(["r'%d $\pm$ %d'" % (np.mean(x), np.std(x))
+                              for x in a_wanted]) + "]")
 
-    # Rearrange data according to 1 - ratio
-    # for i, ev in enumerate(eff_vals[:-1]):
-    #     for j, x in enumerate(ev[:-(i+1)]):
-    #         print(targets[(len(targets) - 1) - i], targets[(len(targets) - 1) - (j+i+1)], "%.2f" % x)
-    #     print()
+    #Rearrange data according to 1 - ratio
+    for i, ev in enumerate(eff_vals[:-1]):
+        for j, x in enumerate(ev[:-(i+1)]):
+            print(targets[(len(targets) - 1) - i], targets[(len(targets) - 1) - (j+i+1)], "%.2f" % x)
+        print()
 
     eff_vals_mean = eff_vals.flatten()
     eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]

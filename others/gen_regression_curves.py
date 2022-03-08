@@ -15,7 +15,7 @@ def find_n_eff(mapping):
             continue
         neff = min(k * (1 - k) / v, neff)
     return neff
-    
+
 
 def get_boneage_data():
     mapping = {0.2: 0.00087064866, 0.3: 0.0004569574, 0.4: 0.0006438183, 0.5: 0.0007685996, 0.6: 0.0008711952, 0.7: 0.0011653631, 0.8: 0.0018011187}
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     n_effs = [10, 1]
     for cc, n_eff in zip(curve_colors, n_effs):
-        
+
         plt.plot(x_axis, [bound(x_, n_eff)
                           for x_ in x_axis], '--', color=cc, label=r"$n_{leaked}=%d$" % n_eff)
 
@@ -128,6 +128,7 @@ if __name__ == "__main__":
     plt.xticks(np.arange(0.1, 1.0, 0.1))
     # plt.grid()
     plt.style.use('seaborn')
+    plt.gca().invert_yaxis()
     plt.legend()
     plt.savefig("./bound_curves_regression.pdf")
 
