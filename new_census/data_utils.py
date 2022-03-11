@@ -3,16 +3,18 @@ import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 import argparse
 import pandas as pd
+from torch.utils.data import   DataLoader
 import os
 import pickle
+import torch as ch
 from sklearn.model_selection import train_test_split
-from torch.utils.data import   Dataset
+from torch.utils.data import Dataset
+
+
 # BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 PROPERTY_FOCUS = {"sex": 'female', "race": 'white'} # in original dataset, 0 for male, 1 for female; 0 for white
-
-
 
 # US Income dataset
 class CensusIncome:
@@ -39,7 +41,8 @@ class CensusIncome:
             X = X.to_numpy()
             return (X.astype(float), np.expand_dims(Y, 1), cols)
 
-    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None,scale=1.0):
+    def get_data(self, split, prop_ratio, filter_prop,
+                 custom_limit=None, scale=1.0):
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -143,8 +146,6 @@ def get_df(df, condition, x):
     return df.iloc[qualify[:x]]
 
 # Wrapper for easier access to dataset
-
-
 class CensusWrapper:
     def __init__(self,
                  filter_prop="none",
@@ -158,28 +159,43 @@ class CensusWrapper:
         self.ratio = ratio
         self.filter_prop = filter_prop
         self.scale=scale
-        
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
                                 filter_prop=self.filter_prop,
-                                custom_limit=custom_limit,scale=self.scale)
+                                custom_limit=custom_limit,
+                                scale=self.scale)
+    
+    def get_loaders(self, batch_size, custom_limit=None, get_num_features=False):
+        train_data, test_data, num_features = self.load_data(custom_limit)
+        train_loader = DataLoader(
+            CensusSet(*train_data),
+            batch_size=batch_size)
+        test_loader = DataLoader(
+            CensusSet(*test_data),
+            batch_size=batch_size)
+        if get_num_features:
+            return train_loader, test_loader, len(num_features)
+        return train_loader, test_loader
+
 
 class CensusSet(Dataset):
     def __init__(self, data, targets):
-        self.data = data
-        self.targets = targets.ravel()
-        
+        self.data = ch.from_numpy(data).float()
+        self.targets = ch.from_numpy(targets).float()
         
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]
         
-        return x, y,0#zero because no property label to return, but compatible with methods from utils
+        return x, y, None
+        #None because no property label to return, but compatible with methods from utils
     
     def __len__(self):
-        return len(self.data)    
+        return len(self.data)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--split', action='store_true',
@@ -207,6 +223,7 @@ if __name__ == "__main__":
 
     def ra(x):
         return x['race'] == 0
+
     adv_tr, adv_te, vic_tr, vic_te = dt.train_df_adv, dt.test_df_adv, dt.train_df_victim, dt.test_df_victim
     print('adv train female and male: {}'.format(cal_q(adv_tr, fe)))
     print('adv test female and male: {}\n'.format(cal_q(adv_te, fe)))

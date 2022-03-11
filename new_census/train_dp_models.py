@@ -31,6 +31,10 @@ if __name__ == "__main__":
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
     parser.add_argument('--scale', type=float, default=1.0)
+    parser.add_argument('--lr', type=float, default=1e-3, help="Learning rate for GD")
+    parser.add_argument('--epsilon', type=float, default=50, help="Privacy budget")
+    parser.add_argument('--epochs', type=int, default=20, help="Number of epochs to train for")
+    parser.add_argument('--batch_size', type=int, default=512)
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -53,14 +57,17 @@ if __name__ == "__main__":
         # Ensures non-overlapping data for target and adversary
         # All the while allowing variations in dataset locally
 
-        (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
-        clf = ch_model.get_model(n_inp=x_tr.shape[1])
-        
+        # Get data loadeers
+        train_loader, test_loader, n_inp = ds.get_loaders(args.batch_size, get_num_features=True)
+        # Get model
+        clf = ch_model.get_model(n_inp=n_inp)
+        # Make sure model is compatible with DP training
         ch_model.validate_model(clf)
-        ch_model.opacus_stuff(clf, ((x_tr.astype(np.float32), y_tr.astype(np.float32)), (x_te.astype(np.float32), y_te.astype(np.float32))))
+        # Train model with DP noise
+        ch_model.opacus_stuff(clf, train_loader, test_loader, args)
         
         """
-        vloss, tacc,vacc = ch_model.train(clf,((x_tr.astype(np.float32), y_tr.astype(np.float32)), (x_te.astype(np.float32), y_te.astype(np.float32))))
+        vloss, tacc,vacc = ch_model.train(clf, loaders,)
         if args.verbose:
             print("Classifier %d : loss %.2f , Tran acc %.2f, Test acc %.2f\n" %
                   (i, vloss, tacc ,vacc))  
