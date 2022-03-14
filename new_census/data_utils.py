@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 import argparse
 import pandas as pd
-from torch.utils.data import   DataLoader
+from torch.utils.data import DataLoader
 import os
 import pickle
 import torch as ch
@@ -15,6 +15,7 @@ from torch.utils.data import Dataset
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 PROPERTY_FOCUS = {"sex": 'female', "race": 'white'} # in original dataset, 0 for male, 1 for female; 0 for white
+
 
 # US Income dataset
 class CensusIncome:
@@ -145,6 +146,7 @@ def get_df(df, condition, x):
     np.random.shuffle(qualify)
     return df.iloc[qualify[:x]]
 
+
 # Wrapper for easier access to dataset
 class CensusWrapper:
     def __init__(self,
@@ -158,7 +160,7 @@ class CensusWrapper:
         self.split = split
         self.ratio = ratio
         self.filter_prop = filter_prop
-        self.scale=scale
+        self.scale = scale
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
@@ -166,7 +168,7 @@ class CensusWrapper:
                                 filter_prop=self.filter_prop,
                                 custom_limit=custom_limit,
                                 scale=self.scale)
-    
+
     def get_loaders(self, batch_size, custom_limit=None, get_num_features=False):
         train_data, test_data, num_features = self.load_data(custom_limit)
         train_loader = DataLoader(
@@ -184,14 +186,16 @@ class CensusSet(Dataset):
     def __init__(self, data, targets):
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
-        
+
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]
-        
-        return x, y, None
-        #None because no property label to return, but compatible with methods from utils
-    
+
+        # Set property label to -1
+        # Not really used, but ensures compatibility with methods
+        # from utils
+        return x, y, -1
+
     def __len__(self):
         return len(self.data)
 
@@ -233,4 +237,3 @@ if __name__ == "__main__":
     print('adv test white and non: {}\n'.format(cal_q(adv_te, ra)))
     print('vic train white and non: {}'.format(cal_q(vic_tr, ra)))
     print('vic test white and non: {}'.format(cal_q(vic_te, ra)))
-   

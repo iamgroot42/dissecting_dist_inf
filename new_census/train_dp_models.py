@@ -1,13 +1,9 @@
 from tqdm import tqdm
-import os
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import ch_model
-import torch as ch
-import numpy as np
 import utils
 
 
-#usage is the same as train_models
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -17,7 +13,8 @@ if __name__ == "__main__":
                         help='while filter to use')
     parser.add_argument('--ratio',
                         default="0.5",
-                        help='what ratio of the new sampled dataset should be true')
+                        help="what ratio of the new sampled dataset"
+                             "should be true")
     parser.add_argument('--num', type=int, default=1000,
                         help='how many classifiers to train?')
     parser.add_argument('--split',
@@ -31,10 +28,26 @@ if __name__ == "__main__":
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
     parser.add_argument('--scale', type=float, default=1.0)
-    parser.add_argument('--lr', type=float, default=1e-3, help="Learning rate for GD")
-    parser.add_argument('--epsilon', type=float, default=50, help="Privacy budget")
-    parser.add_argument('--epochs', type=int, default=20, help="Number of epochs to train for")
+    parser.add_argument('--lr', type=float, default=1e-3,
+                        help="Learning rate for GD")
+    parser.add_argument('--epsilon', type=float,
+                        default=50, help="Privacy budget")
+    parser.add_argument('--delta', type=float,
+                        default=2e-6, help="Delta for DP")
+    parser.add_argument('--epochs', type=int, default=20,
+                        help="Number of epochs to train for")
     parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--max_grad_norm', type=float, default=1.2,
+                        help="The maximum L2 norm of per-sample gradients"
+                        "before they are aggregated by the averaging step."
+                        "Tuning MAX_GRAD_NORM is very important. Start with a"
+                        "low noise multiplier like .1, this should give"
+                        "comparable performance to a non-private model."
+                        "Then do a grid search for the optimal MAX_GRAD_NORM"
+                        "value. The grid can be in the range [.1, 10].")
+    parser.add_argument('--physical_batch_size', type=int, default=256,
+                        help="Peak memory is proportional to batch_size ** 2."
+                        "This physical batch size should be set accordingly")
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -58,14 +71,16 @@ if __name__ == "__main__":
         # All the while allowing variations in dataset locally
 
         # Get data loadeers
-        train_loader, test_loader, n_inp = ds.get_loaders(args.batch_size, get_num_features=True)
+        train_loader, test_loader, n_inp = ds.get_loaders(
+            args.batch_size, get_num_features=True)
         # Get model
         clf = ch_model.get_model(n_inp=n_inp)
         # Make sure model is compatible with DP training
         ch_model.validate_model(clf)
         # Train model with DP noise
         ch_model.opacus_stuff(clf, train_loader, test_loader, args)
-        
+
+        #  Will save models after hyper-parameters have been fixed
         """
         vloss, tacc,vacc = ch_model.train(clf, loaders,)
         if args.verbose:
