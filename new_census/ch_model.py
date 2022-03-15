@@ -154,7 +154,7 @@ def opacus_stuff(model, train_loader, test_loader, args):
                 losses.append(loss.item())
                 accuracies.append(acc)
 
-        return np.mean(accuracies)
+        return np.mean(losses), np.mean(accuracies)
 
     #  EPOCHS
     iterator = range(args.epochs)
@@ -163,9 +163,10 @@ def opacus_stuff(model, train_loader, test_loader, args):
     for epoch in iterator:
         loss, acc, epsilon = train_opacus(
             model, train_loader, optimizer, device)
+        test_loss, test_acc = test_opacus(model, test_loader, device)
         if args.verbose:
             iterator.set_description(
-                f"Epoch {epoch + 1} | Loss: {loss:.3f} | Accuracy: {acc:.3f} | ε={epsilon:.4f}")
+                f"Epoch {epoch + 1} | Train Loss: {loss:.4f} | Train Accuracy: {acc:.3f} | ε={epsilon:.4f} | Test Loss: {test_loss:.4f} | Test Accuracy: {test_acc:.3f}")
 
-    test_acc = test_opacus(model, test_loader, device)
+    _, test_acc = test_opacus(model, test_loader, device)
     return test_acc

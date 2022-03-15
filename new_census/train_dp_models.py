@@ -32,7 +32,7 @@ if __name__ == "__main__":
                         help='start counting from here when saving models')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help="Learning rate for GD")
-    parser.add_argument('--batch_size', type=int, default=512)
+    parser.add_argument('--batch_size', type=int, default=500)
     #  DP-specific arguments
     parser.add_argument('--epsilon', type=float,
                         default=0.1, help="Privacy budget")
@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         "comparable performance to a non-private model."
                         "Then do a grid search for the optimal MAX_GRAD_NORM"
                         "value. The grid can be in the range [.1, 10].")
-    parser.add_argument('--physical_batch_size', type=int, default=512,
+    parser.add_argument('--physical_batch_size', type=int, default=500,
                         help="Peak memory is proportional to batch_size ** 2."
                         "This physical batch size should be set accordingly")
     args = parser.parse_args()

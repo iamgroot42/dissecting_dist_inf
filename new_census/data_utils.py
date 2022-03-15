@@ -16,20 +16,14 @@ BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 # in original dataset, 0 for male, 1 for female; 0 for white
 PROPERTY_FOCUS = {"sex": 'female', "race": 'white'}
-DELTA_VALUES = {0.1: 1.35e-5}
+# DELTA_VALUES = {0.1: 1.4e-5}
+DELTA_VALUES = {0.1: 1.35e-5, 1.0: 1.35e-5}
 
 
 # sex, adv: actual delta 2.1e-5
 # sex, victim: actual delta 1.4e-5
 # race, adv: actual delta 3e-5
 # race, victim: actual delta 2e-5
-
-# using Delta 1.35e-5
-# sex, adv: sigma 60
-# sex, victim: sigma 48.75
-# race, adv: sigma 70
-# race, victim: sigma 57.5
-
 
 # US Income dataset
 class CensusIncome:
@@ -41,20 +35,19 @@ class CensusIncome:
             "ambulatory-difficulty", "hearing-difficulty", "vision-difficulty",
             "work-hour", "world-area-of-birth", "state-code", "income"
         ]
-
         self.load_data(test_ratio=0.4)
 
     # Return data with desired property ratios
     def get_x_y(self, P):
-            # Scale X values
-            Y = P['income'].to_numpy()
-            cols_drop = ['income']
-            if self.drop_senstive_cols:
-                cols_drop += ['sex', 'race']
-            X = P.drop(columns=cols_drop, axis=1)
-            cols = X.columns
-            X = X.to_numpy()
-            return (X.astype(float), np.expand_dims(Y, 1), cols)
+        # Scale X values
+        Y = P['income'].to_numpy()
+        cols_drop = ['income']
+        if self.drop_senstive_cols:
+            cols_drop += ['sex', 'race']
+        X = P.drop(columns=cols_drop, axis=1)
+        cols = X.columns
+        X = X.to_numpy()
+        return (X.astype(float), np.expand_dims(Y, 1), cols)
 
     def get_data(self, split, prop_ratio, filter_prop,
                  custom_limit=None, scale=1.0):
@@ -144,7 +137,7 @@ def get_filter(df, filter_prop, split, ratio, is_test,
         subsample_size = custom_limit
     return utils.heuristic(df, lambda_fn, ratio,
                            subsample_size,
-                           class_imbalance=1.38,  # Calculated based on original distribution
+                           class_imbalance=0.7211,  # Calculated based on original distribution
                            n_tries=100,
                            class_col='income',
                            verbose=False)
