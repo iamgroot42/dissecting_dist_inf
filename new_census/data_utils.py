@@ -14,7 +14,20 @@ from torch.utils.data import Dataset
 # BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
 BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
-PROPERTY_FOCUS = {"sex": 'female', "race": 'white'} # in original dataset, 0 for male, 1 for female; 0 for white
+# in original dataset, 0 for male, 1 for female; 0 for white
+PROPERTY_FOCUS = {"sex": 'female', "race": 'white'}
+
+
+# sex, adv: actual delta 2.1e-5
+# sex, victim: actual delta 1.4e-5
+# race, adv: actual delta 3e-5
+# race, victim: actual delta 2e-5
+
+# using Delta 1.35e-5
+# sex, adv: sigma 60
+# sex, victim: sigma 48.75
+# race, adv: sigma 70
+# race, victim: sigma 57.5
 
 
 # US Income dataset
@@ -102,7 +115,8 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,scale=1.0):
+def get_filter(df, filter_prop, split, ratio, is_test,
+               custom_limit=None, scale=1.0):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
@@ -169,7 +183,8 @@ class CensusWrapper:
                                 custom_limit=custom_limit,
                                 scale=self.scale)
 
-    def get_loaders(self, batch_size, custom_limit=None, get_num_features=False):
+    def get_loaders(self, batch_size, custom_limit=None,
+                    get_num_features=False):
         train_data, test_data, num_features = self.load_data(custom_limit)
         train_loader = DataLoader(
             CensusSet(*train_data),
@@ -205,7 +220,7 @@ if __name__ == "__main__":
     parser.add_argument('--split', action='store_true',
                         help='create test and train split')
     args = parser.parse_args()
-    #create test and train split
+    # Create test and train split
     # Do not run with 'split' for 1 year (already generated splits)
     if args.split:
         x = pickle.load(

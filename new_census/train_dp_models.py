@@ -7,6 +7,7 @@ import utils
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
+    #  Dataset-specific arguments
     parser.add_argument('--filter', type=str,
                         required=True,
                         choices=SUPPORTED_PROPERTIES,
@@ -15,28 +16,30 @@ if __name__ == "__main__":
                         default="0.5",
                         help="what ratio of the new sampled dataset"
                              "should be true")
-    parser.add_argument('--num', type=int, default=1000,
-                        help='how many classifiers to train?')
     parser.add_argument('--split',
                         required=True,
                         choices=["adv", "victim"],
                         help='which split of data to use')
-    parser.add_argument('--verbose', action="store_true",
-                        help='print out per-classifier stats?')
     parser.add_argument('--drop_senstive_cols', action="store_true",
                         help='drop age/sex attributes during training?')
+    parser.add_argument('--scale', type=float, default=1.0)
+    #  Training-specific arguments
+    parser.add_argument('--num', type=int, default=1,
+                        help='how many classifiers to train?')
+    parser.add_argument('--verbose', action="store_true",
+                        help='print out per-classifier stats?')
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
-    parser.add_argument('--scale', type=float, default=1.0)
     parser.add_argument('--lr', type=float, default=1e-3,
                         help="Learning rate for GD")
+    parser.add_argument('--batch_size', type=int, default=512)
+    #  DP-specific arguments
     parser.add_argument('--epsilon', type=float,
-                        default=50, help="Privacy budget")
+                        default=0.1, help="Privacy budget")
     parser.add_argument('--delta', type=float,
-                        default=2e-6, help="Delta for DP")
+                        default=1.35e-5, help="Delta for DP")
     parser.add_argument('--epochs', type=int, default=20,
                         help="Number of epochs to train for")
-    parser.add_argument('--batch_size', type=int, default=512)
     parser.add_argument('--max_grad_norm', type=float, default=1.2,
                         help="The maximum L2 norm of per-sample gradients"
                         "before they are aggregated by the averaging step."
@@ -45,7 +48,7 @@ if __name__ == "__main__":
                         "comparable performance to a non-private model."
                         "Then do a grid search for the optimal MAX_GRAD_NORM"
                         "value. The grid can be in the range [.1, 10].")
-    parser.add_argument('--physical_batch_size', type=int, default=256,
+    parser.add_argument('--physical_batch_size', type=int, default=512,
                         help="Peak memory is proportional to batch_size ** 2."
                         "This physical batch size should be set accordingly")
     args = parser.parse_args()

@@ -8,10 +8,9 @@ from model_utils import BASE_MODELS_DIR
 from opacus import PrivacyEngine
 import numpy as np
 from opacus.utils.batch_memory_manager import BatchMemoryManager
-
-
 from opacus.validators import ModuleValidator
-#Constants
+
+#  Ignore warnings from Opacus
 import warnings
 warnings.simplefilter("ignore")
 
@@ -61,10 +60,7 @@ def validate_model(model):
         Check if model is compatible with Opacus
     """
     errors = ModuleValidator.validate(model, strict=False)
-    print(str(errors[-5:]))
-    if(errors == []):
-        print("Validated")
-    else:
+    if len(errors) > 0:
         print(str(errors[-5:]))
         raise ValueError("Model is not opacus compatible")
 
@@ -73,14 +69,14 @@ def opacus_stuff(model, train_loader, test_loader, args):
     """
         Train model with DP noise
     """
-    # Generally, it should be set to be less than the inverse of the size of the training dataset.
-    assert args.delta < 1 / len(train_loader.dataset), "delta should be < the inverse of the size of the training dataset"
-
     # Get size of train dataset from loader
     train_size = len(train_loader.dataset)
     # Compute delta value corresponding to this size
     delta_computed = 1 / train_size
     print(f"Computed Delta {delta_computed} | Actual Delta {args.delta}")
+
+    # Generally, it should be set to be less than the inverse of the size of the training dataset.
+    assert args.delta < 1 / len(train_loader.dataset), "delta should be < the inverse of the size of the training dataset"
 
     device = ch.device("cuda")
     model = model.to(device)
@@ -94,7 +90,7 @@ def opacus_stuff(model, train_loader, test_loader, args):
         return (1. * ((preds >= 0) == labels)).mean().cpu()
 
     # Defaults to RDP
-    privacy_engine = PrivacyEngine()
+    privacy_engine = PrivacyEngine(accountant='rdp')
     model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
         module=model,
         optimizer=optimizer,
@@ -103,6 +99,7 @@ def opacus_stuff(model, train_loader, test_loader, args):
         target_epsilon=args.epsilon,
         target_delta=args.delta,
         max_grad_norm=args.max_grad_norm,
+        epsilon_tolerance=0.0001  # Lower tolerance gives tighter Sigma values
     )
 
     print(
