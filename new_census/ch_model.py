@@ -73,7 +73,7 @@ def opacus_stuff(model, train_loader, test_loader, args):
     train_size = len(train_loader.dataset)
     # Compute delta value corresponding to this size
     delta_computed = 1 / train_size
-    print(f"Computed Delta {delta_computed} | Actual Delta {args.delta}")
+    print(f"Computed Delta {delta_computed} | Given  Delta {args.delta}")
 
     # Generally, it should be set to be less than the inverse of the size of the training dataset.
     assert args.delta < 1 / len(train_loader.dataset), "delta should be < the inverse of the size of the training dataset"

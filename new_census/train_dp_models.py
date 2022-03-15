@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
+from data_utils import CensusWrapper, SUPPORTED_PROPERTIES, DELTA_VALUES
 import ch_model
 import utils
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
     parser.add_argument('--epsilon', type=float,
                         default=0.1, help="Privacy budget")
     parser.add_argument('--delta', type=float,
-                        default=1.35e-5, help="Delta for DP")
+                        default=None, help="Delta for DP")
     parser.add_argument('--epochs', type=int, default=20,
                         help="Number of epochs to train for")
     parser.add_argument('--max_grad_norm', type=float, default=1.2,
@@ -53,6 +53,13 @@ if __name__ == "__main__":
                         "This physical batch size should be set accordingly")
     args = parser.parse_args()
     utils.flash_utils(args)
+
+    if args.delta is None:
+        args.delta = DELTA_VALUES.get(args.epsilon, None)
+        if args.delta is None:
+            raise ValueError("Delta value for given epsilon not pre-defined")
+    else:
+        print("Caution: Using user-specified delta value")
 
     ds = CensusWrapper(
         filter_prop=args.filter,

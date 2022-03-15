@@ -16,6 +16,7 @@ BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 # in original dataset, 0 for male, 1 for female; 0 for white
 PROPERTY_FOCUS = {"sex": 'female', "race": 'white'}
+DELTA_VALUES = {0.1: 1.35e-5}
 
 
 # sex, adv: actual delta 2.1e-5
