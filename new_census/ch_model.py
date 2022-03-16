@@ -22,13 +22,11 @@ class MLP(nn.Module):
     def __init__(self, n_inp: int, num_classes: int = 1):
         super(MLP, self).__init__()
         self.layers = nn.Sequential(
-            nn.Linear(n_inp, 32),
+            nn.Linear(n_inp, 64),
             nn.ReLU(),
-            nn.Linear(32, 16),
+            nn.Linear(64, 16),
             nn.ReLU(),
-            nn.Linear(16, 8),
-            nn.ReLU(),
-            nn.Linear(8, num_classes),
+            nn.Linear(16, num_classes),
         )
 
     def forward(self, x):
@@ -36,7 +34,7 @@ class MLP(nn.Module):
         return x
 
 
-def get_model(n_inp: int = 13):
+def get_model(n_inp: int = 105):
     clf = MLP(n_inp=n_inp).cuda()
     return clf
 
@@ -73,7 +71,8 @@ def opacus_stuff(model, train_loader, test_loader, args):
     train_size = len(train_loader.dataset)
     # Compute delta value corresponding to this size
     delta_computed = 1 / train_size
-    print(f"Computed Delta {delta_computed} | Given  Delta {args.delta}")
+    if args.verbose:
+        print(f"Computed Delta {delta_computed} | Given  Delta {args.delta}")
 
     # Generally, it should be set to be less than the inverse of the size of the training dataset.
     assert args.delta < 1 / len(train_loader.dataset), "delta should be < the inverse of the size of the training dataset"
@@ -91,6 +90,7 @@ def opacus_stuff(model, train_loader, test_loader, args):
 
     # Defaults to RDP
     privacy_engine = PrivacyEngine(accountant='rdp')
+    # privacy_engine = PrivacyEngine(accountant='gdp')
     model, optimizer, train_loader = privacy_engine.make_private_with_epsilon(
         module=model,
         optimizer=optimizer,
@@ -101,9 +101,8 @@ def opacus_stuff(model, train_loader, test_loader, args):
         max_grad_norm=args.max_grad_norm,
         epsilon_tolerance=0.0001  # Lower tolerance gives tighter Sigma values
     )
-
-    print(
-        f"Using sigma={optimizer.noise_multiplier} and C={args.max_grad_norm}")
+    if args.verbose:
+        print(f"Using sigma={optimizer.noise_multiplier}")
 
     def train_opacus(model, train_loader, optimizer, device):
         model.train()

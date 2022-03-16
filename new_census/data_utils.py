@@ -16,14 +16,7 @@ BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 # in original dataset, 0 for male, 1 for female; 0 for white
 PROPERTY_FOCUS = {"sex": 'female', "race": 'white'}
-# DELTA_VALUES = {0.1: 1.4e-5}
-DELTA_VALUES = {0.1: 1.35e-5, 1.0: 1.35e-5}
 
-
-# sex, adv: actual delta 2.1e-5
-# sex, victim: actual delta 1.4e-5
-# race, adv: actual delta 3e-5
-# race, victim: actual delta 2e-5
 
 # US Income dataset
 class CensusIncome:
@@ -45,6 +38,7 @@ class CensusIncome:
         if self.drop_senstive_cols:
             cols_drop += ['sex', 'race']
         X = P.drop(columns=cols_drop, axis=1)
+        # Convert specific columns to one-hot
         cols = X.columns
         X = X.to_numpy()
         return (X.astype(float), np.expand_dims(Y, 1), cols)
@@ -74,6 +68,20 @@ class CensusIncome:
             return prepare_one_set(self.train_df_victim, self.test_df_victim)
         return prepare_one_set(self.train_df_adv, self.test_df_adv)
 
+    # Process, handle one-hot conversion of data etc
+    def process_df(self, df):
+        def oneHotCatVars(x, colname):
+            df_1 = x.drop(columns=colname, axis=1)
+            df_2 = pd.get_dummies(x[colname], prefix=colname, prefix_sep=':')
+            return (pd.concat([df_1, df_2], axis=1, join='inner'))
+
+        colnames = ['state-code', 'world-area-of-birth',
+                    'marital-status', 'workClass',
+                    'education-attainment']
+        for colname in colnames:
+            df = oneHotCatVars(df, colname)
+        return df
+
     # Create adv/victim splits
     def load_data(self, test_ratio, random_state=42):
         # Load train, test data
@@ -83,14 +91,19 @@ class CensusIncome:
             open(os.path.join(BASE_DATA_DIR, "data", 'test.p'), 'rb'))
         self.train_df = pd.DataFrame(train_data, columns=self.columns)
         self.test_df = pd.DataFrame(test_data, columns=self.columns)
-        '''
-        #set race to binary: 0 for white, 1 for the rest
-        self.train_df['race'] = (self.train_df['race'] != 0).astype(int)
-        self.test_df['race'] = (self.test_df['race'] != 0).astype(int)
-        #set sex columns to int, 0 for male, 1 for female
-        self.train_df['sex'] = self.train_df['sex'].astype(int)
-        self.test_df['sex'] = self.test_df['sex'].astype(int)
-        '''
+
+        # Add field to identify train/test, process together
+        self.train_df['is_train'] = 1
+        self.test_df['is_train'] = 0
+        df = pd.concat([self.train_df, self.test_df], axis=0)
+        df = self.process_df(df)
+
+        # Split back to train/test data
+        self.train_df, self.test_df = df[df['is_train']
+                                         == 1], df[df['is_train'] == 0]
+        self.train_df = self.train_df.drop(columns=['is_train'], axis=1)
+        self.test_df = self.test_df.drop(columns=['is_train'], axis=1)
+
         def s_split(this_df, rs=random_state):
             sss = StratifiedShuffleSplit(n_splits=1,
                                          test_size=test_ratio,

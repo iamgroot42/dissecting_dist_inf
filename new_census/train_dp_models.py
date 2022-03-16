@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from data_utils import CensusWrapper, SUPPORTED_PROPERTIES, DELTA_VALUES
+from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import ch_model
 import utils
 
@@ -30,17 +30,17 @@ if __name__ == "__main__":
                         help='print out per-classifier stats?')
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
-    parser.add_argument('--lr', type=float, default=1e-3,
+    parser.add_argument('--lr', type=float, default=5e-3,
                         help="Learning rate for GD")
     parser.add_argument('--batch_size', type=int, default=500)
+    parser.add_argument('--epochs', type=int, default=30,
+                        help="Number of epochs to train for")
     #  DP-specific arguments
     parser.add_argument('--epsilon', type=float,
                         default=0.1, help="Privacy budget")
     parser.add_argument('--delta', type=float,
-                        default=None, help="Delta for DP")
-    parser.add_argument('--epochs', type=int, default=20,
-                        help="Number of epochs to train for")
-    parser.add_argument('--max_grad_norm', type=float, default=1.2,
+                        default=1.3e-5, help="Delta for DP")
+    parser.add_argument('--max_grad_norm', type=float, default=1,
                         help="The maximum L2 norm of per-sample gradients"
                         "before they are aggregated by the averaging step."
                         "Tuning MAX_GRAD_NORM is very important. Start with a"
@@ -53,13 +53,6 @@ if __name__ == "__main__":
                         "This physical batch size should be set accordingly")
     args = parser.parse_args()
     utils.flash_utils(args)
-
-    if args.delta is None:
-        args.delta = DELTA_VALUES.get(args.epsilon, None)
-        if args.delta is None:
-            raise ValueError("Delta value for given epsilon not pre-defined")
-    else:
-        print("Caution: Using user-specified delta value")
 
     ds = CensusWrapper(
         filter_prop=args.filter,
@@ -92,10 +85,6 @@ if __name__ == "__main__":
 
         #  Will save models after hyper-parameters have been fixed
         """
-        vloss, tacc,vacc = ch_model.train(clf, loaders,)
-        if args.verbose:
-            print("Classifier %d : loss %.2f , Tran acc %.2f, Test acc %.2f\n" %
-                  (i, vloss, tacc ,vacc))  
         save_path = ch_model.get_models_path(
             args.filter, args.split, args.ratio)
         if args.scale != 1.0:
