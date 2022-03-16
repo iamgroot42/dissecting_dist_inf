@@ -6,7 +6,7 @@ models/*
 *.pth
 LOG_*
 RUN*
-images/
+/images
 *.out
 do*.sh
 plots/*
