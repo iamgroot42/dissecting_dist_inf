@@ -11,8 +11,10 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 
 
-# BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
+if utils.check_if_inside_cluster():
+    BASE_DATA_DIR = "/scratch/as9rw/datasets/census_new/census_2019_1year"
+else:
+    BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
 SUPPORTED_PROPERTIES = ["sex", "race"]
 # in original dataset, 0 for male, 1 for female; 0 for white
 PROPERTY_FOCUS = {"sex": 'female', "race": 'white'}
