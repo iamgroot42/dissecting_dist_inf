@@ -125,7 +125,7 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,scale=1
         subsample_size = custom_limit
     return utils.heuristic(df, lambda_fn, ratio,
                            subsample_size,
-                           class_imbalance=1.38,  # Calculated based on original distribution
+                           class_imbalance=0.7211,  # Calculated based on original distribution
                            n_tries=100,
                            class_col='income',
                            verbose=False)

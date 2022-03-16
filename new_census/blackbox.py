@@ -41,11 +41,12 @@ if __name__ == "__main__":
     parser.add_argument('--tries', type=int,
                         default=5, help="number of trials")  
     parser.add_argument('--drop', action="store_true")
-    parser.add_argument('--scale',type=float,default=1.0)               
+    parser.add_argument('--scale',type=float,default=1.0)  
+    parser.add_argument('--ratios',help="ratio of data points to try",
+    required=True,nargs='+',type=float,default = [0.05,0.1,0.2,0.3,0.4,0.5,1.0])              
     args = parser.parse_args()
     flash_utils(args)
-    ratios = [0.05,0.1,0.2,0.3,0.4,0.5,1.0] #ratio of data points to try
-    
+    ratios = args.ratios
     models_victim_1 = get_models(
         get_models_path(args.filter, "victim", args.ratio_1,drop=args.drop,scale=args.scale))
     models_victim_2 = get_models(
