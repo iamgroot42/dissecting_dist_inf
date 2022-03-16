@@ -9,8 +9,11 @@ import pandas as pd
 from utils import worker_init_fn
 
 
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba"
-# BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba_raw_crop/splits/70_30/"
+if utils.check_if_inside_cluster():
+    BASE_DATA_DIR = "/scratch/as9rw/datasets/celeba"
+else:
+    BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/celeba"
+
 PRESERVE_PROPERTIES = ['Smiling', 'Young', 'Male', 'Attractive']
 SUPPORTED_PROPERTIES = [
     '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
@@ -24,6 +27,8 @@ SUPPORTED_PROPERTIES = [
     'Wearing_Hat', 'Wearing_Lipstick', 'Wearing_Necklace',
     'Wearing_Necktie', 'Young'
 ]
+SUPPORTED_RATIOS = ["0.0", "0.1", "0.2", "0.3",
+                    "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
 
 def get_bboxes():
@@ -251,8 +256,8 @@ class CelebaWrapper:
             prop, ratio, cwise_sample[1],
             transform=test_transforms)
 
-    def get_loaders(self, batch_size, shuffle=True, eval_shuffle=False, val_factor=2):
-        num_workers = 16
+    def get_loaders(self, batch_size, shuffle=True,
+                    eval_shuffle=False, val_factor=2, num_workers=16):
         pff = 20
         train_loader = DataLoader(
             self.ds_train, batch_size=batch_size,

@@ -3,15 +3,21 @@ import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 import argparse
 import pandas as pd
+from torch.utils.data import DataLoader
 import os
 import pickle
+import torch as ch
 from sklearn.model_selection import train_test_split
-from torch.utils.data import   Dataset
-# BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_5year"
-BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
-SUPPORTED_PROPERTIES = ["sex", "race"]
-PROPERTY_FOCUS = {"sex": 'female', "race": 'white'} # in original dataset, 0 for male, 1 for female; 0 for white
+from torch.utils.data import Dataset
 
+
+if utils.check_if_inside_cluster():
+    BASE_DATA_DIR = "/scratch/as9rw/datasets/census_new/census_2019_1year"
+else:
+    BASE_DATA_DIR = "/p/adversarialml/as9rw/datasets/census_new/census_2019_1year"
+SUPPORTED_PROPERTIES = ["sex", "race"]
+# in original dataset, 0 for male, 1 for female; 0 for white
+PROPERTY_FOCUS = {"sex": 'female', "race": 'white'}
 
 
 # US Income dataset
@@ -24,22 +30,23 @@ class CensusIncome:
             "ambulatory-difficulty", "hearing-difficulty", "vision-difficulty",
             "work-hour", "world-area-of-birth", "state-code", "income"
         ]
-
         self.load_data(test_ratio=0.4)
 
     # Return data with desired property ratios
     def get_x_y(self, P):
-            # Scale X values
-            Y = P['income'].to_numpy()
-            cols_drop = ['income']
-            if self.drop_senstive_cols:
-                cols_drop += ['sex', 'race']
-            X = P.drop(columns=cols_drop, axis=1)
-            cols = X.columns
-            X = X.to_numpy()
-            return (X.astype(float), np.expand_dims(Y, 1), cols)
+        # Scale X values
+        Y = P['income'].to_numpy()
+        cols_drop = ['income']
+        if self.drop_senstive_cols:
+            cols_drop += ['sex', 'race']
+        X = P.drop(columns=cols_drop, axis=1)
+        # Convert specific columns to one-hot
+        cols = X.columns
+        X = X.to_numpy()
+        return (X.astype(float), np.expand_dims(Y, 1), cols)
 
-    def get_data(self, split, prop_ratio, filter_prop, custom_limit=None,scale=1.0):
+    def get_data(self, split, prop_ratio, filter_prop,
+                 custom_limit=None, scale=1.0):
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -63,6 +70,20 @@ class CensusIncome:
             return prepare_one_set(self.train_df_victim, self.test_df_victim)
         return prepare_one_set(self.train_df_adv, self.test_df_adv)
 
+    # Process, handle one-hot conversion of data etc
+    def process_df(self, df):
+        def oneHotCatVars(x, colname):
+            df_1 = x.drop(columns=colname, axis=1)
+            df_2 = pd.get_dummies(x[colname], prefix=colname, prefix_sep=':')
+            return (pd.concat([df_1, df_2], axis=1, join='inner'))
+
+        colnames = ['state-code', 'world-area-of-birth',
+                    'marital-status', 'workClass',
+                    'education-attainment']
+        for colname in colnames:
+            df = oneHotCatVars(df, colname)
+        return df
+
     # Create adv/victim splits
     def load_data(self, test_ratio, random_state=42):
         # Load train, test data
@@ -72,14 +93,19 @@ class CensusIncome:
             open(os.path.join(BASE_DATA_DIR, "data", 'test.p'), 'rb'))
         self.train_df = pd.DataFrame(train_data, columns=self.columns)
         self.test_df = pd.DataFrame(test_data, columns=self.columns)
-        '''
-        #set race to binary: 0 for white, 1 for the rest
-        self.train_df['race'] = (self.train_df['race'] != 0).astype(int)
-        self.test_df['race'] = (self.test_df['race'] != 0).astype(int)
-        #set sex columns to int, 0 for male, 1 for female
-        self.train_df['sex'] = self.train_df['sex'].astype(int)
-        self.test_df['sex'] = self.test_df['sex'].astype(int)
-        '''
+
+        # Add field to identify train/test, process together
+        self.train_df['is_train'] = 1
+        self.test_df['is_train'] = 0
+        df = pd.concat([self.train_df, self.test_df], axis=0)
+        df = self.process_df(df)
+
+        # Split back to train/test data
+        self.train_df, self.test_df = df[df['is_train']
+                                         == 1], df[df['is_train'] == 0]
+        self.train_df = self.train_df.drop(columns=['is_train'], axis=1)
+        self.test_df = self.test_df.drop(columns=['is_train'], axis=1)
+
         def s_split(this_df, rs=random_state):
             sss = StratifiedShuffleSplit(n_splits=1,
                                          test_size=test_ratio,
@@ -98,7 +124,8 @@ class CensusIncome:
 
 
 # Fet appropriate filter with sub-sampling according to ratio and property
-def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None,scale=1.0):
+def get_filter(df, filter_prop, split, ratio, is_test,
+               custom_limit=None, scale=1.0):
     if filter_prop == "none":
         return df
     elif filter_prop == "sex":
@@ -142,9 +169,8 @@ def get_df(df, condition, x):
     np.random.shuffle(qualify)
     return df.iloc[qualify[:x]]
 
+
 # Wrapper for easier access to dataset
-
-
 class CensusWrapper:
     def __init__(self,
                  filter_prop="none",
@@ -157,35 +183,53 @@ class CensusWrapper:
         self.split = split
         self.ratio = ratio
         self.filter_prop = filter_prop
-        self.scale=scale
-        
+        self.scale = scale
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
                                 filter_prop=self.filter_prop,
-                                custom_limit=custom_limit,scale=self.scale)
+                                custom_limit=custom_limit,
+                                scale=self.scale)
+
+    def get_loaders(self, batch_size, custom_limit=None,
+                    get_num_features=False):
+        train_data, test_data, num_features = self.load_data(custom_limit)
+        train_loader = DataLoader(
+            CensusSet(*train_data),
+            batch_size=batch_size)
+        test_loader = DataLoader(
+            CensusSet(*test_data),
+            batch_size=batch_size)
+        if get_num_features:
+            return train_loader, test_loader, len(num_features)
+        return train_loader, test_loader
+
 
 class CensusSet(Dataset):
     def __init__(self, data, targets):
-        self.data = data
-        self.targets = targets.ravel()
-        
-        
+        self.data = ch.from_numpy(data).float()
+        self.targets = ch.from_numpy(targets).float()
+
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]
-        
-        return x, y,0#zero because no property label to return, but compatible with methods from utils
-    
+
+        # Set property label to -1
+        # Not really used, but ensures compatibility with methods
+        # from utils
+        return x, y, -1
+
     def __len__(self):
-        return len(self.data)    
+        return len(self.data)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--split', action='store_true',
                         help='create test and train split')
     args = parser.parse_args()
-    #create test and train split
+    # Create test and train split
     # Do not run with 'split' for 1 year (already generated splits)
     if args.split:
         x = pickle.load(
@@ -207,6 +251,7 @@ if __name__ == "__main__":
 
     def ra(x):
         return x['race'] == 0
+
     adv_tr, adv_te, vic_tr, vic_te = dt.train_df_adv, dt.test_df_adv, dt.train_df_victim, dt.test_df_victim
     print('adv train female and male: {}'.format(cal_q(adv_tr, fe)))
     print('adv test female and male: {}\n'.format(cal_q(adv_te, fe)))
@@ -216,4 +261,3 @@ if __name__ == "__main__":
     print('adv test white and non: {}\n'.format(cal_q(adv_te, ra)))
     print('vic train white and non: {}'.format(cal_q(vic_tr, ra)))
     print('vic test white and non: {}'.format(cal_q(vic_te, ra)))
-   

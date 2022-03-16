@@ -8,9 +8,10 @@ census_data/*
 train_fix*.sh
 SEX_*
 images/
-log/
 do*.sh
 *.out
 try.py
 /try
 
+# Model weight files
+*.pth

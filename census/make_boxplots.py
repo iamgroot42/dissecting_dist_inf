@@ -51,7 +51,7 @@ if __name__ == "__main__":
     train_dir_1 = os.path.join(BASE_MODELS_DIR, "victim/%s/" % first_cat)
     test_dir_1 = os.path.join(BASE_MODELS_DIR, "adv/%s/" % first_cat)
 
-    targets = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5,0.6, 0.7, 0.8, 0.9, 1.0]
+    targets = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     targets = [str(x) for x in targets if x != args.ratio]
 
     if args.filter != "race":
@@ -157,4 +157,4 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     # Save plot
-    sns_plot.figure.savefig("./meta_boxplot_%s.pdf" % args.filter)
+    sns_plot.figure.savefig("./plots/meta_boxplot_%s.pdf" % args.filter)

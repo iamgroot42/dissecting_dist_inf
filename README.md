@@ -6,6 +6,7 @@ Folder structure:
 - `boneage` : Experiments on the [RSNA Bone-Age](https://www.kaggle.com/kmader/rsna-bone-age) task, reduced to binary prediction
 - `arxiv` : Experiments on the [ogbn-arxiv](https://ogb.stanford.edu/docs/nodeprop/) node-classfication task
 - `census` : Experiments on the [Adult Income](https://www.kaggle.com/uciml/adult-census-income) dataset
+- `new census` : Experiments on the [New Census](https://github.com/bargavj/EvaluatingDPML/blob/master/CENSUS_DATA_README.ipynb) dataset
 - `celeba` : Experiments on the [Celeb-A](https://www.kaggle.com/jessicali9530/celeba-dataset) dataset
 - `botnets`: Experiments on [HarvardNLP's Botnet Detection](https://github.com/harvardnlp/botnet-detection) datasets
 

@@ -46,6 +46,4 @@ if __name__ == "__main__":
             hue=columns[2], 
             data=df)
     sns_plot.set(ylim=(35, 101))
-    sns_plot.figure.savefig("./images/census_loss_{}".format(args.filter))
-
-
+    sns_plot.figure.savefig("./plots/census_loss_{}".format(args.filter))

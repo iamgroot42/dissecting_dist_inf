@@ -56,9 +56,10 @@ if __name__ == "__main__":
         raw_data = raw_data[args.filter]
 
     # Convert to list
-    keys_to_plot = " ".join(args.keys_to_plot)
+    if type(args.keys_to_plot) == list:
+        keys_to_plot = " ".join(args.keys_to_plot)
     keys_to_plot = keys_to_plot.split(',')
-    print(keys_to_plot)
+    keys_to_plot = [key.strip() for key in keys_to_plot]
 
     for n, v1 in raw_data.items():
         if not (n in keys_to_plot):
@@ -98,4 +99,4 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     sns_plot.figure.savefig(
-        "./meta_boxplot_varying_n_%s_%s.png" % (args.filter, str(args.focus_n)))
+        "./plots/meta_boxplot_varying_n_%s_%s.png" % (args.filter, str(args.focus_n)))

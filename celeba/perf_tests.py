@@ -1,4 +1,4 @@
-from model_utils import get_model, BASE_MODELS_DIR
+from model_utils import get_models, BASE_MODELS_DIR
 from data_utils import CelebaWrapper, SUPPORTED_PROPERTIES
 import torch.nn as nn
 import numpy as np
@@ -9,20 +9,6 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_models(folder_path, n_models=1000):
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        # Folder for adv models (or others): skip
-        if os.path.isdir(os.path.join(folder_path, mpath)):
-            continue
-
-        model = get_model(os.path.join(folder_path, mpath))
-        models.append(model)
-    return models
 
 
 def get_accs(val_loader, models):
@@ -47,12 +33,14 @@ if __name__ == "__main__":
     parser.add_argument('--batch_size', type=int, default=256)
     parser.add_argument('--filter', help='alter ratio for this attribute',
                         default="Male",
-                        required=True, choices=SUPPORTED_PROPERTIES)
+                        choices=SUPPORTED_PROPERTIES)
     parser.add_argument('--task', default="Smiling",
                         choices=SUPPORTED_PROPERTIES,
                         help='task to focus on')
     parser.add_argument('--ratio_1', help="ratio for D_1", default="0.5")
     parser.add_argument('--ratio_2', help="ratio for D_2")
+    parser.add_argument('--num_workers', type=int,
+                        default=16, help="Number of workers for dataloaders")
     parser.add_argument('--testing', action='store_true',
                         help="testing script or not")
     parser.add_argument('--total_models', type=int, default=100)
@@ -80,8 +68,10 @@ if __name__ == "__main__":
 
     # Get loaders
     loaders = [
-        ds_1.get_loaders(args.batch_size, shuffle=False)[1],
-        ds_2.get_loaders(args.batch_size, shuffle=False)[1]
+        ds_1.get_loaders(args.batch_size, shuffle=False,
+                         num_workers=args.num_workers)[1],
+        ds_2.get_loaders(args.batch_size, shuffle=False,
+                         num_workers=args.num_workers)[1]
     ]
 
     train_dir_1 = os.path.join(
@@ -106,16 +96,16 @@ if __name__ == "__main__":
     # Load victim models
     print("Loading models")
     if args.testing:
-        models_victim_1 = get_models(test_dir_1, 50)
-        models_victim_2 = get_models(test_dir_2, 50)
+        models_victim_1 = get_models(test_dir_1, 50, cpu=True)
+        models_victim_2 = get_models(test_dir_2, 50, cpu=True)
     else:
-        models_victim_1 = get_models(test_dir_1)
-        models_victim_2 = get_models(test_dir_2)
+        models_victim_1 = get_models(test_dir_1, cpu=True)
+        models_victim_2 = get_models(test_dir_2, cpu=True)
 
     # Load adv models
     total_models = args.total_models
-    models_1 = get_models(train_dir_1, total_models // 2)
-    models_2 = get_models(train_dir_2, total_models // 2)
+    models_1 = get_models(train_dir_1, total_models // 2, cpu=True)
+    models_2 = get_models(train_dir_2, total_models // 2, cpu=True)
 
     allaccs_1, allaccs_2 = [], []
     vic_accs, adv_accs = [], []

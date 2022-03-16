@@ -122,12 +122,12 @@ def gen_optimal(models, labels, sample_shape, n_samples,
             x_use = resize(x_rand, (sample_shape[1], sample_shape[2]))
         else:
             x_use = x_rand
-        
+
         # Get representations from all models
         reprs = ch.stack([m(x_use, latent=latent_focus) for m in models], 0)
-        
+
         reprs_z = ch.mean(reprs[labels == 0], 2)
-        
+
         reprs_o = ch.mean(reprs[labels == 1], 2)
         # If latent_focus is None, simply maximize difference in prediction probs
         if latent_focus is None:

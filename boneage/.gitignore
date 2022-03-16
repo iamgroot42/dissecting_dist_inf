@@ -9,4 +9,4 @@ RUN*
 /images
 *.out
 do*.sh
-/log
+plots/*

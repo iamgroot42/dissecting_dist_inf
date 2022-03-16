@@ -10,3 +10,4 @@ perf_*
 !perf_tests.py
 .vscode/*
 MANY_*
+plots/*

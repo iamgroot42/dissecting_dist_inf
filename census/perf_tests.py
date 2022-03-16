@@ -1,4 +1,4 @@
-from model_utils import get_models_path, load_model, BASE_MODELS_DIR
+from model_utils import get_models_path, get_models, BASE_MODELS_DIR
 from data_utils import CensusTwo, CensusWrapper, SUPPORTED_PROPERTIES
 import numpy as np
 from tqdm import tqdm
@@ -8,17 +8,6 @@ from utils import get_threshold_acc, find_threshold_acc, flash_utils
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-
-def get_models(folder_path, n_models=1000):
-   
-    paths = np.random.permutation(os.listdir(folder_path))[:n_models]
-
-    models = []
-    for mpath in tqdm(paths):
-        model = load_model(os.path.join(folder_path, mpath))
-        models.append(model)
-    return models
 
 
 def get_accs(data, models):
@@ -62,12 +51,12 @@ if __name__ == "__main__":
         if args.filter == "two_attr":
             ds_1 = CensusTwo()
             ds_2 = CensusTwo()
-            [r11,r12] = args.ratio_1.split(',')
-            r11,r12 = float(r11),float(r12)
-            [r21,r22] = args.ratio_2.split(',')
-            r21,r22 = float(r21),float(r22)
-            _, (x_te_1, y_te_1), _ = ds_1.get_data('adv',r11,r12)
-            _, (x_te_2, y_te_2), _ = ds_2.get_data('adv',r21,r22)
+            [r11, r12] = args.ratio_1.split(',')
+            r11, r12 = float(r11), float(r12)
+            [r21, r22] = args.ratio_2.split(',')
+            r21, r22 = float(r21), float(r22)
+            _, (x_te_1, y_te_1), _ = ds_1.get_data('adv', r11, r12)
+            _, (x_te_2, y_te_2), _ = ds_2.get_data('adv', r21, r22)
         else:
             # Prepare data wrappers
             ds_1 = CensusWrapper(
@@ -77,7 +66,7 @@ if __name__ == "__main__":
                 filter_prop=args.filter,
                 ratio=float(args.ratio_2), split="adv")
 
-        # Fetch test data from both ratios
+            # Fetch test data from both ratios
             _, (x_te_1, y_te_1), _ = ds_1.load_data(custom_limit=10000)
             _, (x_te_2, y_te_2), _ = ds_2.load_data(custom_limit=10000)
         y_te_1 = y_te_1.ravel()
@@ -127,7 +116,6 @@ if __name__ == "__main__":
             # Collect all accuracies for basic baseline
             allaccs_1.append(accs_victim_1)
             allaccs_2.append(accs_victim_2)
-        
 
         # Basic baseline: look at model performance on test sets from both G_b
         # Predict b for whichever b it is higher
@@ -150,9 +138,7 @@ if __name__ == "__main__":
         thresholds.append(f_accs[np.argmax(adv_accs)])
        # tr = tr[np.argmax(adv_accs)]
        # rl = rl[np.argmax(adv_accs)]
-        
 
-   
     overall_loss = "Overall loss-test: %.2f" % np.mean(basics)
     overall_threshold = "Overall threshold-test:"+",".join(["%.2f" % x for x in thresholds])
     log_path = os.path.join(BASE_MODELS_DIR, args.filter,"baseline_result:"+args.ratio_1)

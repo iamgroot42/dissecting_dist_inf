@@ -1,5 +1,5 @@
 import numpy as np
-from model_utils import create_model, save_model
+from model_utils import create_model, save_model, check_if_exists
 from data_utils import SUPPORTED_PROPERTIES, CelebaWrapper
 from utils import flash_utils, train, extract_adv_params
 
@@ -24,15 +24,34 @@ if __name__ == "__main__":
                         help='use data augmentations when training models?')
     parser.add_argument('--adv_train', action="store_true",
                         help='use adversarial training?')
+    parser.add_argument('--adv_name', default=None,
+                        help='folder name for storing adversarially trained models')
     parser.add_argument('--task', default="Smiling",
                         choices=SUPPORTED_PROPERTIES,
                         help='task to focus on')
     parser.add_argument('--parallel', action="store_true",
                         help='use multiple GPUs to train?')
+    parser.add_argument('--is_large', action="store_true",
+                        help='use Inceptionv3 instead of AlexNet')
     parser.add_argument('--verbose', action="store_true",
                         help='print out epoch-wise statistics?')
     args = parser.parse_args()
     flash_utils(args)
+
+    # Large model AND adversarial training not supported
+    if args.is_large and args.adv_train:
+        raise ValueError("Large model and adversarial training not supported together")
+
+    # Check if model exists- skip if it does
+    if check_if_exists(args.name, args.ratio, args.filter,
+                       args.split, args.adv_train, args.adv_name,
+                       args.is_large):
+        print("Already trained model exists. Skipping training.")
+        exit(0)
+
+    # Make sure adv_name is provided if adv_train is True
+    if args.adv_train and args.adv_name is None:
+        raise ValueError("Must provide adv_name if adv_train is True")
 
     # CelebA dataset
     ds = CelebaWrapper(args.filter, args.ratio,
@@ -50,14 +69,13 @@ if __name__ == "__main__":
         eps = 2 * args.eps
         norm = np.inf
         nb_iter = 7
-        # Adv acc seems to be too high- investigate what's going on
         adv_params = extract_adv_params(
             eps=eps, eps_iter=(2.5 * eps / nb_iter), nb_iter=nb_iter,
             norm=norm, random_restarts=1,
             clip_min=-1, clip_max=1)
 
     # Create model
-    model = create_model(parallel=args.parallel)
+    model = create_model(parallel=args.parallel, is_large=args.is_large)
 
     # Train model
     model, (vloss, vacc) = train(model, (train_loader, test_loader),
@@ -76,4 +94,5 @@ if __name__ == "__main__":
     save_model(model, args.split, args.filter, str(
         args.ratio), save_name, dataparallel=args.parallel,
         is_adv=args.adv_train,
-        adv_folder_name="adv_train_8")
+        adv_folder_name=args.adv_name,
+        is_large=args.is_large)

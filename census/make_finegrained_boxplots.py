@@ -13,8 +13,9 @@ if __name__ == "__main__":
     parser.add_argument('--darkplot', action="store_true",
                         help='Use dark background for plotting results')
     parser.add_argument('--filter', choices=SUPPORTED_PROPERTIES,
+                        required=True,
                         help='name for subfolder to save/load data from')
-    parser.add_argument('--mode', choices=["meta", "threshold"],
+    parser.add_argument('--mode', choices=["meta", "threshold", "regress"],
                         default="meta",
                         help='name for subfolder to save/load data from')
     args = parser.parse_args()
@@ -282,6 +283,84 @@ if __name__ == "__main__":
             ]
         ]
 
+        raw_data_regress = [
+            [
+                [50.0, 50.4, 50.05, 50.7, 50.45],
+                [52.75, 53.5, 51.85, 52.55, 52.35],
+                [56.95, 55.65, 56.1, 58.95, 56.75],
+                [61.55, 60.8, 60.7, 64.3, 62.9],
+                [66.9, 66.25, 64.7, 71.15, 69],
+                [69.9, 70.1, 70.25, 74.25, 70.15],
+                [65.7, 70.75, 67.25, 69.6, 66.95],
+                [61.8, 68, 64.3, 64.75, 64.15],
+                [57.25, 61.8, 58.85, 59, 59.6],
+                [62, 71.1, 69.2, 73.8, 66.3]
+            ],
+            [
+                [51.55, 50.95, 51.15, 51.4, 50.7],
+                [51.45, 51.8, 52.05, 51.5, 51.55],
+                [53.45, 53.7, 53.6, 54.35, 53.2],
+                [56.25, 55.2, 55.9, 55.6, 53.4],
+                [55.7, 57.35, 56.9, 57.45, 54.7],
+                [53.35, 54.85, 54.15, 54.55, 51.2],
+                [52.35, 53.95, 52.75, 52, 50.9],
+                [50.95, 52.15, 51.35, 50.5, 50.9],
+                [53.25, 58.5, 57.8, 61.2, 56.15]
+            ],
+            [
+                [49.2, 49.25, 49.85, 49.25, 49.75],
+                [52.8, 51.75, 52.55, 51.85, 51.65],
+                [53.45, 53.75, 54.05, 55, 51.2],
+                [54.5, 55.75, 53.95, 54.2, 50.4],
+                [50.8, 52.45, 51.25, 51.5, 50.15],
+                [50.65, 51.4, 50.65, 50.95, 50.1],
+                [50.35, 51, 50.15, 49.95, 50.2],
+                [50.6, 52.45, 52.4, 53.95, 52.8]
+            ],
+            [
+                [51.1, 52.05, 51.4, 52, 51.9],
+                [52.05, 52.2, 52.05, 53.4, 51.7],
+                [51.05, 52.35, 51.25, 51.3, 51,1],
+                [50.15, 50.8, 50.55, 50.5, 49.2],
+                [50.1, 50.5, 49.95, 49.6, 49.65],
+                [50.3, 49.95, 50.25, 49.85, 49.8],
+                [50, 50.55, 50.35, 50.85, 51.05]
+            ],
+            [
+                [50, 50.65, 49.5, 50.4, 50.4],
+                [49.3, 49.35, 49.55, 49.55, 50.1],
+                [49.65, 49.25, 49.5, 49.5, 49.05],
+                [49.7, 49.5, 49.65, 49.45, 49.4],
+                [49.85, 49.7, 49.85, 49.85, 49.4],
+                [49.95, 50, 49.9, 49.95, 50.15],
+            ],
+            [
+                [50.1, 49.95, 50.4, 49.4, 50.55],
+                [49.95, 50.05, 49.9, 49.9, 49.65],
+                [50.05, 50.1, 50, 49.9, 50.2],
+                [49.9, 49.9, 49.9, 49.9, 49.95],
+                [49.95, 49.9, 50, 49.95, 50.1]
+            ],
+            [
+                [50, 50.05, 50.05, 50, 49.65],
+                [50, 50.05, 50, 49.95, 50],
+                [50, 50, 50, 50, 50],
+                [50, 50, 50, 50, 50.05]
+            ],
+            [
+                [50, 50, 50, 50.05, 50],
+                [50, 50, 50, 50, 50],
+                [50, 50, 50, 50, 50]
+            ],
+            [
+                [50, 50, 50, 50, 50],
+                [50, 50, 50, 50, 50]
+            ],
+            [
+                [50, 50, 50, 50, 50]
+            ]
+        ]
+
         raw_data_threshold = [
             [
                 [65.75, 58.90, 53.65, 56.10, 69.95],
@@ -374,8 +453,12 @@ if __name__ == "__main__":
     else:
         exit(0)
 
-    if args.mode == "meta":
-        data_use = raw_data_meta
+    if args.mode in ["meta", "regress"]:
+        if args.mode == "regress":
+            print("Using regression data")
+            data_use = raw_data_regress
+        else:
+            data_use = raw_data_meta
     else:
         data_use = raw_data_threshold
 
@@ -386,7 +469,7 @@ if __name__ == "__main__":
             mask[i][j+i+1] = False
             annot_data[i][j+i+1] = r'%d $\pm$ %d' % (m, s)
 
-    if args.mode != "meta":
+    if args.mode not in ["meta", "regress"]:
         for i in range(len(targets)):
             for j in range(len(targets)-(i+1)):
                 fill_data[j+i+1][i] = raw_data_loss[i][j]
@@ -449,9 +532,16 @@ if __name__ == "__main__":
     wanted = wanted[np.abs(wanted) != np.inf]
     print("Median:", np.median(wanted))
     print(np.min(wanted), np.max(wanted))
-    exit(0)
-    for i in range(len(targets)):
-        print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
+    # exit(0)
+    # for i in range(len(targets) - 1):
+    #     print(['%.2f' % x for x in eff_vals[i][:len(targets)-(i+1)]])
+    
+    for a in fill_data:
+        a_wanted = [x for x in a if x > 0]
+        if len(a_wanted) == 0:
+            continue
+        print("[" + ",".join(["r'%d $\pm$ %d'" % (np.mean(x), np.std(x))
+                              for x in a_wanted]) + "]")
 
     eff_vals_mean = eff_vals.flatten()
     eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]
@@ -463,5 +553,5 @@ if __name__ == "__main__":
                            annot=annot_data, mask=mask,
                            fmt="^", vmin=50, vmax=100)
     sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
-    sns_plot.figure.savefig("./meta_heatmap_%s_%s.png" %
+    sns_plot.figure.savefig("./plots/meta_heatmap_%s_%s.pdf" %
                             (args.filter, args.mode))

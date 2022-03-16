@@ -1,6 +1,9 @@
+"""
+    Meta-classifier experiment using Permutation Invariant Networks.
+"""
 import utils
 from data_utils import SUPPORTED_PROPERTIES
-from model_utils import get_models_path, get_model_representations, BASE_MODELS_DIR, save_model
+from model_utils import get_models_path, get_model_representations, save_model
 import argparse
 import numpy as np
 import torch as ch
@@ -39,7 +42,8 @@ if __name__ == "__main__":
                         help='name for subfolder to save/load data from')
     parser.add_argument('--d_0', default="0.5", help='ratios to use for D_0')
     parser.add_argument('--trg', default=None, help='target ratios')
-    parser.add_argument('--save', action="store_false", help='save model or not')
+    parser.add_argument('--save', action="store_true",
+                        help='save model or not')
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -49,7 +53,7 @@ if __name__ == "__main__":
     # Only look at multiples of 0.10
     # targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
     #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
-    if args.trg == None:
+    if args.trg is None:
         targets = sorted(['0.2,0.5', '0.5,0.2', '0.1,0.5'])
     else:
         lst = eval(args.trg)
@@ -67,18 +71,18 @@ if __name__ == "__main__":
 
     # Load up positive-label test, test data
     pos_w, pos_labels, _ = get_model_representations(
-        get_models_path(args.filter, "adv", d_0), 1, args.first_n)
+        get_models_path("adv", args.filter, d_0), 1, args.first_n)
     pos_w_test, pos_labels_test, dims = get_model_representations(
-        get_models_path(args.filter, "victim", d_0), 1, args.first_n)
+        get_models_path("victim", args.filter, d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
         tgt_data = []
         # Load up negative-label train, test data
         neg_w, neg_labels, _ = get_model_representations(
-                get_models_path(args.filter, "adv", tg), 0, args.first_n)
+            get_models_path("adv", args.filter, tg), 0, args.first_n)
         neg_w_test, neg_labels_test, _ = get_model_representations(
-            get_models_path(args.filter, "victim", tg), 0, args.first_n)
+            get_models_path("victim", args.filter, tg), 0, args.first_n)
 
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
@@ -130,7 +134,6 @@ if __name__ == "__main__":
 
             metamodel = utils.PermInvModel(dims, dropout=0.5)
             metamodel = metamodel.cuda()
-            metamodel = ch.nn.DataParallel(metamodel)
 
             # Float data
             Y_tr = Y_tr.float()
@@ -142,27 +145,27 @@ if __name__ == "__main__":
 
             # Train PIM
             clf, tacc = utils.train_meta_model(
-                         metamodel,
-                         (X_tr, Y_tr), (X_te, Y_te),
-                         epochs=epoch_strategy(tg, args),
-                         binary=True, lr=1e-3,
-                         regression=False,
-                         batch_size=args.batch_size,
-                         val_data=val_data, combined=True,
-                         eval_every=10, gpu=True)
+                metamodel,
+                (X_tr, Y_tr), (X_te, Y_te),
+                epochs=epoch_strategy(tg, args),
+                binary=True, lr=1e-3,
+                regression=False,
+                batch_size=args.batch_size,
+                val_data=val_data, combined=True,
+                eval_every=10, gpu=True)
             if args.save:
-                save_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_model", "-".join(
+                save_path = os.path.join("log/meta/", args.filter, "meta_model", "-".join(
                     [args.d_0, str(args.start_n), str(args.first_n)]), tg)
                 if not os.path.isdir(save_path):
                     os.makedirs(save_path)
-                save_model(clf, os.path.join(save_path, str(i)+
-            "_%.2f" % tacc))
+                # Save meta classifier (torch model)
+                ch.save(clf.state_dict(), os.path.join(save_path, "run%s_%.2f.pth" % (i+1, tacc)))
             tgt_data.append(tacc)
             print("Test accuracy: %.3f" % tacc)
         data.append(tgt_data)
 
     # Print data
-    log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
+    log_path = os.path.join("log/meta/", args.filter, "meta_result")
     if not os.path.isdir(log_path):
         os.makedirs(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
