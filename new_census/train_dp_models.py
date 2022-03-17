@@ -2,6 +2,7 @@ from tqdm import tqdm
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import ch_model
 import utils
+import os
 
 
 if __name__ == "__main__":
@@ -81,18 +82,16 @@ if __name__ == "__main__":
         # Make sure model is compatible with DP training
         ch_model.validate_model(clf)
         # Train model with DP noise
-        ch_model.opacus_stuff(clf, train_loader, test_loader, args)
+        test_acc = ch_model.opacus_stuff(clf, train_loader, test_loader, args)
 
         #  Will save models after hyper-parameters have been fixed
-        """
         save_path = ch_model.get_models_path(
-            args.filter, args.split, args.ratio)
+            args.filter, args.split, os.path.join(args.ratio, "DP", "%.2f" % args.epsilon))
         if args.scale != 1.0:
-            save_path = os.path.join(save_path,"sample_size_scale:{}".format(args.scale))
+            save_path = os.path.join(
+                save_path, "sample_size_scale:{}".format(args.scale))
         if args.drop_senstive_cols:
-            save_path = os.path.join(save_path,"drop")
+            save_path = os.path.join(save_path, "drop")
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
-        ch_model.save_model(clf, os.path.join(save_path,
-                                                 str(i + args.offset) + "_%.2f" % vacc))
-        """
+        ch_model.save_model(clf, os.path.join(save_path, str(i + args.offset) + "_%.2f" % test_acc))

@@ -4,10 +4,14 @@ import torch as ch
 import os
 from joblib import load, dump
 from sklearn.neural_network import MLPClassifier
+from utils import check_if_inside_cluster
 from sklearn.neural_network._base import ACTIVATIONS
 
 
-BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_new_census/60_40"
+if check_if_inside_cluster():
+    BASE_MODELS_DIR = "/scratch/as9rw/models_new_census/60_40"
+else:
+    BASE_MODELS_DIR = "/p/adversarialml/as9rw/models_new_census/60_40"
 
 
 def layer_output(data, MLP, layer=0, get_all=False):
