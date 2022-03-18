@@ -9,6 +9,9 @@
 # Allocation group
 #SBATCH -A uvasrg
 
+# Specify partition
+#SBATCH -p gpu
+
 # Total memory requested on system
 #SBATCH --mem=10G
 

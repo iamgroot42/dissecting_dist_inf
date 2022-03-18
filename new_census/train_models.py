@@ -3,13 +3,12 @@ import os
 from data_utils import CensusWrapper, SUPPORTED_PROPERTIES
 import model_utils
 import utils
-from sklearn.utils._testing import ignore_warnings
-from sklearn.exceptions import ConvergenceWarning
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
+    #  Dataset-specific arguments
     parser.add_argument('--filter', type=str,
                         required=True,
                         choices=SUPPORTED_PROPERTIES,
@@ -17,22 +16,28 @@ if __name__ == "__main__":
     parser.add_argument('--ratio',
                         default="0.5",
                         help='what ratio of the new sampled dataset should be true')
-    parser.add_argument('--num', type=int, default=1000,
-                        help='how many classifiers to train?')
     parser.add_argument('--split',
                         required=True,
                         choices=["adv", "victim"],
                         help='which split of data to use')
-    parser.add_argument('--verbose', action="store_true",
-                        help='print out per-classifier stats?')
     parser.add_argument('--drop_senstive_cols', action="store_true",
                         help='drop age/sex attributes during training?')
+    parser.add_argument('--scale', type=float, default=1.0)
+    #  Model-specific arguments
+    parser.add_argument('--num', type=int, default=1000,
+                        help='how many classifiers to train?')
+    parser.add_argument('--verbose', action="store_true",
+                        help='print out per-classifier stats?')
     parser.add_argument('--offset', type=int, default=0,
                         help='start counting from here when saving models')
-    parser.add_argument('--scale', type=float, default=1.0)
+    parser.add_argument('--batch_size', type=int, default=200)
+    parser.add_argument('--epochs', type=int, default=20)
+    parser.add_argument('--lr', type=float, default=1e-3,
+                        help="Learning rate for Optimizer")
     args = parser.parse_args()
     utils.flash_utils(args)
 
+    # New Census dataset
     ds = CensusWrapper(
         filter_prop=args.filter,
         ratio=float(args.ratio),
@@ -48,33 +53,35 @@ if __name__ == "__main__":
         if args.verbose:
             print("Training classifier %d" % i)
 
-        # Sample to qualify ratio, ultimately coming from fixed split
-        # Ensures non-overlapping data for target and adversary
-        # All the while allowing variations in dataset locally
+        # Every call for get_loaders() will read a different subset of the data
+        # So we don't need to redefine ds every time we train the model
+        train_loader, test_loader, n_inp = ds.get_loaders(
+            args.batch_size, get_num_features=True, squeeze=True)
 
-        (x_tr, y_tr), (x_te, y_te), cols = ds.load_data()
+        # Get model
+        clf = model_utils.get_model(n_inp=n_inp)
 
-        clf = model_utils.get_model()
+        # Train model
+        model, (vloss, vacc) = utils.train(
+                                    clf, (train_loader, test_loader),
+                                    lr=args.lr,
+                                    epoch_num=args.epochs,
+                                    weight_decay=1e-4,
+                                    verbose=args.verbose,
+                                    get_best=True)
 
-        # Wrapper to ignore convergence warnings
-        @ignore_warnings(category=ConvergenceWarning)
-        def train(model):
-            model.fit(x_tr, y_tr.ravel())
-            return model
-
-        clf = train(clf)
-        train_acc = 100 * clf.score(x_tr, y_tr.ravel())
-        test_acc = 100 * clf.score(x_te, y_te.ravel())
-        if args.verbose:
-            print("Classifier %d : Train acc %.2f , Test acc %.2f\n" %
-                  (i, train_acc, test_acc))
+        # Save model
         save_path = model_utils.get_models_path(
             args.filter, args.split, args.ratio)
         if args.scale != 1.0:
-            save_path = os.path.join(save_path,"sample_size_scale:{}".format(args.scale))
+            save_path = os.path.join(
+                save_path, "sample_size_scale:{}".format(args.scale))
         if args.drop_senstive_cols:
-            save_path = os.path.join(save_path,"drop")
+            save_path = os.path.join(save_path, "drop")
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
-        model_utils.save_model(clf, os.path.join(save_path,
-                                                 str(i + args.offset) + "_%.2f" % test_acc))
+
+        # Save model
+        save_path = os.path.join(save_path, str(
+            i + args.offset) + "_%.2f.ch" % vacc)
+        model_utils.save_model(clf, save_path)

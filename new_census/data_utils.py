@@ -193,27 +193,34 @@ class CensusWrapper:
                                 scale=self.scale)
 
     def get_loaders(self, batch_size, custom_limit=None,
-                    get_num_features=False):
+                    get_num_features=False, squeeze=False,
+                    num_workers=0):
         train_data, test_data, num_features = self.load_data(custom_limit)
         train_loader = DataLoader(
-            CensusSet(*train_data),
-            batch_size=batch_size)
+            CensusSet(*train_data, squeeze=squeeze),
+            batch_size=batch_size,
+            shuffle=True, num_workers=num_workers)
         test_loader = DataLoader(
-            CensusSet(*test_data),
-            batch_size=batch_size)
+            CensusSet(*test_data, squeeze=squeeze),
+            batch_size=batch_size,
+            shuffle=False, num_workers=num_workers)
         if get_num_features:
             return train_loader, test_loader, len(num_features)
         return train_loader, test_loader
 
 
 class CensusSet(Dataset):
-    def __init__(self, data, targets):
+    def __init__(self, data, targets, squeeze=False):
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
+        self.squeeze = squeeze
 
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]
+
+        if self.squeeze:
+            y = y.squeeze()
 
         # Set property label to -1
         # Not really used, but ensures compatibility with methods
