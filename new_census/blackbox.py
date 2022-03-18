@@ -77,7 +77,7 @@ if __name__ == "__main__":
         p2 = [get_preds(x_te_2,models_1), get_preds(x_te_2,models_2)]
         pv1 = [get_preds(x_te_1,models_victim_1), get_preds(x_te_1,models_victim_2)]
         pv2 = [get_preds(x_te_2,models_victim_1), get_preds(x_te_2,models_victim_2)]
-        (vpacc,_),_=perpoint_threshold_test( (p1, p2),
+        (vpacc,_),_,_=perpoint_threshold_test( (p1, p2),
         (pv1, pv2),
         (y_te_1, y_te_2),
         ratios, granularity=0.005)
