@@ -1262,7 +1262,7 @@ def test_meta(model, loss_fn, X, Y, batch_size, accuracy,
         loss = ch.cat(loss, 0)
     else:
         loss /= num_samples
-    
+
     if get_preds:
         all_outputs = np.concatenate(all_outputs, axis=0)
         return 100 * running_acc / num_samples, loss, all_outputs
@@ -1481,7 +1481,6 @@ def get_threshold_acc(X, Y, threshold, rule=None):
         return acc_2
 
     # Otherwise, find and use the one that gives the best acc
-
     if acc_1 >= acc_2:
         return acc_1, 1
     return acc_2, 2
@@ -2167,7 +2166,7 @@ def get_ratio_info_for_reg_meta(metamodel, X, Y, num_per_dist, batch_size, combi
     """
         Get MSE and actual predictions for each
         ratio given in Y, using a trained metamodel.
-        Returnse MSE per ratio, actual predictions per ratio, and
+        Returns MSE per ratio, actual predictions per ratio, and
         predictions for each ratio a v/s be using regression
         meta-classifier for binary classification.
     """
