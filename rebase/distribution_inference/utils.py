@@ -1,12 +1,9 @@
 """
-Generic utility functions useful for writing Python code in general
+    Generic utility functions useful for writing Python code in general
 """
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 from os import environ
+from colorama import Fore, Style
+import dataclasses
 
 
 class bcolors:
@@ -19,6 +16,15 @@ class bcolors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+def log_string(x, ttype="log"):
+    color_mapping = {"train": Fore.YELLOW, "val": Fore.GREEN}
+    return color_mapping.get(ttype, Fore.MAGENTA) + x + Style.RESET_ALL
+
+
+def log_statement(x, ttype="log"):
+    print(log_string(x, ttype))
 
 
 def log(x):
@@ -34,7 +40,14 @@ def check_if_inside_cluster():
     return False
 
 
-def flash_utils(args):
-    log_statement("==> Arguments:")
+def flash_utils(args, root: bool = True, num_tabs: int = 0):
+    prefix = "  " * num_tabs
+    if root:
+        log_statement("==> Arguments:")
     for arg in vars(args):
-        print(arg, " : ", getattr(args, arg))
+        arg_val = getattr(args, arg)
+        if dataclasses.is_dataclass(arg_val):
+            print(prefix + arg, " : ")
+            flash_utils(arg_val, root=False, num_tabs=num_tabs + 1)
+        else:
+            print(prefix + arg, " : ", arg_val)

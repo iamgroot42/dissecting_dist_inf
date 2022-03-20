@@ -6,9 +6,34 @@ import torch as ch
 from sklearn.model_selection import train_test_split
 
 import distribution_inference.datasets.base as base
+import distribution_inference.models.core as models_core
 
 
 PRESERVE_PROPERTIES = ['Smiling', 'Young', 'Male', 'Attractive']
+
+
+class DatasetInformation(base.DatasetInformation):
+    def __init__(self):
+        ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        super().__init__(self,
+                        name="Celeb-A",
+                        data_path="celeba",
+                        models_path="models_celeba/75_25",
+                        properties=["Male", "Young"],
+                        values= {"Male": ratios, "Young": ratio},)
+
+    def get_model(self, parallel: bool = False, fake_relu: bool = False,
+                 latent_focus=None, is_large: bool = False,
+                 cpu: bool = False) -> nn.Module:
+        if is_large:
+            model = models_core.InceptionModel(fake_relu=fake_relu, latent_focus=latent_focus)
+        else:
+            model = models_core.MyAlexNet(fake_relu=fake_relu, latent_focus=latent_focus)
+        if not cpu:
+            model = model.cuda()
+        if parallel:
+            model = nn.DataParallel(model)
+        return model
 
 
 def _get_attributes():

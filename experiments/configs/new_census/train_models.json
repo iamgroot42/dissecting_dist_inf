@@ -1,0 +1,12 @@
+{
+    "data_config": {
+        "name": "new_census",
+        "prop": "",
+        "split": "",
+        "value": -1
+    },
+    "epochs": 20,
+    "learning_rate": 1e-3,
+    "batch_size": 200,
+    "num_models": 1
+}

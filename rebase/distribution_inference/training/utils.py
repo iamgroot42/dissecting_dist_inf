@@ -37,3 +37,6 @@ def extract_adv_params(
 
     return adv_params
 
+
+def save_model(model, path):
+    ch.save(model.state_dict(), path)

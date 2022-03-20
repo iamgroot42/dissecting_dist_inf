@@ -2,6 +2,7 @@
 from tqdm import tqdm
 import torch as ch
 import torch.nn as nn
+import numpy as np
 from copy import deepcopy
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 

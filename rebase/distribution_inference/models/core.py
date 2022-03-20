@@ -1,3 +1,5 @@
+import torch as ch
+import torch.nn as nn
 
 
 class InceptionModel(nn.Module):
@@ -100,3 +102,20 @@ class MyAlexNet(nn.Module):
                 x = layer(x)
                 if i == 2 * (latent - 5) + 1:
                     return x
+
+
+class MLPTwoLayer(nn.Module):
+    def __init__(self, n_inp: int, num_classes: int = 1):
+        super(MLPTwoLayer, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(n_inp, 64),
+            nn.ReLU(),
+            nn.Linear(64, 16),
+            nn.ReLU(),
+            nn.Linear(16, num_classes),
+        )
+
+    def forward(self, x):
+        x = self.layers(x)
+        return x
+
