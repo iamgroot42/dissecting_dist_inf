@@ -1,4 +1,5 @@
 import os
+import torch as ch
 
 
 def ensure_dir_exists(dir):
@@ -24,7 +25,7 @@ class AverageMeter(object):
 
 
 def extract_adv_params(
-        eps, eps_iter, nb_iter, norm,
+        eps: float, eps_iter, nb_iter: int, norm,
         random_restarts, clip_min, clip_max):
     adv_params = {}
     adv_params["eps"] = eps

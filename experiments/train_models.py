@@ -28,7 +28,6 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(train_config)
-    exit(0)
 
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -39,14 +38,9 @@ if __name__ == "__main__":
     # Create new DS object
     ds = ds_wrapper_class(data_config)
 
-    # Define iterator (for training models)
-    iterator = range(1, train_config.num_models + 1)
-    if not train_config.verbose:
-        iterator = tqdm(iterator)
-
-    for i in iterator:
-        if train_config.verbose:
-            print("Training classifier %d" % i)
+    # Train models
+    for i in range(1, train_config.num_models + 1):
+        print("Training classifier %d / %d" % (i, train_config.num_models))
 
         # Get data loaders
         train_loader, val_loader = ds.get_loaders(batch_size=train_config.batch_size, squeeze=True)
@@ -67,6 +61,4 @@ if __name__ == "__main__":
         save_path = ds.get_save_path(train_config, file_name)
 
         # Save model
-        print(save_path)
-        exit(0)
-        # model_utils.save_model(clf, save_path)
+        save_model(model, save_path)
