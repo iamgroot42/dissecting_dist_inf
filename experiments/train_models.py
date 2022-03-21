@@ -15,6 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--config_file", help="Specify config file", type=Path)
     args, remaining_argv = parser.parse_known_args()
     # Attempt to extract as much information from config file as you can
+    config = None
     if args.config_file is not None:
         config = TrainConfig.load(args.config_file, drop_extra_fields=False)
     # Also give user the option to provide config values over CLI
@@ -43,18 +44,15 @@ if __name__ == "__main__":
         print("Training classifier %d / %d" % (i, train_config.num_models))
 
         # Get data loaders
-        train_loader, val_loader = ds.get_loaders(batch_size=train_config.batch_size, squeeze=True)
+        train_loader, val_loader = ds.get_loaders(
+            batch_size=train_config.batch_size)
 
         # Get model
         model = ds_info.get_model()
 
         # Train model
         model, (vloss, vacc) = train(model, (train_loader, val_loader),
-                                    lr=train_config.learning_rate,
-                                    epoch_num=train_config.epochs,
-                                    weight_decay=train_config.weight_decay,
-                                    verbose=train_config.verbose,
-                                    get_best=train_config.get_best)
+                                     train_config=train_config)
 
         # Get path to save model
         file_name = str(i + train_config.offset) + ("_%.2f" % vacc)

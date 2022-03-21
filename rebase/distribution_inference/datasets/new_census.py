@@ -1,4 +1,5 @@
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.model_selection import train_test_split
 import pickle
 import pandas as pd
 import numpy as np
@@ -10,24 +11,25 @@ from distribution_inference.config import TrainConfig, DatasetConfig
 from distribution_inference.models.core import MLPTwoLayer
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
+from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
     def __init__(self):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="New Census",
-                        data_path="census_new/census_2019_1year",
-                        models_path="models_new_census/60_40",
-                        properties=["sex", "race"],
-                        values= {"sex": ratios, "race": ratios},
-                        property_focus = {"sex": 'female', "race": 'white'})
+                         data_path="census_new/census_2019_1year",
+                         models_path="models_new_census/60_40",
+                         properties=["sex", "race"],
+                         values={"sex": ratios, "race": ratios},
+                         property_focus={"sex": 'female', "race": 'white'})
 
     def get_model(self, cpu: bool = False) -> nn.Module:
-        model = MLPTwoLayer(n_inp = 105)
+        model = MLPTwoLayer(n_inp=105)
         if not cpu:
             model = model.cuda()
         return model
-    
+
     def generate_victim_adversary_splits(self, adv_ratio=None, test_ratio=0.33, num_tries=None):
         """
             Generate and store data offline for victim and adversary
@@ -38,7 +40,7 @@ class DatasetInformation(base.DatasetInformation):
             qualify = np.nonzero((condition(df)).to_numpy())[0]
             notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
             return len(qualify), len(notqualify)
-    
+
         x = pickle.load(
             open(os.path.join(self.base_data_dir, 'census_features.p'), 'rb'))
         y = pickle.load(
@@ -101,13 +103,13 @@ class _CensusIncome:
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
             TRAIN_DF = self.get_filter(TRAIN_DF, filter_prop,
-                                  split, prop_ratio, is_test=0,
-                                  custom_limit=custom_limit,
-                                  scale=scale)
+                                       split, prop_ratio, is_test=0,
+                                       custom_limit=custom_limit,
+                                       scale=scale)
             TEST_DF = self.get_filter(TEST_DF, filter_prop,
-                                 split, prop_ratio, is_test=1,
-                                 custom_limit=custom_limit,
-                                 scale=scale)
+                                      split, prop_ratio, is_test=1,
+                                      custom_limit=custom_limit,
+                                      scale=scale)
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
                 TRAIN_DF), self.get_x_y(TEST_DF)
@@ -202,11 +204,11 @@ class _CensusIncome:
         else:
             subsample_size = custom_limit
         return utils.heuristic(df, lambda_fn, ratio,
-                        subsample_size,
-                        class_imbalance=0.7211,  # Calculated based on original distribution
-                        n_tries=100,
-                        class_col='income',
-                        verbose=False)
+                               subsample_size,
+                               class_imbalance=0.7211,  # Calculated based on original distribution
+                               n_tries=100,
+                               class_col='income',
+                               verbose=False)
 
 
 class CensusSet(base.CustomDataset):
@@ -243,28 +245,34 @@ class CensusWrapper(base.CustomDatasetWrapper):
                                 scale=self.scale)
 
     def get_loaders(self, batch_size, custom_limit=None,
-                    squeeze=False, shuffle=True, eval_shuffle=False):
+                    shuffle: bool = True,
+                    eval_shuffle: bool = False):
         train_data, val_data, _ = self.load_data(custom_limit)
-        self.ds_train = CensusSet(*train_data, squeeze=squeeze)
-        self.ds_val = CensusSet(*val_data, squeeze=squeeze)
+        self.ds_train = CensusSet(*train_data, squeeze=self.squeeze)
+        self.ds_val = CensusSet(*val_data, squeeze=self.squeeze)
         return super().get_loaders(batch_size, shuffle=shuffle,
-                    eval_shuffle=eval_shuffle,
-                    num_workers=0)
-    
-    def get_save_path(self, train_config: TrainConfig, name: str) -> str:
+                                   eval_shuffle=eval_shuffle,
+                                   num_workers=0)
+
+    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+        info_object = DatasetInformation()
+        model = info_object.get_model(cpu=on_cpu)
+        return load_model(model, path)
+
+    def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
         dp_config = train_config.dp_config
 
-        if dp_config:
-            base_path = os.path.join(base_models_dir, "DP_%.2f" % dp_config.epsilon)
-        else:
+        if dp_config is None:
             base_path = os.path.join(base_models_dir, "normal")
+        else:
+            base_path = os.path.join(base_models_dir, "DP_%.2f" % dp_config.epsilon)
 
         save_path = os.path.join(base_path, self.prop, self.split)
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
-    
+
         if self.scale != 1.0:
             save_path = os.path.join(self.scalesave_path, "sample_size_scale:{}".format(self.scale))
         if self.drop_senstive_cols:
@@ -274,4 +282,4 @@ class CensusWrapper(base.CustomDatasetWrapper):
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
 
-        return os.path.join(save_path, name)
+        return save_path

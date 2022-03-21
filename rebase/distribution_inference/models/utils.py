@@ -1,3 +1,7 @@
+import torch as ch
+import torch.nn as nn
+
+
 # fake relu function
 class fakerelu(ch.autograd.Function):
     @staticmethod

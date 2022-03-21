@@ -3,6 +3,7 @@
         "name": "new_census",
         "prop": "",
         "split": "",
+        "squeeze": true,
         "value": -1
     },
     "epochs": 20,

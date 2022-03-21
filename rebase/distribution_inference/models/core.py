@@ -1,5 +1,8 @@
 import torch as ch
 import torch.nn as nn
+from torchvision.models import densenet121
+
+from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 
 
 class InceptionModel(nn.Module):
@@ -118,4 +121,3 @@ class MLPTwoLayer(nn.Module):
     def forward(self, x):
         x = self.layers(x)
         return x
-

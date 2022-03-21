@@ -7,10 +7,12 @@ from copy import deepcopy
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
 from distribution_inference.training.utils import AverageMeter
+from distribution_inference.config import TrainConfig
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
-                verbose=True, adv_train=False, expect_extra=True):
+                verbose: bool = True, adv_train=None,
+                expect_extra: bool = True):
     model.train()
     train_loss = AverageMeter()
     train_acc = AverageMeter()
@@ -25,7 +27,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
         images, labels = images.cuda(), labels.cuda()
         N = images.size(0)
 
-        if adv_train is False:
+        if adv_train is None:
             # Clear accumulated gradients
             optimizer.zero_grad()
             outputs = model(images)[:, 0]
@@ -59,14 +61,16 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
     return train_loss.avg, train_acc.avg
 
 
-def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False, expect_extra=True):
+def validate_epoch(val_loader, model, criterion,
+                   verbose: bool = True, adv_train=None,
+                   expect_extra: bool = True):
     model.eval()
     val_loss = AverageMeter()
     val_acc = AverageMeter()
     adv_val_loss = AverageMeter()
     adv_val_acc = AverageMeter()
 
-    with ch.set_grad_enabled(adv_train is not False):
+    with ch.set_grad_enabled(adv_train is not None):
         for data in val_loader:
             if expect_extra:
                 images, labels, _ = data
@@ -78,7 +82,7 @@ def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False, 
             outputs = model(images)[:, 0]
             prediction = (outputs >= 0)
 
-            if adv_train is not False:
+            if adv_train is not None:
                 adv_x = projected_gradient_descent(
                     model, images, eps=adv_train['eps'],
                     eps_iter=adv_train['eps_iter'],
@@ -103,7 +107,7 @@ def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False, 
             val_loss.update(criterion(outputs, labels.float()).item())
 
     if verbose:
-        if adv_train is False:
+        if adv_train is None:
             print('[Validation], Loss: %.5f, Accuracy: %.4f' %
                   (val_loss.avg, val_acc.avg))
         else:
@@ -112,40 +116,41 @@ def validate_epoch(val_loader, model, criterion, verbose=True, adv_train=False, 
                    adv_val_loss.avg, adv_val_acc.avg))
         print()
 
-    if adv_train is False:
+    if adv_train is None:
         return val_loss.avg, val_acc.avg
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
-def train(model, loaders, lr=1e-3, epoch_num=10,
-          weight_decay=0, verbose=True, get_best=False,
-          adv_train=False, expect_extra=True):
+def train(model, loaders, train_config: TrainConfig):
     # Get data loaders
     train_loader, val_loader = loaders
 
     # Define optimizer, loss function
     optimizer = ch.optim.Adam(
-        model.parameters(), lr=lr,
-        weight_decay=weight_decay)
+        model.parameters(),
+        lr=train_config.learning_rate,
+        weight_decay=train_config.weight_decay)
     criterion = nn.BCEWithLogitsLoss().cuda()
 
-    iterator = range(1, epoch_num+1)
-    if not verbose:
+    iterator = range(1, train_config.epochs + 1)
+    if not train_config.verbose:
         iterator = tqdm(iterator)
 
     best_model, best_loss = None, np.inf
     for epoch in iterator:
         _, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch,
-                              verbose=verbose, adv_train=adv_train,
-                              expect_extra=expect_extra)
+                              verbose=train_config.verbose,
+                              adv_train=train_config.adv_train,
+                              expect_extra=train_config.expect_extra)
 
         vloss, vacc = validate_epoch(
-            val_loader, model, criterion, verbose=verbose,
-            adv_train=adv_train,
-            expect_extra=expect_extra)
-        if not verbose:
-            if adv_train is False:
+            val_loader, model, criterion,
+            verbose=train_config.verbose,
+            adv_train=train_config.adv_train,
+            expect_extra=train_config.expect_extra)
+        if not train_config.verbose:
+            if train_config.adv_train is None:
                 iterator.set_description(
                     "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
             else:
@@ -153,13 +158,13 @@ def train(model, loaders, lr=1e-3, epoch_num=10,
                     "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (tacc, vacc[0], vacc[1]))
 
         vloss_compare = vloss
-        if adv_train is not False:
+        if train_config.adv_train is not None:
             vloss_compare = vloss[0]
 
-        if get_best and vloss_compare < best_loss:
+        if train_config.get_best and vloss_compare < best_loss:
             best_loss = vloss_compare
             best_model = deepcopy(model)
 
-    if get_best:
+    if train_config.get_best:
         return best_model, (vloss, vacc)
     return vloss, vacc

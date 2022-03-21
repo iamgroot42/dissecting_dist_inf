@@ -41,3 +41,8 @@ def extract_adv_params(
 
 def save_model(model, path):
     ch.save(model.state_dict(), path)
+
+
+def load_model(model, path):
+    model.load_state_dict(ch.load(path))
+    return model

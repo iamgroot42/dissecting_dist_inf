@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 import pandas as pd
 
-from . import new_census
+from distribution_inference.datasets import new_census
 
 
 DATASET_INFO_MAPPING = {

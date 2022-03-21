@@ -6,16 +6,7 @@ import os
 import argparse
 from utils import perpoint_threshold_test,threshold_and_loss_test,flash_utils,ensure_dir_exists
 
-def get_preds(x,ms):
-    
-    ps = []
-    for m in tqdm(ms):
-        p=m.predict_proba(x)[:,1]
-        ps.append(p)
-    return np.squeeze(np.array(ps))
-def cal_acc(p,y):
-    outputs = (p>=0.5).astype('int')
-    return np.average((outputs==np.squeeze(np.repeat(np.expand_dims(y,axis=1),outputs.shape[1],axis=1))).astype(int),axis=0)
+
 
 def get_models(folder_path, n_models=1000):
    
@@ -31,6 +22,8 @@ def get_models(folder_path, n_models=1000):
         models.append(model)
         i+=1
     return models
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ratio_1', help="ratios for D_1")
@@ -82,7 +75,7 @@ if __name__ == "__main__":
         (y_te_1, y_te_2),
         ratios, granularity=0.005)
         perp.append(vpacc)
-        (vacc,ba),_=threshold_and_loss_test( cal_acc
+        (vacc,ba),_=threshold_and_loss_test( calculate_accuracies
         ,(p1, p2),
         (pv1, pv2),
         (y_te_1, y_te_2),
@@ -119,12 +112,3 @@ if __name__ == "__main__":
     ensure_dir_exists(log_path)
     with open(os.path.join(log_path,args.ratio_2),"w") as wr:
         wr.write(content)
-    
-    
-   
-    
-
-      
-    
-   
-    
