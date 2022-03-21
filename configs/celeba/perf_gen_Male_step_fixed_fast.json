@@ -1,0 +1,23 @@
+{
+    "filter"  :  "Male",
+"task"  :  "Smiling",
+"ratio_1"  :  "0.5",
+"testing"  :  false,
+"n_models"  :  100,
+"n_samples"  :  500,
+"latent_focus"  :  null,
+"steps"  :  20,
+"step_size"  :  100.0,
+"use_normal"  :  true,
+"use_best"  :  false,
+"upscale"  :  1,
+"use_natural"  :  false,
+"constrained"  :  false,
+"start_natural"  :  false,
+"r"  :  1.0,
+"r2"  :  0.2,
+"adv_adv_prefix":"adv_train",
+    "victim_adv_prefix":"adv_train",
+    "use_adv_for_adv":false,
+    "use_adv_for_victim":false
+}

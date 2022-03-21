@@ -2052,6 +2052,66 @@ def order_points(p1s, p2s):
     inds = np.argsort(abs_dif)
     return inds
 
+def threshold_and_loss_test(cal_acc,preds_adv: List, preds_victim: List, y_gt: List, ratios: List = [1.], granularity: float = 0.005):
+
+    adv_accs_1, victim_accs_1, acc_1 = threshold_test_per_dist(cal_acc,preds_adv[0], preds_victim[0], y_gt[0], ratios, granularity)
+    # Get data for second distribution
+    adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(cal_acc,preds_adv[1], preds_victim[1], y_gt[1], ratios, granularity)
+
+    # Get best adv accuracies for both distributions and compare
+    which_dist = 0
+    if np.max(adv_accs_1) > np.max(adv_accs_2):
+        adv_accs_use, victim_accs_use = adv_accs_1, victim_accs_1
+    else:
+        adv_accs_use, victim_accs_use =  adv_accs_2, victim_accs_2
+        which_dist = 1
+    ind = np.argmax(adv_accs_use)
+    victim_acc_use = victim_accs_use[ind]
+    # loss test
+    basic=[]
+    for r in range(len(ratios)):
+        preds_1 = (acc_1[0][r, :] > acc_2[0][r, :])
+        preds_2 = (acc_1[1][r, :] <= acc_2[1][r, :])
+        basic.append(100*(np.mean(preds_1) + np.mean(preds_2)) / 2)
+    return (victim_acc_use, basic[ind]), (which_dist, ind)
+def threshold_test_per_dist(cal_acc,preds_adv: List, preds_victim: List, y_gt: np.ndarray, ratios: List = [1.], granularity: float = 0.005):
+    p1, p2 = preds_adv
+    # Predictions by victim's models
+    pv1, pv2 = preds_victim
+
+    # Optimal order of point
+    order = order_points(p1, p2)
+
+    # Order points according to computed utility
+    p1 = np.transpose(p1)[order][::-1]
+    p2 = np.transpose(p2)[order][::-1]
+    pv1 = np.transpose(pv1)[order][::-1]
+    pv2 = np.transpose(pv2)[order][::-1]
+    yg = y_gt[order][::-1]
+    adv_accs, allaccs_1,allaccs_2 ,f_accs=[],[],[],[]
+    for ratio in ratios:
+        # Get first <ratio> percentile of points
+        leng = int(ratio * p1.shape[0])
+        p1_use, p2_use, yg_use  = p1[:leng], p2[:leng], yg[:leng]
+        pv1_use, pv2_use = pv1[:leng], pv2[:leng]
+        accs_1 = 100*cal_acc(p1_use,yg_use)
+        accs_2 = 100*cal_acc(p2_use,yg_use)
+        tracc, threshold, rule = find_threshold_acc(
+                accs_1, accs_2,granularity=granularity)
+        adv_accs.append(100*tracc)
+        accs_victim_1 = 100*cal_acc(pv1_use,yg_use)
+        accs_victim_2 = 100*cal_acc(pv2_use,yg_use)  
+        allaccs_1.append(accs_victim_1)
+        allaccs_2.append(accs_victim_2)  
+        combined = np.concatenate((accs_victim_1, accs_victim_2))
+        classes = np.concatenate(
+                (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
+        specific_acc = get_threshold_acc(
+                combined, classes, threshold, rule)
+        f_accs.append(100*specific_acc)
+    allaccs_1 = np.array(allaccs_1)
+    allaccs_2 = np.array(allaccs_2)
+    return np.array(adv_accs),np.array(f_accs),(allaccs_1,allaccs_2)
 
 def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
     """
@@ -2093,7 +2153,6 @@ def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List,
     p2 = np.transpose(p2)[order][::-1]
     pv1 = np.transpose(pv1)[order][::-1]
     pv2 = np.transpose(pv2)[order][::-1]
-
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=granularity)
 

@@ -1,0 +1,8 @@
+{
+    "filter":"sex",
+    "ratio_1": "0.5",
+    "tries": 5,
+    "scale":0.1,
+    "drop":false,
+    "ratios":[0.05,0.1,0.2,0.3,0.4,0.5,1.0]
+}

@@ -1,0 +1,11 @@
+{
+    "n_tries":10,
+    "batch_size":1200,
+    "train_sample":800,
+    "val_sample":0,
+    "epochs":80,
+    "start_n":0,
+    "first_n":0,
+    "first":"0.5",
+    "prune_ratio":null
+}
