@@ -1,6 +1,8 @@
 import os
 import torch as ch
+from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
+from distribution_inference.config import AttackConfig
 
 def ensure_dir_exists(dir):
     if not os.path.exists(dir):
@@ -46,3 +48,17 @@ def save_model(model, path):
 def load_model(model, path):
     model.load_state_dict(ch.load(path))
     return model
+
+
+def generate_adversarial_input(model, data, adv_config: AttackConfig):
+    adv_data = projected_gradient_descent(
+                model, data,
+                eps=adv_config.epsilon,
+                eps_iter=adv_config.epsilon_iter,
+                nb_iter=adv_config.iters,
+                norm=adv_config.norm,
+                clip_min=adv_config.clip_min,
+                clip_max=adv_config.clip_max,
+                random_restarts=adv_config.random_restarts,
+                binary_sigmoid=True)
+    return adv_data

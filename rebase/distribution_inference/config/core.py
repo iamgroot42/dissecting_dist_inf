@@ -1,23 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional, List
+import numpy as np
 from simple_parsing.helpers import Serializable, field
 
 
 @dataclass
-class DPTraining(Serializable):
-    """
-        Hyper-parameters for DP training.
-    """
-    epsilon: float
-    """Epsilon (privacy budget) to use when training"""
-    delta: float
-    """Delta value (probability of leakage) while DP training. Should be less than inverse of train dataset"""
-    physical_batch_size: int
-    """Physical batch size (scales in square in memory) when training"""
-
-
-@dataclass
-class AdvTraining(Serializable):
+class AdvTrainingConfig(Serializable):
     """
         Hyper-parameters for adversarial training.
     """
@@ -27,6 +15,29 @@ class AdvTraining(Serializable):
     """Bound on perturbation per iteration"""
     iters: int
     """Number of iterations to run PGD for"""
+    clip_min: float = None
+    """Minimum value to clip to"""
+    clip_max: float = None
+    """Maximum value to clip to"""
+    random_restarts: int = None
+    """Number of random restarts to run PGD for"""
+    norm: float = np.inf
+    """Norm for perturbation budget"""
+
+
+@dataclass
+class DPTrainingConfig(Serializable):
+    """
+        Hyper-parameters for DP training.
+    """
+    epsilon: float
+    """Epsilon (privacy budget) to use when training"""
+    delta: float
+    """Delta value (probability of leakage) while DP training. Should be less than inverse of train dataset"""
+    physical_batch_size: int
+    """Physical batch size (scales in square in memory) when training"""
+    max_grad_norm: float
+    """Maximum gradient norm to clip to"""
 
 
 @dataclass
@@ -69,10 +80,12 @@ class TrainConfig(Serializable):
     """Learning rate for optimizer"""
     batch_size: int
     """Batch size for training"""
-    dp_config: Optional[DPTraining] = None
-    """Configuration to be used for training with DP"""
-    adv_config: Optional[AdvTraining] = None
+
+    adv_config: Optional[AdvTrainingConfig] = None
     """Configuration to be used for adversarial training"""
+    dp_config: Optional[DPTrainingConfig] = None
+    """Configuration to be used for DP training"""
+
     verbose: Optional[bool] = False
     """Whether to print out per-classifier stats"""
     num_models: int = 1
@@ -87,8 +100,6 @@ class TrainConfig(Serializable):
     """Whether to train on CPU or GPU"""
     expect_extra: Optional[bool] = True
     """Expect dataloaders to have 3-value tuples instead of two"""
-    adv_train: Optional[AdvTraining] = None
-    """Config for adversarial training"""
     use_best: Optional[bool] = True
     """Use model with best validation loss"""
 
@@ -126,6 +137,8 @@ class WhiteBoxAttackConfig(Serializable):
     """
         Configuration values for white-box attacks.
     """
+    attack: str
+    """Which attack to use"""
     # Valid for training
     epochs: int
     """Number of epochs to train meta-classifiers for"""
@@ -139,6 +152,8 @@ class WhiteBoxAttackConfig(Serializable):
     """Number of models to validate meta-classifiers on (per run)"""
     save: Optional[bool] = False
     """Save meta-classifiers?"""
+    regression: Optional[bool] = False
+    """Whether to use regression meta-classifier"""
 
     # Valid only for MLPs
     start_n: Optional[int] = 0

@@ -38,8 +38,11 @@ class DatasetInformation:
         self.values = values
         self.property_focus = property_focus
 
-    def get_model(self) -> nn.Module:
+    def get_model(self, cpu: bool = False) -> nn.Module:
         raise NotImplementedError(f"Implement method to model for {self.name} dataset")
+
+    def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
+        raise NotImplementedError(f"DP Training not supported for {self.name} dataset")
 
     def generate_victim_adversary_splits(self, adv_ratio: float, test_ratio: float, num_tries: int):
         """

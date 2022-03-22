@@ -14,7 +14,7 @@
     "black_box": {
         "num_adv_models": 50,
         "attack_type": [
-            "loss_and_threshold"
+            "threshold_perpoint", "loss_and_threshold"
         ],
         "ratios": [
             0.05,

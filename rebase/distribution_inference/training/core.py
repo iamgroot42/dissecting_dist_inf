@@ -4,14 +4,23 @@ import torch as ch
 import torch.nn as nn
 import numpy as np
 from copy import deepcopy
-from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
-from distribution_inference.training.utils import AverageMeter
-from distribution_inference.config import TrainConfig
+from distribution_inference.training.utils import AverageMeter, generate_adversarial_input
+from distribution_inference.config import TrainConfig, AdvTrainingConfig
+from distribution_inference.training.dp import train as train_with_dp
+
+
+def train(model, loaders, train_config: TrainConfig):
+    if train_config.dp_config is None:
+        return train_without_dp(model, loaders, train_config)
+    else:
+        # If DP training, call appropriate function
+        return train_with_dp(model, loaders, train_config)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
-                verbose: bool = True, adv_train=None,
+                verbose: bool = True,
+                adv_config: AdvTrainingConfig = None,
                 expect_extra: bool = True):
     model.train()
     train_loss = AverageMeter()
@@ -19,29 +28,21 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
     iterator = train_loader
     if verbose:
         iterator = tqdm(train_loader)
-    for data in iterator:
+    for tuple in iterator:
         if expect_extra:
-            images, labels, _ = data
+            data, labels, _ = tuple
         else:
-            images, labels = data
-        images, labels = images.cuda(), labels.cuda()
-        N = images.size(0)
+            data, labels = tuple
+        data, labels = data.cuda(), labels.cuda()
+        N = data.size(0)
 
-        if adv_train is None:
+        if adv_config is None:
             # Clear accumulated gradients
             optimizer.zero_grad()
-            outputs = model(images)[:, 0]
+            outputs = model(data)[:, 0]
         else:
             # Adversarial inputs
-            adv_x = projected_gradient_descent(
-                model, images, eps=adv_train['eps'],
-                eps_iter=adv_train['eps_iter'],
-                nb_iter=adv_train['nb_iter'],
-                norm=adv_train['norm'],
-                clip_min=adv_train['clip_min'],
-                clip_max=adv_train['clip_max'],
-                random_restarts=adv_train['random_restarts'],
-                binary_sigmoid=True)
+            adv_x = generate_adversarial_input(model, data)
             # Important to zero grad after above call, else model gradients
             # get accumulated over attack too
             optimizer.zero_grad()
@@ -62,7 +63,8 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
 
 
 def validate_epoch(val_loader, model, criterion,
-                   verbose: bool = True, adv_train=None,
+                   verbose: bool = True,
+                   adv_config: AdvTrainingConfig = None,
                    expect_extra: bool = True):
     model.eval()
     val_loss = AverageMeter()
@@ -70,28 +72,20 @@ def validate_epoch(val_loader, model, criterion,
     adv_val_loss = AverageMeter()
     adv_val_acc = AverageMeter()
 
-    with ch.set_grad_enabled(adv_train is not None):
-        for data in val_loader:
+    with ch.set_grad_enabled(adv_config is not None):
+        for tuple in val_loader:
             if expect_extra:
-                images, labels, _ = data
+                data, labels, _ = tuple
             else:
-                images, labels = data
-            images, labels = images.cuda(), labels.cuda()
-            N = images.size(0)
+                data, labels = tuple
+            data, labels = data.cuda(), labels.cuda()
+            N = data.size(0)
 
-            outputs = model(images)[:, 0]
+            outputs = model(data)[:, 0]
             prediction = (outputs >= 0)
 
-            if adv_train is not None:
-                adv_x = projected_gradient_descent(
-                    model, images, eps=adv_train['eps'],
-                    eps_iter=adv_train['eps_iter'],
-                    nb_iter=adv_train['nb_iter'],
-                    norm=adv_train['norm'],
-                    clip_min=adv_train['clip_min'],
-                    clip_max=adv_train['clip_max'],
-                    random_restarts=adv_train['random_restarts'],
-                    binary_sigmoid=True)
+            if adv_config is not None:
+                adv_x = generate_adversarial_input(model, data)
                 outputs_adv = model(adv_x)[:, 0]
                 prediction_adv = (outputs_adv >= 0)
 
@@ -107,7 +101,7 @@ def validate_epoch(val_loader, model, criterion,
             val_loss.update(criterion(outputs, labels.float()).item())
 
     if verbose:
-        if adv_train is None:
+        if adv_config is None:
             print('[Validation], Loss: %.5f, Accuracy: %.4f' %
                   (val_loss.avg, val_acc.avg))
         else:
@@ -116,12 +110,12 @@ def validate_epoch(val_loader, model, criterion,
                    adv_val_loss.avg, adv_val_acc.avg))
         print()
 
-    if adv_train is None:
+    if adv_config is None:
         return val_loss.avg, val_acc.avg
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
-def train(model, loaders, train_config: TrainConfig):
+def train_without_dp(model, loaders, train_config: TrainConfig):
     # Get data loaders
     train_loader, val_loader = loaders
 
@@ -141,16 +135,16 @@ def train(model, loaders, train_config: TrainConfig):
         _, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch,
                               verbose=train_config.verbose,
-                              adv_train=train_config.adv_train,
+                              adv_config=train_config.adv_config,
                               expect_extra=train_config.expect_extra)
 
         vloss, vacc = validate_epoch(
             val_loader, model, criterion,
             verbose=train_config.verbose,
-            adv_train=train_config.adv_train,
+            adv_config=train_config.adv_config,
             expect_extra=train_config.expect_extra)
         if not train_config.verbose:
-            if train_config.adv_train is None:
+            if train_config.adv_config is None:
                 iterator.set_description(
                     "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
             else:
@@ -158,7 +152,7 @@ def train(model, loaders, train_config: TrainConfig):
                     "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (100 * tacc, 100 * vacc[0], 100 * vacc[1]))
 
         vloss_compare = vloss
-        if train_config.adv_train is not None:
+        if train_config.adv_config is not None:
             vloss_compare = vloss[0]
 
         if train_config.get_best and vloss_compare < best_loss:

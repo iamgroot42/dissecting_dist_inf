@@ -30,6 +30,12 @@ class DatasetInformation(base.DatasetInformation):
             model = model.cuda()
         return model
 
+    def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
+        model = MLPTwoLayer(n_inp=105)
+        if not cpu:
+            model = model.cuda()
+        return model
+
     def generate_victim_adversary_splits(self, adv_ratio=None, test_ratio=0.33, num_tries=None):
         """
             Generate and store data offline for victim and adversary
@@ -252,7 +258,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         self.ds_val = CensusSet(*val_data, squeeze=self.squeeze)
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
-                                   num_workers=0)
+                                   num_workers=1)
 
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         info_object = DatasetInformation()
