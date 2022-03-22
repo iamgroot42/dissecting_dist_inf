@@ -50,8 +50,7 @@ def threshold_test_per_dist(cal_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
                             y_gt: np.ndarray,
-                            ratios: List = [1.],
-                            granularity: float = 0.005):
+                            config: BlackBoxAttackConfig):
     """
         Perform threshold-test on predictions of adversarial and victim models,
         for each of the given ratios. Returns statistics on all ratios.
@@ -73,7 +72,7 @@ def threshold_test_per_dist(cal_acc: Callable,
 
     adv_accs, allaccs_1, allaccs_2, f_accs = [], [], [], []
     # For all given percentile ratios
-    for ratio in ratios:
+    for ratio in config.ratios:
         # Get first <ratio> percentile of points
         leng = int(ratio * p1.shape[0])
         p1_use, p2_use, yg_use = p1[:leng], p2[:leng], yg[:leng]
@@ -86,7 +85,7 @@ def threshold_test_per_dist(cal_acc: Callable,
         # Find a threshold on these accuracies that maximizes
         # distinguishing accuracy
         tracc, threshold, rule = find_threshold_acc(
-            accs_1, accs_2, granularity=granularity)
+            accs_1, accs_2, granularity=config.granularity)
         adv_accs.append(100 * tracc)
         accs_victim_1 = 100 * cal_acc(pv1_use, yg_use)
         accs_victim_2 = 100 * cal_acc(pv2_use, yg_use)

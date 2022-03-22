@@ -4,8 +4,9 @@ from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import torch.nn as nn
 from typing import List
+import warnings
 
-from distribution_inference.utils import check_if_inside_cluster
+from distribution_inference.utils import check_if_inside_cluster, warning_string, log
 from distribution_inference.config import DatasetConfig, TrainConfig
 import distribution_inference.datasets.utils as utils
 
@@ -145,6 +146,7 @@ class CustomDatasetWrapper:
         folder_path = self.get_save_dir(train_config)
         shuffled_model_paths = np.random.permutation(os.listdir(folder_path))
         total_models = len(shuffled_model_paths) if n_models is None else n_models
+        log(f"Available models: {total_models}")
         i = 0
         models = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
@@ -155,8 +157,15 @@ class CustomDatasetWrapper:
                 # Skip any directories we may stumble upon
                 if os.path.isdir(os.path.join(folder_path, mpath)):
                     continue
-                model = self.load_model(os.path.join(folder_path, mpath), on_cpu=on_cpu)
+                model = self.load_model(os.path.join(
+                    folder_path, mpath), on_cpu=on_cpu)
                 models.append(model)
-            i += 1
-            pbar.update()
+                i += 1
+                pbar.update()
+        if len(models) == 0:
+            raise ValueError("No models found in the given path")
+        if n_models is not None and len(models) != n_models:
+            warnings.warn(warning_string(
+                f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))
+
         return models

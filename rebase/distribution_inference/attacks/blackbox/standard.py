@@ -23,13 +23,15 @@ class LossAndThresholdAttack(Attack):
             calc_acc,
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
-            ground_truth[0], self.config)
+            ground_truth[0],
+            self.config)
         # Get accuracies on second data distribution
         adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(
             calc_acc,
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
-            ground_truth[1], self.config)
+            ground_truth[1],
+            self.config)
 
         # Get best adv accuracies for both distributions, across all ratios
         chosen_distribution = 0
@@ -44,7 +46,7 @@ class LossAndThresholdAttack(Attack):
         chosen_ratio_index = np.argmax(adv_accs_use)
         victim_acc_use = victim_accs_use[chosen_ratio_index]
         # Loss test
-        basic = self._loss_test(acc_1, acc_2, self.config)
+        basic = self._loss_test(acc_1, acc_2)
 
         choice_information = (chosen_distribution, chosen_ratio_index)
         return (victim_acc_use, basic[chosen_ratio_index]), choice_information

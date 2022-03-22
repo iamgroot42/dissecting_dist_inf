@@ -1,5 +1,7 @@
+from distribution_inference.attacks import blackbox
 from simple_parsing import ArgumentParser
 from pathlib import Path
+from dataclasses import replace
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_preds_for_vic_and_adv
@@ -11,12 +13,12 @@ from distribution_inference.utils import flash_utils
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--config_file", help="Specify config file", type=Path)
+    parser.add_argument("--load_config", help="Specify config file", type=Path)
     args, remaining_argv = parser.parse_known_args()
     # Attempt to extract as much information from config file as you can
     config = None
-    if args.config_file is not None:
-        config = AttackConfig.load(args.config_file, drop_extra_fields=False)
+    if args.load_config is not None:
+        config = AttackConfig.load(args.load_config, drop_extra_fields=False)
     # Also give user the option to provide config values over CLI
     parser = ArgumentParser(parents=[parser])
     parser.add_arguments(AttackConfig, dest="attack_config", default=config)
@@ -61,7 +63,7 @@ if __name__ == "__main__":
 
         # Creata a copy of the data config, with the property value
         # changed to the current value
-        data_config_other = data_config.copy()
+        data_config_other = replace(data_config)
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
             data_config_other)
 
@@ -112,14 +114,18 @@ if __name__ == "__main__":
             )
         )
 
+        # TODO: Need a better (and more modular way) to handle
+        # the redundant code above.
+
         # For each requested attack
         for attack_type in bb_attack_config.attack_type:
-            attack_wrapper = get_attack(attack_type)
             # Create attacker object
-            attacker_obj = get_attack(attack_type)()
+            attacker_obj = get_attack(attack_type)(bb_attack_config)
 
             # Repeat number of trials
             for _ in range(attack_config.tries):
+
+                # TODO: Figure out where the randomness of trials should come in
 
                 # Launch attack
                 result = attacker_obj.attack(

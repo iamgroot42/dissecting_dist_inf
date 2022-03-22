@@ -152,10 +152,10 @@ def train(model, loaders, train_config: TrainConfig):
         if not train_config.verbose:
             if train_config.adv_train is None:
                 iterator.set_description(
-                    "train_acc: %.2f | val_acc: %.2f |" % (tacc, vacc))
+                    "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
             else:
                 iterator.set_description(
-                    "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (tacc, vacc[0], vacc[1]))
+                    "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (100 * tacc, 100 * vacc[0], 100 * vacc[1]))
 
         vloss_compare = vloss
         if train_config.adv_train is not None:

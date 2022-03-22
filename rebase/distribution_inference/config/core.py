@@ -176,7 +176,7 @@ class AttackConfig(Serializable):
     """Configuration used when training models"""
     black_box: BlackBoxAttackConfig
     """Configuration for black-box attacks"""
-    value: List
+    values: List
     """List of values (on property specified) to launch attack against"""
     tries: int = 1
     """Number of times to try each attack experiment"""

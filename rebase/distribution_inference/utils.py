@@ -27,8 +27,12 @@ def log_statement(x, ttype="log"):
     print(log_string(x, ttype))
 
 
+def warning_string(x):
+    return f"{bcolors.WARNING}%s{bcolors.ENDC}" % x
+
+
 def log(x):
-    print(f"{bcolors.WARNING}%s{bcolors.ENDC}" % x)
+    print(warning_string(x))
 
 
 def check_if_inside_cluster():
