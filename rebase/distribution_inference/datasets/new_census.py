@@ -268,19 +268,24 @@ class CensusWrapper(base.CustomDatasetWrapper):
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
-        dp_config = train_config.dp_config
+
+        dp_config = None
+        if train_config.misc_config is not None:
+            dp_config = train_config.dp_config
 
         if dp_config is None:
             base_path = os.path.join(base_models_dir, "normal")
         else:
-            base_path = os.path.join(base_models_dir, "DP_%.2f" % dp_config.epsilon)
+            base_path = os.path.join(
+                base_models_dir, "DP_%.2f" % dp_config.epsilon)
 
         save_path = os.path.join(base_path, self.prop, self.split)
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
 
         if self.scale != 1.0:
-            save_path = os.path.join(self.scalesave_path, "sample_size_scale:{}".format(self.scale))
+            save_path = os.path.join(
+                self.scalesave_path, "sample_size_scale:{}".format(self.scale))
         if self.drop_senstive_cols:
             save_path = os.path.join(save_path, "drop")
 

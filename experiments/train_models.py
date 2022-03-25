@@ -1,4 +1,4 @@
-from distribution_inference.config.core import DPTrainingConfig
+from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from simple_parsing import ArgumentParser
 from tqdm import tqdm
 from pathlib import Path
@@ -7,7 +7,7 @@ import os
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
 from distribution_inference.training.utils import save_model
-from distribution_inference.config import TrainConfig, DatasetConfig
+from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
 
 
@@ -20,9 +20,12 @@ if __name__ == "__main__":
     train_config = TrainConfig.load(args.load_config, drop_extra_fields=False)
 
     # Extract configuration information from config file
+    dp_config = None
     train_config: TrainConfig = train_config
     data_config: DatasetConfig = train_config.data_config
-    dp_config: DPTrainingConfig = train_config.dp_config
+    misc_config: MiscTrainConfig = train_config.misc_config
+    if misc_config is not None:
+        dp_config: DPTrainingConfig = misc_config.dp_config
 
     # Print out arguments
     flash_utils(train_config)

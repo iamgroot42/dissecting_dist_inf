@@ -5,7 +5,7 @@ from torchvision.models import densenet121
 from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 
 
-def BaseModel(nn.Module):
+class BaseModel(nn.Module):
     def __init__(self,
                  is_conv: bool = False,
                  transpose_features: bool = True):

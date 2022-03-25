@@ -7,7 +7,7 @@ from dataclasses import replace
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_preds_for_vic_and_adv
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution, PredictionsOnDistributions
-from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
+from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteboxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     attack_config: AttackConfig = args.attack_config
     wb_attack_config: WhiteboxAttackConfig = attack_config.white_box
     train_config: TrainConfig = attack_config.train_config
-    data_config: DatasetConfig = train_config.data_configz
+    data_config: DatasetConfig = train_config.data_config
 
     # Make sure regression config is not being used here
     if wb_attack_config.regression_config:
@@ -52,13 +52,16 @@ if __name__ == "__main__":
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     ds_vic_1 = ds_wrapper_class(data_config_victim_1)
 
+    # Make train config for adversarial models
+    train_config_adv = get_train_config_for_adv(train_config, attack_config)
+
     # Load victim and adversary's models for first value
     features_adv_1 = ds_adv_1.get_model_features(
-            train_config,
-            wb_attack_config,
-            n_models=wb_attack_config.num_adv_models,
-            on_cpu=attack_config.on_cpu,
-            shuffle=True)
+        train_config_adv,
+        wb_attack_config,
+        n_models=wb_attack_config.num_adv_models,
+        on_cpu=attack_config.on_cpu,
+        shuffle=True)
     features_vic_1 = ds_vic_1.get_model_features(
         train_config,
         wb_attack_config,
@@ -82,7 +85,7 @@ if __name__ == "__main__":
 
         # Load victim and adversary's models for other value
         features_adv_2 = ds_adv_2.get_models(
-            train_config,
+            train_config_adv,
             wb_attack_config,
             n_models=wb_attack_config.num_adv_models,
             on_cpu=attack_config.on_cpu,
