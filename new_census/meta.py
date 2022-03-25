@@ -42,6 +42,7 @@ if __name__ == "__main__":
     parser.add_argument('--save', action="store_false", help='save model or not')
     parser.add_argument('--drop', action="store_true")
     parser.add_argument('--scale',type=float,default=1.0)
+    parser.add_argument('--dp',type=float,default=None)
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -84,8 +85,12 @@ if __name__ == "__main__":
 
             pos_w, pos_labels, _ = get_model_representations(
             get_models_path(args.filter, "adv", d_0), 1, args.first_n)
-            pos_w_test, pos_labels_test, dims = get_model_representations(
-            get_models_path(args.filter, "victim", d_0), 1, args.first_n)
+            if args.dp:
+                pos_w_test, pos_labels_test, dims = get_model_representations(
+                get_models_path(args.filter, "victim", d_0,"DP_%.2f" % args.dp), 1, args.first_n)
+            else:
+                pos_w_test, pos_labels_test, dims = get_model_representations(
+                get_models_path(args.filter, "victim", d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
@@ -108,8 +113,12 @@ if __name__ == "__main__":
 
                 neg_w, neg_labels, _ = get_model_representations(
                 get_models_path(args.filter, "adv", tg), 0, args.first_n)
-                neg_w_test, neg_labels_test, dims = get_model_representations(
-                get_models_path(args.filter, "victim", tg), 0, args.first_n)
+                if args.dp:
+                    neg_w_test, neg_labels_test, dims = get_model_representations(
+                    get_models_path(args.filter, "victim", tg,"DP_%.2f" % args.dp), 0, args.first_n)
+                else:
+                    neg_w_test, neg_labels_test, dims = get_model_representations(
+                    get_models_path(args.filter, "victim", tg), 0, args.first_n)
 
 
         # Generate test set
@@ -201,6 +210,8 @@ if __name__ == "__main__":
 
     if args.drop:
         log_path = os.path.join(log_path,'drop')
+    if args.dp:
+        log_path = os.path.join(log_path,"DP_%.2f" % args.dp)
     utils.ensure_dir_exists(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
         for i, tup in enumerate(data):

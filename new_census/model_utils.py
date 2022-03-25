@@ -5,7 +5,7 @@ import os
 from tqdm import tqdm
 from opacus import PrivacyEngine
 import numpy as np
-from utils import check_if_inside_cluster
+from utils import check_if_inside_cluster,get_weight_layers
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 from opacus.validators import ModuleValidator
 
@@ -46,9 +46,11 @@ def save_model(clf, path):
     ch.save(state_dict, path)
 
 
-def load_model(path):
+def load_model(path,n_inp:int):
     # TODO: Implement
-    pass
+    model = get_model()
+    model.load_state_dict(ch.load(path), strict=False) 
+    return model
 
 
 def get_models_path(property, split, value=None, is_dp=None):
@@ -60,6 +62,24 @@ def get_models_path(property, split, value=None, is_dp=None):
     if value is not None:
         path = os.path.join(path, value)
     return path
+def get_model_representations(folder_path, label, first_n=np.inf, start_n=0):
+    models_in_folder = os.listdir(folder_path)
+    # np.random.shuffle(models_in_folder)
+    vecs, labels = [], []
+    for path in tqdm(models_in_folder):
+        model = load_model(os.path.join(folder_path, path))
+
+        # Extract model parameters
+        dims, fvec = get_weight_layers(
+            model, first_n=first_n, start_n=start_n)
+        fvec = [x.cuda() for x in fvec]
+        vecs.append(fvec)
+        labels.append(label)
+    labels = np.array(labels)
+    labels = ch.from_numpy(labels)
+
+    return vecs, labels, dims
+
 
 
 def validate_model(model):
