@@ -46,13 +46,18 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(data_config_victim_1)
 
     # Load victim and adversary's models for first value
+    # Load as many adv models as victim, and then create random
+    # splits per trial later
     models_adv_1 = ds_adv_1.get_models(train_config,
-                                       n_models=bb_attack_config.num_adv_models,
-                                       on_cpu=attack_config.on_cpu)
+                                       n_models=attack_config.num_victim_models,
+                                       on_cpu=attack_config.on_cpu,
+                                       shuffle=True)
     models_vic_1 = ds_vic_1.get_models(train_config,
                                        n_models=attack_config.num_victim_models,
-                                       on_cpu=attack_config.on_cpu)
-    # Get victim and adv predictions on loaders for given ratio
+                                       on_cpu=attack_config.on_cpu,
+                                       shuffle=False)
+
+    # Get victim and adv predictions on loaders for fixed ratio
     preds_vic_1_on_1, preds_adv_1_on_1, ground_truth_1 = get_preds_for_vic_and_adv(
         models_vic_1, models_adv_1,
         ds_adv_1,
@@ -74,10 +79,12 @@ if __name__ == "__main__":
         # Load victim and adversary's models for other value
         models_adv_2 = ds_adv_2.get_models(train_config,
                                            n_models=bb_attack_config.num_adv_models,
-                                           on_cpu=attack_config.on_cpu)
+                                           on_cpu=attack_config.on_cpu,
+                                           shuffle=True)
         models_vic_2 = ds_vic_2.get_models(train_config,
                                            n_models=attack_config.num_victim_models,
-                                           on_cpu=attack_config.on_cpu)
+                                           on_cpu=attack_config.on_cpu,
+                                           shuffle=False)
 
         # Get victim and adv predictions on loaders for fixed ratio
         preds_vic_1_on_2, preds_adv_1_on_2, ground_truth_2 = get_preds_for_vic_and_adv(

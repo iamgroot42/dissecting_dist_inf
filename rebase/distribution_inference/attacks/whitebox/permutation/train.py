@@ -90,12 +90,12 @@ def test(model, loss_fn, X, Y, batch_size, accuracy,
 
 # Function to train meta-classifier
 def train(model, train_data, test_data,
-                     epochs, lr, eval_every: int = 5,
-                     binary: bool = True, regression: bool = False,
-                     val_data=None, batch_size: int = 1000,
-                     gpu: bool = False, combined: bool = False,
-                     shuffle: bool = True, train_acts = None,
-                     test_acts = None, val_acts = None):
+          epochs, lr, eval_every: int = 5,
+          binary: bool = True, regression: bool = False,
+          val_data=None, batch_size: int = 1000,
+          gpu: bool = False, combined: bool = False,
+          shuffle: bool = True, train_acts = None,
+          test_acts = None, val_acts = None):
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.01)
 
     # Make sure both weights and activations available if val requested
