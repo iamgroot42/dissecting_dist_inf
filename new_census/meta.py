@@ -41,8 +41,8 @@ if __name__ == "__main__":
     parser.add_argument('--trg', default=None, help='target ratios')
     parser.add_argument('--save', action="store_false", help='save model or not')
     parser.add_argument('--drop', action="store_true")
-    parser.add_argument('--scale',type=float,default=1.0)
-    parser.add_argument('--dp',type=float,default=None)
+    parser.add_argument('--scale', type=float, default=1.0)
+    parser.add_argument('--dp', type=float, default=None)
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             os.path.join(get_models_path(args.filter, "adv", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
             pos_w_test, pos_labels_test, dims = get_model_representations(
             os.path.join(get_models_path(args.filter, "victim", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
-        
+
         else:
 
             pos_w, pos_labels, _ = get_model_representations(
