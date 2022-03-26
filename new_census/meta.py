@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
     #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
     if args.trg == None:
-        targets = sorted(['0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1.0'])
+        targets = sorted(['0.0','0.1','0.2','0.3','0.4','0.6','0.7','0.8','0.9','1.0'])
     else:
         lst = eval(args.trg)
         targets = []
@@ -120,7 +120,10 @@ if __name__ == "__main__":
                     neg_w_test, neg_labels_test, dims = get_model_representations(
                     get_models_path(args.filter, "victim", tg), 0, args.first_n)
 
-
+        pos_w = np.array(pos_w,dtype='object')
+        pos_w_test = np.array(pos_w_test,dtype='object')
+        neg_w = np.array(neg_w,dtype='object')
+        neg_w_test = np.array(neg_w_test,dtype='object')
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
         Y_te = ch.cat((pos_labels_test, neg_labels_test)).cuda()
@@ -192,7 +195,11 @@ if __name__ == "__main__":
                          val_data=val_data, combined=True,
                          eval_every=10, gpu=True)
             if args.save:
-                save_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_model", "-".join(
+                if args.dp:
+                    save_path = os.path.join(BASE_MODELS_DIR, args.filter,"DP_%.2f" % args.dp, "meta_model", "-".join(
+                    [args.d_0, str(args.start_n), str(args.first_n)]), tg)
+                else:
+                    save_path = os.path.join(BASE_MODELS_DIR, args.filter,"DP_%.2f" % args.dp, "meta_model", "-".join(
                     [args.d_0, str(args.start_n), str(args.first_n)]), tg)
                 if not os.path.isdir(save_path):
                     os.makedirs(save_path)
