@@ -363,38 +363,3 @@ class FullPermInvModel(nn.Module):
         reps = ch.cat(reps, 1)
         logits = self.rho(reps)
         return logits
-
-
-class CombinedPermInvModel(nn.Module):
-    def __init__(self, dims, dim_channels, dim_kernels,
-                 inside_dims=[64, 8], n_classes=2, dropout=0.5):
-        super(CombinedPermInvModel, self).__init__()
-        # Model for convolutional layers
-        self.conv_perm = PermInvConvModel(
-            dim_channels, dim_kernels, inside_dims,
-            n_classes, dropout, only_latent=True)
-        # Model for FC layers
-        self.fc_perm = PermInvModel(
-            dims, inside_dims, n_classes,
-            dropout, only_latent=True)
-
-        self.n_conv_layers = len(dim_channels)
-        self.n_fc_layers = len(dims)
-
-        # If binary, need only one output
-        if n_classes == 2:
-            n_classes = 1
-
-        n_layers = self.n_conv_layers + self.n_fc_layers
-        self.rho = nn.Linear(inside_dims[-1] * n_layers, n_classes)
-
-    def forward(self, x):
-        # First n_conv_layers are for CONV model
-        conv_latent = self.conv_perm(x[:self.n_conv_layers])
-        # Layers after that are for FC model
-        fc_latent = self.fc_perm(x[-self.n_fc_layers:])
-
-        # Concatenate feature representations
-        latent = ch.cat((fc_latent, conv_latent), -1)
-        logits = self.rho(latent)
-        return logits

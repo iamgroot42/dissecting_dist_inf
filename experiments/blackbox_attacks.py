@@ -6,7 +6,7 @@ from dataclasses import replace
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_preds_for_vic_and_adv
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution, PredictionsOnDistributions
-from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
+from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 
@@ -45,14 +45,24 @@ if __name__ == "__main__":
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     ds_vic_1 = ds_wrapper_class(data_config_victim_1)
 
+    # Make train config for adversarial models
+    train_config_adv = get_train_config_for_adv(train_config, attack_config)
+
     # Load victim and adversary's models for first value
-    models_adv_1 = ds_adv_1.get_models(train_config,
-                                       n_models=bb_attack_config.num_adv_models,
-                                       on_cpu=attack_config.on_cpu)
-    models_vic_1 = ds_vic_1.get_models(train_config,
-                                       n_models=attack_config.num_victim_models,
-                                       on_cpu=attack_config.on_cpu)
-    # Get victim and adv predictions on loaders for given ratio
+    # Load as many adv models as victim, and then create random
+    # splits per trial later
+    models_adv_1 = ds_adv_1.get_models(
+        train_config_adv,
+        n_models=attack_config.num_victim_models,
+        on_cpu=attack_config.on_cpu,
+        shuffle=True)
+    models_vic_1 = ds_vic_1.get_models(
+        train_config,
+        n_models=attack_config.num_victim_models,
+        on_cpu=attack_config.on_cpu,
+        shuffle=False)
+
+    # Get victim and adv predictions on loaders for fixed ratio
     preds_vic_1_on_1, preds_adv_1_on_1, ground_truth_1 = get_preds_for_vic_and_adv(
         models_vic_1, models_adv_1,
         ds_adv_1,
@@ -72,12 +82,14 @@ if __name__ == "__main__":
         ds_vic_2 = ds_wrapper_class(data_config_vic_2)
 
         # Load victim and adversary's models for other value
-        models_adv_2 = ds_adv_2.get_models(train_config,
+        models_adv_2 = ds_adv_2.get_models(train_config_adv,
                                            n_models=bb_attack_config.num_adv_models,
-                                           on_cpu=attack_config.on_cpu)
+                                           on_cpu=attack_config.on_cpu,
+                                           shuffle=True)
         models_vic_2 = ds_vic_2.get_models(train_config,
                                            n_models=attack_config.num_victim_models,
-                                           on_cpu=attack_config.on_cpu)
+                                           on_cpu=attack_config.on_cpu,
+                                           shuffle=False)
 
         # Get victim and adv predictions on loaders for fixed ratio
         preds_vic_1_on_2, preds_adv_1_on_2, ground_truth_2 = get_preds_for_vic_and_adv(

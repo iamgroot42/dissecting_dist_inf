@@ -68,6 +68,14 @@ class DatasetConfig(Serializable):
 
 
 @dataclass
+class MiscTrainConfig(Serializable):
+    adv_config: Optional[AdvTrainingConfig] = None
+    """Configuration to be used for adversarial training"""
+    dp_config: Optional[DPTrainingConfig] = None
+    """Configuration to be used for DP training"""
+
+
+@dataclass
 class TrainConfig(Serializable):
     """
         Configuration values for training models.
@@ -81,10 +89,8 @@ class TrainConfig(Serializable):
     batch_size: int
     """Batch size for training"""
 
-    adv_config: Optional[AdvTrainingConfig] = None
-    """Configuration to be used for adversarial training"""
-    dp_config: Optional[DPTrainingConfig] = None
-    """Configuration to be used for DP training"""
+    misc_config: Optional[MiscTrainConfig] = None
+    """Extra configuration for model training env"""
 
     verbose: Optional[bool] = False
     """Whether to print out per-classifier stats"""
@@ -155,27 +161,21 @@ class WhiteBoxAttackConfig(Serializable):
     regression: Optional[bool] = False
     """Whether to use regression meta-classifier"""
 
-    # Valid only for MLPs
-    start_n: Optional[int] = 0
-    """Layer index to start with (while extracting parameters)"""
-    first_n: Optional[int] = None
-    """Layer index (from start) until which to extract parameters"""
+    # Valid for MLPs
+    custom_layers_fc: Optional[List[int]] = None
+    """Indices of layers to extract features from (in specific) for FC"""
+    start_n_fc: Optional[int] = 0
+    """Layer index to start with (while extracting parameters) for FC"""
+    first_n_fc: Optional[int] = None
+    """Layer index (from start) until which to extract parameters for FC"""
 
     # Valid only for CNNs
+    custom_layers_conv: Optional[List[int]] = None
+    """Indices of layers to extract features from (in specific) for FC"""
     start_n_conv: Optional[int] = 0
     """Layer index to start with (while extracting parameters) for conv layers"""
     first_n_conv: Optional[int] = None
     """Layer index (from start) until which to extract parameters for conv layers"""
-    start_n_fc: Optional[int] = 0
-    """Layer index to start with (while extracting parameters) for fc layers"""
-    first_n_fc: Optional[int] = None
-    """Layer index (from start) until which to extract parameters for fc layers"""
-
-    # Loading models other than those trained with standard training
-    use_adv_for_adv: Optional[bool] = False
-    """Whether to use adversarially-trained models for training meta-classifier(s)"""
-    use_adv_for_victim: Optional[bool] = False
-    """Whether to use adversarially-trained models for training victim model(s)"""
 
     # Valid for specific attacks
     permutation_config: Optional[PermutationAttackConfig] = None
@@ -201,3 +201,7 @@ class AttackConfig(Serializable):
     """Number of victim models (per distribution) to test on"""
     on_cpu: Optional[bool] = False
     """Keep models read on CPU?"""
+    adv_diff_misc_config: Optional[bool] = False
+    """If true, indicates adv models having different mist training config"""
+    adv_misc_config: Optional[MiscTrainConfig] = None
+    """If given, specifies extra training params (adv, DP, etc) for adv models"""

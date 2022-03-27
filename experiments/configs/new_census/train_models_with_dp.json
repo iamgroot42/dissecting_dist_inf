@@ -1,9 +1,11 @@
 {
-    "dp_config": {
-        "epsilon": 0.1,
-        "delta": 1.3e-5,
-        "max_grad_norm": 1.0,
-        "physical_batch_size": 500
+    "misc_config": {
+        "dp_config": {
+            "epsilon": 0.1,
+            "delta": 1.3e-5,
+            "max_grad_norm": 1.0,
+            "physical_batch_size": 500
+        }
     },
     "data_config": {
         "name": "new_census",

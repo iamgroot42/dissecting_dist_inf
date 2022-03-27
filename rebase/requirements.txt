@@ -1,0 +1,13 @@
+git+https://github.com/iamgroot42/SimpleParsing
+git+https://github.com/iamgroot42/cleverhans
+git+https://github.com/iamgroot42/opacus
+git+https://github.com/iamgroot42/robustness
+torch==1.10.2
+torchvision==0.11.3
+torchaudio==0.10.2
+scikit-learn==1.0.2
+scipy==1.8.0
+tqdm
+pandas
+coloramaseaborn
+jsonargparse

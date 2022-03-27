@@ -7,7 +7,8 @@ from typing import List
 import warnings
 
 from distribution_inference.utils import check_if_inside_cluster, warning_string, log
-from distribution_inference.config import DatasetConfig, TrainConfig
+from distribution_inference.config import DatasetConfig, TrainConfig, WhiteBoxAttackConfig
+#from distribution_inference.attacks.whitebox.utils import get_weight_layers
 import distribution_inference.datasets.utils as utils
 
 
@@ -138,22 +139,34 @@ class CustomDatasetWrapper:
         """Load model from a given path"""
         raise NotImplementedError("Function to load model not implemented")
 
+    def _get_model_paths(self,
+                         train_config: TrainConfig,
+                         n_models: int = None,
+                         shuffle: bool = True) -> List:
+        # Get path to load models
+        folder_path = self.get_save_dir(train_config)
+        model_paths = os.listdir(folder_path)
+        if shuffle:
+            model_paths = np.random.permutation(model_paths)
+        total_models = len(model_paths) if n_models is None else n_models
+        log(f"Available models: {total_models}")
+        return model_paths, folder_path, total_models
+
     def get_models(self,
-                   train_config: TrainConfig = None,
+                   train_config: TrainConfig,
                    n_models: int = None,
-                   on_cpu: bool = False) -> List[nn.Module]:
+                   on_cpu: bool = False,
+                   shuffle: bool = True) -> List[nn.Module]:
         """
             Load models
         """
-        # Get path to save model
-        folder_path = self.get_save_dir(train_config)
-        shuffled_model_paths = np.random.permutation(os.listdir(folder_path))
-        total_models = len(shuffled_model_paths) if n_models is None else n_models
-        log(f"Available models: {total_models}")
+        # Get path to load models
+        model_paths, folder_path, total_models = self._get_model_paths(
+            train_config, n_models, shuffle)
         i = 0
         models = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
-            for mpath in shuffled_model_paths:
+            for mpath in model_paths:
                 # Break reading if requested number of models is reached
                 if i >= n_models:
                     break
@@ -170,5 +183,39 @@ class CustomDatasetWrapper:
         if n_models is not None and len(models) != n_models:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))
-
         return models
+
+    def get_model_features(self,
+                           train_config: TrainConfig,
+                           attack_config: WhiteBoxAttackConfig,
+                           n_models: int = None,
+                           on_cpu: bool = False,
+                           shuffle: bool = True):
+        """
+            Extract features for a given model
+        """
+        # Get path to load models
+        model_paths, folder_path, total_models = self._get_model_paths(
+            train_config, n_models, shuffle)
+        i = 0
+        feature_vectors = []
+        with tqdm(total=total_models, desc="Loading models") as pbar:
+            for mpath in model_paths:
+                # Break reading if requested number of models is reached
+                if i >= n_models:
+                    break
+                # Skip any directories we may stumble upon
+                if os.path.isdir(os.path.join(folder_path, mpath)):
+                    continue
+
+                # Load model
+                model = self.load_model(os.path.join(
+                    folder_path, mpath), on_cpu=on_cpu)
+
+                # Extract model features
+                # Get model params, shift to GPU
+                dims, feature_vector = get_weight_layers(model, attack_config)
+
+                feature_vectors.append(feature_vector)
+        feature_vectors = np.array(feature_vectors, dtype='object')
+        return dims, feature_vectors

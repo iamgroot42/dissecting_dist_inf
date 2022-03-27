@@ -11,11 +11,12 @@ from distribution_inference.training.dp import train as train_with_dp
 
 
 def train(model, loaders, train_config: TrainConfig):
-    if train_config.dp_config is None:
-        return train_without_dp(model, loaders, train_config)
-    else:
+    if train_config.misc_config and train_config.misc_config.dp:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config)
+    else:
+        # If DP training, call appropriate function
+        return train_without_dp(model, loaders, train_config)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
@@ -130,21 +131,25 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
     if not train_config.verbose:
         iterator = tqdm(iterator)
 
+    adv_config = None
+    if train_config.misc_config is not None:
+        adv_config = train_config.misc_config.adv_config
+
     best_model, best_loss = None, np.inf
     for epoch in iterator:
         _, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch,
                               verbose=train_config.verbose,
-                              adv_config=train_config.adv_config,
+                              adv_config=adv_config,
                               expect_extra=train_config.expect_extra)
 
         vloss, vacc = validate_epoch(
             val_loader, model, criterion,
             verbose=train_config.verbose,
-            adv_config=train_config.adv_config,
+            adv_config=adv_config,
             expect_extra=train_config.expect_extra)
         if not train_config.verbose:
-            if train_config.adv_config is None:
+            if adv_config is None:
                 iterator.set_description(
                     "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
             else:
@@ -152,7 +157,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
                     "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (100 * tacc, 100 * vacc[0], 100 * vacc[1]))
 
         vloss_compare = vloss
-        if train_config.adv_config is not None:
+        if adv_config is not None:
             vloss_compare = vloss[0]
 
         if train_config.get_best and vloss_compare < best_loss:

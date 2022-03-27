@@ -4,11 +4,14 @@
 import torch as ch
 from tqdm import tqdm
 import numpy as np
+from typing import List
 import torch.optim as optim
 import torch.nn as nn
 from copy import deepcopy
 
 import distribution_inference.utils as utils
+from distribution_inference.config.core import WhiteBoxAttackConfig
+from distribution_inference.models.core import BaseModel
 
 
 def prepare_batched_data(X, reduce=False, verbose=True):
@@ -102,20 +105,22 @@ def get_preds(model, X, batch_size, on_gpu=True):
     return ch.cat(preds, 0)
 
 
-# Function to extract model parameters
-def get_weight_layers(m, normalize=False, transpose=True,
-                      first_n=np.inf, start_n=0,
-                      custom_layers=None,
-                      conv=False, include_all=False,
-                      prune_mask=[]):
+def _get_weight_layers(model: BaseModel,
+                       start_n: int = 0,
+                       first_n: int = np.inf,
+                       custom_layers: List[int] = None,
+                       include_all: bool = False,
+                       is_conv: bool = False,
+                       prune_mask=[]):
     dims, dim_kernels, weights, biases = [], [], [], []
     i, j = 0, 0
 
     # Sort and store desired layers, if specified
-    custom_layers = sorted(custom_layers) if custom_layers is not None else None
+    custom_layers_sorted = sorted(
+        custom_layers) if custom_layers is not None else None
 
     track = 0
-    for name, param in m.named_parameters():
+    for name, param in model.named_parameters():
         if "weight" in name:
 
             param_data = param.data.detach().cpu()
@@ -125,11 +130,11 @@ def get_weight_layers(m, normalize=False, transpose=True,
                 param_data = param_data * prune_mask[track]
                 track += 1
 
-            if transpose:
+            if model.transpose_features:
                 param_data = param_data.T
 
             weights.append(param_data)
-            if conv:
+            if is_conv:
                 dims.append(weights[-1].shape[2])
                 dim_kernels.append(weights[-1].shape[0] * weights[-1].shape[1])
             else:
@@ -140,7 +145,7 @@ def get_weight_layers(m, normalize=False, transpose=True,
         # Assume each layer has weight & bias
         i += 1
 
-        if custom_layers is None:
+        if custom_layers_sorted is None:
             # If requested, start looking from start_n layer
             if (i - 1) // 2 < start_n:
                 dims, dim_kernels, weights, biases = [], [], [], []
@@ -151,7 +156,7 @@ def get_weight_layers(m, normalize=False, transpose=True,
                 break
         else:
             # If this layer was not asked for, omit corresponding weights & biases
-            if i // 2 != custom_layers[j // 2]:
+            if i // 2 != custom_layers_sorted[j // 2]:
                 dims = dims[:-1]
                 dim_kernels = dim_kernels[:-1]
                 weights = weights[:-1]
@@ -161,27 +166,21 @@ def get_weight_layers(m, normalize=False, transpose=True,
                 j += 1
 
             # Break if all layers were processed
-            if len(custom_layers) == j // 2:
+            if len(custom_layers_sorted) == j // 2:
                 break
 
-    if custom_layers is not None and len(custom_layers) != j // 2:
+    if custom_layers_sorted is not None and len(custom_layers_sorted) != j // 2:
         raise ValueError("Custom layers requested do not match actual model")
 
     if include_all:
-        if conv:
+        if is_conv:
             middle_dim = weights[-1].shape[3]
         else:
             middle_dim = weights[-1].shape[1]
 
-    if normalize:
-        min_w = min([ch.min(x).item() for x in weights])
-        max_w = max([ch.max(x).item() for x in weights])
-        weights = [(w - min_w) / (max_w - min_w) for w in weights]
-        weights = [w / max_w for w in weights]
-
     cctd = []
     for w, b in zip(weights, biases):
-        if conv:
+        if is_conv:
             b_exp = b.unsqueeze(0).unsqueeze(0)
             b_exp = b_exp.expand(w.shape[0], w.shape[1], 1, -1)
             combined = ch.cat((w, b_exp), 2).transpose(2, 3)
@@ -191,10 +190,44 @@ def get_weight_layers(m, normalize=False, transpose=True,
 
         cctd.append(combined)
 
-    if conv:
+    if is_conv:
         if include_all:
             return (dims, dim_kernels, middle_dim), cctd
         return (dims, dim_kernels), cctd
     if include_all:
         return (dims, middle_dim), cctd
     return dims, cctd
+
+
+# Function to extract model parameters
+def get_weight_layers(model: BaseModel,
+                      attack_config: WhiteBoxAttackConfig,
+                      prune_mask=[]):
+
+    if model.is_conv:
+        # Model has convolutional layers
+        # Process FC and Conv layers separately
+        dims_conv, fvec_conv = _get_weight_layers(
+            model.features,
+            first_n=attack_config.first_n_conv,
+            start_n=attack_config.start_n_conv,
+            is_conv=True,
+            custom_layers=attack_config.custom_layers_conv,
+            include_all=True)
+        dims_fc, fvec_fc = _get_weight_layers(
+            model.classifier,
+            first_n=attack_config.first_n_fc,
+            start_n=attack_config.start_n_fc,
+            custom_layers=attack_config.custom_layers_fc)
+        feature_vector = fvec_conv + fvec_fc
+        dimensions = (dims_conv, dims_fc)
+    else:
+        dims_fc, fvec_fc = _get_weight_layers(
+            model,
+            first_n=attack_config.first_n_fc,
+            start_n=attack_config.start_n_fc,
+            custom_layers=attack_config.custom_layers_fc)
+        feature_vector = fvec_fc
+        dimensions = dims_fc
+
+    return dimensions, feature_vector

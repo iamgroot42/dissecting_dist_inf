@@ -5,19 +5,28 @@ from torchvision.models import densenet121
 from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 
 
-class InceptionModel(nn.Module):
+class BaseModel(nn.Module):
+    def __init__(self,
+                 is_conv: bool = False,
+                 transpose_features: bool = True):
+        self.is_conv = is_conv
+        self.transpose_features = transpose_features
+        super(BaseModel, self).__init__()
+
+
+class InceptionModel(BaseModel):
     def __init__(self,
                  num_classes: int = 1,
                  fake_relu: bool = False,
                  latent_focus: int = None) -> None:
-        super(InceptionModel, self).__init__()
+        super().__init__(is_conv=True)
         self.model = densenet121(num_classes=num_classes) #, aux_logits=False)
 
     def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
         return self.model(x)
 
 
-class MyAlexNet(nn.Module):
+class MyAlexNet(BaseModel):
     def __init__(self,
                  num_classes: int = 1,
                  fake_relu: bool = False,
@@ -31,7 +40,7 @@ class MyAlexNet(nn.Module):
 
         self.latent_focus = latent_focus
 
-        super(MyAlexNet, self).__init__()
+        super().__init__(is_conv=True)
         layers = [
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
             FakeReluWrapper(inplace=True),
@@ -107,9 +116,9 @@ class MyAlexNet(nn.Module):
                     return x
 
 
-class MLPTwoLayer(nn.Module):
+class MLPTwoLayer(BaseModel):
     def __init__(self, n_inp: int, num_classes: int = 1):
-        super(MLPTwoLayer, self).__init__()
+        super().__init__(is_conv=False)
         self.layers = nn.Sequential(
             nn.Linear(n_inp, 64),
             nn.ReLU(),
