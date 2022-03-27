@@ -20,3 +20,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Be sure to add requirements.txt to .gitignore exception
+!requirements.txt
+ 
