@@ -11,7 +11,7 @@ from distribution_inference.training.dp import train as train_with_dp
 
 
 def train(model, loaders, train_config: TrainConfig):
-    if train_config.misc_config and train_config.misc_config.dp:
+    if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config)
     else:
@@ -43,7 +43,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             outputs = model(data)[:, 0]
         else:
             # Adversarial inputs
-            adv_x = generate_adversarial_input(model, data)
+            adv_x = generate_adversarial_input(model, data, adv_config)
             # Important to zero grad after above call, else model gradients
             # get accumulated over attack too
             optimizer.zero_grad()
@@ -86,7 +86,7 @@ def validate_epoch(val_loader, model, criterion,
             prediction = (outputs >= 0)
 
             if adv_config is not None:
-                adv_x = generate_adversarial_input(model, data)
+                adv_x = generate_adversarial_input(model, data, adv_config)
                 outputs_adv = model(adv_x)[:, 0]
                 prediction_adv = (outputs_adv >= 0)
 
@@ -134,6 +134,10 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
     adv_config = None
     if train_config.misc_config is not None:
         adv_config = train_config.misc_config.adv_config
+
+    # If eps-iter is not set, use default rule
+    if adv_config is not None and adv_config.epsilon_iter is None:
+        adv_config.epsilon_iter = 2.5 * adv_config.epsilon / adv_config.iters
 
     best_model, best_loss = None, np.inf
     for epoch in iterator:
