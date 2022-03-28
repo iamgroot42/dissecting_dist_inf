@@ -70,6 +70,7 @@ if __name__ == "__main__":
         # Creata a copy of the data config, with the property value
         # changed to the current value
         data_config_other = replace(data_config)
+        data_config_other.value = prop_value
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
             data_config_other)
 

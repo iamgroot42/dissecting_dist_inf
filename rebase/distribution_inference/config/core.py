@@ -145,8 +145,8 @@ class RegressionConfig(Serializable):
     """
         Configuration for regression-based attacks
     """
-    values_to_train: List
-    """Values of property to use while training"""
+    additional_values_to_test: Optional[List] = None
+    """Values of property to use while testing in addition to ratios used to train"""
 
 
 @dataclass
@@ -212,7 +212,7 @@ class AttackConfig(Serializable):
     train_config: TrainConfig
     """Configuration used when training models"""
     values: List
-    """List of values (on property specified) to launch attack against"""
+    """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
     black_box: Optional[BlackBoxAttackConfig] = None
