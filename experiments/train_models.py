@@ -33,11 +33,6 @@ if __name__ == "__main__":
             # Scale epsilon by 255 if requested
             if train_config.misc_config.adv_config.scale_by_255:
                 train_config.misc_config.adv_config.epsilon /= 255
-            # Special case for CelebA
-            # Given the way scaling is done, eps (passed as argument) should be
-            # 2^(1/p) for L_p norm
-            if data_config.name == "celeba":
-                train_config.misc_config.adv_config.epsilon *= 2
 
     # Print out arguments
     flash_utils(train_config)

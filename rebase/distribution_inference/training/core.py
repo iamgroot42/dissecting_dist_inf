@@ -8,6 +8,7 @@ from copy import deepcopy
 from distribution_inference.training.utils import AverageMeter, generate_adversarial_input
 from distribution_inference.config import TrainConfig, AdvTrainingConfig
 from distribution_inference.training.dp import train as train_with_dp
+from distribution_inference.utils import warning_string
 
 
 def train(model, loaders, train_config: TrainConfig):
@@ -135,6 +136,13 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
     if train_config.misc_config is not None:
         adv_config = train_config.misc_config.adv_config
 
+        # Special case for CelebA
+        # Given the way scaling is done, eps (passed as argument) should be
+        # 2^(1/p) for L_p norm
+        if train_config.data_config.name == "celeba":
+            adv_config.epsilon *= 2
+            print(warning_string("Special Behavior: Doubling epsilon for Celeb-A"))
+
     # If eps-iter is not set, use default rule
     if adv_config is not None and adv_config.epsilon_iter is None:
         adv_config.epsilon_iter = 2.5 * adv_config.epsilon / adv_config.iters
@@ -167,6 +175,11 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
         if train_config.get_best and vloss_compare < best_loss:
             best_loss = vloss_compare
             best_model = deepcopy(model)
+
+    # Special case for CelebA
+    # Return epsilon back to normal
+    if train_config.misc_config is not None and train_config.data_config.name == "celeba":
+        adv_config.epsilon /= 2
 
     if train_config.get_best:
         return best_model, (vloss, vacc)
