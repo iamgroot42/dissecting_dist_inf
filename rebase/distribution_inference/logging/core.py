@@ -46,11 +46,11 @@ class AttackResult(Result):
                 self.not_empty_dic(dic,k)
                 check_rec(dic[k],keys)
         check_rec(self.dic,['result',attack,prop])
-        if self.dic['result'][attack][prop].has_key('adv_acc'):
+        if 'adv_acc' in self.dic['result'][attack][prop]:
             self.dic['result'][attack][prop]['adv acc'].append(advacc)
         else:
             self.dic['result'][attack][prop]['adv acc'] = [advacc]
-        if self.dic['result'][attack][prop].has_key('victim_acc'):
+        if 'victim_acc' in self.dic['result'][attack][prop]:
             self.dic['result'][attack][prop]['victim acc'].append(vacc)
         else:
             self.dic['result'][attack][prop]['victim acc'] = [vacc]
