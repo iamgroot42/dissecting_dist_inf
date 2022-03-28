@@ -271,7 +271,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
 
         dp_config = None
         if train_config.misc_config is not None:
-            dp_config = train_config.dp_config
+            dp_config = train_config.misc_config.dp_config
 
         if dp_config is None:
             base_path = os.path.join(base_models_dir, "normal")

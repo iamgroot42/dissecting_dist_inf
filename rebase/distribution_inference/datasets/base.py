@@ -8,7 +8,7 @@ import warnings
 
 from distribution_inference.utils import check_if_inside_cluster, warning_string, log
 from distribution_inference.config import DatasetConfig, TrainConfig, WhiteBoxAttackConfig
-#from distribution_inference.attacks.whitebox.utils import get_weight_layers
+from distribution_inference.attacks.whitebox.utils import get_weight_layers
 import distribution_inference.datasets.utils as utils
 
 
@@ -183,7 +183,7 @@ class CustomDatasetWrapper:
         if n_models is not None and len(models) != n_models:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))
-        return models
+        return np.array(models, dtype='object')
 
     def get_model_features(self,
                            train_config: TrainConfig,
@@ -215,7 +215,17 @@ class CustomDatasetWrapper:
                 # Extract model features
                 # Get model params, shift to GPU
                 dims, feature_vector = get_weight_layers(model, attack_config)
-
                 feature_vectors.append(feature_vector)
+
+                # Update progress
+                i += 1
+                pbar.update(1)
+
+        if len(feature_vectors) == 0:
+            raise ValueError("No models found in the given path")
+        if n_models is not None and len(feature_vectors) != n_models:
+            warnings.warn(warning_string(
+                f"\nNumber of models loaded ({len(feature_vectors)}) is less than requested ({n_models})"))
+
         feature_vectors = np.array(feature_vectors, dtype='object')
         return dims, feature_vectors

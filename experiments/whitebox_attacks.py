@@ -1,34 +1,29 @@
-from distribution_inference.attacks import blackbox
-from pyparsing import AtStringStart
+
+
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from dataclasses import replace
 
-from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
-from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_preds_for_vic_and_adv
-from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution, PredictionsOnDistributions
-from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
-from distribution_inference.config import DatasetConfig, AttackConfig, WhiteboxAttackConfig, TrainConfig
-from distribution_inference.utils import flash_utils
 
+from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
+from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
+from distribution_inference.attacks.whitebox.utils import wrap_into_x_y, get_attack, get_train_val_from_pool
+from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
+from distribution_inference.utils import flash_utils
 
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--load_config", help="Specify config file", type=Path)
-    args, remaining_argv = parser.parse_known_args()
+    parser.add_argument(
+        "--load_config", help="Specify config file",
+        type=Path, required=True)
+    args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
-    config = None
-    if args.load_config is not None:
-        config = AttackConfig.load(args.load_config, drop_extra_fields=False)
-    # Also give user the option to provide config values over CLI
-    parser = ArgumentParser(parents=[parser])
-    parser.add_arguments(AttackConfig, dest="attack_config", default=config)
-    args = parser.parse_args(remaining_argv)
+    attack_config: AttackConfig = AttackConfig.load(
+        args.load_config, drop_extra_fields=False)
 
     # Extract configuration information from config file
-    attack_config: AttackConfig = args.attack_config
-    wb_attack_config: WhiteboxAttackConfig = attack_config.white_box
+    wb_attack_config: WhiteBoxAttackConfig = attack_config.white_box
     train_config: TrainConfig = attack_config.train_config
     data_config: DatasetConfig = train_config.data_config
 
@@ -55,22 +50,21 @@ if __name__ == "__main__":
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
-    # Load victim and adversary's models for first value
-    features_adv_1 = ds_adv_1.get_model_features(
+    # Load victim and adversary's model features for first value
+    dims, features_adv_1 = ds_adv_1.get_model_features(
         train_config_adv,
         wb_attack_config,
-        n_models=wb_attack_config.num_adv_models,
+        n_models=attack_config.num_total_adv_models,
         on_cpu=attack_config.on_cpu,
         shuffle=True)
-    features_vic_1 = ds_vic_1.get_model_features(
+    _, features_vic_1 = ds_vic_1.get_model_features(
         train_config,
         wb_attack_config,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
         shuffle=False)
 
-    data = []
-
+    accuracies = []
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         # Creata a copy of the data config, with the property value
@@ -83,114 +77,64 @@ if __name__ == "__main__":
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2)
 
-        # Load victim and adversary's models for other value
-        features_adv_2 = ds_adv_2.get_models(
+        # Load victim and adversary's model features for other value
+        _, features_adv_2 = ds_adv_2.get_model_features(
             train_config_adv,
             wb_attack_config,
-            n_models=wb_attack_config.num_adv_models,
+            n_models=attack_config.num_total_adv_models,
             on_cpu=attack_config.on_cpu,
             shuffle=True)
-        features_vic_2 = ds_vic_2.get_models(
+        _, features_vic_2 = ds_vic_2.get_model_features(
             train_config,
             wb_attack_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False)
 
-        # TODO: Pick up from here
-
-
         # Generate test set
-        X_te = np.concatenate((pos_w_test, neg_w_test))
-        Y_te = ch.cat((pos_labels_test, neg_labels_test)).cuda()
+        test_data = wrap_into_x_y(
+            [features_vic_1, features_vic_2])
 
-        print("Batching data: hold on")
-        X_te = utils.prepare_batched_data(X_te)
+        for _ in range(attack_config.tries):
+            # Create attacker object
+            attacker_obj = get_attack(wb_attack_config.attack)(dims, wb_attack_config)
 
-        for i in range(args.ntimes):
-            # Random shuffles
-            shuffled_1 = np.random.permutation(len(pos_labels))
-            pp_x = pos_w[shuffled_1[:args.train_sample]]
-            pp_y = pos_labels[shuffled_1[:args.train_sample]]
+            # Prepare train, val data
+            train_data, val_data = get_train_val_from_pool(
+                [features_adv_1, features_adv_2],
+                wb_config=wb_attack_config,
+            )
 
-            shuffled_2 = np.random.permutation(len(neg_labels))
-            np_x = neg_w[shuffled_2[:args.train_sample]]
-            np_y = neg_labels[shuffled_2[:args.train_sample]]
+            # Execute attack
+            chosen_accuracy = attacker_obj.execute_attack(
+                train_data=train_data,
+                test_data=test_data,
+                val_data=val_data)
 
-            # Combine them together
-            X_tr = np.concatenate((pp_x, np_x))
-            Y_tr = ch.cat((pp_y, np_y))
+            print("Test accuracy: %.3f" % chosen_accuracy)
+            accuracies.append(chosen_accuracy)
 
-            val_data = None
-            if args.val_sample > 0:
-                pp_val_x = pos_w[
-                    shuffled_1[
-                        args.train_sample:args.train_sample+args.val_sample]]
-                np_val_x = neg_w[
-                    shuffled_2[
-                        args.train_sample:args.train_sample+args.val_sample]]
+            if attack_config.save:
+                attacker_obj.save_model()
+            #     save_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_model", "-".join(
+            #         [args.d_0, str(args.start_n), str(args.first_n)]), tg)
+            #     if not os.path.isdir(save_path):
+            #         os.makedirs(save_path)
+            #     save_model(clf, os.path.join(save_path, str(i)+
+            # "_%.2f" % tacc))
+    print(accuracies)
 
-                pp_val_y = pos_labels[
-                    shuffled_1[
-                        args.train_sample:args.train_sample+args.val_sample]]
-                np_val_y = neg_labels[
-                    shuffled_2[
-                        args.train_sample:args.train_sample+args.val_sample]]
-
-                # Combine them together
-                X_val = np.concatenate((pp_val_x, np_val_x))
-                Y_val = ch.cat((pp_val_y, np_val_y))
-
-                # Batch layer-wise inputs
-                print("Batching data: hold on")
-                X_val = utils.prepare_batched_data(X_val)
-                Y_val = Y_val.float()
-
-                val_data = (X_val, Y_val)
-
-            metamodel = utils.PermInvModel(dims, dropout=0.5)
-            metamodel = metamodel.cuda()
-            metamodel = ch.nn.DataParallel(metamodel)
-
-            # Float data
-            Y_tr = Y_tr.float()
-            Y_te = Y_te.float()
-
-            # Batch layer-wise inputs
-            print("Batching data: hold on")
-            X_tr = utils.prepare_batched_data(X_tr)
-
-            # Train PIM
-            clf, tacc = utils.train_meta_model(
-                         metamodel,
-                         (X_tr, Y_tr), (X_te, Y_te),
-                         epochs=epoch_strategy(tg, args),
-                         binary=True, lr=1e-3,
-                         regression=False,
-                         batch_size=args.batch_size,
-                         val_data=val_data, combined=True,
-                         eval_every=10, gpu=True)
-            if args.save:
-                save_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_model", "-".join(
-                    [args.d_0, str(args.start_n), str(args.first_n)]), tg)
-                if not os.path.isdir(save_path):
-                    os.makedirs(save_path)
-                save_model(clf, os.path.join(save_path, str(i)+
-            "_%.2f" % tacc))
-            tgt_data.append(tacc)
-            print("Test accuracy: %.3f" % tacc)
-        data.append(tgt_data)
-
+    # TODO: Implement logging
     # Print data
-    log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
+    # log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
 
-    if args.scale != 1.0:
-        log_path = os.path.join(log_path,"sample_size_scale:{}".format(args.scale))
+    # if args.scale != 1.0:
+    #     log_path = os.path.join(log_path,"sample_size_scale:{}".format(args.scale))
 
-    if args.drop:
-        log_path = os.path.join(log_path,'drop')
-    utils.ensure_dir_exists(log_path)
-    with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
-        for i, tup in enumerate(data):
-            print(targets[i], tup)
-            wr.write(targets[i]+': '+",".join([str(x) for x in tup])+"\n")
+    # if args.drop:
+    #     log_path = os.path.join(log_path,'drop')
+    # utils.ensure_dir_exists(log_path)
+    # with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
+    #     for i, tup in enumerate(data):
+    #         print(targets[i], tup)
+    #         wr.write(targets[i]+': '+",".join([str(x) for x in tup])+"\n")
