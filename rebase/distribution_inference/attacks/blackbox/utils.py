@@ -90,6 +90,16 @@ def get_preds(loader, models: List[nn.Module]):
     return predictions.cpu().numpy(), ground_truth
 
 
+def get_preds_for_models(models: List[nn.Module],
+                         ds_obj: CustomDatasetWrapper,
+                         batch_size: int):
+    # Get val data loader
+    _, loader = ds_obj.get_loaders(batch_size=batch_size)
+    # Get predictions for models on data
+    preds, ground_truth = get_preds(loader, models)
+    return preds, ground_truth
+
+
 def get_preds_for_vic_and_adv(models_vic: List[nn.Module],
                               models_adv: List[nn.Module],
                               ds_obj: CustomDatasetWrapper,

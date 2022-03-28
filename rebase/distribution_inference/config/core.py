@@ -139,12 +139,22 @@ class PermutationAttackConfig(Serializable):
 
 
 @dataclass
+class RegressionConfig(Serializable):
+    """
+        Configuration for regression-based attacks
+    """
+    values_to_train: List
+    """Values of property to use while training"""
+
+
+@dataclass
 class WhiteBoxAttackConfig(Serializable):
     """
         Configuration values for white-box attacks.
     """
     attack: str
     """Which attack to use"""
+
     # Valid for training
     epochs: int
     """Number of epochs to train meta-classifiers for"""
@@ -152,14 +162,24 @@ class WhiteBoxAttackConfig(Serializable):
     """Batch size for training meta-classifiers"""
     learning_rate: Optional[float] = 1e-3
     """Learning rate for meta-classifiers"""
+    weight_decay: Optional[float] = 0.01
+    """Weight-decay while training meta-classifiers"""
     train_sample: Optional[int] = 800
     """Number of models to train meta-classifiers on (per run)"""
     val_sample: Optional[int] = 0
     """Number of models to validate meta-classifiers on (per run)"""
     save: Optional[bool] = False
     """Save meta-classifiers?"""
-    regression: Optional[bool] = False
+    regression_config: Optional[RegressionConfig] = None
     """Whether to use regression meta-classifier"""
+    eval_every: Optional[int] = 10
+    """Print evaluation metrics on test data every X epochs"""
+    binary: Optional[bool] = True
+    """Use BCE loss with binary classification"""
+    gpu: Optional[bool] = True
+    """Whether to train on GPU or CPU"""
+    shuffle: Optional[bool] = True
+    """Shuffle train data in each epoch?"""
 
     # Valid for MLPs
     custom_layers_fc: Optional[List[int]] = None
@@ -189,14 +209,14 @@ class AttackConfig(Serializable):
     """
     train_config: TrainConfig
     """Configuration used when training models"""
-    black_box: BlackBoxAttackConfig
-    """Configuration for black-box attacks"""
     values: List
     """List of values (on property specified) to launch attack against"""
-    tries: int = 1
-    """Number of times to try each attack experiment"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
+    black_box: Optional[BlackBoxAttackConfig] = None
+    """Configuration for black-box attacks"""
+    tries: int = 1
+    """Number of times to try each attack experiment"""
     num_victim_models: Optional[int] = 1000
     """Number of victim models (per distribution) to test on"""
     on_cpu: Optional[bool] = False
@@ -205,3 +225,5 @@ class AttackConfig(Serializable):
     """If true, indicates adv models having different mist training config"""
     adv_misc_config: Optional[MiscTrainConfig] = None
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
+    num_total_adv_models: Optional[int] = 1000
+    """Total number of adversarial models to load"""
