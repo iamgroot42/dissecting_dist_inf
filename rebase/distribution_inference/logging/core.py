@@ -41,9 +41,10 @@ class AttackResult(Result):
 
     def add_results(self,attack:str,prop,vacc,advacc):
         def check_rec(dic:dict,keys:List):
-            k = keys.pop(0)
-            self.not_empty_dic(dic,k)
-            check_rec(dic[k],keys)
+            if not keys==[]:
+                k = keys.pop(0)
+                self.not_empty_dic(dic,k)
+                check_rec(dic[k],keys)
         check_rec(self.dic,['result',attack,prop])
         if self.dic['result'][attack][prop].has_key('adv_acc'):
             self.dic['result'][attack][prop]['adv acc'].append(advacc)
