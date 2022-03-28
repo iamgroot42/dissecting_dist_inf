@@ -210,11 +210,12 @@ class AttackConfig(Serializable):
     train_config: TrainConfig
     """Configuration used when training models"""
     values: List
+    black_box: BlackBoxAttackConfig
+    """Configuration for black-box attacks"""
     """List of values (on property specified) to launch attack against"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
-    black_box: Optional[BlackBoxAttackConfig] = None
-    """Configuration for black-box attacks"""
+    
     tries: int = 1
     """Number of times to try each attack experiment"""
     num_victim_models: Optional[int] = 1000

@@ -21,7 +21,7 @@ class Result:
             json.dump(self.dic, f)
             
     def not_empty_dic(self,dic:dict,key):
-        if not dic.has_key(key):
+        if key not in dic:
             dic[key]={}
     
     def load(self):

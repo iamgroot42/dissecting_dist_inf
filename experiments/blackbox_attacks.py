@@ -14,7 +14,7 @@ from distribution_inference.logging.core import AttackResult
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument("--load_config", help="Specify config file", type=Path)
-    parser.add_argument("--name", help="experiment name",type=str)
+    parser.add_argument("--en", help="experiment name",type=str)
     args, remaining_argv = parser.parse_known_args()
     # Attempt to extract as much information from config file as you can
     config = None
@@ -30,10 +30,9 @@ if __name__ == "__main__":
     bb_attack_config: BlackBoxAttackConfig = attack_config.black_box
     train_config: TrainConfig = attack_config.train_config
     data_config: DatasetConfig = train_config.data_config
-    logger = AttackResult(Path('./log/new_census'),args.name)
+    logger = AttackResult(Path('./log/new_census'),args.en,attack_config)
     # Print out arguments
     flash_utils(attack_config)
-
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
