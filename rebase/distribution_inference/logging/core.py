@@ -16,7 +16,7 @@ class Result:
         self.save_t = datetime.now()
         self.dic['save time']=str(self.save_t)
         save_p = self.path.joinpath(self.name)
-        Path.mkdir(self.path,exist_ok=True)
+        self.path.mkdir(parents=True,exist_ok=True)
         with save_p.open('w') as f:
             json.dump(self.dic, f)
             
@@ -47,13 +47,13 @@ class AttackResult(Result):
                 check_rec(dic[k],keys)
         check_rec(self.dic,['result',attack,prop])
         if 'adv_acc' in self.dic['result'][attack][prop]:
-            self.dic['result'][attack][prop]['adv acc'].append(advacc)
+            self.dic['result'][attack][prop]['adv_acc'].append(advacc)
         else:
-            self.dic['result'][attack][prop]['adv acc'] = [advacc]
+            self.dic['result'][attack][prop]['adv_acc'] = [advacc]
         if 'victim_acc' in self.dic['result'][attack][prop]:
-            self.dic['result'][attack][prop]['victim acc'].append(vacc)
+            self.dic['result'][attack][prop]['victim_acc'].append(vacc)
         else:
-            self.dic['result'][attack][prop]['victim acc'] = [vacc]
+            self.dic['result'][attack][prop]['victim_acc'] = [vacc]
 
 
 

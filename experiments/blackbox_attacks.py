@@ -2,7 +2,7 @@ from distribution_inference.attacks import blackbox
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from dataclasses import replace
-
+from copy import deepcopy
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_preds_for_vic_and_adv
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution, PredictionsOnDistributions
@@ -13,25 +13,22 @@ from distribution_inference.logging.core import AttackResult
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--load_config", help="Specify config file", type=Path)
-    parser.add_argument("--en", help="experiment name",type=str)
-    args, remaining_argv = parser.parse_known_args()
-    # Attempt to extract as much information from config file as you can
-    config = None
-    if args.load_config is not None:
-        config = AttackConfig.load(args.load_config, drop_extra_fields=False)
-    # Also give user the option to provide config values over CLI
-    parser = ArgumentParser(parents=[parser])
-    parser.add_arguments(AttackConfig, dest="attack_config", default=config)
-    args = parser.parse_args(remaining_argv)
-
+    parser.add_argument("--en", help="experiment name",type=str,required=True)
+    parser.add_argument(
+        "--load_config", help="Specify config file",
+        type=Path, required=True)
+    args = parser.parse_args()
+    print(args.en)
     # Extract configuration information from config file
-    attack_config: AttackConfig = args.attack_config
+    attack_config: AttackConfig = AttackConfig.load(
+        args.load_config, drop_extra_fields=False)
     bb_attack_config: BlackBoxAttackConfig = attack_config.black_box
     train_config: TrainConfig = attack_config.train_config
     data_config: DatasetConfig = train_config.data_config
-    logger = AttackResult(Path('./log/new_census'),args.en,attack_config)
+    print(type(train_config.misc_config.dp_config))
+    logger = AttackResult(Path('./log/new_census'),args.en,deepcopy(attack_config))
     # Print out arguments
+    print(type(train_config.misc_config.dp_config))
     flash_utils(attack_config)
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -122,6 +119,7 @@ if __name__ == "__main__":
         # For each requested attack
             for attack_type in bb_attack_config.attack_type:
             # Create attacker object
+                print(attack_type)
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
 
                 # Launch attack
