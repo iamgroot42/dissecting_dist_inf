@@ -271,7 +271,6 @@ class CensusWrapper(base.CustomDatasetWrapper):
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
-
         dp_config = None
         if train_config.misc_config is not None:
             dp_config = train_config.misc_config.dp_config

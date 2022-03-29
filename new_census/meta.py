@@ -41,7 +41,8 @@ if __name__ == "__main__":
     parser.add_argument('--trg', default=None, help='target ratios')
     parser.add_argument('--save', action="store_false", help='save model or not')
     parser.add_argument('--drop', action="store_true")
-    parser.add_argument('--scale',type=float,default=1.0)
+    parser.add_argument('--scale', type=float, default=1.0)
+    parser.add_argument('--dp', type=float, default=None)
     args = parser.parse_args()
     utils.flash_utils(args)
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     # targets = filter(lambda x: x != d_0 and int(float(x) * 10) ==
     #                 float(x) * 10, os.listdir(get_models_path(args.filter, "adv")))
     if args.trg == None:
-        targets = sorted(['0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1.0'])
+        targets = sorted(['0.0','0.1','0.2','0.3','0.4','0.6','0.7','0.8','0.9','1.0'])
     else:
         lst = eval(args.trg)
         targets = []
@@ -79,13 +80,17 @@ if __name__ == "__main__":
             os.path.join(get_models_path(args.filter, "adv", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
             pos_w_test, pos_labels_test, dims = get_model_representations(
             os.path.join(get_models_path(args.filter, "victim", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
-        
+
         else:
 
             pos_w, pos_labels, _ = get_model_representations(
             get_models_path(args.filter, "adv", d_0), 1, args.first_n)
-            pos_w_test, pos_labels_test, dims = get_model_representations(
-            get_models_path(args.filter, "victim", d_0), 1, args.first_n)
+            if args.dp:
+                pos_w_test, pos_labels_test, dims = get_model_representations(
+                get_models_path(args.filter, "victim", d_0,"DP_%.2f" % args.dp), 1, args.first_n)
+            else:
+                pos_w_test, pos_labels_test, dims = get_model_representations(
+                get_models_path(args.filter, "victim", d_0), 1, args.first_n)
 
     data = []
     for tg in targets:
@@ -108,10 +113,17 @@ if __name__ == "__main__":
 
                 neg_w, neg_labels, _ = get_model_representations(
                 get_models_path(args.filter, "adv", tg), 0, args.first_n)
-                neg_w_test, neg_labels_test, dims = get_model_representations(
-                get_models_path(args.filter, "victim", tg), 0, args.first_n)
+                if args.dp:
+                    neg_w_test, neg_labels_test, dims = get_model_representations(
+                    get_models_path(args.filter, "victim", tg,"DP_%.2f" % args.dp), 0, args.first_n)
+                else:
+                    neg_w_test, neg_labels_test, dims = get_model_representations(
+                    get_models_path(args.filter, "victim", tg), 0, args.first_n)
 
-
+        pos_w = np.array(pos_w,dtype='object')
+        pos_w_test = np.array(pos_w_test,dtype='object')
+        neg_w = np.array(neg_w,dtype='object')
+        neg_w_test = np.array(neg_w_test,dtype='object')
         # Generate test set
         X_te = np.concatenate((pos_w_test, neg_w_test))
         Y_te = ch.cat((pos_labels_test, neg_labels_test)).cuda()
@@ -183,7 +195,11 @@ if __name__ == "__main__":
                          val_data=val_data, combined=True,
                          eval_every=10, gpu=True)
             if args.save:
-                save_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_model", "-".join(
+                if args.dp:
+                    save_path = os.path.join(BASE_MODELS_DIR, args.filter,"DP_%.2f" % args.dp, "meta_model", "-".join(
+                    [args.d_0, str(args.start_n), str(args.first_n)]), tg)
+                else:
+                    save_path = os.path.join(BASE_MODELS_DIR, args.filter,"DP_%.2f" % args.dp, "meta_model", "-".join(
                     [args.d_0, str(args.start_n), str(args.first_n)]), tg)
                 if not os.path.isdir(save_path):
                     os.makedirs(save_path)
@@ -201,6 +217,8 @@ if __name__ == "__main__":
 
     if args.drop:
         log_path = os.path.join(log_path,'drop')
+    if args.dp:
+        log_path = os.path.join(log_path,"DP_%.2f" % args.dp)
     utils.ensure_dir_exists(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
         for i, tup in enumerate(data):
