@@ -36,7 +36,10 @@ class DatasetInformation(base.DatasetInformation):
             model = model.cuda()
         return model
 
-    def generate_victim_adversary_splits(self, adv_ratio=None, test_ratio=0.33, num_tries=None):
+    def generate_victim_adversary_splits(self,
+                                         adv_ratio=None,
+                                         test_ratio: float = 0.33,
+                                         num_tries: int = None):
         """
             Generate and store data offline for victim and adversary
             using the given dataset. Use this method only once for the

@@ -11,18 +11,20 @@ class AdvTrainingConfig(Serializable):
     """
     epsilon: float
     """Bound on total perturbation norm"""
-    epsilon_iter: float
-    """Bound on perturbation per iteration"""
     iters: int
     """Number of iterations to run PGD for"""
+    epsilon_iter: Optional[float] = None
+    """Bound on perturbation per iteration"""
     clip_min: float = None
     """Minimum value to clip to"""
     clip_max: float = None
     """Maximum value to clip to"""
-    random_restarts: int = None
+    random_restarts: int = 1
     """Number of random restarts to run PGD for"""
     norm: float = np.inf
     """Norm for perturbation budget"""
+    scale_by_255: bool = False
+    """Scale given epsilon by 255?"""
 
 
 @dataclass
@@ -143,8 +145,8 @@ class RegressionConfig(Serializable):
     """
         Configuration for regression-based attacks
     """
-    values_to_train: List
-    """Values of property to use while training"""
+    additional_values_to_test: Optional[List] = None
+    """Values of property to use while testing in addition to ratios used to train"""
 
 
 @dataclass
@@ -212,7 +214,7 @@ class AttackConfig(Serializable):
     values: List
     black_box:  Optional[BlackBoxAttackConfig] = None
     """Configuration for black-box attacks"""
-    """List of values (on property specified) to launch attack against"""
+    """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
     

@@ -1,11 +1,6 @@
 """
     Core code for training permutation-invariant meta-classifiers.
 """
-import torch as ch
-import torch.nn as nn
-from typing import List, Tuple
-
-from distribution_inference.config import WhiteboxAttackConfig
 
 
 def coordinate_descent(models_train, models_val,

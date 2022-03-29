@@ -50,7 +50,9 @@ def load_model(model, path):
     return model
 
 
-def generate_adversarial_input(model, data, adv_config: AttackConfig):
+def generate_adversarial_input(model, data,
+                               adv_config: AttackConfig,
+                               sanity_checks: bool = True):
     adv_data = projected_gradient_descent(
                 model, data,
                 eps=adv_config.epsilon,
@@ -60,5 +62,6 @@ def generate_adversarial_input(model, data, adv_config: AttackConfig):
                 clip_min=adv_config.clip_min,
                 clip_max=adv_config.clip_max,
                 random_restarts=adv_config.random_restarts,
+                sanity_checks=sanity_checks,
                 binary_sigmoid=True)
     return adv_data

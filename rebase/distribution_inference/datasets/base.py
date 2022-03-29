@@ -23,9 +23,13 @@ class Constants:
 
 
 class DatasetInformation:
-    def __init__(self, name: str, data_path: str,
-                 models_path: str, properties: list,
-                 values: dict, property_focus: dict):
+    def __init__(self,
+                 name: str,
+                 data_path: str,
+                 models_path: str,
+                 properties: list,
+                 values: dict,
+                 property_focus: dict = None):
         """
             data_path : path to dataset
             models_path: path to models
@@ -55,8 +59,7 @@ class DatasetInformation:
 
 
 class CustomDataset(Dataset):
-    def __init__(self, classify, prop, ratio, cwise_sample,
-                 shuffle: bool = False, transform=None):
+    def __init__(self):
         self.num_samples = None
 
     def __len__(self):

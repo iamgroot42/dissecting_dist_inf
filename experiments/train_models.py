@@ -1,8 +1,6 @@
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from simple_parsing import ArgumentParser
-from tqdm import tqdm
 from pathlib import Path
-import os
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
@@ -26,6 +24,12 @@ if __name__ == "__main__":
     misc_config: MiscTrainConfig = train_config.misc_config
     if misc_config is not None:
         dp_config: DPTrainingConfig = misc_config.dp_config
+
+        # TODO: Figure out best place to have this logic in the module
+        if misc_config.adv_config:
+            # Scale epsilon by 255 if requested
+            if train_config.misc_config.adv_config.scale_by_255:
+                train_config.misc_config.adv_config.epsilon /= 255
 
     # Print out arguments
     flash_utils(train_config)
@@ -57,8 +61,14 @@ if __name__ == "__main__":
         model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                      train_config=train_config)
 
+        # If adv training, suffix is a bit different
+        if misc_config and misc_config.adv_config:
+            suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
+        else:
+            suffix = "_%.2f.ch" % vacc
+
         # Get path to save model
-        file_name = str(i + train_config.offset) + ("_%.2f.ch" % vacc)
+        file_name = str(i + train_config.offset) + suffix
         save_path = ds.get_save_path(train_config, file_name)
 
         # Save model

@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(attack_config)
-    logger = AttackResult("./log/new_census",args.en,deepcopy(attack_config))
+    logger = AttackResult(Path("./log/new_census"),args.en,deepcopy(attack_config))
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
