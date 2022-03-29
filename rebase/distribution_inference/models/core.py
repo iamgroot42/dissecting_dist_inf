@@ -31,7 +31,7 @@ class MyAlexNet(BaseModel):
                  num_classes: int = 1,
                  fake_relu: bool = False,
                  latent_focus: int = None) -> None:
-
+        super().__init__(is_conv=True)
         # expected input shape: 218,178
         if fake_relu:
             act_fn = BasicWrapper
@@ -40,7 +40,6 @@ class MyAlexNet(BaseModel):
 
         self.latent_focus = latent_focus
 
-        super().__init__(is_conv=True)
         layers = [
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
             FakeReluWrapper(inplace=True),

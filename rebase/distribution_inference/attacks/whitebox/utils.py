@@ -105,6 +105,7 @@ def _get_weight_layers(model: BaseModel,
                        custom_layers: List[int] = None,
                        include_all: bool = False,
                        is_conv: bool = False,
+                       transpose_features: bool = True,
                        prune_mask=[]):
     dims, dim_kernels, weights, biases = [], [], [], []
     i, j = 0, 0
@@ -127,7 +128,7 @@ def _get_weight_layers(model: BaseModel,
                 param_data = param_data * prune_mask[track]
                 track += 1
 
-            if model.transpose_features:
+            if transpose_features:
                 param_data = param_data.T
 
             weights.append(param_data)
@@ -210,12 +211,16 @@ def get_weight_layers(model: BaseModel,
             start_n=attack_config.start_n_conv,
             is_conv=True,
             custom_layers=attack_config.custom_layers_conv,
+            transpose_features=model.transpose_features,
+            prune_mask=prune_mask,
             include_all=True)
         dims_fc, fvec_fc = _get_weight_layers(
             model.classifier,
             first_n=attack_config.first_n_fc,
             start_n=attack_config.start_n_fc,
-            custom_layers=attack_config.custom_layers_fc)
+            custom_layers=attack_config.custom_layers_fc,
+            transpose_features=model.transpose_features,
+            prune_mask=prune_mask,)
         feature_vector = fvec_conv + fvec_fc
         dimensions = (dims_conv, dims_fc)
     else:
@@ -223,7 +228,9 @@ def get_weight_layers(model: BaseModel,
             model,
             first_n=attack_config.first_n_fc,
             start_n=attack_config.start_n_fc,
-            custom_layers=attack_config.custom_layers_fc)
+            custom_layers=attack_config.custom_layers_fc,
+            transpose_features=model.transpose_features,
+            prune_mask=prune_mask,)
         feature_vector = fvec_fc
         dimensions = dims_fc
 

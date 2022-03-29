@@ -6,7 +6,7 @@ from tqdm import tqdm
 from copy import deepcopy
 
 from distribution_inference.attacks.whitebox.core import Attack
-from distribution_inference.attacks.whitebox.permutation.models import PermInvModel
+from distribution_inference.attacks.whitebox.permutation.models import PermInvModel, FullPermInvModel
 from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.utils import log
 
@@ -19,8 +19,12 @@ class PINAttack(Attack):
         self.dims = dims
 
     def _prepare_model(self):
-        # Define meta-classifier
-        self.model = PermInvModel(self.dims, dropout=0.5)
+        if isinstance(self.dims, tuple):
+            # If dims is tuple, need joint model
+            self.model = FullPermInvModel(self.dims, dropout=0.5)
+        else:
+            # Define meta-classifier
+            self.model = PermInvModel(self.dims, dropout=0.5)
         if self.config.gpu:
             self.model = self.model.cuda()
 

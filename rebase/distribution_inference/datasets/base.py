@@ -77,7 +77,7 @@ class CustomDataset(Dataset):
 
 
 class CustomDatasetWrapper:
-    def __init__(self, data_config: DatasetConfig):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
         """
             self.ds_train and self.ds_val should be set to
             datasets to be used to train and evaluate.
@@ -95,6 +95,7 @@ class CustomDatasetWrapper:
         # Either set ds_train and ds_val here
         # Or set them inside get_loaders
         self.info_object = None
+        self.skip_data = skip_data
 
     def get_loaders(self, batch_size,
                     shuffle: bool = True,

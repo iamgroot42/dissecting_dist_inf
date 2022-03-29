@@ -11,6 +11,7 @@ import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 import distribution_inference.models.core as models_core
 from distribution_inference.config import TrainConfig, DatasetConfig
+from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
@@ -236,8 +237,8 @@ class CelebACustomBinary(base.CustomDataset):
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig):
-        super().__init__(data_config)
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+        super().__init__(data_config, skip_data)
         self.info_object = DatasetInformation()
 
         # Make sure specified label is valid
@@ -263,56 +264,56 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             train_transforms = augment_transforms + train_transforms
         train_transforms = transforms.Compose(train_transforms)
 
-        # Read attributes file to get attribute names
-        attrs, _ = _get_attributes(self.info_object.base_data_dir)
-        # Create mapping between filename and attributes
-        attr_dict = attrs.to_dict(orient='index')
+        if not self.skip_data:
+            # Read attributes file to get attribute names
+            attrs, _ = _get_attributes(self.info_object.base_data_dir)
+            # Create mapping between filename and attributes
+            attr_dict = attrs.to_dict(orient='index')
 
-        # Use relevant file split information
-        filelist_train = os.path.join(
-            self.info_object.base_data_dir,
-            "splits", "75_25", self.split, "train.txt")
-        filelist_test = os.path.join(
-            self.info_object.base_data_dir,
-            "splits", "75_25", self.split, "test.txt")
+            # Use relevant file split information
+            filelist_train = os.path.join(
+                self.info_object.base_data_dir,
+                "splits", "75_25", self.split, "train.txt")
+            filelist_test = os.path.join(
+                self.info_object.base_data_dir,
+                "splits", "75_25", self.split, "test.txt")
 
-        # Define number of sub-samples
-        prop_wise_subsample_sizes = {
-            "Smiling": {
-                "adv": {
-                    "Male": (10000, 1000),
-                    "Attractive": (10000, 1200),
-                    "Young": (6000, 600)
+            # Define number of sub-samples
+            prop_wise_subsample_sizes = {
+                "Smiling": {
+                    "adv": {
+                        "Male": (10000, 1000),
+                        "Attractive": (10000, 1200),
+                        "Young": (6000, 600)
+                    },
+                    "victim": {
+                        "Male": (15000, 3000),
+                        "Attractive": (30000, 4000),
+                        "Young": (15000, 2000)
+                    }
                 },
-                "victim": {
-                    "Male": (15000, 3000),
-                    "Attractive": (30000, 4000),
-                    "Young": (15000, 2000)
-                }
-            },
-            "Male": {
-                "adv": {
-                    "Young": (3000, 350),
-                },
-                "victim": {
-                    "Young": (8000, 1400),
+                "Male": {
+                    "adv": {
+                        "Young": (3000, 350),
+                    },
+                    "victim": {
+                        "Young": (8000, 1400),
+                    }
                 }
             }
-        }
 
-        cwise_sample = prop_wise_subsample_sizes[self.classify][self.split][self.prop]
-        if self.cwise_samples is not None:
-            self.cwise_sample = self.cwise_samples
+            cwise_sample = prop_wise_subsample_sizes[self.classify][self.split][self.prop]
+            if self.cwise_samples is not None:
+                self.cwise_sample = self.cwise_samples
 
-        self.ds_train = CelebACustomBinary(
-            self.classify, filelist_train, attr_dict,
-            self.prop, self.ratio, cwise_sample[0],
-            transform=train_transforms,
-            )
-        self.ds_val = CelebACustomBinary(
-            self.classify, filelist_test, attr_dict,
-            self.prop, self.ratio, cwise_sample[1],
-            transform=test_transforms)
+            self.ds_train = CelebACustomBinary(
+                self.classify, filelist_train, attr_dict,
+                self.prop, self.ratio, cwise_sample[0],
+                transform=train_transforms,)
+            self.ds_val = CelebACustomBinary(
+                self.classify, filelist_test, attr_dict,
+                self.prop, self.ratio, cwise_sample[1],
+                transform=test_transforms)
 
     def get_loaders(self, batch_size, shuffle=True,
                     eval_shuffle=False, val_factor=2,
@@ -350,6 +351,11 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             os.makedirs(save_path)
 
         return save_path
+
+    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+        info_object = DatasetInformation()
+        model = info_object.get_model(cpu=on_cpu)
+        return load_model(model, path)
 
 
 def _get_attributes(base_data_dir):

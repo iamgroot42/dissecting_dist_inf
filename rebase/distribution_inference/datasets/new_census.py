@@ -242,9 +242,10 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig):
-        super().__init__(data_config)
-        self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+        super().__init__(data_config, skip_data)
+        if not skip_data:
+            self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,

@@ -37,7 +37,10 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(attack_config)
-    logger = AttackResult(Path("./log/new_census"),args.en,deepcopy(attack_config))
+    # TODO: Path below should be inferred from dataset, not fixed here in file
+    # Same for the 'deepcopy' - maybe shift to the constructor itself?
+    logger = AttackResult(Path("./log/new_census"),
+                          args.en, deepcopy(attack_config))
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -47,14 +50,13 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_victim_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_adv_1 = ds_wrapper_class(data_config_adv_1)
-    ds_vic_1 = ds_wrapper_class(data_config_victim_1)
+    ds_adv_1 = ds_wrapper_class(data_config_adv_1, skip_data=True)
+    ds_vic_1 = ds_wrapper_class(data_config_victim_1, skip_data=True)
 
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
     # Load victim and adversary's model features for first value
-    
     _, features_vic_1 = ds_vic_1.get_model_features(
         train_config,
         wb_attack_config,
@@ -72,8 +74,8 @@ if __name__ == "__main__":
             data_config_other)
 
         # Create new DS object for both and victim (for other ratio)
-        ds_adv_2 = ds_wrapper_class(data_config_adv_2)
-        ds_vic_2 = ds_wrapper_class(data_config_vic_2)
+        ds_adv_2 = ds_wrapper_class(data_config_adv_2, skip_data=True)
+        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
 
         # Load victim and adversary's model features for other value
         _, features_vic_2 = ds_vic_2.get_model_features(
@@ -90,9 +92,9 @@ if __name__ == "__main__":
         for _ in range(attack_config.tries):
             # Create attacker object
             dims, features_adv_1 = ds_adv_1.get_model_features(
-            train_config_adv,
-            wb_attack_config,
-            n_models=attack_config.num_total_adv_models,
+                train_config_adv,
+                wb_attack_config,
+                n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=True)
             attacker_obj = get_attack(wb_attack_config.attack)(dims, wb_attack_config)
@@ -115,29 +117,6 @@ if __name__ == "__main__":
                 val_data=val_data)
 
             print("Test accuracy: %.3f" % chosen_accuracy)
-            
-
-            #if attack_config.save:
-            #    attacker_obj.save_model()
-            #     save_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_model", "-".join(
-            #         [args.d_0, str(args.start_n), str(args.first_n)]), tg)
-            #     if not os.path.isdir(save_path):
-            #         os.makedirs(save_path)
-            #     save_model(clf, os.path.join(save_path, str(i)+
-            # "_%.2f" % tacc))
-            logger.add_results(wb_attack_config.attack,prop_value,chosen_accuracy,None)
+            logger.add_results(wb_attack_config.attack,
+                               prop_value, chosen_accuracy, None)
     logger.save()
-    # TODO: Implement logging
-    # Print data
-    # log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
-
-    # if args.scale != 1.0:
-    #     log_path = os.path.join(log_path,"sample_size_scale:{}".format(args.scale))
-
-    # if args.drop:
-    #     log_path = os.path.join(log_path,'drop')
-    # utils.ensure_dir_exists(log_path)
-    # with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
-    #     for i, tup in enumerate(data):
-    #         print(targets[i], tup)
-    #         wr.write(targets[i]+': '+",".join([str(x) for x in tup])+"\n")

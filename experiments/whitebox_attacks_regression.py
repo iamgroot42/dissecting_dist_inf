@@ -1,5 +1,3 @@
-# TODO: Test file
-
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from dataclasses import replace
@@ -44,8 +42,8 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv, data_config_victim = get_dfs_for_victim_and_adv(
         data_config)
-    ds_adv = ds_wrapper_class(data_config_adv)
-    ds_vic = ds_wrapper_class(data_config_victim)
+    ds_adv = ds_wrapper_class(data_config_adv, skip_data=True)
+    ds_vic = ds_wrapper_class(data_config_victim, skip_data=True)
 
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
@@ -61,8 +59,9 @@ if __name__ == "__main__":
             data_config_specific)
 
         # Create new DS object for both and victim (for other ratio)
-        ds_adv_specific = ds_wrapper_class(data_config_adv_specific)
-        ds_vic_specific = ds_wrapper_class(data_config_vic_specific)
+        ds_adv_specific = ds_wrapper_class(data_config_adv_specific, skip_data=True)
+        ds_vic_specific = ds_wrapper_class(
+            data_config_vic_specific, skip_data=True)
 
         # Load victim and adversary's model features for other value
         dims, features_adv_specific = ds_adv_specific.get_model_features(
@@ -81,9 +80,13 @@ if __name__ == "__main__":
         collected_features_train.append(features_adv_specific)
         collected_features_test.append(features_vic_specific)
 
+    additional_values = None
+    if wb_attack_config.regression_config.additional_values_to_test:
+        additional_values = wb_attack_config.regression_config.additional_values_to_test
+
     # Look at any additional requested ratios
-    if wb_attack_config.regression_config.additional_values_to_test is not None:
-        for prop_value in wb_attack_config.regression_config.additional_values_to_test:
+    if additional_values:
+        for prop_value in additional_values:
             # Creata a copy of the data config, with the property value
             # changed to the current value
             data_config_specific = replace(data_config)
@@ -107,9 +110,9 @@ if __name__ == "__main__":
     base_labels = [float(x) for x in attack_config.values]
 
     # Wrap into test data
-    test_labels = base_labels + \
-        [float(x)
-         for x in wb_attack_config.regression_config.additional_values_to_test]
+    test_labels = base_labels
+    if additional_values:
+        test_labels += [float(x) for x in additional_values]
     test_data = wrap_into_x_y(collected_features_test,
                               labels_list=test_labels)
 
@@ -139,5 +142,4 @@ if __name__ == "__main__":
             attacker_obj.save_model()
 
     print(mse_vals)
-
     # TODO: Implement logging

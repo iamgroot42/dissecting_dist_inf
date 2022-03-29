@@ -1,4 +1,3 @@
-from distribution_inference.attacks import blackbox
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from dataclasses import replace
@@ -11,6 +10,7 @@ from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxA
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
 
+
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument("--en", help="experiment name",type=str,required=True)
@@ -19,6 +19,7 @@ if __name__ == "__main__":
         type=Path, required=True)
     args = parser.parse_args()
     print(args.en)
+
     # Extract configuration information from config file
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
@@ -26,9 +27,11 @@ if __name__ == "__main__":
     train_config: TrainConfig = attack_config.train_config
     data_config: DatasetConfig = train_config.data_config
     print(type(train_config.misc_config.dp_config))
+
     logger = AttackResult(Path('./log/new_census'),args.en,deepcopy(attack_config))
     # Print out arguments
     print(type(train_config.misc_config.dp_config))
+
     flash_utils(attack_config)
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -48,7 +51,6 @@ if __name__ == "__main__":
                                        n_models=attack_config.num_victim_models,
                                        on_cpu=attack_config.on_cpu)
     
-
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -130,7 +132,6 @@ if __name__ == "__main__":
                     calc_acc=calculate_accuracies)
 
                 logger.add_results(attack_type,prop_value,result[0][0],result[1][0])
-
 
      # Summarize results over runs, for each ratio and attack
     logger.save()

@@ -2,7 +2,10 @@
     "white_box": {
         "attack": "permutation_invariant",
         "epochs": 200,
-        "batch_size": 1000
+        "batch_size": 1000,
+        "regression_config": {
+            "additional_values_to_test": [0.2]
+        }
     },
     "train_config": {
         "data_config": {
@@ -18,7 +21,7 @@
     },
     "tries": 5,
     "values": [
-        0.2
+        0.0, 0.1, 0.3
     ],
     "on_cpu": true
 }
