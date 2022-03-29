@@ -42,7 +42,7 @@ class PerPointThresholdAttack(Attack):
         adv_pred_use = adv_preds_use[chosen_ratio_index]
 
         choice_information = (chosen_distribution, chosen_ratio_index)
-        return (victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information
+        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information]
 
 
 def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):

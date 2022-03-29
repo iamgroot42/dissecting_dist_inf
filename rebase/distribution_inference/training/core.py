@@ -8,14 +8,16 @@ from copy import deepcopy
 from distribution_inference.training.utils import AverageMeter, generate_adversarial_input
 from distribution_inference.config import TrainConfig, AdvTrainingConfig
 from distribution_inference.training.dp import train as train_with_dp
+from distribution_inference.utils import warning_string
 
 
 def train(model, loaders, train_config: TrainConfig):
-    if train_config.dp_config is None:
-        return train_without_dp(model, loaders, train_config)
-    else:
+    if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config)
+    else:
+        # If DP training, call appropriate function
+        return train_without_dp(model, loaders, train_config)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
@@ -42,7 +44,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             outputs = model(data)[:, 0]
         else:
             # Adversarial inputs
-            adv_x = generate_adversarial_input(model, data)
+            adv_x = generate_adversarial_input(model, data, adv_config)
             # Important to zero grad after above call, else model gradients
             # get accumulated over attack too
             optimizer.zero_grad()
@@ -85,7 +87,7 @@ def validate_epoch(val_loader, model, criterion,
             prediction = (outputs >= 0)
 
             if adv_config is not None:
-                adv_x = generate_adversarial_input(model, data)
+                adv_x = generate_adversarial_input(model, data, adv_config)
                 outputs_adv = model(adv_x)[:, 0]
                 prediction_adv = (outputs_adv >= 0)
 
@@ -130,21 +132,36 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
     if not train_config.verbose:
         iterator = tqdm(iterator)
 
+    adv_config = None
+    if train_config.misc_config is not None:
+        adv_config = train_config.misc_config.adv_config
+
+        # Special case for CelebA
+        # Given the way scaling is done, eps (passed as argument) should be
+        # 2^(1/p) for L_p norm
+        if train_config.data_config.name == "celeba":
+            adv_config.epsilon *= 2
+            print(warning_string("Special Behavior: Doubling epsilon for Celeb-A"))
+
+    # If eps-iter is not set, use default rule
+    if adv_config is not None and adv_config.epsilon_iter is None:
+        adv_config.epsilon_iter = 2.5 * adv_config.epsilon / adv_config.iters
+
     best_model, best_loss = None, np.inf
     for epoch in iterator:
         _, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch,
                               verbose=train_config.verbose,
-                              adv_config=train_config.adv_config,
+                              adv_config=adv_config,
                               expect_extra=train_config.expect_extra)
 
         vloss, vacc = validate_epoch(
             val_loader, model, criterion,
             verbose=train_config.verbose,
-            adv_config=train_config.adv_config,
+            adv_config=adv_config,
             expect_extra=train_config.expect_extra)
         if not train_config.verbose:
-            if train_config.adv_config is None:
+            if adv_config is None:
                 iterator.set_description(
                     "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
             else:
@@ -152,12 +169,17 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
                     "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (100 * tacc, 100 * vacc[0], 100 * vacc[1]))
 
         vloss_compare = vloss
-        if train_config.adv_config is not None:
+        if adv_config is not None:
             vloss_compare = vloss[0]
 
         if train_config.get_best and vloss_compare < best_loss:
             best_loss = vloss_compare
             best_model = deepcopy(model)
+
+    # Special case for CelebA
+    # Return epsilon back to normal
+    if train_config.misc_config is not None and train_config.data_config.name == "celeba":
+        adv_config.epsilon /= 2
 
     if train_config.get_best:
         return best_model, (vloss, vacc)

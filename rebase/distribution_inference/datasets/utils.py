@@ -2,17 +2,17 @@ import numpy as np
 from tqdm import tqdm
 import pandas as pd
 
-from distribution_inference.datasets import new_census
+from distribution_inference.datasets import new_census, celeba
 
 
 DATASET_INFO_MAPPING = {
-    # "celeba": celeba.DatasetInformation,
     "new_census": new_census.DatasetInformation,
+    "celeba": celeba.DatasetInformation
 }
 
 DATASET_WRAPPER_MAPPING = {
-    # "celeba": celeba.CelebaWrapper,
     "new_census": new_census.CensusWrapper,
+    "celeba": celeba.CelebaWrapper,
 }
 
 

@@ -65,7 +65,7 @@ if __name__ == "__main__":
         dims, vecs_test = get_model_features(
             test_dir, max_read=n_models,
             focus=args.focus,
-            shift_to_gpu=False)        
+            shift_to_gpu=False)
         vecs_test = np.array(vecs_test, dtype='object')
         X_test.append(vecs_test)
         Y_test += [float(ratio)] * len(vecs_test)

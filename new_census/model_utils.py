@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch as ch
 import os
 from tqdm import tqdm
-from opacus import PrivacyEngine
+#from opacus import PrivacyEngine
 import numpy as np
 from utils import check_if_inside_cluster,get_weight_layers
-from opacus.utils.batch_memory_manager import BatchMemoryManager
-from opacus.validators import ModuleValidator
+#from opacus.utils.batch_memory_manager import BatchMemoryManager
+#from opacus.validators import ModuleValidator
 
 #  Ignore warnings from Opacus
 import warnings
@@ -46,7 +46,7 @@ def save_model(clf, path):
     ch.save(state_dict, path)
 
 
-def load_model(path,n_inp:int):
+def load_model(path,n_inp:int=105):
     # TODO: Implement
     model = get_model()
     model.load_state_dict(ch.load(path), strict=False) 

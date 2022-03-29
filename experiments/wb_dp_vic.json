@@ -1,5 +1,9 @@
 {
-    
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 200,
+        "batch_size": 1000
+    },
     "train_config": {
         "data_config": {
             "name": "new_census",
@@ -22,22 +26,7 @@
     },
     "adv_diff_misc_config": false,
     "tries": 5,
-    "black_box": {
-        "granularity" : 0.05,
-        "num_adv_models": 50,
-        "attack_type": [
-            "loss_and_threshold",
-            "threshold_perpoint"
-        ],
-        "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
-            1.0
-        ]
-    },
-    "values": [0.2]
+    "values": [
+        0.0,0.1,0.2,0.3,0.4,0.6,0.7,0.8,0.9,1.0
+    ]
 }

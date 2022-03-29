@@ -11,18 +11,20 @@ class AdvTrainingConfig(Serializable):
     """
     epsilon: float
     """Bound on total perturbation norm"""
-    epsilon_iter: float
-    """Bound on perturbation per iteration"""
     iters: int
     """Number of iterations to run PGD for"""
+    epsilon_iter: Optional[float] = None
+    """Bound on perturbation per iteration"""
     clip_min: float = None
     """Minimum value to clip to"""
     clip_max: float = None
     """Maximum value to clip to"""
-    random_restarts: int = None
+    random_restarts: int = 1
     """Number of random restarts to run PGD for"""
     norm: float = np.inf
     """Norm for perturbation budget"""
+    scale_by_255: bool = False
+    """Scale given epsilon by 255?"""
 
 
 @dataclass
@@ -68,6 +70,14 @@ class DatasetConfig(Serializable):
 
 
 @dataclass
+class MiscTrainConfig(Serializable):
+    adv_config: Optional[AdvTrainingConfig] = None
+    """Configuration to be used for adversarial training"""
+    dp_config: Optional[DPTrainingConfig] = None
+    """Configuration to be used for DP training"""
+
+
+@dataclass
 class TrainConfig(Serializable):
     """
         Configuration values for training models.
@@ -81,10 +91,8 @@ class TrainConfig(Serializable):
     batch_size: int
     """Batch size for training"""
 
-    adv_config: Optional[AdvTrainingConfig] = None
-    """Configuration to be used for adversarial training"""
-    dp_config: Optional[DPTrainingConfig] = None
-    """Configuration to be used for DP training"""
+    misc_config: Optional[MiscTrainConfig] = None
+    """Extra configuration for model training env"""
 
     verbose: Optional[bool] = False
     """Whether to print out per-classifier stats"""
@@ -133,12 +141,22 @@ class PermutationAttackConfig(Serializable):
 
 
 @dataclass
+class RegressionConfig(Serializable):
+    """
+        Configuration for regression-based attacks
+    """
+    additional_values_to_test: Optional[List] = None
+    """Values of property to use while testing in addition to ratios used to train"""
+
+
+@dataclass
 class WhiteBoxAttackConfig(Serializable):
     """
         Configuration values for white-box attacks.
     """
     attack: str
     """Which attack to use"""
+
     # Valid for training
     epochs: int
     """Number of epochs to train meta-classifiers for"""
@@ -146,36 +164,40 @@ class WhiteBoxAttackConfig(Serializable):
     """Batch size for training meta-classifiers"""
     learning_rate: Optional[float] = 1e-3
     """Learning rate for meta-classifiers"""
+    weight_decay: Optional[float] = 0.01
+    """Weight-decay while training meta-classifiers"""
     train_sample: Optional[int] = 800
     """Number of models to train meta-classifiers on (per run)"""
     val_sample: Optional[int] = 0
     """Number of models to validate meta-classifiers on (per run)"""
     save: Optional[bool] = False
     """Save meta-classifiers?"""
-    regression: Optional[bool] = False
+    regression_config: Optional[RegressionConfig] = None
     """Whether to use regression meta-classifier"""
+    eval_every: Optional[int] = 10
+    """Print evaluation metrics on test data every X epochs"""
+    binary: Optional[bool] = True
+    """Use BCE loss with binary classification"""
+    gpu: Optional[bool] = True
+    """Whether to train on GPU or CPU"""
+    shuffle: Optional[bool] = True
+    """Shuffle train data in each epoch?"""
 
-    # Valid only for MLPs
-    start_n: Optional[int] = 0
-    """Layer index to start with (while extracting parameters)"""
-    first_n: Optional[int] = None
-    """Layer index (from start) until which to extract parameters"""
+    # Valid for MLPs
+    custom_layers_fc: Optional[List[int]] = None
+    """Indices of layers to extract features from (in specific) for FC"""
+    start_n_fc: Optional[int] = 0
+    """Layer index to start with (while extracting parameters) for FC"""
+    first_n_fc: Optional[int] = None
+    """Layer index (from start) until which to extract parameters for FC"""
 
     # Valid only for CNNs
+    custom_layers_conv: Optional[List[int]] = None
+    """Indices of layers to extract features from (in specific) for FC"""
     start_n_conv: Optional[int] = 0
     """Layer index to start with (while extracting parameters) for conv layers"""
     first_n_conv: Optional[int] = None
     """Layer index (from start) until which to extract parameters for conv layers"""
-    start_n_fc: Optional[int] = 0
-    """Layer index to start with (while extracting parameters) for fc layers"""
-    first_n_fc: Optional[int] = None
-    """Layer index (from start) until which to extract parameters for fc layers"""
-
-    # Loading models other than those trained with standard training
-    use_adv_for_adv: Optional[bool] = False
-    """Whether to use adversarially-trained models for training meta-classifier(s)"""
-    use_adv_for_victim: Optional[bool] = False
-    """Whether to use adversarially-trained models for training victim model(s)"""
 
     # Valid for specific attacks
     permutation_config: Optional[PermutationAttackConfig] = None
@@ -190,14 +212,21 @@ class AttackConfig(Serializable):
     train_config: TrainConfig
     """Configuration used when training models"""
     values: List
-    """List of values (on property specified) to launch attack against"""
-    tries: int = 1
-    """Number of times to try each attack experiment"""
-    black_box: Optional[BlackBoxAttackConfig] = None
+    black_box:  Optional[BlackBoxAttackConfig] = None
     """Configuration for black-box attacks"""
+    """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
+    
+    tries: int = 1
+    """Number of times to try each attack experiment"""
     num_victim_models: Optional[int] = 1000
     """Number of victim models (per distribution) to test on"""
     on_cpu: Optional[bool] = False
     """Keep models read on CPU?"""
+    adv_diff_misc_config: Optional[bool] = False
+    """If true, indicates adv models having different mist training config"""
+    adv_misc_config: Optional[MiscTrainConfig] = None
+    """If given, specifies extra training params (adv, DP, etc) for adv models"""
+    num_total_adv_models: Optional[int] = 1000
+    """Total number of adversarial models to load"""

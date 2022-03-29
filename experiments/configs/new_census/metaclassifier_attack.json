@@ -1,0 +1,23 @@
+{
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "white_box": {
+        "attack": "pin",
+        "epochs": 1000,
+        "batch_size": 1000
+    },
+    "tries": 10,
+    "values": [
+        0.0
+    ]
+}

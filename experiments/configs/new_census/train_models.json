@@ -4,7 +4,7 @@
         "prop": "sex",
         "split": "adv",
         "squeeze": true,
-        "value": 1.0
+        "value": 0.1
     },
     "epochs": 20,
     "learning_rate": 1e-3,
