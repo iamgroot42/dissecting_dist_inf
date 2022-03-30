@@ -59,7 +59,8 @@ if __name__ == "__main__":
             data_config_specific)
 
         # Create new DS object for both and victim (for other ratio)
-        ds_adv_specific = ds_wrapper_class(data_config_adv_specific, skip_data=True)
+        ds_adv_specific = ds_wrapper_class(
+            data_config_adv_specific, skip_data=True)
         ds_vic_specific = ds_wrapper_class(
             data_config_vic_specific, skip_data=True)
 
@@ -138,7 +139,7 @@ if __name__ == "__main__":
         print("Test MSEe: %.3f" % chosen_mse)
         mse_vals.append(chosen_mse)
 
-        if attack_config.save:
+        if wb_attack_config.save:
             attacker_obj.save_model()
 
     print(mse_vals)

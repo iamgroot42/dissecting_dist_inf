@@ -257,7 +257,8 @@ class CelebaWrapper:
             transform=test_transforms)
 
     def get_loaders(self, batch_size, shuffle=True,
-                    eval_shuffle=False, val_factor=2, num_workers=16):
+                    eval_shuffle=False, val_factor=2,
+                    num_workers=16):
         pff = 20
         train_loader = DataLoader(
             self.ds_train, batch_size=batch_size,
