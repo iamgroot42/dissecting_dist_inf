@@ -224,8 +224,6 @@ class AttackConfig(Serializable):
     """Number of victim models (per distribution) to test on"""
     on_cpu: Optional[bool] = False
     """Keep models read on CPU?"""
-    adv_diff_misc_config: Optional[bool] = False
-    """If true, indicates adv models having different mist training config"""
     adv_misc_config: Optional[MiscTrainConfig] = None
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
     num_total_adv_models: Optional[int] = 1000

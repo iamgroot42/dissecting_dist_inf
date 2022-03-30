@@ -20,7 +20,7 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "adv_diff_misc_config": false,
+    "adv_misc_config":null,
     "tries": 5,
     "black_box": {
         "granularity" : 0.05,
