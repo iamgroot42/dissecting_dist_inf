@@ -58,7 +58,6 @@ class PlotHelper():
     
     #Box plot, returns a graph object given a logger object
     def boxplot(self, title = '', darkplot = True, dash = True):
-        print(self.df)
         
         graph = seaborn.boxplot(x = self.columns[0], y = self.columns[1], hue = self.columns[2], data = self.df)
 
