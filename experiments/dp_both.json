@@ -20,7 +20,6 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "adv_diff_misc_config": true,
     "adv_misc_config": {
         "dp_config": {
             "epsilon": 1.0,
