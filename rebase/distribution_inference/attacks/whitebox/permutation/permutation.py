@@ -3,12 +3,14 @@ import torch as ch
 import torch.nn as nn
 import numpy as np
 from tqdm import tqdm
+import os
 from copy import deepcopy
+import warnings
 
 from distribution_inference.attacks.whitebox.core import Attack
 from distribution_inference.attacks.whitebox.permutation.models import PermInvModel, FullPermInvModel
-from distribution_inference.config import WhiteBoxAttackConfig
-from distribution_inference.utils import log
+from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig
+from distribution_inference.utils import log, get_save_path, warning_string, ensure_dir_exists
 
 
 class PINAttack(Attack):
@@ -32,6 +34,31 @@ class PINAttack(Attack):
         if self.config.binary:
             return ch.sum((y == (x >= 0)))
         return ch.sum(y == ch.argmax(x, 1))
+
+    def save_model(self,
+                   data_config: DatasetConfig,
+                   attack_specific_info_string: str):
+        if not self.trained_model:
+            warnings.warn(warning_string(
+                "\nAttack being saved without training."))
+        if self.config.regression_config:
+            model_dir = "pin/regression"
+        else:
+            model_dir = "pin/classification"
+        save_path = os.path.join(
+            get_save_path(),
+            model_dir,
+            data_config.name,
+            data_config.prop)
+        if self.config.regression_config is not None:
+            save_path = os.path.join(save_path, str(data_config.value))
+
+        # Make sure folder exists
+        ensure_dir_exists(save_path)
+
+        model_save_path = os.path.join(
+            save_path, f"{attack_specific_info_string}.ch")
+        ch.save(self.model.state_dict(), model_save_path)
 
     def execute_attack(self,
                        train_data: Tuple[List, List],
@@ -58,6 +85,7 @@ class PINAttack(Attack):
             train_aux=train_aux,
             test_aux=test_aux,
             val_aux=val_aux)
+        self.trained_model = True
 
         return chosen_accuracy
 

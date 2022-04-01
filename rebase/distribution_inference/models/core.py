@@ -129,3 +129,70 @@ class MLPTwoLayer(BaseModel):
     def forward(self, x):
         x = self.layers(x)
         return x
+
+
+class BoneModel(BaseModel):
+    def __init__(self,
+                 n_inp: int = 1024,
+                 fake_relu: bool = False,
+                 latent_focus: int = None):
+        super().__init__(is_conv=False)
+        if latent_focus is not None:
+            if latent_focus not in [0, 1]:
+                raise ValueError("Invalid interal layer requested")
+
+        if fake_relu:
+            act_fn = BasicWrapper
+        else:
+            act_fn = nn.ReLU
+
+        self.latent_focus = latent_focus
+        layers = [
+            nn.Linear(n_inp, 128),
+            FakeReluWrapper(inplace=True),
+            nn.Linear(128, 64),
+            FakeReluWrapper(inplace=True),
+            nn.Linear(64, 1)
+        ]
+
+        mapping = {0: 1, 1: 3}
+        if self.latent_focus is not None:
+            layers[mapping[self.latent_focus]] = act_fn(inplace=True)
+
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
+        if latent is None:
+            return self.layers(x)
+
+        if latent not in [0, 1]:
+            raise ValueError("Invalid interal layer requested")
+
+        # First, second hidden layers correspond to outputs of
+        # Model layers 1, 3
+        latent = (latent * 2) + 1
+
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            if i == latent:
+                return x
+
+
+class DenseNet(BaseModel):
+    def __init__(self,
+                 n_inp: int = 1024,
+                 fake_relu: bool = False,
+                 latent_focus: int = None):
+        # TODO: Implement latent focus
+        # TODO: Implement fake_relu
+        super().__init__(is_conv=True)
+
+        # Densenet
+        self.model = densenet121(pretrained=True)
+        self.model.classifier = nn.Linear(n_inp, 1)
+
+        # TODO: Implement fake_relu
+
+    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
+        # TODO: Implement latent functionality
+        return self.model(x)

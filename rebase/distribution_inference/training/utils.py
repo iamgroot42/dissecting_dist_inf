@@ -4,10 +4,6 @@ from cleverhans.future.torch.attacks.projected_gradient_descent import projected
 
 from distribution_inference.config import AttackConfig
 
-def ensure_dir_exists(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
 
 class AverageMeter(object):
     def __init__(self):

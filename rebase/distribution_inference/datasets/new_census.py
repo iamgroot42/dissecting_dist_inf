@@ -37,7 +37,7 @@ class DatasetInformation(base.DatasetInformation):
         return model
 
     def generate_victim_adversary_splits(self,
-                                         adv_ratio=None,
+                                         adv_ratio = None,
                                          test_ratio: float = 0.33,
                                          num_tries: int = None):
         """

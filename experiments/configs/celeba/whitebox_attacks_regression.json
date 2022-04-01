@@ -5,8 +5,9 @@
         "batch_size": 150,
         "train_sample": 700,
         "val_sample": 50,
+        "save": true,
         "regression_config": {
-            "additional_values_to_test": [0.2]
+            "additional_values_to_test": null
         }
     },
     "train_config": {
@@ -17,13 +18,23 @@
             "split": "adv",
             "value": 0.0
         },
+        "misc_config": {
+            "adv_config": {
+                "epsilon": 4,
+                "iters": 7,
+                "clip_min": -1,
+                "clip_max": 1,
+                "random_restarts": 1,
+                "scale_by_255": true
+            }
+        },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
     "tries": 5,
     "values": [
-        0.0, 0.1, 0.3
+        0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0
     ],
     "on_cpu": true
 }

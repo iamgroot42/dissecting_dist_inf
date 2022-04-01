@@ -1,63 +1,63 @@
+from distribution_inference.config.core import TrainConfig
 import torch as ch
+import warnings
 import torch.nn as nn
+from typing import List
+import numpy as np
 import tqdm as tqdm
 
 from distribution_inference.attacks.whitebox.affinity.affinity import AffinityMetaClassifier
+from distribution_inference.datasets.base import CustomDatasetWrapper
+from distribution_inference.datasets.utils import collect_data
 from distribution_inference.training.core import train
+from distribution_inference.config import TrainConfig
+from distribution_inference.utils import warning_string
 
 
-def make_affinity_feature(model, data, use_logit: bool = False, detach: bool = True, verbose: bool = True):
-    """
-         Construct affinity matrix per layer based on affinity scores
-         for a given model. Model them in a way that does not
-         require graph-based models.
-    """
-    # Build affinity graph for given model and data
-    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+def get_seed_data(ds_list: List[CustomDatasetWrapper],
+                  train_config: TrainConfig,
+                  num_samples_use: int = None):
+    all_data = []
+    # For each given loader
+    for ds in ds_list:
+        # Use val-loader and collect all data
+        _, test_loader = ds.get_loaders(
+            train_config.batch_size,
+            eval_shuffle=False)
+        # Collect this data
+        data, _ = collect_data(test_loader)
+        # Randomly pick num_samples_use samples
+        if num_samples_use is not None:
+            if num_samples_use > len(data):
+                warnings.warn(warning_string(
+                    f"\nRequested using {num_samples_use} samples, but only {len(data)} samples available for {ds}.\n"))
+            data = data[np.random.choice(
+                data.shape[0], num_samples_use, replace=False)]
 
-    # Start with getting layer-wise model features
-    model_features = model(data, get_all=True, detach_before_return=detach)
-    layerwise_features = []
-    for i, feature in enumerate(model_features):
-        scores = []
-        # Pair-wise iteration of all data
-        for i in range(len(data)-1):
-            others = feature[i+1:]
-            scores += cos(ch.unsqueeze(feature[i], 0), others)
-        layerwise_features.append(ch.stack(scores, 0))
-
-    # If asked to use logits, convert them to probability scores
-    # And then consider them as-it-is (instead of pair-wise comparison)
-    if use_logit:
-        logits = model_features[-1]
-        probs = ch.sigmoid(logits)
-        layerwise_features.append(probs)
-
-    concatenated_features = ch.stack(layerwise_features, 0)
-    return concatenated_features
+        all_data.append(data)
+    return all_data
 
 
-def make_affinity_features(models, data, use_logit: bool = False,
-                           detach: bool = True, verbose: bool = True):
-    all_features = []
-    iterator = models
-    if verbose:
-        iterator = tqdm(iterator, desc="Building affinity matrix")
-    for model in iterator:
-        affinity_feature = make_affinity_feature(
-            model, data, use_logit=use_logit,
-            detach=detach, verbose=verbose)
-        all_features.append(affinity_feature)
-    return ch.stack(all_features, 0)
+def wrap_into_x_y(features_list: List,
+                  labels_list: List[float] = [0., 1.]):
+    Y = []
+    for features, label in zip(features_list, labels_list):
+        Y.append([label] * len(features))
+
+    X = ch.cat(features_list, dim=0).float()
+    Y = ch.from_numpy(np.concatenate(Y, axis=0))
+
+    return X, Y
 
 
-def coordinate_descent(models_train, models_val,
-                           num_features, num_layers,
-                           get_features,
-                           meta_train_args,
-                           gen_optimal_fn, seed_data,
-                           n_times: int = 10,
-                           restart_meta: bool = False):
+def coordinate_descent(models_train,
+                       models_val,
+                       num_features, num_layers,
+                       get_features,
+                       meta_train_args,
+                       gen_optimal_fn, seed_data,
+                       n_times: int = 10,
+                       restart_meta: bool = False):
     """
     Coordinate descent- optimize to find good data points, followed by
     training of meta-classifier model.

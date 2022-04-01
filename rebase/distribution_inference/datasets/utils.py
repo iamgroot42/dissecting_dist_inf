@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
+import torch as ch
 
 from distribution_inference.datasets import new_census, celeba
 
@@ -103,3 +104,18 @@ def heuristic(df, condition, ratio,
     # Pick the one closest to desired ratio
     picked_df = pckds[np.argmin(vals)]
     return picked_df.reset_index(drop=True)
+
+
+def collect_data(loader, expect_extra: bool = True):
+    X, Y = [], []
+    for datum in loader:
+        if expect_extra:
+            x, y, _ = datum
+        else:
+            x, y = datum
+        X.append(x)
+        Y.append(y)
+    # Concatenate both torch tensors across batches
+    X = ch.cat(X, dim=0)
+    Y = ch.cat(Y, dim=0)
+    return X, Y

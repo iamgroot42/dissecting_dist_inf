@@ -1,9 +1,6 @@
-
-
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from dataclasses import replace
-from copy import deepcopy
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
@@ -11,6 +8,7 @@ from distribution_inference.attacks.whitebox.utils import wrap_into_x_y, get_att
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -29,6 +27,12 @@ if __name__ == "__main__":
     wb_attack_config: WhiteBoxAttackConfig = attack_config.white_box
     train_config: TrainConfig = attack_config.train_config
     data_config: DatasetConfig = train_config.data_config
+    if train_config.misc_config is not None:
+        # TODO: Figure out best place to have this logic in the module
+        if train_config.misc_config.adv_config:
+            # Scale epsilon by 255 if requested
+            if train_config.misc_config.adv_config.scale_by_255:
+                train_config.misc_config.adv_config.epsilon /= 255
 
     # Make sure regression config is not being used here
     if wb_attack_config.regression_config:
@@ -37,10 +41,10 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(attack_config)
-    # TODO: Path below should be inferred from dataset, not fixed here in file
-    # Same for the 'deepcopy' - maybe shift to the constructor itself?
-    logger = AttackResult(Path("./log/new_census"),
-                          args.en, deepcopy(attack_config))
+
+    # Define logger
+    logger = AttackResult(args.en, attack_config)
+
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -90,20 +94,24 @@ if __name__ == "__main__":
             [features_vic_1, features_vic_2])
 
         for _ in range(attack_config.tries):
-            # Create attacker object
+            # Load adv models for both ratios
             dims, features_adv_1 = ds_adv_1.get_model_features(
                 train_config_adv,
                 wb_attack_config,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=True)
-            attacker_obj = get_attack(wb_attack_config.attack)(dims, wb_attack_config)
             _, features_adv_2 = ds_adv_2.get_model_features(
                 train_config_adv,
                 wb_attack_config,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=True)
+
+            # Create attacker object
+            attacker_obj = get_attack(wb_attack_config.attack)(
+                dims, wb_attack_config)
+
             # Prepare train, val data
             train_data, val_data = get_train_val_from_pool(
                 [features_adv_1, features_adv_2],
@@ -119,4 +127,12 @@ if __name__ == "__main__":
             print("Test accuracy: %.3f" % chosen_accuracy)
             logger.add_results(wb_attack_config.attack,
                                prop_value, chosen_accuracy, None)
+
+            # Save attack parameters if requested
+            if wb_attack_config.save:
+                attacker_obj.save_model(
+                    data_config_other,
+                    attack_specific_info_string=str(chosen_accuracy))
+
+    # Save logger results
     logger.save()

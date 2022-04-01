@@ -21,7 +21,7 @@ class DatasetInformation(base.DatasetInformation):
                          data_path="celeba",
                          models_path="models_celeba/75_25",
                          properties=["Male", "Young"],
-                         values={"Make": ratios, "Young": ratios})
+                         values={"Male": ratios, "Young": ratios})
         self.preserve_properties = ['Smiling', 'Young', 'Male', 'Attractive']
         self.supported_properties = [
             '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
@@ -332,7 +332,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         if train_config.misc_config and train_config.misc_config.adv_config:
             # Extract epsilon to be used
-            adv_folder_prefix = "adv_"
+            adv_folder_prefix = "adv_train_"
             adv_config = train_config.misc_config.adv_config
             if adv_config.scale_by_255:
                 # Use 'int' value

@@ -143,6 +143,9 @@ class CustomDatasetWrapper:
         """Load model from a given path"""
         raise NotImplementedError("Function to load model not implemented")
 
+    def __str__(self):
+        return f"{type(self).__name__}(prop={self.prop}, ratio={self.ratio}, split={self.split}, classify={self.classify})"
+
     def _get_model_paths(self,
                          train_config: TrainConfig,
                          n_models: int = None,
@@ -183,7 +186,7 @@ class CustomDatasetWrapper:
                 i += 1
                 pbar.update()
         if len(models) == 0:
-            raise ValueError("No models found in the given path")
+            raise ValueError(f"No models found in the given path {folder_path}")
         if n_models is not None and len(models) != n_models:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))

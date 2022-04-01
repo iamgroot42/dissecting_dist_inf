@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Union
 import numpy as np
 from simple_parsing.helpers import Serializable, field
 
@@ -141,6 +141,19 @@ class PermutationAttackConfig(Serializable):
 
 
 @dataclass
+class AffinityAttackConfig(Serializable):
+    """
+        Configuration for affinity-based meta-classifier
+    """
+    num_final: int = 16
+    """Number of activations in final mini-model (per layer)"""
+    only_latent: bool = False
+    """Ignore logits (output) layer"""
+    num_retain_pairs: float = 1.0
+    """What fraction of pairs to use when training classifier"""
+
+
+@dataclass
 class RegressionConfig(Serializable):
     """
         Configuration for regression-based attacks
@@ -172,6 +185,8 @@ class WhiteBoxAttackConfig(Serializable):
     """Number of models to validate meta-classifiers on (per run)"""
     save: Optional[bool] = False
     """Save meta-classifiers?"""
+    load: Optional[str] = None
+    """Path to load meta-classifiers from"""
     regression_config: Optional[RegressionConfig] = None
     """Whether to use regression meta-classifier"""
     eval_every: Optional[int] = 10
@@ -202,6 +217,8 @@ class WhiteBoxAttackConfig(Serializable):
     # Valid for specific attacks
     permutation_config: Optional[PermutationAttackConfig] = None
     """Configuration for permutation-invariant attacks"""
+    affinity_config: Optional[AffinityAttackConfig] = None
+    """Configuration for affinity-based attacks"""
 
 
 @dataclass
