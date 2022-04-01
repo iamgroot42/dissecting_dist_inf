@@ -5,30 +5,31 @@ import torch as ch
 import torch.nn as nn
 from tqdm import tqdm
 
+from distribution_inference.attacks.whitebox.core import Attack
 from distribution_inference.attacks.whitebox.affinity.models import AffinityMetaClassifier
 from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig, TrainConfig
 from distribution_inference.utils import warning_string, get_save_path, ensure_dir_exists
 from distribution_inference.models.core import BaseModel
 from distribution_inference.training.core import train
-from distribution_inference.datasets.base import CustomDatasetWrapper
-from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data
 
 
-class AffinityAttack:
+class AffinityAttack(Attack):
     def __init__(self,
                  config: WhiteBoxAttackConfig):
         super().__init__(config)
-        self.num_dim = config.affinity_config.num_dim
+        self.num_dim = None
         self.use_logit = not self.config.affinity_config.only_latent
-        self.num_retain = self.config.affinity_config.num_retain
+        self.frac_retain_pairs = self.config.affinity_config.frac_retain_pairs
         self.num_layers = config.affinity_config.num_layers
         if type(self.num_layers) == int:
             self.num_layers = list(range(self.num_layers))
-        if self.num_retain > 1 or self.num_retain < 0:
+        if self.frac_retain_pairs > 1 or self.frac_retain_pairs < 0:
             raise ValueError(
-                f"num_retain must be in [0, 1] when provided as a float, got {self.num_retain}")
+                f"frac_retain_pairs must be in [0, 1] when provided as a float, got {self.frac_retain_pairs}")
 
     def _prepare_model(self):
+        if self.num_dim is None:
+            raise ValueError("num_dim must be set before calling _prepare_model")
         self.model = AffinityMetaClassifier(
             self.num_dim,
             self.num_layers,
@@ -36,12 +37,28 @@ class AffinityAttack:
         if self.config.gpu:
             self.model = self.model.cuda()
 
+    def _collect_features(self,
+                          model: BaseModel,
+                          loader: ch.utils.data.DataLoader,
+                          detach: bool = True):
+        features = None
+        for data in loader:
+            if self.config.gpu:
+                data = data.cuda()
+            model_features = model(
+                data, get_all=True,
+                detach_before_return=detach)
+            if features is None:
+                features = model_features
+            else:
+                for i, mf in enumerate(model_features):
+                    features[i].append(mf)
+        return features
+
     def make_affinity_features(self,
                                models: List[BaseModel],
-                               ds_objs: List[CustomDatasetWrapper],
-                               train_config: TrainConfig,
-                               detach: bool = True,
-                               num_samples_use: int = None):
+                               loader: ch.utils.data.DataLoader,
+                               detach: bool = True):
         """
             1. Extract model features on give data for all models
             2. Compute pair-wise cosine similarity across all datapoints
@@ -50,14 +67,21 @@ class AffinityAttack:
         for model in tqdm(models, desc="Building affinity matrix"):
             # Steps 2 & 3: get all model features and affinity scores
             affinity_feature = self._make_affinity_feature(
-                model, seed_data,
+                model, loader,
                 detach=detach)
             all_features.append(affinity_feature)
-        return ch.stack(all_features, 0)
+        seed_data = ch.stack(all_features, 0)
+
+        #TODO: Do something with frac_retain_pairs
+
+        # Set num_dim
+        self.num_dim = (len(seed_data) * (len(seed_data) - 1)) // 2
+
+        return seed_data
 
     def _make_affinity_feature(self,
                                model: BaseModel,
-                               data,
+                               loader: ch.utils.data.DataLoader,
                                detach: bool = True):
         """
             Construct affinity matrix per layer based on affinity scores
@@ -68,12 +92,12 @@ class AffinityAttack:
         cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
         # Start with getting layer-wise model features
-        model_features = model(data, get_all=True, detach_before_return=detach)
+        model_features = self._collect_features(model, loader, detach)
         layerwise_features = []
         for i, feature in enumerate(model_features):
             scores = []
             # Pair-wise iteration of all data
-            for i in range(len(data)-1):
+            for i in range(len(feature) - 1):
                 others = feature[i+1:]
                 scores += cos(ch.unsqueeze(feature[i], 0), others)
             layerwise_features.append(ch.stack(scores, 0))
@@ -82,10 +106,10 @@ class AffinityAttack:
         # And then consider them as-it-is (instead of pair-wise comparison)
         if self.use_logit:
             logits = model_features[-1]
-            probs = ch.sigmoid(logits)
+            probs = ch.sigmoid(logits).squeeze_(1)
             layerwise_features.append(probs)
 
-        concatenated_features = ch.stack(layerwise_features, 0)
+        concatenated_features = ch.cat(layerwise_features, 0)
         return concatenated_features
 
     def execute_attack(self, train_data, test_data, train_config: TrainConfig):

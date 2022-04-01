@@ -1,7 +1,6 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from dataclasses import replace
-from copy import deepcopy
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_preds_for_vic_and_adv
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution, PredictionsOnDistributions

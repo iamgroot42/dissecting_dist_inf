@@ -126,8 +126,23 @@ class MLPTwoLayer(BaseModel):
             nn.Linear(16, num_classes),
         )
 
-    def forward(self, x):
-        x = self.layers(x)
+    def forward(self, x,
+                detach_before_return: bool = False,
+                get_all: bool = False):
+        all_latents = []
+        valid_for_all = [1, 3, 4]
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            if get_all and i in valid_for_all:
+                if detach_before_return:
+                    all_latents.append(x.detach())
+                else:
+                    all_latents.append(x)
+
+        if get_all:
+            return all_latents
+        if detach_before_return:
+            return x.detach()
         return x
 
 

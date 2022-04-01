@@ -1,0 +1,46 @@
+{
+    "white_box": {
+        "attack": "affinity",
+        "epochs": 200,
+        "batch_size": 1000,
+        "affinity_config": {
+            "num_layers":4,
+            "num_dim": 16,
+            "frac_retain_pairs": 1.0,
+            "num_samples_use": 50
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "misc_config": {
+            "dp_config": {
+                "epsilon": 0.1,
+                "delta": 0,
+                "max_grad_norm": 0,
+                "physical_batch_size": 0
+            }
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "adv_diff_misc_config": true,
+    "adv_misc_config": {
+        "dp_config": {
+            "epsilon": 0.1,
+            "delta": 0,
+            "max_grad_norm": 0,
+            "physical_batch_size": 0
+        }
+    },
+    "tries": 5,
+    "values": [
+        0.2
+    ]
+}

@@ -147,13 +147,11 @@ class AffinityAttackConfig(Serializable):
     """
     num_layers: Union[List[int], int]
     """Number of layers (or list of layers) to use features from in meta-classifier"""
-    num_dim: int
-    """Latent dimension for per-layer meta-classifier"""
     num_final: int = 16
     """Number of activations in final mini-model (per layer)"""
     only_latent: bool = False
     """Ignore logits (output) layer"""
-    num_retain_pairs: float = 1.0
+    frac_retain_pairs: float = 1.0
     """What fraction of pairs to use when training classifier"""
     num_samples_use: int = None
     """How many examples to compute pair-wise similarities for"""

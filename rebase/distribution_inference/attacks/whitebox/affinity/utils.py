@@ -1,26 +1,27 @@
-from distribution_inference.config.core import TrainConfig
 import torch as ch
 import warnings
 from typing import List
+from torch.utils.data import DataLoader
 import numpy as np
 
 from distribution_inference.attacks.whitebox.affinity.affinity import AffinityMetaClassifier
+from distribution_inference.attacks.whitebox.utils import BasicDataset
 from distribution_inference.datasets.base import CustomDatasetWrapper
-from distribution_inference.datasets.utils import collect_data
+from distribution_inference.datasets.utils import collect_data, worker_init_fn
 from distribution_inference.training.core import train
-from distribution_inference.config import TrainConfig
+from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.utils import warning_string
 
 
-def get_seed_data(ds_list: List[CustomDatasetWrapper],
-                  train_config: TrainConfig,
-                  num_samples_use: int = None):
+def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
+                         attack_config: WhiteBoxAttackConfig,
+                         num_samples_use: int = None):
     all_data = []
     # For each given loader
     for ds in ds_list:
         # Use val-loader and collect all data
         _, test_loader = ds.get_loaders(
-            train_config.batch_size,
+            attack_config.batch_size,
             eval_shuffle=False)
         # Collect this data
         data, _ = collect_data(test_loader)
@@ -33,7 +34,18 @@ def get_seed_data(ds_list: List[CustomDatasetWrapper],
                 data.shape[0], num_samples_use, replace=False)]
 
         all_data.append(data)
-    return all_data
+    all_data = ch.cat(all_data, dim=0)
+    # Create a dataset out of this
+    basic_ds = BasicDataset(all_data)
+    # Get loader using given dataset
+    loader = DataLoader(
+        basic_ds,
+        batch_size=attack_config.batch_size,
+        shuffle=False,
+        num_workers=2,
+        worker_init_fn=worker_init_fn,
+        prefetch_factor=2)
+    return loader
 
 
 def wrap_into_x_y(features_list: List,

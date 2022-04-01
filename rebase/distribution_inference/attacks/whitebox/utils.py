@@ -7,6 +7,7 @@ from tqdm import tqdm
 from typing import List
 
 from distribution_inference.attacks.whitebox.permutation.permutation import PINAttack
+from distribution_inference.attacks.whitebox.affinity.affinity import AffinityAttack
 from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.models.core import BaseModel
 from distribution_inference.utils import warning_string
@@ -15,6 +16,7 @@ import distribution_inference.datasets.utils as utils
 
 ATTACK_MAPPING = {
     "permutation_invariant": PINAttack,
+    "affinity": AffinityAttack
 }
 
 
@@ -43,15 +45,18 @@ def prepare_batched_data(X,
 
 
 class BasicDataset(Dataset):
-    def __init__(self, X, Y):
+    def __init__(self, X, Y=None):
         self.X = X
         self.Y = Y
-        assert len(self.X) == len(self.Y)
-    
+        if self.Y is not None:
+            assert len(self.X) == len(self.Y)
+
     def __len__(self):
-        return len(self.Y)
-        
+        return len(self.X)
+
     def __getitem__(self, idx):
+        if self.Y is None:
+            return self.X[idx]
         return self.X[idx], self.Y[idx]
 
 
@@ -121,7 +126,8 @@ def wrap_into_loader(features_list: List,
                      batch_size: int,
                      labels_list: List[float] = [0., 1.],
                      shuffle: bool = False,
-                     num_workers: int = 2):
+                     num_workers: int = 2,
+                     wrap_with_loader: bool = True):
     """
         Wrap given features of models from N distributions
         into X and Y, to be used for model training. Use given list of
@@ -131,20 +137,26 @@ def wrap_into_loader(features_list: List,
     for features, label in zip(features_list, labels_list):
         X.append(features)
         Y.append([label] * len(features))
-
-    X = np.concatenate(X, axis=0)
     Y = np.concatenate(Y, axis=0)
-    loader = covert_data_to_loaders(
-        X, Y,
-        batch_size=batch_size,
-        shuffle=shuffle,
-        num_workers=num_workers)
+
+    # Return in loader form if requested
+    if wrap_with_loader:
+        X = np.concatenate(X, axis=0)
+        loader = covert_data_to_loaders(
+            X, Y,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers)
+    else:
+        X = np.concatenate(X, axis=0, dtype=object)
+        loader = (X, Y)
     return loader
 
 
 def get_train_val_from_pool(features_list: List,
                             wb_config: WhiteBoxAttackConfig,
-                            labels_list: List[float] = [0., 1.]):
+                            labels_list: List[float] = [0., 1.],
+                            wrap_with_loader: bool = True,):
     """
         Sample train and val data from pool of given data.
     """
@@ -173,12 +185,16 @@ def get_train_val_from_pool(features_list: List,
 
     # Get train data
     train_loader = wrap_into_loader(
-        features_train, batch_size=wb_config.batch_size, shuffle=wb_config.shuffle)
+        features_train, batch_size=wb_config.batch_size,
+        shuffle=wb_config.shuffle,
+        wrap_with_loader=wrap_with_loader)
     # Get val data
     val_loader = None
     if val_sample > 0:
         val_loader = wrap_into_loader(
-            features_val, batch_size=wb_config.batch_size, shuffle=False)
+            features_val, batch_size=wb_config.batch_size,
+            shuffle=False,
+            wrap_with_loader=wrap_with_loader)
 
     return train_loader, val_loader
 
