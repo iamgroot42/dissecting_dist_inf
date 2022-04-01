@@ -1,10 +1,8 @@
 from distribution_inference.config.core import TrainConfig
 import torch as ch
 import warnings
-import torch.nn as nn
 from typing import List
 import numpy as np
-import tqdm as tqdm
 
 from distribution_inference.attacks.whitebox.affinity.affinity import AffinityMetaClassifier
 from distribution_inference.datasets.base import CustomDatasetWrapper

@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
-from distribution_inference.attacks.whitebox.utils import wrap_into_x_y, get_attack, get_train_val_from_pool
+from distribution_inference.attacks.whitebox.utils import get_attack, get_train_val_from_pool, wrap_into_loader
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
@@ -90,8 +90,11 @@ if __name__ == "__main__":
             shuffle=False)
 
         # Generate test set
-        test_data = wrap_into_x_y(
-            [features_vic_1, features_vic_2])
+        test_loader = wrap_into_loader(
+            [features_vic_1, features_vic_2],
+            batch_size=wb_attack_config.batch_size,
+            shuffle=False,
+        )
 
         for _ in range(attack_config.tries):
             # Load adv models for both ratios
@@ -113,16 +116,16 @@ if __name__ == "__main__":
                 dims, wb_attack_config)
 
             # Prepare train, val data
-            train_data, val_data = get_train_val_from_pool(
+            train_loader, val_loader = get_train_val_from_pool(
                 [features_adv_1, features_adv_2],
                 wb_config=wb_attack_config,
             )
 
             # Execute attack
             chosen_accuracy = attacker_obj.execute_attack(
-                train_data=train_data,
-                test_data=test_data,
-                val_data=val_data)
+                train_loader=train_loader,
+                test_loader=test_loader,
+                val_loader=val_loader)
 
             print("Test accuracy: %.3f" % chosen_accuracy)
             logger.add_results(wb_attack_config.attack,

@@ -10,19 +10,20 @@ from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig, T
 from distribution_inference.utils import warning_string, get_save_path, ensure_dir_exists
 from distribution_inference.models.core import BaseModel
 from distribution_inference.training.core import train
+from distribution_inference.datasets.base import CustomDatasetWrapper
 from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data
 
 
 class AffinityAttack:
     def __init__(self,
-                 num_dim: int,
-                 num_layers: int,
                  config: WhiteBoxAttackConfig):
         super().__init__(config)
-        self.num_dim = num_dim
-        self.num_layers = num_layers
+        self.num_dim = config.affinity_config.num_dim
         self.use_logit = not self.config.affinity_config.only_latent
         self.num_retain = self.config.affinity_config.num_retain
+        self.num_layers = config.affinity_config.num_layers
+        if type(self.num_layers) == int:
+            self.num_layers = list(range(self.num_layers))
         if self.num_retain > 1 or self.num_retain < 0:
             raise ValueError(
                 f"num_retain must be in [0, 1] when provided as a float, got {self.num_retain}")
@@ -37,19 +38,14 @@ class AffinityAttack:
 
     def make_affinity_features(self,
                                models: List[BaseModel],
-                               loaders: List,
+                               ds_objs: List[CustomDatasetWrapper],
                                train_config: TrainConfig,
                                detach: bool = True,
                                num_samples_use: int = None):
         """
-            1. Extract data from given dataloders
-            2. Extract model features on give data for all models
-            3. Compute pair-wise cosine similarity across all datapoints
+            1. Extract model features on give data for all models
+            2. Compute pair-wise cosine similarity across all datapoints
         """
-        # Step 1: extract all data
-        seed_data = get_seed_data(
-            loaders, train_config,
-            num_samples_use=num_samples_use)
         all_features = []
         for model in tqdm(models, desc="Building affinity matrix"):
             # Steps 2 & 3: get all model features and affinity scores

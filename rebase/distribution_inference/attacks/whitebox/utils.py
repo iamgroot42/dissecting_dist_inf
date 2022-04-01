@@ -1,5 +1,7 @@
+from pickletools import read_unicodestringnl
 import torch as ch
 import numpy as np
+from torch.utils.data import DataLoader, Dataset
 import warnings
 from tqdm import tqdm
 from typing import List
@@ -8,6 +10,7 @@ from distribution_inference.attacks.whitebox.permutation.permutation import PINA
 from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.models.core import BaseModel
 from distribution_inference.utils import warning_string
+import distribution_inference.datasets.utils as utils
 
 
 ATTACK_MAPPING = {
@@ -39,6 +42,60 @@ def prepare_batched_data(X,
     return inputs
 
 
+class BasicDataset(Dataset):
+    def __init__(self, X, Y):
+        self.X = X
+        self.Y = Y
+        assert len(self.X) == len(self.Y)
+    
+    def __len__(self):
+        return len(self.Y)
+        
+    def __getitem__(self, idx):
+        return self.X[idx], self.Y[idx]
+
+
+def covert_data_to_loaders(X,
+                           Y,
+                           batch_size: int,
+                           shuffle: bool = False,
+                           num_workers: int = 2,
+                           reduce: bool = False,):
+    """
+        Create DataLoaders using given model features and labels.
+        Will delete given X, Y vectors to save memory.
+    """
+    # Define collate_fn
+    def collate_fn(data):
+        features, labels = zip(*data)
+        # Combine them per-layer
+        x = [[] for _ in range(len(features[0]))]
+        for feature in features:
+            for i, layer_feature in enumerate(feature):
+                x[i].append(layer_feature)
+
+        x = [ch.stack(x_, 0) for x_ in x]
+        if reduce:
+            x = [x_.view(-1, x_.shape[-1]) for x_ in x]
+        y = ch.tensor(labels).float()
+
+        return x, y
+
+    # Create your own dataset
+    ds = BasicDataset(X, Y)
+
+    # Get loader using given dataset
+    loader = DataLoader(
+            ds,
+            batch_size=batch_size,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            collate_fn=collate_fn,
+            worker_init_fn=utils.worker_init_fn,
+            prefetch_factor=2)
+    return loader
+
+
 def wrap_into_x_y(features_list: List,
                   labels_list: List[float] = [0., 1.]):
     """
@@ -60,6 +117,31 @@ def wrap_into_x_y(features_list: List,
     return X, Y
 
 
+def wrap_into_loader(features_list: List,
+                     batch_size: int,
+                     labels_list: List[float] = [0., 1.],
+                     shuffle: bool = False,
+                     num_workers: int = 2):
+    """
+        Wrap given features of models from N distributions
+        into X and Y, to be used for model training. Use given list of
+        labels for each distribution.
+    """
+    X, Y = [], []
+    for features, label in zip(features_list, labels_list):
+        X.append(features)
+        Y.append([label] * len(features))
+
+    X = np.concatenate(X, axis=0)
+    Y = np.concatenate(Y, axis=0)
+    loader = covert_data_to_loaders(
+        X, Y,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers)
+    return loader
+
+
 def get_train_val_from_pool(features_list: List,
                             wb_config: WhiteBoxAttackConfig,
                             labels_list: List[float] = [0., 1.]):
@@ -69,7 +151,7 @@ def get_train_val_from_pool(features_list: List,
     train_sample = wb_config.train_sample
     val_sample = wb_config.val_sample
     features_train, features_val = [], []
-    for features, label in zip(features_list, labels_list):
+    for features, _ in zip(features_list, labels_list):
         # Random shuffle
         shuffle_indices = np.random.permutation(len(features))
 
@@ -90,13 +172,15 @@ def get_train_val_from_pool(features_list: List,
                     f"\nNumber of models requested ({len(indices_for_val)}) for val shuffle is less than requested ({val_sample})"))
 
     # Get train data
-    train_data = wrap_into_x_y(features_train, labels_list)
+    train_loader = wrap_into_loader(
+        features_train, batch_size=wb_config.batch_size, shuffle=wb_config.shuffle)
     # Get val data
-    val_data = None
+    val_loader = None
     if val_sample > 0:
-        val_data = wrap_into_x_y(features_val, labels_list)
+        val_loader = wrap_into_loader(
+            features_val, batch_size=wb_config.batch_size, shuffle=False)
 
-    return train_data, val_data
+    return train_loader, val_loader
 
 
 def _get_weight_layers(model: BaseModel,

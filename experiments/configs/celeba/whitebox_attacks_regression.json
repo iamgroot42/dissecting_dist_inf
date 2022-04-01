@@ -8,6 +8,9 @@
         "save": true,
         "regression_config": {
             "additional_values_to_test": null
+        },
+        "permutation_config": {
+            "focus": "conv"
         }
     },
     "train_config": {

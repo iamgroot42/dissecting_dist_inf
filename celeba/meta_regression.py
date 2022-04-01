@@ -22,8 +22,25 @@ if __name__ == "__main__":
     parser.add_argument('--eval_only', action="store_true",
                         help="Only loading up model and evaluating")
     parser.add_argument('--model_path', help="Path to saved model")
+    # Related to using adversarial models
+    parser.add_argument('--adv_adv_prefix', type=str,
+                        default="adv_train_8",
+                        help="Prefix for adversarial models for adv")
+    parser.add_argument('--victim_adv_prefix', type=str,
+                        default="adv_train_8",
+                        help="Prefix for adversarial models for victim")
+    parser.add_argument('--use_adv_for_adv', action="store_true",
+                        help="Use adv-trained models for adv's models")
+    parser.add_argument('--use_adv_for_victim', action="store_true",
+                        help="Use adv-trained models for victim's models")
     args = parser.parse_args()
     utils.flash_utils(args)
+
+    if args.use_adv_for_adv:
+        print("Using adv-trained models for adv's models")
+
+    if args.use_adv_for_victim:
+        print("Using adv-trained models for victim's models")
 
     if args.testing:
         num_train, num_val = 3, 2
@@ -42,6 +59,12 @@ if __name__ == "__main__":
             BASE_MODELS_DIR, "adv/%s/%s/" % (args.filter, ratio))
         test_dir = os.path.join(
             BASE_MODELS_DIR, "victim/%s/%s/" % (args.filter, ratio))
+
+        if args.use_adv_for_adv:
+            train_dir = os.path.join(train_dir, args.adv_adv_prefix)
+
+        if args.use_adv_for_victim:
+            test_dir = os.path.join(test_dir, args.victim_adv_prefix)
 
         # Load models, convert to features
         if not args.eval_only:
@@ -112,11 +135,11 @@ if __name__ == "__main__":
         metamodel = metamodel.cuda()
         loss_fn = ch.nn.MSELoss(reduction='none')
         _, losses, preds = utils.test_meta(
-                        metamodel, loss_fn, X_test, Y_test.cuda(),
-                        args.batch_size, None,
-                        binary=True, regression=True, gpu=True,
-                        combined=True, element_wise=True,
-                        get_preds=True)
+            metamodel, loss_fn, X_test, Y_test.cuda(),
+            args.batch_size, None,
+            binary=True, regression=True, gpu=True,
+            combined=True, element_wise=True,
+            get_preds=True)
         y_np = Y_test.numpy()
         losses = losses.numpy()
         print("Mean loss: %.4f" % np.mean(losses))
@@ -127,7 +150,7 @@ if __name__ == "__main__":
             losses_dict[ratio] = np.mean(losses[y_np == ratio])
         print(losses_dict)
         # Conctruct a matrix where every (i, j) entry is the accuracy
-        # for ratio[i] v/s ratio [j], where whichever ratio is closer to the 
+        # for ratio[i] v/s ratio [j], where whichever ratio is closer to the
         # ratios is considered the "correct" one
         # Assume equal number of models per ratio, stored in order of
         # SUPPORTED_RATIOS
@@ -135,15 +158,20 @@ if __name__ == "__main__":
         for i in range(acc_mat.shape[0]):
             for j in range(i + 1, acc_mat.shape[0]):
                 # Get relevant GT for ratios[i] (0) v/s ratios[j] (1)
-                gt_z = (Y_test[num_per_dist * i:num_per_dist * (i + 1)].numpy() == float(ratios[j]))
-                gt_o = (Y_test[num_per_dist * j:num_per_dist * (j + 1)].numpy() == float(ratios[j]))
+                gt_z = (Y_test[num_per_dist * i:num_per_dist *
+                        (i + 1)].numpy() == float(ratios[j]))
+                gt_o = (Y_test[num_per_dist * j:num_per_dist *
+                        (j + 1)].numpy() == float(ratios[j]))
                 # Get relevant preds
                 pred_z = preds[num_per_dist * i:num_per_dist * (i + 1)]
                 pred_o = preds[num_per_dist * j:num_per_dist * (j + 1)]
-                pred_z = (pred_z >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
-                pred_o = (pred_o >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+                pred_z = (pred_z >= (
+                    0.5 * (float(ratios[i]) + float(ratios[j]))))
+                pred_o = (pred_o >= (
+                    0.5 * (float(ratios[i]) + float(ratios[j]))))
                 # Compute accuracies and store
-                acc = np.concatenate((gt_z, gt_o), 0) == np.concatenate((pred_z, pred_o), 0)
+                acc = np.concatenate((gt_z, gt_o), 0) == np.concatenate(
+                    (pred_z, pred_o), 0)
                 acc_mat[i, j] = np.mean(acc)
         print(acc_mat)
     else:
@@ -169,7 +197,7 @@ if __name__ == "__main__":
     # All
     # Train: 0.00092, 0.00062, 0.00055, 0.00063, 0.00048
     # Test: 0.66619, 0.42054, 0.39416, 0.41067, 0.45654
-    # Conv
+    # Convl
     # Train: 0.00059, 0.00045, 0.00049, 0.00058, 0.00051
     # Test: 0.47972, 0.39712, 0.32094, 0.37900, 0.26586
 
