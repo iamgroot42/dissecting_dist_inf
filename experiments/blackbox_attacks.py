@@ -12,13 +12,13 @@ from distribution_inference.logging.core import AttackResult
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
-    parser.add_argument("--en", help="experiment name",
-                        type=str, required=True)
+    parser.add_argument(
+        "--en", help="experiment name",
+        type=str, required=True)
     parser.add_argument(
         "--load_config", help="Specify config file",
         type=Path, required=True)
     args = parser.parse_args()
-    print(args.en)
 
     # Extract configuration information from config file
     attack_config: AttackConfig = AttackConfig.load(
@@ -59,18 +59,13 @@ if __name__ == "__main__":
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
-        # Creata a copy of the data config, with the property value
-        # changed to the current value
-        data_config_other = replace(data_config)
-        data_config_other.value = prop_value
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
-            data_config_other)
+            data_config, prop_value=prop_value)
 
         # Create new DS object for both and victim (for other ratio)
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2)
         # Load victim models for other value
-
         models_vic_2 = ds_vic_2.get_models(train_config,
                                            n_models=attack_config.num_victim_models,
                                            on_cpu=attack_config.on_cpu,

@@ -1,11 +1,10 @@
 {
     "white_box": {
         "attack": "affinity",
-        "epochs": 200,
+        "epochs": 150,
         "batch_size": 1000,
         "affinity_config": {
-            "num_layers":4,
-            "num_dim": 16,
+            "num_final": 16,
             "frac_retain_pairs": 1.0,
             "num_samples_use": 50
         }
@@ -41,6 +40,6 @@
     },
     "tries": 5,
     "values": [
-        0.2
+        0.0, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9, 1.0
     ]
 }

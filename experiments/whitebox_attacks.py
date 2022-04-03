@@ -72,10 +72,8 @@ if __name__ == "__main__":
     for prop_value in attack_config.values:
         # Creata a copy of the data config, with the property value
         # changed to the current value
-        data_config_other = replace(data_config)
-        data_config_other.value = prop_value
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
-            data_config_other)
+            data_config, prop_value=prop_value)
 
         # Create new DS object for both and victim (for other ratio)
         ds_adv_2 = ds_wrapper_class(data_config_adv_2, skip_data=True)
@@ -134,7 +132,7 @@ if __name__ == "__main__":
             # Save attack parameters if requested
             if wb_attack_config.save:
                 attacker_obj.save_model(
-                    data_config_other,
+                    data_config_vic_2,
                     attack_specific_info_string=str(chosen_accuracy))
 
     # Save logger results

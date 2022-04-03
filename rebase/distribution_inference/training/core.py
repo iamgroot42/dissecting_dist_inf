@@ -11,19 +11,21 @@ from distribution_inference.training.dp import train as train_with_dp
 from distribution_inference.utils import warning_string
 
 
-def train(model, loaders, train_config: TrainConfig):
+def train(model, loaders, train_config: TrainConfig,
+          input_is_list: bool = False):
     if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
-        return train_with_dp(model, loaders, train_config)
+        return train_with_dp(model, loaders, train_config, input_is_list)
     else:
         # If DP training, call appropriate function
-        return train_without_dp(model, loaders, train_config)
+        return train_without_dp(model, loaders, train_config, input_is_list)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
                 verbose: bool = True,
                 adv_config: AdvTrainingConfig = None,
-                expect_extra: bool = True):
+                expect_extra: bool = True,
+                input_is_list: bool = False):
     model.train()
     train_loss = AverageMeter()
     train_acc = AverageMeter()
@@ -35,8 +37,12 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             data, labels, _ = tuple
         else:
             data, labels = tuple
-        data, labels = data.cuda(), labels.cuda()
-        N = data.size(0)
+        if input_is_list:
+            data = [x.cuda() for x in data]
+        else:
+            data = data.cuda()
+        labels = labels.cuda()
+        N = labels.size(0)
 
         if adv_config is None:
             # Clear accumulated gradients
@@ -67,7 +73,8 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
 def validate_epoch(val_loader, model, criterion,
                    verbose: bool = True,
                    adv_config: AdvTrainingConfig = None,
-                   expect_extra: bool = True):
+                   expect_extra: bool = True,
+                   input_is_list: bool = False):
     model.eval()
     val_loss = AverageMeter()
     val_acc = AverageMeter()
@@ -80,8 +87,12 @@ def validate_epoch(val_loader, model, criterion,
                 data, labels, _ = tuple
             else:
                 data, labels = tuple
-            data, labels = data.cuda(), labels.cuda()
-            N = data.size(0)
+            if input_is_list:
+                data = [x.cuda() for x in data]
+            else:
+                data = data.cuda()
+            labels = labels.cuda()
+            N = labels.size(0)
 
             outputs = model(data)[:, 0]
             prediction = (outputs >= 0)
@@ -117,7 +128,7 @@ def validate_epoch(val_loader, model, criterion,
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
-def train_without_dp(model, loaders, train_config: TrainConfig):
+def train_without_dp(model, loaders, train_config: TrainConfig, input_is_list: bool = False):
     # Get data loaders
     train_loader, val_loader = loaders
 
@@ -153,13 +164,15 @@ def train_without_dp(model, loaders, train_config: TrainConfig):
                               criterion, optimizer, epoch,
                               verbose=train_config.verbose,
                               adv_config=adv_config,
-                              expect_extra=train_config.expect_extra)
+                              expect_extra=train_config.expect_extra,
+                              input_is_list=input_is_list)
 
         vloss, vacc = validate_epoch(
             val_loader, model, criterion,
             verbose=train_config.verbose,
             adv_config=adv_config,
-            expect_extra=train_config.expect_extra)
+            expect_extra=train_config.expect_extra,
+            input_is_list=input_is_list)
         if not train_config.verbose:
             if adv_config is None:
                 iterator.set_description(

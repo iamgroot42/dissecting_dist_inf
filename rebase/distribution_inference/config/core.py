@@ -108,8 +108,6 @@ class TrainConfig(Serializable):
     """Whether to train on CPU or GPU"""
     expect_extra: Optional[bool] = True
     """Expect dataloaders to have 3-value tuples instead of two"""
-    use_best: Optional[bool] = True
-    """Use model with best validation loss"""
 
 
 @dataclass
@@ -145,8 +143,6 @@ class AffinityAttackConfig(Serializable):
     """
         Configuration for affinity-based meta-classifier
     """
-    num_layers: Union[List[int], int]
-    """Number of layers (or list of layers) to use features from in meta-classifier"""
     num_final: int = 16
     """Number of activations in final mini-model (per layer)"""
     only_latent: bool = False

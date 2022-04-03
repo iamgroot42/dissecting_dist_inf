@@ -11,37 +11,43 @@ class AffinityMetaClassifier(nn.Module):
     def __init__(self,
                  num_dim: int,
                  num_layers: int,
-                 config: AffinityAttackConfig):
+                 config: AffinityAttackConfig,
+                 num_logit: int = 0,):
         super().__init__()
         self.num_dim = num_dim
         self.num_layers = num_layers
-        self.only_latent = config.only_latent
         self.num_final = config.num_final
         self.final_act_size = self.num_final * self.num_layers
         self.models = []
+        self.num_logit = num_logit
+        self.only_latent = config.only_latent
 
-        def make_small_model():
+        def make_small_model(dims):
             return nn.Sequential(
-                nn.Linear(self.num_dim, 1024),
+                nn.Linear(dims, 1024),
                 nn.ReLU(),
-                nn.Linear(1024, 256),
-                nn.ReLU(),
-                nn.Linear(256, 64),
+                nn.Linear(1024, 64),
                 nn.ReLU(),
                 nn.Linear(64, self.num_final),
             )
+        # Make one model per feature layer
         for _ in range(num_layers):
-            self.models.append(make_small_model())
+            self.models.append(make_small_model(self.num_dim))
+        # If logits are also going to be provided, have a model for them as well
+        if self.num_logit > 0:
+            self.models.append(make_small_model(self.num_logit))
         self.models = nn.ModuleList(self.models)
-        if not self.only_latent:
-            self.final_layer = nn.Linear(self.num_final * self.num_layers, 1)
+
+        num_eff_layers = self.num_layers
+        num_eff_layers += 1 if self.num_logit > 0 else 0
+        self.final_layer = nn.Linear(self.num_final * num_eff_layers, 1)
 
     def forward(self, x) -> ch.Tensor:
         # Get intermediate activations for each layer
         # Aggreage them to get a single feature vector
         all_acts = []
         for i, model in enumerate(self.models):
-            all_acts.append(model(x[:, i]))
+            all_acts.append(model(x[i]))
         all_accs = ch.cat(all_acts, 1)
         # Return pre-logit activations if requested
         if self.only_latent:

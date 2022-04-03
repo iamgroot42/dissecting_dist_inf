@@ -16,13 +16,16 @@ from distribution_inference.utils import warning_string
 def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
                          attack_config: WhiteBoxAttackConfig,
                          num_samples_use: int = None):
+    """
+        Collect data from given datasets and wrap into a dataloader.
+    """
     all_data = []
     # For each given loader
     for ds in ds_list:
         # Use val-loader and collect all data
         _, test_loader = ds.get_loaders(
             attack_config.batch_size,
-            eval_shuffle=False)
+            eval_shuffle=True)
         # Collect this data
         data, _ = collect_data(test_loader)
         # Randomly pick num_samples_use samples
@@ -37,12 +40,14 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
     all_data = ch.cat(all_data, dim=0)
     # Create a dataset out of this
     basic_ds = BasicDataset(all_data)
+    print(warning_string(f"Seed data has {len(basic_ds)} samples."))
     # Get loader using given dataset
     loader = DataLoader(
         basic_ds,
-        batch_size=attack_config.batch_size,
+        # batch_size=attack_config.batch_size,
+        batch_size=32,
         shuffle=False,
-        num_workers=2,
+        num_workers=1,
         worker_init_fn=worker_init_fn,
         prefetch_factor=2)
     return loader
@@ -50,6 +55,9 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
 
 def wrap_into_x_y(features_list: List,
                   labels_list: List[float] = [0., 1.]):
+    """
+        Wrap given data into X & Y
+    """
     Y = []
     for features, label in zip(features_list, labels_list):
         Y.append([label] * len(features))

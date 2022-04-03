@@ -57,7 +57,7 @@ class PINAttack(Attack):
         ensure_dir_exists(save_path)
 
         model_save_path = os.path.join(
-            save_path, f"{attack_specific_info_string}.ch")
+            save_path, f"{self.config.permutation_config.focus}_{attack_specific_info_string}.ch")
         ch.save(self.model.state_dict(), model_save_path)
 
     def execute_attack(self,

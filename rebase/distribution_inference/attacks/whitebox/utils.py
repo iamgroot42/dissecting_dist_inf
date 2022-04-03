@@ -1,4 +1,3 @@
-from pickletools import read_unicodestringnl
 import torch as ch
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
@@ -149,6 +148,7 @@ def wrap_into_loader(features_list: List,
             num_workers=num_workers)
     else:
         X = np.concatenate(X, axis=0, dtype=object)
+        Y = ch.Tensor(Y)
         loader = (X, Y)
     return loader
 

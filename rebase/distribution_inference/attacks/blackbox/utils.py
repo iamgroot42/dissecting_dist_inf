@@ -61,12 +61,10 @@ def get_preds(loader, models: List[nn.Module]):
         Get predictions for given models on given data
     """
     predictions = []
-    inputs = []
     ground_truth = []
     # Accumulate all data for given loader
     for data in loader:
-        data_points, labels, _ = data
-        inputs.append(data_points.cuda())
+        _, labels, _ = data
         ground_truth.append(labels.cpu().numpy())
 
     # Get predictions for each model
@@ -80,21 +78,27 @@ def get_preds(loader, models: List[nn.Module]):
 
         with ch.no_grad():
             predictions_on_model = []
-            for data in inputs:
-                predictions_on_model.append(model(data).detach()[:, 0])
+            # Iterate through data-loader
+            for data in loader:
+                data_points, labels, _ = data
+                data_points = data_points.cuda()
+                # Get prediction
+                prediction = model(data_points).detach()[:, 0]
+                predictions_on_model.append(prediction.cpu())
         predictions_on_model = ch.cat(predictions_on_model)
         predictions.append(predictions_on_model)
 
     predictions = ch.stack(predictions, 0)
     ground_truth = np.concatenate(ground_truth, axis=0)
-    return predictions.cpu().numpy(), ground_truth
+    return predictions.numpy(), ground_truth
 
 
 def get_preds_for_models(models: List[nn.Module],
                          ds_obj: CustomDatasetWrapper,
                          batch_size: int):
     # Get val data loader
-    _, loader = ds_obj.get_loaders(batch_size=batch_size)
+    _, loader = ds_obj.get_loaders(batch_size=batch_size,
+                                   eval_shuffle=False)
     # Get predictions for models on data
     preds, ground_truth = get_preds(loader, models)
     return preds, ground_truth

@@ -20,9 +20,6 @@ class AffinityAttack(Attack):
         self.num_dim = None
         self.use_logit = not self.config.affinity_config.only_latent
         self.frac_retain_pairs = self.config.affinity_config.frac_retain_pairs
-        self.num_layers = config.affinity_config.num_layers
-        if type(self.num_layers) == int:
-            self.num_layers = list(range(self.num_layers))
         if self.frac_retain_pairs > 1 or self.frac_retain_pairs < 0:
             raise ValueError(
                 f"frac_retain_pairs must be in [0, 1] when provided as a float, got {self.frac_retain_pairs}")
@@ -33,7 +30,8 @@ class AffinityAttack(Attack):
         self.model = AffinityMetaClassifier(
             self.num_dim,
             self.num_layers,
-            self.config.affinity_config)
+            self.config.affinity_config,
+            self.num_logit_features,)
         if self.config.gpu:
             self.model = self.model.cuda()
 
@@ -49,10 +47,11 @@ class AffinityAttack(Attack):
                 data, get_all=True,
                 detach_before_return=detach)
             if features is None:
-                features = model_features
+                features = [[x] for x in model_features]
             else:
                 for i, mf in enumerate(model_features):
                     features[i].append(mf)
+        features = [ch.cat(x, 0) for x in features]
         return features
 
     def make_affinity_features(self,
@@ -60,22 +59,26 @@ class AffinityAttack(Attack):
                                loader: ch.utils.data.DataLoader,
                                detach: bool = True):
         """
-            1. Extract model features on give data for all models
-            2. Compute pair-wise cosine similarity across all datapoints
+            Construct affinity matrix per layer based on affinity scores
+            for a given model. Model them in a way that does not
+            require graph-based models.
         """
         all_features = []
         for model in tqdm(models, desc="Building affinity matrix"):
             # Steps 2 & 3: get all model features and affinity scores
-            affinity_feature = self._make_affinity_feature(
+            affinity_feature, num_features, num_logit_features, num_layers = self._make_affinity_feature(
                 model, loader,
                 detach=detach)
             all_features.append(affinity_feature)
-        seed_data = ch.stack(all_features, 0)
+        # seed_data = ch.stack(all_features, 0)
+        seed_data = all_features
 
         #TODO: Do something with frac_retain_pairs
 
         # Set num_dim
-        self.num_dim = (len(seed_data) * (len(seed_data) - 1)) // 2
+        self.num_dim = num_features
+        self.num_logit_features = num_logit_features
+        self.num_layers = num_layers
 
         return seed_data
 
@@ -95,35 +98,79 @@ class AffinityAttack(Attack):
         model_features = self._collect_features(model, loader, detach)
         layerwise_features = []
         for i, feature in enumerate(model_features):
+            # If got to logit, break- will handle outside of loop
+            if self.use_logit and i == len(model_features) - 1:
+                break
             scores = []
             # Pair-wise iteration of all data
-            for i in range(len(feature) - 1):
-                others = feature[i+1:]
-                scores += cos(ch.unsqueeze(feature[i], 0), others)
+            for j in range(feature.shape[0]-1):
+                others = feature[j+1:]
+                scores += cos(ch.unsqueeze(feature[j], 0), others)
             layerwise_features.append(ch.stack(scores, 0))
 
+        num_layers = len(layerwise_features)
         # If asked to use logits, convert them to probability scores
         # And then consider them as-it-is (instead of pair-wise comparison)
+        num_logit_features = 0
         if self.use_logit:
             logits = model_features[-1]
             probs = ch.sigmoid(logits).squeeze_(1)
             layerwise_features.append(probs)
+            num_logit_features = probs.shape[0]
 
-        concatenated_features = ch.cat(layerwise_features, 0)
-        return concatenated_features
+        num_features = layerwise_features[0].shape[0]
+        return layerwise_features, num_features, num_logit_features, num_layers
 
-    def execute_attack(self, train_data, test_data, train_config: TrainConfig):
+    def execute_attack(self, train_data, test_data):
         """
             Define and train meta-classifier
         """
         # Prepare model
         self._prepare_model()
 
+        # Make new train_config to train meta-classifier
+        train_config = TrainConfig(
+            data_config=None,
+            epochs=self.config.epochs,
+            learning_rate=self.config.learning_rate,
+            batch_size=self.config.batch_size,
+            verbose=True,
+            weight_decay=self.config.weight_decay,
+            get_best=True,
+            expect_extra=False,
+        )
+
+        def collate_fn(data):
+            features, labels = zip(*data)
+            # Combine them per-layer
+            x = [[] for _ in range(len(features[0]))]
+            for feature in features:
+                for i, layer_feature in enumerate(feature):
+                    x[i].append(layer_feature)
+
+            x = [ch.stack(x_, 0) for x_ in x]
+            y = ch.tensor(labels).float()
+
+            return x, y
+
+        class BasicDataset(ch.utils.data.Dataset):
+            def __init__(self, X, Y):
+                self.X = X
+                self.Y = Y
+                assert len(self.X) == len(self.Y)
+
+            def __len__(self):
+                return len(self.X)
+
+            def __getitem__(self, idx):
+                return self.X[idx], self.Y[idx]
+
         # Create laoaders out of all the given data
         def get_loader(data, shuffle):
+            ds = BasicDataset(data[0], data[1])
             return ch.utils.data.DataLoader(
-                ch.utils.data.TensorDataset(data[0], data[1]),
-                batch_size=train_config.batch_size,
+                ds, batch_size=self.config.batch_size,
+                collate_fn=collate_fn,
                 shuffle=shuffle)
 
         train_loader = get_loader(train_data, True)
@@ -136,7 +183,8 @@ class AffinityAttack(Attack):
         # normal training functions from training.core
         self.model, (test_loss, test_acc) = train(self.model,
                                                   (train_loader, test_loader),
-                                                  train_config=train_config)
+                                                  train_config=train_config,
+                                                  input_is_list=True)
         self.trained_model = True
         return test_acc
 

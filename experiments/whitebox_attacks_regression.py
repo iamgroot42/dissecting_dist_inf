@@ -69,12 +69,8 @@ if __name__ == "__main__":
         # Load up model features for each of the values
         collected_features_train, collected_features_test = [], []
         for prop_value in attack_config.values:
-            # Creata a copy of the data config, with the property value
-            # changed to the current value
-            data_config_specific = replace(data_config)
-            data_config_specific.value = prop_value
             data_config_adv_specific, data_config_vic_specific = get_dfs_for_victim_and_adv(
-                data_config_specific)
+                data_config, prop_value=prop_value)
 
             # Create new DS object for both and victim (for other ratio)
             ds_adv_specific = ds_wrapper_class(
@@ -99,19 +95,16 @@ if __name__ == "__main__":
             collected_features_train.append(features_adv_specific)
             collected_features_test.append(features_vic_specific)
 
+        # Look at any additional requested ratios
         additional_values = None
         if wb_attack_config.regression_config.additional_values_to_test:
             additional_values = wb_attack_config.regression_config.additional_values_to_test
-
-        # Look at any additional requested ratios
         if additional_values:
             for prop_value in additional_values:
                 # Creata a copy of the data config, with the property value
                 # changed to the current value
-                data_config_specific = replace(data_config)
-                data_config_specific.value = prop_value
                 _, data_config_vic_specific = get_dfs_for_victim_and_adv(
-                    data_config_specific)
+                    data_config, prop_value=prop_value)
 
                 # Create new DS object for victim (for other ratio)
                 ds_vic_specific = ds_wrapper_class(data_config_vic_specific)
@@ -166,6 +159,11 @@ if __name__ == "__main__":
             attacker_obj.save_model(
                 data_config,
                 attack_specific_info_string=str(chosen_mse))
+
+        # Cleanup: delete features, etc before next trial begins
+        del collected_features_train, collected_features_test
+        del train_loader, val_loader
+        del attacker_obj
 
     # Save logger results
     logger.save()
