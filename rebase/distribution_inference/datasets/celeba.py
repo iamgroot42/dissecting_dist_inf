@@ -249,7 +249,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
         ]
-        test_transforms = transforms.Compose([
+        self.test_transforms = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
         ])
@@ -262,62 +262,65 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 transforms.RandomHorizontalFlip()
             ]
             train_transforms = augment_transforms + train_transforms
-        train_transforms = transforms.Compose(train_transforms)
+        self.train_transforms = transforms.Compose(train_transforms)
 
-        if not self.skip_data:
-            # Read attributes file to get attribute names
-            attrs, _ = _get_attributes(self.info_object.base_data_dir)
-            # Create mapping between filename and attributes
-            attr_dict = attrs.to_dict(orient='index')
+    def load_data(self):
+        # Read attributes file to get attribute names
+        attrs, _ = _get_attributes(self.info_object.base_data_dir)
+        # Create mapping between filename and attributes
+        attr_dict = attrs.to_dict(orient='index')
 
-            # Use relevant file split information
-            filelist_train = os.path.join(
-                self.info_object.base_data_dir,
-                "splits", "75_25", self.split, "train.txt")
-            filelist_test = os.path.join(
-                self.info_object.base_data_dir,
-                "splits", "75_25", self.split, "test.txt")
+        # Use relevant file split information
+        filelist_train = os.path.join(
+            self.info_object.base_data_dir,
+            "splits", "75_25", self.split, "train.txt")
+        filelist_test = os.path.join(
+            self.info_object.base_data_dir,
+            "splits", "75_25", self.split, "test.txt")
 
-            # Define number of sub-samples
-            prop_wise_subsample_sizes = {
-                "Smiling": {
-                    "adv": {
-                        "Male": (10000, 1000),
-                        "Attractive": (10000, 1200),
-                        "Young": (6000, 600)
-                    },
-                    "victim": {
-                        "Male": (15000, 3000),
-                        "Attractive": (30000, 4000),
-                        "Young": (15000, 2000)
-                    }
+        # Define number of sub-samples
+        prop_wise_subsample_sizes = {
+            "Smiling": {
+                "adv": {
+                    "Male": (10000, 1000),
+                    "Attractive": (10000, 1200),
+                    "Young": (6000, 600)
                 },
-                "Male": {
-                    "adv": {
-                        "Young": (3000, 350),
-                    },
-                    "victim": {
-                        "Young": (8000, 1400),
-                    }
+                "victim": {
+                    "Male": (15000, 3000),
+                    "Attractive": (30000, 4000),
+                    "Young": (15000, 2000)
+                }
+            },
+            "Male": {
+                "adv": {
+                    "Young": (3000, 350),
+                },
+                "victim": {
+                    "Young": (8000, 1400),
                 }
             }
+        }
 
-            cwise_sample = prop_wise_subsample_sizes[self.classify][self.split][self.prop]
-            if self.cwise_samples is not None:
-                self.cwise_sample = self.cwise_samples
+        cwise_sample = prop_wise_subsample_sizes[self.classify][self.split][self.prop]
+        if self.cwise_samples is not None:
+            self.cwise_sample = self.cwise_samples
 
-            self.ds_train = CelebACustomBinary(
-                self.classify, filelist_train, attr_dict,
-                self.prop, self.ratio, cwise_sample[0],
-                transform=train_transforms,)
-            self.ds_val = CelebACustomBinary(
-                self.classify, filelist_test, attr_dict,
-                self.prop, self.ratio, cwise_sample[1],
-                transform=test_transforms)
+        # Create datasets
+        ds_train = CelebACustomBinary(
+            self.classify, filelist_train, attr_dict,
+            self.prop, self.ratio, cwise_sample[0],
+            transform=self.train_transforms,)
+        ds_val = CelebACustomBinary(
+            self.classify, filelist_test, attr_dict,
+            self.prop, self.ratio, cwise_sample[1],
+            transform=self.test_transforms)
+        return ds_train, ds_val
 
     def get_loaders(self, batch_size, shuffle=True,
                     eval_shuffle=False, val_factor=2,
                     num_workers=16, prefetch_factor=20):
+        self.ds_train, self.ds_val = self.load_data()
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
                                    val_factor=val_factor,
@@ -342,7 +345,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 # If actual epsilon value, use as it is
                 epsilon_val = adv_config.epsilon
                 adv_folder_prefix += ("%.4f" % epsilon_val)
-            subfolder_prefix = os.path.join(subfolder_prefix, adv_folder_prefix)
+            subfolder_prefix = os.path.join(
+                subfolder_prefix, adv_folder_prefix)
 
         save_path = os.path.join(base_models_dir, subfolder_prefix)
 

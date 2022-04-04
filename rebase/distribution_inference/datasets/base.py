@@ -103,7 +103,7 @@ class CustomDatasetWrapper:
                     val_factor: float = 1,
                     num_workers: int = 0,
                     prefetch_factor: int = 2):
-
+        # This function should return new loaders at every call
         train_loader = DataLoader(
             self.ds_train,
             batch_size=batch_size,

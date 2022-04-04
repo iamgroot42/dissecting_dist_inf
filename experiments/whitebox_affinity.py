@@ -121,6 +121,9 @@ if __name__ == "__main__":
                 wb_attack_config,
                 num_samples_use=wb_attack_config.affinity_config.num_samples_use)
 
+            # TODO: Should also find a way to save and store this seed data
+            # Without the seed data, the meta-classifier is useless
+
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
                 wb_attack_config)

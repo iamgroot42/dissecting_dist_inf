@@ -184,7 +184,6 @@ class _CensusIncome:
         self.train_df_victim, self.train_df_adv = s_split(self.train_df)
         self.test_df_victim, self.test_df_adv = s_split(self.test_df)
 
-
     # Fet appropriate filter with sub-sampling according to ratio and property
     def get_filter(self, df, filter_prop, split, ratio, is_test,
                    custom_limit=None, scale: float = 1.0):
@@ -292,7 +291,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         if self.drop_senstive_cols:
             save_path = os.path.join(save_path, "drop")
 
-        # # Make sure this directory exists
+        # Make sure this directory exists
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
 

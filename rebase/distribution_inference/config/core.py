@@ -108,6 +108,8 @@ class TrainConfig(Serializable):
     """Whether to train on CPU or GPU"""
     expect_extra: Optional[bool] = True
     """Expect dataloaders to have 3-value tuples instead of two"""
+    extra_info: Optional[dict] = None
+    """Optional dictionary to store misc information for dataset-specific args"""
 
 
 @dataclass
@@ -169,7 +171,6 @@ class WhiteBoxAttackConfig(Serializable):
     """
     attack: str
     """Which attack to use"""
-
     # Valid for training
     epochs: int
     """Number of epochs to train meta-classifiers for"""
