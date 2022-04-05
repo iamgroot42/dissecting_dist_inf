@@ -6,7 +6,7 @@
         "train_sample": 800,
         "val_sample": 0,
         "permutation_config": {
-            "focus": "all"
+            "focus": "fc"
         }
     },
     "train_config": {
