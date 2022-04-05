@@ -50,7 +50,7 @@ class PINAttack(Attack):
             model_dir,
             data_config.name,
             data_config.prop)
-        if self.config.regression_config is not None:
+        if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
 
         # Make sure folder exists

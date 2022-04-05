@@ -108,6 +108,8 @@ class TrainConfig(Serializable):
     """Whether to train on CPU or GPU"""
     expect_extra: Optional[bool] = True
     """Expect dataloaders to have 3-value tuples instead of two"""
+    save_every_epoch: Optional[bool] = False
+    """Save model after every epoch?"""
     extra_info: Optional[dict] = None
     """Optional dictionary to store misc information for dataset-specific args"""
 

@@ -59,17 +59,22 @@ if __name__ == "__main__":
 
         # Train model
         model, (vloss, vacc) = train(model, (train_loader, val_loader),
-                                     train_config=train_config)
+                                     train_config=train_config,
+                                     extra_options={
+                                        "curren_model_num": i,
+                                        "save_path_fn": ds.get_save_path})
 
-        # If adv training, suffix is a bit different
-        if misc_config and misc_config.adv_config:
-            suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
-        else:
-            suffix = "_%.2f.ch" % vacc
+        # If saving only the final model
+        if not train_config.save_every_epoch:
+            # If adv training, suffix is a bit different
+            if misc_config and misc_config.adv_config:
+                suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
+            else:
+                suffix = "_%.2f.ch" % vacc
 
-        # Get path to save model
-        file_name = str(i + train_config.offset) + suffix
-        save_path = ds.get_save_path(train_config, file_name)
+            # Get path to save model
+            file_name = str(i + train_config.offset) + suffix
+            save_path = ds.get_save_path(train_config, file_name)
 
-        # Save model
-        save_model(model, save_path)
+            # Save model
+            save_model(model, save_path)
