@@ -23,7 +23,7 @@ def validate_model(model):
         raise ValueError("Model is not opacus compatible")
 
 
-def train(model, loaders, train_config: TrainConfig):
+def train(model, loaders, train_config: TrainConfig, input_is_list: bool = False):
     """
         Train model with DP noise
     """
@@ -88,7 +88,10 @@ def train(model, loaders, train_config: TrainConfig):
 
             for (datum, target, _) in memory_safe_data_loader:
                 optimizer.zero_grad()
-                datum = datum.to(device)
+                if input_is_list:
+                    datum = [x.to(device) for x in datum]
+                else:
+                    datum = datum.to(device)
                 target = target.to(device)
 
                 # compute output
@@ -114,7 +117,10 @@ def train(model, loaders, train_config: TrainConfig):
 
         with ch.no_grad():
             for datum, target, _ in val_loader:
-                datum = datum.to(device)
+                if input_is_list:
+                    datum = [x.to(device) for x in datum]
+                else:
+                    datum = datum.to(device)
                 target = target.to(device)
 
                 output = model(datum)

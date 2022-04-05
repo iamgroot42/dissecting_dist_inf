@@ -1,16 +1,12 @@
-
-import torch as ch
-import numpy as np
-
-from distribution_inference.config import WhiteBoxAttackConfig
+from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig
 
 
 class Attack:
-    def __init__(
-        self,
-        config: WhiteBoxAttackConfig):
+    def __init__(self,
+                 config: WhiteBoxAttackConfig):
         self.config = config
-    
+        self.trained_model = False
+
     def _prepare_model(self):
         """
             Define and prepare model for attack.
@@ -25,7 +21,9 @@ class Attack:
         """
         raise NotImplementedError("Must be implemented in subclass")
 
-    def save_model(self):
+    def save_model(self,
+                   data_config: DatasetConfig,
+                   attack_specific_info_string: str):
         """
             Save model to disk.
         """

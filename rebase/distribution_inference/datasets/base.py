@@ -77,7 +77,7 @@ class CustomDataset(Dataset):
 
 
 class CustomDatasetWrapper:
-    def __init__(self, data_config: DatasetConfig):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
         """
             self.ds_train and self.ds_val should be set to
             datasets to be used to train and evaluate.
@@ -95,6 +95,7 @@ class CustomDatasetWrapper:
         # Either set ds_train and ds_val here
         # Or set them inside get_loaders
         self.info_object = None
+        self.skip_data = skip_data
 
     def get_loaders(self, batch_size,
                     shuffle: bool = True,
@@ -102,14 +103,16 @@ class CustomDatasetWrapper:
                     val_factor: float = 1,
                     num_workers: int = 0,
                     prefetch_factor: int = 2):
-
+        # This function should return new loaders at every call
         train_loader = DataLoader(
             self.ds_train,
             batch_size=batch_size,
             shuffle=shuffle,
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
-            prefetch_factor=prefetch_factor)
+  
+            prefetch_factor=prefetch_factor
+            )
 
         test_loader = DataLoader(
             self.ds_val,
@@ -117,7 +120,9 @@ class CustomDatasetWrapper:
             shuffle=eval_shuffle,
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
-            prefetch_factor=prefetch_factor)
+            
+            prefetch_factor=prefetch_factor
+            )
 
         return train_loader, test_loader
 
@@ -141,6 +146,9 @@ class CustomDatasetWrapper:
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         """Load model from a given path"""
         raise NotImplementedError("Function to load model not implemented")
+
+    def __str__(self):
+        return f"{type(self).__name__}(prop={self.prop}, ratio={self.ratio}, split={self.split}, classify={self.classify})"
 
     def _get_model_paths(self,
                          train_config: TrainConfig,
@@ -182,7 +190,7 @@ class CustomDatasetWrapper:
                 i += 1
                 pbar.update()
         if len(models) == 0:
-            raise ValueError("No models found in the given path")
+            raise ValueError(f"No models found in the given path {folder_path}")
         if n_models is not None and len(models) != n_models:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))

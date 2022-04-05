@@ -11,6 +11,7 @@ import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 import distribution_inference.models.core as models_core
 from distribution_inference.config import TrainConfig, DatasetConfig
+from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
@@ -20,7 +21,7 @@ class DatasetInformation(base.DatasetInformation):
                          data_path="celeba",
                          models_path="models_celeba/75_25",
                          properties=["Male", "Young"],
-                         values={"Make": ratios, "Young": ratios})
+                         values={"Male": ratios, "Young": ratios})
         self.preserve_properties = ['Smiling', 'Young', 'Male', 'Attractive']
         self.supported_properties = [
             '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
@@ -236,8 +237,8 @@ class CelebACustomBinary(base.CustomDataset):
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig):
-        super().__init__(data_config)
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+        super().__init__(data_config, skip_data)
         self.info_object = DatasetInformation()
 
         # Make sure specified label is valid
@@ -248,7 +249,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
         ]
-        test_transforms = transforms.Compose([
+        self.test_transforms = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5), (0.5))
         ])
@@ -261,8 +262,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 transforms.RandomHorizontalFlip()
             ]
             train_transforms = augment_transforms + train_transforms
-        train_transforms = transforms.Compose(train_transforms)
+        self.train_transforms = transforms.Compose(train_transforms)
 
+    def load_data(self):
         # Read attributes file to get attribute names
         attrs, _ = _get_attributes(self.info_object.base_data_dir)
         # Create mapping between filename and attributes
@@ -304,19 +306,21 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         if self.cwise_samples is not None:
             self.cwise_sample = self.cwise_samples
 
-        self.ds_train = CelebACustomBinary(
+        # Create datasets
+        ds_train = CelebACustomBinary(
             self.classify, filelist_train, attr_dict,
             self.prop, self.ratio, cwise_sample[0],
-            transform=train_transforms,
-            )
-        self.ds_val = CelebACustomBinary(
+            transform=self.train_transforms,)
+        ds_val = CelebACustomBinary(
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
-            transform=test_transforms)
+            transform=self.test_transforms)
+        return ds_train, ds_val
 
     def get_loaders(self, batch_size, shuffle=True,
                     eval_shuffle=False, val_factor=2,
                     num_workers=16, prefetch_factor=20):
+        self.ds_train, self.ds_val = self.load_data()
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
                                    val_factor=val_factor,
@@ -331,7 +335,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         if train_config.misc_config and train_config.misc_config.adv_config:
             # Extract epsilon to be used
-            adv_folder_prefix = "adv_"
+            adv_folder_prefix = "adv_train_"
             adv_config = train_config.misc_config.adv_config
             if adv_config.scale_by_255:
                 # Use 'int' value
@@ -341,7 +345,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 # If actual epsilon value, use as it is
                 epsilon_val = adv_config.epsilon
                 adv_folder_prefix += ("%.4f" % epsilon_val)
-            subfolder_prefix = os.path.join(subfolder_prefix, adv_folder_prefix)
+            subfolder_prefix = os.path.join(
+                subfolder_prefix, adv_folder_prefix)
 
         save_path = os.path.join(base_models_dir, subfolder_prefix)
 
@@ -350,6 +355,11 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             os.makedirs(save_path)
 
         return save_path
+
+    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+        info_object = DatasetInformation()
+        model = info_object.get_model(cpu=on_cpu)
+        return load_model(model, path)
 
 
 def _get_attributes(base_data_dir):

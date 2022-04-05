@@ -1,63 +1,81 @@
 import torch as ch
-import torch.nn as nn
-import tqdm as tqdm
+import warnings
+from typing import List
+from torch.utils.data import DataLoader
+import numpy as np
 
 from distribution_inference.attacks.whitebox.affinity.affinity import AffinityMetaClassifier
+from distribution_inference.attacks.whitebox.utils import BasicDataset
+from distribution_inference.datasets.base import CustomDatasetWrapper
+from distribution_inference.datasets.utils import collect_data, worker_init_fn
 from distribution_inference.training.core import train
+from distribution_inference.config import WhiteBoxAttackConfig
+from distribution_inference.utils import warning_string
 
 
-def make_affinity_feature(model, data, use_logit: bool = False, detach: bool = True, verbose: bool = True):
+def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
+                         attack_config: WhiteBoxAttackConfig,
+                         num_samples_use: int = None):
     """
-         Construct affinity matrix per layer based on affinity scores
-         for a given model. Model them in a way that does not
-         require graph-based models.
+        Collect data from given datasets and wrap into a dataloader.
     """
-    # Build affinity graph for given model and data
-    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+    all_data = []
+    # For each given loader
+    for ds in ds_list:
+        # Use val-loader and collect all data
+        _, test_loader = ds.get_loaders(
+            attack_config.batch_size,
+            eval_shuffle=True)
+        # Collect this data
+        data, _ = collect_data(test_loader)
+        # Randomly pick num_samples_use samples
+        if num_samples_use is not None:
+            if num_samples_use > len(data):
+                warnings.warn(warning_string(
+                    f"\nRequested using {num_samples_use} samples, but only {len(data)} samples available for {ds}.\n"))
+            data = data[np.random.choice(
+                data.shape[0], num_samples_use, replace=False)]
 
-    # Start with getting layer-wise model features
-    model_features = model(data, get_all=True, detach_before_return=detach)
-    layerwise_features = []
-    for i, feature in enumerate(model_features):
-        scores = []
-        # Pair-wise iteration of all data
-        for i in range(len(data)-1):
-            others = feature[i+1:]
-            scores += cos(ch.unsqueeze(feature[i], 0), others)
-        layerwise_features.append(ch.stack(scores, 0))
-
-    # If asked to use logits, convert them to probability scores
-    # And then consider them as-it-is (instead of pair-wise comparison)
-    if use_logit:
-        logits = model_features[-1]
-        probs = ch.sigmoid(logits)
-        layerwise_features.append(probs)
-
-    concatenated_features = ch.stack(layerwise_features, 0)
-    return concatenated_features
-
-
-def make_affinity_features(models, data, use_logit: bool = False,
-                           detach: bool = True, verbose: bool = True):
-    all_features = []
-    iterator = models
-    if verbose:
-        iterator = tqdm(iterator, desc="Building affinity matrix")
-    for model in iterator:
-        affinity_feature = make_affinity_feature(
-            model, data, use_logit=use_logit,
-            detach=detach, verbose=verbose)
-        all_features.append(affinity_feature)
-    return ch.stack(all_features, 0)
+        all_data.append(data)
+    all_data = ch.cat(all_data, dim=0)
+    # Create a dataset out of this
+    basic_ds = BasicDataset(all_data)
+    print(warning_string(f"Seed data has {len(basic_ds)} samples."))
+    # Get loader using given dataset
+    loader = DataLoader(
+        basic_ds,
+        # batch_size=attack_config.batch_size,
+        batch_size=32,
+        shuffle=False,
+        num_workers=1,
+        worker_init_fn=worker_init_fn,
+        prefetch_factor=2)
+    return loader
 
 
-def coordinate_descent(models_train, models_val,
-                           num_features, num_layers,
-                           get_features,
-                           meta_train_args,
-                           gen_optimal_fn, seed_data,
-                           n_times: int = 10,
-                           restart_meta: bool = False):
+def wrap_into_x_y(features_list: List,
+                  labels_list: List[float] = [0., 1.]):
+    """
+        Wrap given data into X & Y
+    """
+    Y = []
+    for features, label in zip(features_list, labels_list):
+        Y.append([label] * len(features))
+
+    X = ch.cat(features_list, dim=0).float()
+    Y = ch.from_numpy(np.concatenate(Y, axis=0))
+
+    return X, Y
+
+
+def coordinate_descent(models_train,
+                       models_val,
+                       num_features, num_layers,
+                       get_features,
+                       meta_train_args,
+                       gen_optimal_fn, seed_data,
+                       n_times: int = 10,
+                       restart_meta: bool = False):
     """
     Coordinate descent- optimize to find good data points, followed by
     training of meta-classifier model.

@@ -86,7 +86,7 @@ if __name__ == "__main__":
             os.path.join(get_models_path(args.filter, "adv", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
             pos_w_test, pos_labels_test, dims = get_model_representations(
             os.path.join(get_models_path(args.filter, "victim", d_0),'sample_size_scale:{}'.format(args.scale)), 1, args.first_n)
-        
+
         else:
 
             pos_w, pos_labels, _ = get_model_representations(

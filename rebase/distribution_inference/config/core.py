@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Union
 import numpy as np
 from simple_parsing.helpers import Serializable, field
 
@@ -108,8 +108,8 @@ class TrainConfig(Serializable):
     """Whether to train on CPU or GPU"""
     expect_extra: Optional[bool] = True
     """Expect dataloaders to have 3-value tuples instead of two"""
-    use_best: Optional[bool] = True
-    """Use model with best validation loss"""
+    extra_info: Optional[dict] = None
+    """Optional dictionary to store misc information for dataset-specific args"""
 
 
 @dataclass
@@ -127,7 +127,7 @@ class BlackBoxAttackConfig(Serializable):
     """Batch size to use for loaders when generating predictions"""
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
-
+    preload: Optional[bool] = False
 
 @dataclass
 class PermutationAttackConfig(Serializable):
@@ -138,6 +138,21 @@ class PermutationAttackConfig(Serializable):
     """Which kind of meta-classifier to use"""
     scale_invariance: Optional[bool] = False
     """Whether to use scale-invariant meta-classifier"""
+
+
+@dataclass
+class AffinityAttackConfig(Serializable):
+    """
+        Configuration for affinity-based meta-classifier
+    """
+    num_final: int = 16
+    """Number of activations in final mini-model (per layer)"""
+    only_latent: bool = False
+    """Ignore logits (output) layer"""
+    frac_retain_pairs: float = 1.0
+    """What fraction of pairs to use when training classifier"""
+    num_samples_use: int = None
+    """How many examples to compute pair-wise similarities for"""
 
 
 @dataclass
@@ -156,7 +171,6 @@ class WhiteBoxAttackConfig(Serializable):
     """
     attack: str
     """Which attack to use"""
-
     # Valid for training
     epochs: int
     """Number of epochs to train meta-classifiers for"""
@@ -172,6 +186,8 @@ class WhiteBoxAttackConfig(Serializable):
     """Number of models to validate meta-classifiers on (per run)"""
     save: Optional[bool] = False
     """Save meta-classifiers?"""
+    load: Optional[str] = None
+    """Path to load meta-classifiers from"""
     regression_config: Optional[RegressionConfig] = None
     """Whether to use regression meta-classifier"""
     eval_every: Optional[int] = 10
@@ -202,6 +218,8 @@ class WhiteBoxAttackConfig(Serializable):
     # Valid for specific attacks
     permutation_config: Optional[PermutationAttackConfig] = None
     """Configuration for permutation-invariant attacks"""
+    affinity_config: Optional[AffinityAttackConfig] = None
+    """Configuration for affinity-based attacks"""
 
 
 @dataclass
@@ -212,9 +230,9 @@ class AttackConfig(Serializable):
     train_config: TrainConfig
     """Configuration used when training models"""
     values: List
+    """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     black_box:  Optional[BlackBoxAttackConfig] = None
     """Configuration for black-box attacks"""
-    """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
     

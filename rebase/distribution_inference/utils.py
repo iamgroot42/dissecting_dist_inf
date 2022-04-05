@@ -1,7 +1,7 @@
 """
     Generic utility functions useful for writing Python code in general
 """
-from os import environ
+import os
 from colorama import Fore, Style
 import dataclasses
 
@@ -39,7 +39,7 @@ def check_if_inside_cluster():
     """
         Check if current code is being run inside a cluster.
     """
-    if environ.get('ISRIVANNA') == "1":
+    if os.environ.get('ISRIVANNA') == "1":
         return True
     return False
 
@@ -55,3 +55,18 @@ def flash_utils(args, root: bool = True, num_tabs: int = 0):
             flash_utils(arg_val, root=False, num_tabs=num_tabs + 1)
         else:
             print(prefix + arg, " : ", arg_val)
+
+
+def ensure_dir_exists(dir):
+    """
+        Create necessary folders if given path does not exist.
+    """
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+
+
+def get_save_path():
+    """
+        Path where results/trained meta-models are stored
+    """
+    return "./log"

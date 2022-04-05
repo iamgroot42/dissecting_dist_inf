@@ -12,10 +12,10 @@ if __name__ == "__main__":
     parser.add_argument('--n_tries', type=int, default=5)
     # Related to using adversarial models
     parser.add_argument('--adv_adv_prefix', type=str,
-                        default="adv_train",
+                        default="adv_train_16",
                         help="Prefix for adversarial models for adv")
     parser.add_argument('--victim_adv_prefix', type=str,
-                        default="adv_train",
+                        default="adv_train_16",
                         help="Prefix for adversarial models for victim")
     parser.add_argument('--use_adv_for_adv', action="store_true",
                         help="Use adv-trained models for adv's models")

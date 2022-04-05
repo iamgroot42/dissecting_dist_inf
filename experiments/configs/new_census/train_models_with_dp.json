@@ -9,10 +9,10 @@
     },
     "data_config": {
         "name": "new_census",
-        "prop": "race",
-        "split": "adv",
+        "prop": "sex",
+        "split": "victim",
         "squeeze": false,
-        "value": 0.5
+        "value": 0.2
     },
     "epochs": 30,
     "learning_rate": 5e-3,

@@ -49,7 +49,7 @@ class LossAndThresholdAttack(Attack):
         basic = self._loss_test(acc_1, acc_2)
 
         choice_information = (chosen_distribution, chosen_ratio_index)
-        return [[(victim_acc_use, basic[chosen_ratio_index])], [adv_accs_use[chosen_ratio_index]],choice_information]
+        return [[(victim_acc_use, basic[chosen_ratio_index])], [adv_accs_use[chosen_ratio_index]], choice_information]
 
     def _loss_test(self, acc_1, acc_2):
         basic = []

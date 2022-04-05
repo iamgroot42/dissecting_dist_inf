@@ -1,0 +1,260 @@
+{
+    "name": "affinity_dp_0.1",
+    "start time": "2022-04-02 22:41:28.093589",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "new_census",
+                "prop": "sex",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": null,
+                "cwise_samples": null,
+                "squeeze": true
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": {
+                "adv_config": null,
+                "dp_config": {
+                    "epsilon": 0.1,
+                    "delta": 0.0,
+                    "physical_batch_size": 0,
+                    "max_grad_norm": 0.0
+                }
+            },
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true
+        },
+        "values": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+        ],
+        "black_box": null,
+        "white_box": {
+            "attack": "affinity",
+            "epochs": 150,
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 800,
+            "val_sample": 0,
+            "save": false,
+            "load": null,
+            "regression_config": null,
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": null,
+            "affinity_config": {
+                "num_final": 16,
+                "only_latent": false,
+                "frac_retain_pairs": 1.0,
+                "num_samples_use": 50
+            }
+        },
+        "tries": 5,
+        "num_victim_models": 1000,
+        "on_cpu": false,
+        "adv_diff_misc_config": true,
+        "adv_misc_config": {
+            "adv_config": null,
+            "dp_config": {
+                "epsilon": 0.1,
+                "delta": 0.0,
+                "physical_batch_size": 0,
+                "max_grad_norm": 0.0
+            }
+        },
+        "num_total_adv_models": 1000
+    },
+    "result": {
+        "affinity": {
+            "0.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.9875,
+                    0.9775,
+                    0.977,
+                    0.986,
+                    0.9844999999999999
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.9425,
+                    0.9335,
+                    0.9490000000000001,
+                    0.9484999999999999,
+                    0.9245
+                ]
+            },
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.8554999999999999,
+                    0.8855,
+                    0.883,
+                    0.89,
+                    0.8474999999999999
+                ]
+            },
+            "0.3": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.8115,
+                    0.7969999999999999,
+                    0.805,
+                    0.802,
+                    0.7965
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.659,
+                    0.6659999999999999,
+                    0.6605,
+                    0.6605000000000001,
+                    0.671
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.6555,
+                    0.6725000000000001,
+                    0.6715,
+                    0.6779999999999999,
+                    0.666
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.8125,
+                    0.8280000000000001,
+                    0.797,
+                    0.8045,
+                    0.8115
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.9025000000000001,
+                    0.913,
+                    0.9145000000000001,
+                    0.891,
+                    0.9025000000000001
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.951,
+                    0.9484999999999999,
+                    0.9544999999999999,
+                    0.9610000000000001,
+                    0.9615
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    0.9915,
+                    0.9864999999999999,
+                    0.9895,
+                    0.991,
+                    0.991
+                ]
+            }
+        }
+    },
+    "save time": "2022-04-03 11:52:20.317598"
+}

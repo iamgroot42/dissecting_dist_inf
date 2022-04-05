@@ -18,6 +18,8 @@ if __name__ == "__main__":
     parser.add_argument('--split', choices=['victim', 'adv'], required=True)
     parser.add_argument('--bs', type=int, default=128, help='batch size')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
+    parser.add_argument('--num_workers', default=16, type=int,
+                        help="Number of workers for dataloaders")
     parser.add_argument('--eps', type=float, default=0.063,
                         help='epsilon for adversarial training')
     parser.add_argument('--augment', action="store_true",
@@ -59,7 +61,8 @@ if __name__ == "__main__":
                        classify=args.task)
 
     # Get loaders
-    train_loader, test_loader = ds.get_loaders(args.bs)
+    train_loader, test_loader = ds.get_loaders(
+        args.bs, num_workers=args.num_workers)
 
     # Get adv params
     adv_params = False

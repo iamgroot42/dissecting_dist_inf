@@ -37,7 +37,7 @@ class DatasetInformation(base.DatasetInformation):
         return model
 
     def generate_victim_adversary_splits(self,
-                                         adv_ratio=None,
+                                         adv_ratio = None,
                                          test_ratio: float = 0.33,
                                          num_tries: int = None):
         """
@@ -184,7 +184,6 @@ class _CensusIncome:
         self.train_df_victim, self.train_df_adv = s_split(self.train_df)
         self.test_df_victim, self.test_df_adv = s_split(self.test_df)
 
-
     # Fet appropriate filter with sub-sampling according to ratio and property
     def get_filter(self, df, filter_prop, split, ratio, is_test,
                    custom_limit=None, scale: float = 1.0):
@@ -242,9 +241,10 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig):
-        super().__init__(data_config)
-        self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+        super().__init__(data_config, skip_data)
+        if not skip_data:
+            self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
@@ -291,7 +291,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         if self.drop_senstive_cols:
             save_path = os.path.join(save_path, "drop")
 
-        # # Make sure this directory exists
+        # Make sure this directory exists
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
 

@@ -142,8 +142,10 @@ class PermInvConvModel(nn.Module):
 
 
 class PermInvModel(nn.Module):
-    def __init__(self, dims: List[int], inside_dims: List[int] = [64, 8],
-                 n_classes: int = 2, dropout: float = 0.5,
+    def __init__(self, dims: List[int],
+                 inside_dims: List[int] = [64, 8],
+                 n_classes: int = 2,
+                 dropout: float = 0.5,
                  only_latent: bool = False):
         super(PermInvModel, self).__init__()
         self.dims = dims
@@ -236,17 +238,21 @@ class PermInvModel(nn.Module):
 
 
 class FullPermInvModel(nn.Module):
-    def __init__(self, dims, middle_dim, dim_channels, dim_kernels,
-                 inside_dims=[64, 8], n_classes=2, dropout=0.5):
+    def __init__(self,
+                 dims: List[List],
+                 inside_dims: List[int] = [64, 8],
+                 n_classes: int = 2,
+                 dropout: float = 0.5):
         super(FullPermInvModel, self).__init__()
-        self.dim_channels = dim_channels
-        self.dim_kernels = dim_kernels
-        self.middle_dim = middle_dim
-        self.dims = dims
-        self.total_layers = len(dim_channels) + len(dims)
+        # Extract relevant dimensions from given dims
+        dims_conv, dims_fc = dims
+        self.dim_channels, self.dim_kernels, self.middle_dim = dims_conv
+        self.dims_fc = dims_fc
 
-        assert len(dim_channels) == len(
-            dim_kernels), "Kernel size information missing!"
+        self.total_layers = len(self.dim_channels) + len(dims_fc)
+
+        assert len(self.dim_channels) == len(
+            self.dim_kernels), "Kernel size information missing!"
 
         self.dropout = dropout
         self.layers = []
@@ -279,7 +285,7 @@ class FullPermInvModel(nn.Module):
             if is_conv:
                 dim = self.dim_channels[i]
             else:
-                dim = self.dims[i - len(self.dim_channels)]
+                dim = self.dims_fc[i - len(self.dim_channels)]
 
             # +1 for bias
             # prev_layer for previous layer
@@ -289,11 +295,12 @@ class FullPermInvModel(nn.Module):
             if is_conv:
                 # Concatenated along pixels in kernel
                 self.layers.append(
-                    make_mini(prev_layer + (1 + dim) * dim_kernels[i], add_drop=True))
+                    make_mini(prev_layer + (1 + dim) * self.dim_kernels[i],
+                              add_drop=True))
             else:
                 # FC layer
                 if i == len(self.dim_channels):
-                    prev_layer = inside_dims[-1] * middle_dim
+                    prev_layer = inside_dims[-1] * self.middle_dim
                 self.layers.append(make_mini(prev_layer + 1 + dim))
 
         self.layers = nn.ModuleList(self.layers)
