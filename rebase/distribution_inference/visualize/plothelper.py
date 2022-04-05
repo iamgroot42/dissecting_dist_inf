@@ -1,68 +1,105 @@
 import seaborn
 import matplotlib.pyplot as plt
-#Example Setup
-from simple_parsing import ArgumentParser
 import json
+import os
 import pandas as pd
-from distribution_inference.logging.core import AttackResult
+import warnings
+import matplotlib as mpl
+mpl.rcParams['figure.dpi'] = 200
 
-#Helper class for plotting logging objects
-#Can either directly pass the path to the logger or the the logger object 
-#Also takes a 3-length columns argument for chart customization
-#Example:
-#plothelper = PlotHelper('test2.json')
-#graph = plothelper.violinplot(title = 'title')
-#plt.show()
+from distribution_inference.logging.core import AttackResult
+from distribution_inference.utils import warning_string
+from distribution_inference.attacks.utils import get_attack_name
+
 
 class PlotHelper():
-    def __init__(self, path:str = '', logger:AttackResult = None, columns = ['Ratios', 'Values', 'Hues']):
-        self.df = pd.DataFrame(columns = columns)
+    def __init__(self, path: str = '',
+                 logger: AttackResult = None,
+                 columns=['Ratios', 'Values', 'Hues']):
+        self.df = []
         self.path = path
         self.logger = logger
         self.columns = columns
-        self.parse()
-    #Parse logger file
-    def parse(self):
+        self.supported_plot_types = {
+            'violin': self.violinplot,
+            'box': self.boxplot,
+            'reg': self.regplot
+        }
+        # Parse results
+        self._parse()
+
+    def _parse(self):
         if(len(self.columns) != 3):
             raise ValueError(
-                    "columns argument must be of length 3")
-        #Values for plot
+                "columns argument must be of length 3")
+        # Values for plot
         ratios = []
-        #Check logger
-        if(self.path != ''): #using json file
+        # Check logger
+        if(self.path != ''):
+            if not os.path.exists(self.path):
+                raise FileNotFoundError(f"Provided path {self.path} does not exist")
+            # Using JSON file
             logger = json.load(open(self.path, 'r'))
-        elif(logger != None): #using logger object
+        elif (logger is not None) and type(logger) == AttackResult:
+            # Using logger object directly
             logger = logger.dic
         else:
             raise ValueError(
-                    "Must pass either a logger class or a path")
-        for attack_res in logger['result']: #look in results
+                "Must pass either a logger class or a path")
 
-            if(attack_res == "loss_and_threshold"): #parsing for loss_and_threshold attack type
+        # Look at all the results
+        for attack_res in logger['result']:
+            attack_names = get_attack_name(attack_res)
+            # Loss & Threshold attacks
+            if(attack_res == "loss_and_threshold"):
                 for ratio in logger['result'][attack_res]:
-                    ratios.append(ratio) #add ratio
-                    for results in logger['result'][attack_res][ratio]['victim_acc']:
+                    ratios.append(ratio)  # add ratio
+                    victim_results = logger['result'][attack_res][ratio]['victim_acc']
+                    for results in victim_results:
                         loss = results[0]
                         threshold = results[1]
-                        self.df = self.df.append(pd.DataFrame({self.columns[0]: [float(ratio)], self.columns[1]: [loss], self.columns[2]: ['Loss']}), ignore_index = True)
-                        self.df = self.df.append(pd.DataFrame({self.columns[0]: [float(ratio)], self.columns[1]: [threshold], self.columns[2]: ['Threshold']}), ignore_index = True)
-
-            elif(attack_res == "threshold_perpoint"): #parsing for threshold_perpoint attack type
+                        self.df.append({
+                            self.columns[0]: float(ratio),
+                            self.columns[1]: loss,
+                            self.columns[2]: attack_names[0]})
+                        self.df.append({
+                            self.columns[0]: float(ratio),
+                            self.columns[1]: threshold,
+                            self.columns[2]: attack_names[1]})
+            # Per-point threshold attack, or white-box attack
+            elif attack_res in ["threshold_perpoint", "affinity", "permutation_invariant"]:
                 for ratio in logger['result'][attack_res]:
-                    ratios.append(ratio) #add ratio
-                    
-                    for results in logger['result'][attack_res][ratio]['adv_acc']:
-                        self.df = self.df.append(pd.DataFrame({self.columns[0]: [float(ratio)], self.columns[1]: [results], self.columns[2]: ['Per Point (Adv)']}), ignore_index = True)
-                    for results in logger['result'][attack_res][ratio]['victim_acc']:
-                        self.df = self.df.append(pd.DataFrame({self.columns[0]: [float(ratio)], self.columns[1]: [results], self.columns[2]: ['Per Point (Vict)']}), ignore_index = True)
-    
-    #Box plot, returns a graph object given a logger object
-    def boxplot(self, title = '', darkplot = True, dash = True):
-        
-        graph = seaborn.boxplot(x = self.columns[0], y = self.columns[1], hue = self.columns[2], data = self.df)
+                    ratios.append(ratio)  # add ratio
+                    victim_results = logger['result'][attack_res][ratio]['victim_acc']
+                    for results in victim_results:
+                        self.df.append({
+                            self.columns[0]: float(ratio),
+                            self.columns[1]: results,
+                            self.columns[2]: attack_names})
+            else:
+                warnings.warn(warning_string(f"\nAttack type {attack_res} not supported\n"))
+        if len(self.df) == 0:
+            raise ValueError("None of the attacks in given results are supported for plotting")
+
+        # Convert data to dataframe
+        self.df = pd.DataFrame(self.df)
+
+    def get_appropriate_plotter_fn(self, plot_type):
+        plotter_fn = self.supported_plot_types.get(plot_type, None)
+        if plotter_fn is None:
+            raise ValueError("Requested plot-type not supported")
+        return plotter_fn
+
+    # Box plot, returns a graph object given a logger object
+    def boxplot(self, title='', darkplot=True, dash=True):
+        graph = seaborn.boxplot(
+            x=self.columns[0], y=self.columns[1],
+            hue=self.columns[2], data=self.df)
+        # Distinguishing accuracy range
+        # TODO: Make this generic (to support loss values etc)
+        graph.set(ylim=(45, 101))
 
         graph.set_title(title)
-        #Plot settings (from celeba)
         if darkplot:
             # Set dark background
             plt.style.use('dark_background')
@@ -78,13 +115,13 @@ class PlotHelper():
 
         return graph
 
-    #Violin plot, returns a graph object given a logger object
-    def violinplot(self, title = '', darkplot = True, dash = True):
-        
-        graph = seaborn.violinplot(x = self.columns[0], y = self.columns[1], hue = self.columns[2], data = self.df)
+    # Violin plot, returns a graph object given a logger object
+    def violinplot(self, title='', darkplot=True, dash=True):
+        graph = seaborn.violinplot(
+            x=self.columns[0], y=self.columns[1],
+            hue=self.columns[2], data=self.df)
 
         graph.set_title(title)
-        #Plot settings (from celeba)
         if darkplot:
             # Set dark background
             plt.style.use('dark_background')
@@ -100,13 +137,13 @@ class PlotHelper():
 
         return graph
 
-    #Regression plot, returns a graph object given a logger object
-    #This plot does not take hues
-    def regplot(self, title = '', darkplot = True, dash = True):
-        graph = seaborn.regplot(x = self.columns[0], y = self.columns[1], data = self.df)
+    # Regression plot, returns a graph object given a logger object
+    # This plot does not take hues
+    def regplot(self, title='', darkplot=True, dash=True):
+        graph = seaborn.regplot(
+            x=self.columns[0], y=self.columns[1], data=self.df)
 
         graph.set_title(title)
-        #Plot settings (from celeba)
         if darkplot:
             # Set dark background
             plt.style.use('dark_background')
@@ -121,5 +158,3 @@ class PlotHelper():
         plt.tight_layout()
 
         return graph
-
-

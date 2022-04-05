@@ -3,6 +3,21 @@ from dataclasses import replace
 from distribution_inference.config import DatasetConfig, TrainConfig, AttackConfig
 
 
+ATTACK_MAPPING = {
+    "permutation_invariant": "Weights Meta-Classifier",
+    "affinity": "Activation-Correlation Meta-Classifier",
+    "threshold_perpoint": "Point-Wise Threshold Test",
+    "loss_and_threshold": ("Loss Test", "Threshold Test")
+}
+
+
+def get_attack_name(attack_name: str):
+    wrapper = ATTACK_MAPPING.get(attack_name, None)
+    if not wrapper:
+        raise NotImplementedError(f"Attack {attack_name} not implemented")
+    return wrapper
+
+
 def get_dfs_for_victim_and_adv(base_data_config: DatasetConfig,
                                prop_value=None):
     """
