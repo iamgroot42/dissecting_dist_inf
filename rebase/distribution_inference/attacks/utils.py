@@ -27,9 +27,7 @@ def get_train_config_for_adv(train_config: TrainConfig,
         Check if misc training config for adv is different.
         If yes, make one and return. Else use same as base config.
     """
+    train_config_adv = replace(train_config)
     if attack_config.adv_diff_misc_config:
-        train_config_adv = replace(train_config)
         train_config_adv.misc_config = attack_config.adv_misc_config
-    else:
-        train_config_adv = train_config
     return train_config_adv

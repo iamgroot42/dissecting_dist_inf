@@ -3,14 +3,14 @@
         "attack": "permutation_invariant",
         "epochs": 100,
         "batch_size": 150,
-        "train_sample": 700,
+        "train_sample": 500,
         "val_sample": 50,
         "save": true,
         "regression_config": {
             "additional_values_to_test": null
         },
         "permutation_config": {
-            "focus": "conv"
+            "focus": "all"
         }
     },
     "train_config": {

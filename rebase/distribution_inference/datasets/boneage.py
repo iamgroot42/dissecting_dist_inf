@@ -289,7 +289,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
         subfolder_prefix = os.path.join(self.split, str(self.ratio))
-        if train_config.extra_info and train_config.expect_extra.get("full_model"):
+        if train_config.extra_info and train_config.extra_info.get("full_model"):
             subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
         save_path = os.path.join(base_models_dir, subfolder_prefix)

@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List
+from typing import List, Tuple
 import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
@@ -7,7 +7,7 @@ import torch as ch
 
 from distribution_inference.attacks.blackbox.per_point import PerPointThresholdAttack
 from distribution_inference.attacks.blackbox.standard import LossAndThresholdAttack
-from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution, PredictionsOnDistributions
+from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution
 from distribution_inference.datasets.base import CustomDatasetWrapper
 
 
@@ -22,21 +22,6 @@ def get_attack(attack_name: str):
     if not wrapper:
         raise NotImplementedError(f"Attack {attack_name} not implemented")
     return wrapper
-
-
-def wrap_predictions(preds_from_prop_1_on_distr_1: List,
-                     preds_from_prop_1_on_distr_2: List,
-                     preds_from_prop_2_on_distr_1: List,
-                     preds_from_prop_2_on_distr_2: List):
-    """
-        Wrapper to store predictions for models
-        with two different training distributions.
-    """
-    preds_on_distr_1 = PredictionsOnOneDistribution(
-        preds_from_prop_1_on_distr_1, preds_from_prop_2_on_distr_1)
-    preds_on_distr_2 = PredictionsOnOneDistribution(
-        preds_from_prop_1_on_distr_2, preds_from_prop_2_on_distr_2)
-    return PredictionsOnDistributions(preds_on_distr_1, preds_on_distr_2)
 
 
 def calculate_accuracies(data, labels, use_logit: bool = True):
@@ -104,17 +89,39 @@ def get_preds_for_models(models: List[nn.Module],
     return preds, ground_truth
 
 
-def get_preds_for_vic_and_adv(models_vic: List[nn.Module],
-                              models_adv: List[nn.Module],
-                              ds_obj: CustomDatasetWrapper,
-                              batch_size: int):
-    # Get val data loader
-    _, loader = ds_obj.get_loaders(batch_size=batch_size)
+def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
+                               models_adv: List[nn.Module],
+                               loader):
     # Get predictions for victim models and data
     preds_vic, ground_truth = get_preds(loader, models_vic)
     # Get predictions for adversary models and data
-    preds_adv, _ = get_preds(loader, models_adv)
+    preds_adv, ground_truth_repeat = get_preds(loader, models_adv)
+    assert np.all(ground_truth == ground_truth_repeat), "Val loader is probably shuffling data!"
     return preds_vic, preds_adv, ground_truth
+
+
+def get_vic_adv_preds_on_distr(
+        models_vic: Tuple[List[nn.Module], List[nn.Module]],
+        models_adv: Tuple[List[nn.Module], List[nn.Module]],
+        ds_obj: CustomDatasetWrapper,
+        batch_size: int):
+    # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
+    _, loader = ds_obj.get_loaders(batch_size=batch_size)
+    # Get predictions for first set of models
+    preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
+        models_vic[0], models_adv[0], loader)
+    # Get predictions for second set of models
+    preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
+        models_vic[1], models_adv[1], loader)
+    adv_preds = PredictionsOnOneDistribution(
+        preds_property_1=preds_adv_1,
+        preds_property_2=preds_adv_2
+    )
+    vic_preds = PredictionsOnOneDistribution(
+        preds_property_1=preds_vic_1,
+        preds_property_2=preds_vic_2
+    )
+    return (adv_preds, vic_preds, ground_truth)
 
 
 def compute_metrics(dataset_true, dataset_pred,

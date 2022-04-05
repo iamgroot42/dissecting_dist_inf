@@ -6,10 +6,13 @@
         "squeeze": true,
         "value": 0.2
     },
-    "epochs": 20,
-    "learning_rate": 2e-3,
-    "batch_size": 8192,
-    "weight_decay": 0.02,
+    "epochs": 8,
+    "learning_rate": 2e-5,
+    "batch_size": 40,
+    "weight_decay": 0.05,
     "num_models": 1000,
-    "get_best": true
+    "get_best": true,
+    "extra_info": {
+        "full_model": true
+    }
 }

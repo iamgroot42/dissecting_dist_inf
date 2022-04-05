@@ -1,7 +1,7 @@
 {
     "white_box": {
         "attack": "affinity",
-        "epochs": 150,
+        "epochs": 120,
         "batch_size": 1000,
         "affinity_config": {
             "num_final": 16,
@@ -12,7 +12,7 @@
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "sex",
+            "prop": "race",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
