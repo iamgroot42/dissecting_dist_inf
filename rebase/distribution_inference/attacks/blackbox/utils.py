@@ -4,7 +4,7 @@ import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
 import torch as ch
-
+import gc
 from distribution_inference.attacks.blackbox.per_point import PerPointThresholdAttack
 from distribution_inference.attacks.blackbox.standard import LossAndThresholdAttack
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution
@@ -72,6 +72,7 @@ def get_preds(loader, models: List[nn.Module],preload):
                 # Get prediction
                     prediction = model(data_points).detach()[:, 0]
                     predictions_on_model.append(prediction.cpu())
+                    del data_points
             else:
                 for data in loader:
                     data_points, labels, _ = data
@@ -79,11 +80,16 @@ def get_preds(loader, models: List[nn.Module],preload):
                 # Get prediction
                     prediction = model(data_points).detach()[:, 0]
                     predictions_on_model.append(prediction.cpu())
+            del model
         predictions_on_model = ch.cat(predictions_on_model)
         predictions.append(predictions_on_model)
 
     predictions = ch.stack(predictions, 0)
     ground_truth = np.concatenate(ground_truth, axis=0)
+    if preload:
+        del inputs
+    ch.cuda.empty_cache()
+    gc.collect()
     return predictions.numpy(), ground_truth
 
 

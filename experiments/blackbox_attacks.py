@@ -18,7 +18,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load_config", help="Specify config file",
         type=Path, required=True)
+    parser.add_argument('--gpu', 
+                        default='0,1,2,3', help="device number")  
     args = parser.parse_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
     # Extract configuration information from config file
