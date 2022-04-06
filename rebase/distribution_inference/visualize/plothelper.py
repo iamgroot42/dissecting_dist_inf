@@ -17,7 +17,8 @@ class PlotHelper():
     def __init__(self,
                  paths: List[str] = [''],
                  loggers: List[AttackResult] = [None],
-                 columns=['Ratios', 'Values', 'Hues']):
+                 columns=['Ratios', 'Values', 'Hues'],
+                 legend_titles: List = None):
         self.df = []
         self.paths = paths
         self.loggers = loggers
@@ -31,6 +32,12 @@ class PlotHelper():
             'reg': self.regplot,
             'line': self.lineplot
         }
+        self.legend_titles = legend_titles
+        # If legend titles given, must be same length as paths/loggers
+        if self.legend_titles is not None:
+            if len(self.legend_titles) != len(self.paths) and len(self.legend_titles) != len(self.loggers):
+                raise ValueError(
+                    f"legend_titles ({len(legend_titles)}) must be of length equal to paths or loggers")
         # Must not provide empty lists
         if type(self.paths) == list and len(self.paths) == 0:
             raise ValueError("Must provide at least one path")
@@ -49,13 +56,13 @@ class PlotHelper():
         self.df = pd.DataFrame(self.df)
 
     def _parse_results(self, list_of_things, are_paths: bool):
-        for thing in list_of_things:
+        for i, thing in enumerate(list_of_things):
             if are_paths:
                 logger = self._get_logger_from_path_or_obj(thing, None)
             else:
                 logger = thing.dic
             # Parse data from given results-object
-            self._parse(logger)
+            self._parse(logger, i)
         pass
 
     def _get_logger_from_path_or_obj(self, path, logger_obj):
@@ -72,12 +79,15 @@ class PlotHelper():
                 "Must pass either a logger class or a path")
         return logger
 
-    def _parse(self, logger):
+    def _parse(self, logger, legend_entry_index: int = None):
         # Values for plot
         ratios = []
 
         # Look at all the results
         for attack_res in logger['result']:
+            title_prefix = ""
+            if legend_entry_index is not None:
+                title_prefix = self.legend_titles[legend_entry_index] + " : "
             attack_names = get_attack_name(attack_res)
             # Loss & Threshold attacks
             if(attack_res == "loss_and_threshold"):
@@ -90,11 +100,11 @@ class PlotHelper():
                         self.df.append({
                             self.columns[0]: float(ratio),
                             self.columns[1]: loss,
-                            self.columns[2]: attack_names[0]})
+                            self.columns[2]: title_prefix + attack_names[0]})
                         self.df.append({
                             self.columns[0]: float(ratio),
                             self.columns[1]: threshold,
-                            self.columns[2]: attack_names[1]})
+                            self.columns[2]: title_prefix + attack_names[1]})
             # Per-point threshold attack, or white-box attack
             elif attack_res in ["threshold_perpoint", "affinity", "permutation_invariant"]:
                 for ratio in logger['result'][attack_res]:
@@ -105,7 +115,7 @@ class PlotHelper():
                             self.columns[0]: float(ratio),
                             # Temporary (below) - ideally all results should be in [0, 100] across entire module
                             self.columns[1]: results * 100,
-                            self.columns[2]: attack_names})
+                            self.columns[2]: title_prefix + attack_names})
             else:
                 warnings.warn(warning_string(f"\nAttack type {attack_res} not supported\n"))
         if len(self.df) == 0:
@@ -117,6 +127,22 @@ class PlotHelper():
             raise ValueError("Requested plot-type not supported")
         return plotter_fn
 
+    def _graph_specific_options(self, graph, title='',
+                                darkplot=True, dash=True):
+        graph.set_title(title)
+        if darkplot:
+            # Set dark background
+            plt.style.use('dark_background')
+        # Add dividing line in centre
+        lower, upper = plt.gca().get_xlim()
+        if dash:
+            midpoint = (lower + upper) / 2
+            plt.axvline(x=midpoint,
+                        color='white' if darkplot else 'black',
+                        linewidth=1.0, linestyle='--')
+        # Make sure axis label not cut off
+        plt.tight_layout()
+
     # Box plot, returns a graph object given a logger object
     def boxplot(self, title='', darkplot=True, dash=True):
         graph = seaborn.boxplot(
@@ -126,19 +152,7 @@ class PlotHelper():
         # TODO: Make this generic (to support loss values etc)
         graph.set(ylim=(45, 101))
 
-        graph.set_title(title)
-        if darkplot:
-            # Set dark background
-            plt.style.use('dark_background')
-        # Add dividing line in centre
-        lower, upper = plt.gca().get_xlim()
-        if dash:
-            midpoint = (lower + upper) / 2
-            plt.axvline(x=midpoint,
-                        color='white' if darkplot else 'black',
-                        linewidth=1.0, linestyle='--')
-        # Make sure axis label not cut off
-        plt.tight_layout()
+        self._graph_specific_options(graph, title, darkplot, dash)
 
         return graph
 
@@ -148,19 +162,7 @@ class PlotHelper():
             x=self.columns[0], y=self.columns[1],
             hue=self.columns[2], data=self.df)
 
-        graph.set_title(title)
-        if darkplot:
-            # Set dark background
-            plt.style.use('dark_background')
-        # Add dividing line in centre
-        lower, upper = plt.gca().get_xlim()
-        if dash:
-            midpoint = (lower + upper) / 2
-            plt.axvline(x=midpoint,
-                        color='white' if darkplot else 'black',
-                        linewidth=1.0, linestyle='--')
-        # Make sure axis label not cut off
-        plt.tight_layout()
+        self._graph_specific_options(graph, title, darkplot, dash)
 
         return graph
 
@@ -170,24 +172,12 @@ class PlotHelper():
         graph = seaborn.regplot(
             x=self.columns[0], y=self.columns[1], data=self.df)
 
-        graph.set_title(title)
-        if darkplot:
-            # Set dark background
-            plt.style.use('dark_background')
-        # Add dividing line in centre
-        lower, upper = plt.gca().get_xlim()
-        if dash:
-            midpoint = (lower + upper) / 2
-            plt.axvline(x=midpoint,
-                        color='white' if darkplot else 'black',
-                        linewidth=1.0, linestyle='--')
-        # Make sure axis label not cut off
-        plt.tight_layout()
+        self._graph_specific_options(graph, title, darkplot, dash)
 
         return graph
 
     # Plot values (attack results, etc) across time (model training
-    def lineplot(self, title='', darkplot=True):
+    def lineplot(self, title='', darkplot=True, dash=False):
         graph = seaborn.lineplot(
             x=self.columns[0],
             y=self.columns[1],
@@ -195,8 +185,6 @@ class PlotHelper():
             data=self.data
         )
 
-        graph.set_title(title)
-        # Make sure axis label not cut off
-        plt.tight_layout()
+        self._graph_specific_options(graph, title, darkplot, dash)
 
         return graph

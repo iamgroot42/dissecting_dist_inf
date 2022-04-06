@@ -35,6 +35,10 @@ if __name__ == "__main__":
                         default='Attack',
                         help="legend title",
                         type=str)
+    parser.add_argument("--legend_titles",
+                        nargs='+',
+                        help="Titles for legends",
+                        type=str)
     parser.add_argument("--dark",
                         action="store_true",
                         help="dark background")
@@ -47,9 +51,13 @@ if __name__ == "__main__":
     columns = [args.x, args.y, args.legend]
 
     # Create plothelper object
-    plothelper = PlotHelper(paths=args.log_path, columns=columns)
+    plothelper = PlotHelper(paths=args.log_path,
+                            columns=columns,
+                            legend_titles=args.legend_titles)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
-    graph = plotter_fn(title=args.title, darkplot=args.dark, dash=args.dash)
+    graph = plotter_fn(title=args.title,
+                       darkplot=args.dark,
+                       dash=args.dash)
 
     # Save plot
     graph.figure.savefig(os.path.join(

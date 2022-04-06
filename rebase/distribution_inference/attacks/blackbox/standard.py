@@ -10,7 +10,8 @@ class LossAndThresholdAttack(Attack):
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
-               calc_acc: Callable = None):
+               calc_acc: Callable = None,
+               epochwise_version: bool = False):
         """
             Perform Threshold-Test and Loss-Test attacks using
             given accuracies of models.
@@ -24,14 +25,16 @@ class LossAndThresholdAttack(Attack):
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
             ground_truth[0],
-            self.config)
+            self.config,
+            epochwise_version=epochwise_version)
         # Get accuracies on second data distribution
         adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(
             calc_acc,
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
             ground_truth[1],
-            self.config)
+            self.config,
+            epochwise_version=epochwise_version)
 
         # Get best adv accuracies for both distributions, across all ratios
         chosen_distribution = 0

@@ -50,15 +50,15 @@ class AffinityMetaClassifier(nn.Module):
         all_acts = []
         for i, model in enumerate(self.models):
             all_acts.append(model(x[i]))
-        all_accs = ch.cat(all_acts, 1)
+        all_acts = ch.cat(all_acts, 1)
         # Return pre-logit activations if requested
         if self.only_latent:
-            return all_accs
+            return all_acts
         # If agnostic to number of layers, average over given layer representations
         # and return
         if self.layer_agnostic:
-            return ch.mean(all_accs, 1)
-        return self.final_layer(all_accs)
+            return ch.mean(all_acts, 1).unsqueeze(1)
+        return self.final_layer(all_acts)
 
 
 class WeightAndActMeta(nn.Module):

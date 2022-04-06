@@ -91,9 +91,17 @@ def get_preds_for_models(models: List[nn.Module],
 
 def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
                                models_adv: List[nn.Module],
-                               loader):
+                               loader,
+                               epochwise_version: bool = False):
     # Get predictions for victim models and data
-    preds_vic, ground_truth = get_preds(loader, models_vic)
+    if epochwise_version:
+        preds_vic = []
+        for models_inside_vic in models_vic:
+            preds_vic_inside, ground_truth = get_preds(
+                loader, models_inside_vic)
+            preds_vic.append(preds_vic_inside)
+    else:
+        preds_vic, ground_truth = get_preds(loader, models_vic)
     # Get predictions for adversary models and data
     preds_adv, ground_truth_repeat = get_preds(loader, models_adv)
     assert np.all(ground_truth == ground_truth_repeat), "Val loader is probably shuffling data!"
@@ -104,15 +112,18 @@ def get_vic_adv_preds_on_distr(
         models_vic: Tuple[List[nn.Module], List[nn.Module]],
         models_adv: Tuple[List[nn.Module], List[nn.Module]],
         ds_obj: CustomDatasetWrapper,
-        batch_size: int):
+        batch_size: int,
+        epochwise_version: bool = False):
     # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
     _, loader = ds_obj.get_loaders(batch_size=batch_size)
     # Get predictions for first set of models
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
-        models_vic[0], models_adv[0], loader)
+        models_vic[0], models_adv[0], loader,
+        epochwise_version=epochwise_version)
     # Get predictions for second set of models
     preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
-        models_vic[1], models_adv[1], loader)
+        models_vic[1], models_adv[1], loader,
+        epochwise_version=epochwise_version)
     adv_preds = PredictionsOnOneDistribution(
         preds_property_1=preds_adv_1,
         preds_property_2=preds_adv_2
