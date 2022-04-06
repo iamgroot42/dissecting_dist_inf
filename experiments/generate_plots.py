@@ -7,30 +7,39 @@ from distribution_inference.visualize.plothelper import PlotHelper
 if __name__ == "__main__":
     #Arguments for plotting
     parser = ArgumentParser(add_help=False)
-    parser.add_argument(
-        "--log_path",
-        help="Specify file where results are stored",
-        type=str, required=True)
-    parser.add_argument(
-        "--plot",
-        help="Specify plot type",
-        choices=['violin', 'box', 'reg'],
-        type=str,
-        required=True)
-    parser.add_argument(
-        "--savepath",
-        help="Specify save path (ending with /)",
-        type=str)
-    parser.add_argument("--title", default='', help="Plot title", type=str)
-    parser.add_argument("--x", default=r'$\alpha_1$',
-                        help="Title for X-axis", type=str)
-    parser.add_argument("--y", default='Accuracy (%)',
-                        help="Title for Y-axis", type=str)
-    parser.add_argument("--legend", default='Attack',
-                        help="legend title", type=str)
-    parser.add_argument("--dark", action="store_true",
+    parser.add_argument("--log_path",
+                        nargs='+',
+                        help="Specify file where results are stored",
+                        type=str, required=True)
+    parser.add_argument("--plot",
+                        help="Specify plot type",
+                        choices=['violin', 'box', 'reg', 'line'],
+                        type=str,
+                        required=True)
+    parser.add_argument("--savepath",
+                        help="Specify save path (ending with /)",
+                        type=str,
+                        required=True)
+    parser.add_argument("--title",
+                        default='',
+                        help="Plot title", type=str)
+    parser.add_argument("--x",
+                        default=r'$\alpha_1$',
+                        help="Title for X-axis",
+                        type=str)
+    parser.add_argument("--y",
+                        default='Accuracy (%)',
+                        help="Title for Y-axis",
+                        type=str)
+    parser.add_argument("--legend",
+                        default='Attack',
+                        help="legend title",
+                        type=str)
+    parser.add_argument("--dark",
+                        action="store_true",
                         help="dark background")
-    parser.add_argument("--dash", action="store_true",
+    parser.add_argument("--dash",
+                        action="store_true",
                         help="add dashed line midway?",)
     args = parser.parse_args()
 
@@ -38,7 +47,7 @@ if __name__ == "__main__":
     columns = [args.x, args.y, args.legend]
 
     # Create plothelper object
-    plothelper = PlotHelper(path=args.log_path, columns=columns)
+    plothelper = PlotHelper(paths=args.log_path, columns=columns)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title, darkplot=args.dark, dash=args.dash)
 

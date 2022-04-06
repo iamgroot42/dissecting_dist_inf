@@ -155,6 +155,8 @@ class AffinityAttackConfig(Serializable):
     """What fraction of pairs to use when training classifier"""
     num_samples_use: int = None
     """How many examples to compute pair-wise similarities for"""
+    layer_agnostic: bool = False
+    """Whether to use layer-agnostic version of meta-classifier"""
 
 
 @dataclass

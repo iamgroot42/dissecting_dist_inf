@@ -1,21 +1,20 @@
 import torch as ch
 import torch.nn as nn
-from typing import List
+from typing import List, Tuple
 
 
 class PermInvConvModel(nn.Module):
-    def __init__(self, dim_channels, dim_kernels,
+    def __init__(self, dims: Tuple,
                  inside_dims=[64, 8], n_classes=2,
                  dropout=0.5, only_latent=False,
                  scale_invariance=False):
         super(PermInvConvModel, self).__init__()
-        self.dim_channels = dim_channels
-        self.dim_kernels = dim_kernels
+        self.dim_channels, self.dim_kernels = dims
         self.only_latent = only_latent
         self.scale_invariance = scale_invariance
 
-        assert len(dim_channels) == len(
-            dim_kernels), "Kernel size information missing!"
+        assert len(self.dim_channels) == len(
+            self.dim_kernels), "Kernel size information missing!"
 
         self.dropout = dropout
         self.layers = []
@@ -49,7 +48,7 @@ class PermInvConvModel(nn.Module):
             # For each pixel in the kernel
             # Concatenated along pixels in kernel
             self.layers.append(
-                make_mini(prev_layer + (1 + dim) * dim_kernels[i]))
+                make_mini(prev_layer + (1 + dim) * self.dim_kernels[i]))
 
         self.layers = nn.ModuleList(self.layers)
 

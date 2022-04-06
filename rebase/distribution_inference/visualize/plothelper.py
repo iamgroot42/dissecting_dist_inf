@@ -4,6 +4,7 @@ import json
 import os
 import pandas as pd
 import warnings
+from typing import List
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
 
@@ -13,39 +14,67 @@ from distribution_inference.attacks.utils import get_attack_name
 
 
 class PlotHelper():
-    def __init__(self, path: str = '',
-                 logger: AttackResult = None,
+    def __init__(self,
+                 paths: List[str] = [''],
+                 loggers: List[AttackResult] = [None],
                  columns=['Ratios', 'Values', 'Hues']):
         self.df = []
-        self.path = path
-        self.logger = logger
+        self.paths = paths
+        self.loggers = loggers
         self.columns = columns
-        self.supported_plot_types = {
-            'violin': self.violinplot,
-            'box': self.boxplot,
-            'reg': self.regplot
-        }
-        # Parse results
-        self._parse()
-
-    def _parse(self):
         if(len(self.columns) != 3):
             raise ValueError(
                 "columns argument must be of length 3")
-        # Values for plot
-        ratios = []
-        # Check logger
-        if(self.path != ''):
-            if not os.path.exists(self.path):
-                raise FileNotFoundError(f"Provided path {self.path} does not exist")
+        self.supported_plot_types = {
+            'violin': self.violinplot,
+            'box': self.boxplot,
+            'reg': self.regplot,
+            'line': self.lineplot
+        }
+        # Must not provide empty lists
+        if type(self.paths) == list and len(self.paths) == 0:
+            raise ValueError("Must provide at least one path")
+        if type(self.loggers) == list and len(self.loggers) == 0:
+            raise ValueError("Must provide at least one logger")
+        # Cannot provide both logger and path
+        if self.paths[0] != '' and self.loggers[0] is not None:
+            raise ValueError(
+                "Must pass either a logger class or a path")
+        if self.loggers[0] is not None:
+            self._parse_results(self.loggers, are_paths=False)
+        elif self.paths[0] != '':
+            self._parse_results(self.paths, are_paths=True)
+
+        # Convert data to dataframe
+        self.df = pd.DataFrame(self.df)
+
+    def _parse_results(self, list_of_things, are_paths: bool):
+        for thing in list_of_things:
+            if are_paths:
+                logger = self._get_logger_from_path_or_obj(thing, None)
+            else:
+                logger = thing.dic
+            # Parse data from given results-object
+            self._parse(logger)
+        pass
+
+    def _get_logger_from_path_or_obj(self, path, logger_obj):
+        if path != '':
+            if not os.path.exists(path):
+                raise FileNotFoundError(f"Provided path {path} does not exist")
             # Using JSON file
-            logger = json.load(open(self.path, 'r'))
-        elif (logger is not None) and type(logger) == AttackResult:
+            logger = json.load(open(path, 'r'))
+        elif (logger_obj is not None) and type(logger_obj) == AttackResult:
             # Using logger object directly
-            logger = logger.dic
+            logger = logger_obj.dic
         else:
             raise ValueError(
                 "Must pass either a logger class or a path")
+        return logger
+
+    def _parse(self, logger):
+        # Values for plot
+        ratios = []
 
         # Look at all the results
         for attack_res in logger['result']:
@@ -74,15 +103,13 @@ class PlotHelper():
                     for results in victim_results:
                         self.df.append({
                             self.columns[0]: float(ratio),
-                            self.columns[1]: results,
+                            # Temporary (below) - ideally all results should be in [0, 100] across entire module
+                            self.columns[1]: results * 100,
                             self.columns[2]: attack_names})
             else:
                 warnings.warn(warning_string(f"\nAttack type {attack_res} not supported\n"))
         if len(self.df) == 0:
             raise ValueError("None of the attacks in given results are supported for plotting")
-
-        # Convert data to dataframe
-        self.df = pd.DataFrame(self.df)
 
     def get_appropriate_plotter_fn(self, plot_type):
         plotter_fn = self.supported_plot_types.get(plot_type, None)
@@ -154,6 +181,21 @@ class PlotHelper():
             plt.axvline(x=midpoint,
                         color='white' if darkplot else 'black',
                         linewidth=1.0, linestyle='--')
+        # Make sure axis label not cut off
+        plt.tight_layout()
+
+        return graph
+
+    # Plot values (attack results, etc) across time (model training
+    def lineplot(self, title='', darkplot=True):
+        graph = seaborn.lineplot(
+            x=self.columns[0],
+            y=self.columns[1],
+            hue=self.columns[2],
+            data=self.data
+        )
+
+        graph.set_title(title)
         # Make sure axis label not cut off
         plt.tight_layout()
 

@@ -3,14 +3,14 @@
         "attack": "permutation_invariant",
         "epochs": 100,
         "batch_size": 150,
-        "train_sample": 500,
+        "train_sample": 700,
         "val_sample": 50,
         "save": true,
         "regression_config": {
             "additional_values_to_test": null
         },
         "permutation_config": {
-            "focus": "all"
+            "focus": "conv"
         }
     },
     "train_config": {
@@ -23,7 +23,7 @@
         },
         "misc_config": {
             "adv_config": {
-                "epsilon": 4,
+                "epsilon": 16,
                 "iters": 7,
                 "clip_min": -1,
                 "clip_max": 1,

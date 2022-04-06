@@ -8,7 +8,7 @@ from copy import deepcopy
 import warnings
 
 from distribution_inference.attacks.whitebox.core import Attack
-from distribution_inference.attacks.whitebox.permutation.models import PermInvModel, FullPermInvModel
+from distribution_inference.attacks.whitebox.permutation.models import PermInvModel, FullPermInvModel, PermInvConvModel
 from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig
 from distribution_inference.utils import log, get_save_path, warning_string, ensure_dir_exists
 
@@ -22,9 +22,21 @@ class PINAttack(Attack):
 
     def _prepare_model(self):
         if isinstance(self.dims, tuple):
-            # If dims is tuple, need joint model
-            self.model = FullPermInvModel(self.dims, dropout=0.5)
+            if self.config.permutation_config.focus == "all":
+                # If dims is tuple, need joint model
+                self.model = FullPermInvModel(self.dims, dropout=0.5)
+            elif self.config.permutation_config.focus == "conv":
+                # Focus wanted only on conv layers
+                self.model = PermInvConvModel(self.dims[0][:2], dropout=0.5)
+            elif self.config.permutation_config.focus == "fc":
+                self.model = PermInvModel(self.dims[1], dropout=0.5)
+            else:
+                raise NotImplementedError(
+                    f"Focus mode {self.config.permutation_config.focus} not supported")
         else:
+            # Focus must be on FC layers
+            if self.config.permutation_config.focus != "fc":
+                raise AssertionError("Mode must be FC if model has only FC layers")
             # Define meta-classifier
             self.model = PermInvModel(self.dims, dropout=0.5)
         if self.config.gpu:
@@ -52,12 +64,15 @@ class PINAttack(Attack):
             data_config.prop)
         if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
+        save_path = os.path.join(
+            save_path, self.config.permutation_config.focus)
 
         # Make sure folder exists
         ensure_dir_exists(save_path)
 
         model_save_path = os.path.join(
-            save_path, f"{self.config.permutation_config.focus}_{attack_specific_info_string}.ch")
+            save_path,
+            f"{attack_specific_info_string}.ch")
         ch.save(self.model.state_dict(), model_save_path)
 
     def execute_attack(self,
@@ -200,6 +215,10 @@ class PINAttack(Attack):
 
         # Make sure model is in evaluation mode
         model.eval()
+
+        # Compute test accuracy on this model
+        t_acc, t_loss = self._test(
+            model, loss_fn, test_loader)
 
         if regression:
             return model, t_loss

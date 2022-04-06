@@ -12,7 +12,7 @@ class AffinityMetaClassifier(nn.Module):
                  num_dim: int,
                  num_layers: int,
                  config: AffinityAttackConfig,
-                 num_logit: int = 0,):
+                 num_logit: int = 0):
         super().__init__()
         self.num_dim = num_dim
         self.num_layers = num_layers
@@ -21,6 +21,7 @@ class AffinityMetaClassifier(nn.Module):
         self.models = []
         self.num_logit = num_logit
         self.only_latent = config.only_latent
+        self.layer_agnostic = config.layer_agnostic
 
         def make_small_model(dims):
             return nn.Sequential(
@@ -40,7 +41,8 @@ class AffinityMetaClassifier(nn.Module):
 
         num_eff_layers = self.num_layers
         num_eff_layers += 1 if self.num_logit > 0 else 0
-        self.final_layer = nn.Linear(self.num_final * num_eff_layers, 1)
+        if not self.layer_agnostic:
+            self.final_layer = nn.Linear(self.num_final * num_eff_layers, 1)
 
     def forward(self, x) -> ch.Tensor:
         # Get intermediate activations for each layer
@@ -52,6 +54,10 @@ class AffinityMetaClassifier(nn.Module):
         # Return pre-logit activations if requested
         if self.only_latent:
             return all_accs
+        # If agnostic to number of layers, average over given layer representations
+        # and return
+        if self.layer_agnostic:
+            return ch.mean(all_accs, 1)
         return self.final_layer(all_accs)
 
 

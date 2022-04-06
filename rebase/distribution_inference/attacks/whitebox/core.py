@@ -1,3 +1,4 @@
+from torch.utils.data import Dataset
 from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig
 
 
@@ -28,3 +29,19 @@ class Attack:
             Save model to disk.
         """
         raise NotImplementedError("Must be implemented in subclass")
+
+
+class BasicDataset(Dataset):
+    def __init__(self, X, Y=None):
+        self.X = X
+        self.Y = Y
+        if self.Y is not None:
+            assert len(self.X) == len(self.Y)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        if self.Y is None:
+            return self.X[idx]
+        return self.X[idx], self.Y[idx]

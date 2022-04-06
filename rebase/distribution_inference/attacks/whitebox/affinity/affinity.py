@@ -5,7 +5,7 @@ import torch as ch
 import torch.nn as nn
 from tqdm import tqdm
 
-from distribution_inference.attacks.whitebox.core import Attack
+from distribution_inference.attacks.whitebox.core import Attack, BasicDataset
 from distribution_inference.attacks.whitebox.affinity.models import AffinityMetaClassifier
 from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig, TrainConfig
 from distribution_inference.utils import warning_string, get_save_path, ensure_dir_exists
@@ -53,6 +53,9 @@ class AffinityAttack(Attack):
                     features[i].append(mf)
         features = [ch.cat(x, 0) for x in features]
         return features
+
+    def register_seed_data(self, seed_data_ds: BasicDataset):
+        self.seed_data_ds = seed_data_ds
 
     def make_affinity_features(self,
                                models: List[BaseModel],
@@ -214,4 +217,12 @@ class AffinityAttack(Attack):
 
         model_save_path = os.path.join(
             save_path, f"{attack_specific_info_string}.ch")
-        ch.save(self.model.state_dict(), model_save_path)
+        ch.save({
+            "model": self.model.state_dict(),
+            "seed_data_ds": self.seed_data_ds
+        }, model_save_path)
+
+    def load_model(self, load_path: str):
+        checkpoint = ch.load(load_path)
+        self.model.load_state_dict(checkpoint["model"])
+        self.seed_data_ds = checkpoint["seed_data_ds"]

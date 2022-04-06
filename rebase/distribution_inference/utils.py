@@ -45,7 +45,7 @@ def check_if_inside_cluster():
 
 
 def flash_utils(args, root: bool = True, num_tabs: int = 0):
-    prefix = "  " * num_tabs
+    prefix = "    " * num_tabs
     if root:
         log_statement("==> Arguments:")
     for arg in vars(args):
