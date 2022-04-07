@@ -1,3 +1,4 @@
+import torch as ch
 from torch.utils.data import Dataset
 from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig
 
@@ -29,6 +30,10 @@ class Attack:
             Save model to disk.
         """
         raise NotImplementedError("Must be implemented in subclass")
+
+    def load_model(self, path):
+        self.model = self._prepare_model()
+        self.model.load_state_dict(ch.load(path))
 
 
 class BasicDataset(Dataset):

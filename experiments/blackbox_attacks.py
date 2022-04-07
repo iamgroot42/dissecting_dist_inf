@@ -1,3 +1,6 @@
+"""
+    Script for executing black-box inference attacks.
+"""
 from simple_parsing import ArgumentParser
 from pathlib import Path
 
@@ -85,7 +88,8 @@ if __name__ == "__main__":
                 models_adv=(models_adv_1, models_adv_2),
                 ds_obj=ds_adv_1,
                 batch_size=bb_attack_config.batch_size,
-                epochwise_version=attack_config.train_config.save_every_epoch
+                epochwise_version=attack_config.train_config.save_every_epoch,
+                preload=bb_attack_config.preload
             )
             # Get victim and adv predictions on loaders for second ratio
             preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
@@ -93,7 +97,8 @@ if __name__ == "__main__":
                 models_adv=(models_adv_1, models_adv_2),
                 ds_obj=ds_adv_2,
                 batch_size=bb_attack_config.batch_size,
-                epochwise_version=attack_config.train_config.save_every_epoch
+                epochwise_version=attack_config.train_config.save_every_epoch,
+                preload=bb_attack_config.preload
             )
             # Wrap predictions to be used by the attack
             preds_adv = PredictionsOnDistributions(
@@ -118,7 +123,8 @@ if __name__ == "__main__":
                 result = attacker_obj.attack(
                     preds_adv, preds_vic,
                     ground_truth=(ground_truth_1, ground_truth_2),
-                    calc_acc=calculate_accuracies)
+                    calc_acc=calculate_accuracies,
+                    epochwise_version=attack_config.train_config.save_every_epoch)
 
                 logger.add_results(attack_type, prop_value,
                                    result[0][0], result[1][0])

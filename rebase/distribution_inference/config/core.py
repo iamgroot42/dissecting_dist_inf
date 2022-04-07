@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, List, Union
+from typing import Optional, List
 import numpy as np
 from simple_parsing.helpers import Serializable, field
 
@@ -129,6 +129,8 @@ class BlackBoxAttackConfig(Serializable):
     """Batch size to use for loaders when generating predictions"""
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
+    preload: Optional[bool] = False
+    """Pre-load data on GPU (always prefer if GPU has capacity)"""
 
 
 @dataclass

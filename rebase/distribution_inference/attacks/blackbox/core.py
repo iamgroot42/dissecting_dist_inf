@@ -100,7 +100,7 @@ def threshold_test_per_dist(cal_acc: Callable,
         if epochwise_version:
             accs_victim_1 = [100 * cal_acc(pv1_use_inside, yg_use)
                              for pv1_use_inside in pv1_use]
-            accs_victim_1 = [100 * cal_acc(pv2_use_inside, yg_use)
+            accs_victim_2 = [100 * cal_acc(pv2_use_inside, yg_use)
                              for pv2_use_inside in pv2_use]
         else:
             accs_victim_1 = 100 * cal_acc(pv1_use, yg_use)
@@ -116,6 +116,7 @@ def threshold_test_per_dist(cal_acc: Callable,
                 x, y) in zip(accs_victim_1, accs_victim_2)]
             specific_acc = [get_threshold_acc(
                 x, y, threshold, rule) for (x, y) in zip(combined, classes)]
+            f_accs.append([100 * x for x in specific_acc])
         else:
             combined = np.concatenate((accs_victim_1, accs_victim_2))
             classes = np.concatenate(
@@ -126,7 +127,13 @@ def threshold_test_per_dist(cal_acc: Callable,
 
     allaccs_1 = np.array(allaccs_1)
     allaccs_2 = np.array(allaccs_2)
-    return np.array(adv_accs), np.array(f_accs), (allaccs_1, allaccs_2)
+    f_accs = np.array(f_accs)
+    if epochwise_version:
+        allaccs_1 = np.transpose(allaccs_1, (1, 0, 2))
+        allaccs_2 = np.transpose(allaccs_2, (1, 0, 2))
+        f_accs = f_accs.T
+
+    return np.array(adv_accs), f_accs, (allaccs_1, allaccs_2)
 
 
 def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):

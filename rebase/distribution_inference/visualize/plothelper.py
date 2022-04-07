@@ -18,11 +18,13 @@ class PlotHelper():
                  paths: List[str] = [''],
                  loggers: List[AttackResult] = [None],
                  columns=['Ratios', 'Values', 'Hues'],
-                 legend_titles: List = None):
+                 legend_titles: List = None,
+                 attacks_wanted: List = None):
         self.df = []
         self.paths = paths
         self.loggers = loggers
         self.columns = columns
+        self.attacks_wanted = attacks_wanted
         if(len(self.columns) != 3):
             raise ValueError(
                 "columns argument must be of length 3")
@@ -85,8 +87,11 @@ class PlotHelper():
 
         # Look at all the results
         for attack_res in logger['result']:
+            if self.attacks_wanted is not None and attack_res not in self.attacks_wanted:
+                print(f"Not plotting {attack_res}")
+                continue
             title_prefix = ""
-            if legend_entry_index is not None:
+            if self.legend_titles is not None:
                 title_prefix = self.legend_titles[legend_entry_index] + " : "
             attack_names = get_attack_name(attack_res)
             # Loss & Threshold attacks
@@ -114,7 +119,7 @@ class PlotHelper():
                         self.df.append({
                             self.columns[0]: float(ratio),
                             # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                            self.columns[1]: results * 100,
+                            self.columns[1]: results, #* 100,
                             self.columns[2]: title_prefix + attack_names})
             else:
                 warnings.warn(warning_string(f"\nAttack type {attack_res} not supported\n"))

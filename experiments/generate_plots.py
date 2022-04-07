@@ -11,6 +11,10 @@ if __name__ == "__main__":
                         nargs='+',
                         help="Specify file where results are stored",
                         type=str, required=True)
+    parser.add_argument("--wanted",
+                        nargs='+',
+                        help="Specify which attacks to plot",
+                        type=str)
     parser.add_argument("--plot",
                         help="Specify plot type",
                         choices=['violin', 'box', 'reg', 'line'],
@@ -53,7 +57,8 @@ if __name__ == "__main__":
     # Create plothelper object
     plothelper = PlotHelper(paths=args.log_path,
                             columns=columns,
-                            legend_titles=args.legend_titles)
+                            legend_titles=args.legend_titles,
+                            attacks_wanted=args.wanted)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,

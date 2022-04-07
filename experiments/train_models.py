@@ -61,7 +61,7 @@ if __name__ == "__main__":
         model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                      train_config=train_config,
                                      extra_options={
-                                        "curren_model_num": i,
+                                        "curren_model_num": i + train_config.offset,
                                         "save_path_fn": ds.get_save_path})
 
         # If saving only the final model

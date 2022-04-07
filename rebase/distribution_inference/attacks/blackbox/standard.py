@@ -47,12 +47,27 @@ class LossAndThresholdAttack(Attack):
         # Of the chosen distribution, pick the one with the best accuracy
         # out of all given ratios
         chosen_ratio_index = np.argmax(adv_accs_use)
-        victim_acc_use = victim_accs_use[chosen_ratio_index]
+        if epochwise_version:
+            victim_acc_use = [x[chosen_ratio_index] for x in victim_accs_use]
+        else:
+            victim_acc_use = victim_accs_use[chosen_ratio_index]
         # Loss test
-        basic = self._loss_test(acc_1, acc_2)
+        if epochwise_version:
+            basic = []
+            for i in range(acc_1[0].shape[0]):
+                basic.append(
+                    self._loss_test(
+                        (acc_1[0][i], acc_1[1][i]),
+                        (acc_2[0][i], acc_2[1][i])
+                    )
+                )
+            basic_chosen = [x[chosen_ratio_index] for x in basic]
+        else:
+            basic = self._loss_test(acc_1, acc_2)
+            basic_chosen = basic[chosen_ratio_index]
 
         choice_information = (chosen_distribution, chosen_ratio_index)
-        return [[(victim_acc_use, basic[chosen_ratio_index])], [adv_accs_use[chosen_ratio_index]], choice_information]
+        return [[(victim_acc_use, basic_chosen)], [adv_accs_use[chosen_ratio_index]], choice_information]
 
     def _loss_test(self, acc_1, acc_2):
         basic = []

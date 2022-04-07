@@ -41,19 +41,27 @@ def calculate_accuracies(data, labels, use_logit: bool = True):
     return np.average(1. * (preds == expanded_gt), axis=0)
 
 
-def get_preds(loader, models: List[nn.Module]):
+def get_preds(loader, models: List[nn.Module],
+              preload: bool = False,
+              verbose: bool = True):
     """
         Get predictions for given models on given data
     """
     predictions = []
     ground_truth = []
+    inputs = []
     # Accumulate all data for given loader
     for data in loader:
-        _, labels, _ = data
+        features, labels, _ = data
         ground_truth.append(labels.cpu().numpy())
+        if preload:
+            inputs.append(features.cuda())
 
     # Get predictions for each model
-    for model in tqdm(models):
+    iterator = models
+    if verbose:
+        iterator = tqdm(iterator)
+    for model in iterator:
         # Shift model to GPU
         model = model.cuda()
         # Make sure model is in evaluation mode
@@ -63,13 +71,20 @@ def get_preds(loader, models: List[nn.Module]):
 
         with ch.no_grad():
             predictions_on_model = []
-            # Iterate through data-loader
-            for data in loader:
-                data_points, labels, _ = data
-                data_points = data_points.cuda()
-                # Get prediction
-                prediction = model(data_points).detach()[:, 0]
-                predictions_on_model.append(prediction.cpu())
+
+            # Skip multiple CPU-CUDA copy ops
+            if preload:
+                for data_batch in inputs:
+                    prediction = model(data_batch).detach()[:, 0]
+                    predictions_on_model.append(prediction.cpu())
+            else:
+                # Iterate through data-loader
+                for data in loader:
+                    data_points, labels, _ = data
+                    data_points = data_points.cuda()
+                    # Get prediction
+                    prediction = model(data_points).detach()[:, 0]
+                    predictions_on_model.append(prediction.cpu())
         predictions_on_model = ch.cat(predictions_on_model)
         predictions.append(predictions_on_model)
 
@@ -78,32 +93,29 @@ def get_preds(loader, models: List[nn.Module]):
     return predictions.numpy(), ground_truth
 
 
-def get_preds_for_models(models: List[nn.Module],
-                         ds_obj: CustomDatasetWrapper,
-                         batch_size: int):
-    # Get val data loader
-    _, loader = ds_obj.get_loaders(batch_size=batch_size,
-                                   eval_shuffle=False)
-    # Get predictions for models on data
-    preds, ground_truth = get_preds(loader, models)
-    return preds, ground_truth
-
-
 def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
                                models_adv: List[nn.Module],
                                loader,
-                               epochwise_version: bool = False):
+                               epochwise_version: bool = False,
+                               preload: bool = False):
     # Get predictions for victim models and data
     if epochwise_version:
-        preds_vic = []
-        for models_inside_vic in models_vic:
+        # Track predictions for each epoch
+        preds_vic = [[] for _ in range(len(models_vic[0]))]
+        for models_inside_vic in tqdm(models_vic):
             preds_vic_inside, ground_truth = get_preds(
-                loader, models_inside_vic)
-            preds_vic.append(preds_vic_inside)
+                loader, models_inside_vic, preload=preload,
+                verbose=False)
+            # In epoch-wise mode, we need prediction results
+            # across epochs, not models
+            for i, p in enumerate(preds_vic_inside):
+                preds_vic[i].append(p)
     else:
-        preds_vic, ground_truth = get_preds(loader, models_vic)
+        preds_vic, ground_truth = get_preds(
+            loader, models_vic, preload=preload)
     # Get predictions for adversary models and data
-    preds_adv, ground_truth_repeat = get_preds(loader, models_adv)
+    preds_adv, ground_truth_repeat = get_preds(
+        loader, models_adv, preload=preload)
     assert np.all(ground_truth == ground_truth_repeat), "Val loader is probably shuffling data!"
     return preds_vic, preds_adv, ground_truth
 
@@ -113,17 +125,23 @@ def get_vic_adv_preds_on_distr(
         models_adv: Tuple[List[nn.Module], List[nn.Module]],
         ds_obj: CustomDatasetWrapper,
         batch_size: int,
-        epochwise_version: bool = False):
+        epochwise_version: bool = False,
+        preload: bool = False):
     # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
     _, loader = ds_obj.get_loaders(batch_size=batch_size)
+
+    # TODO: Use preload logic here to speed things even more up
+
     # Get predictions for first set of models
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
         models_vic[0], models_adv[0], loader,
-        epochwise_version=epochwise_version)
+        epochwise_version=epochwise_version,
+        preload=preload)
     # Get predictions for second set of models
     preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
         models_vic[1], models_adv[1], loader,
-        epochwise_version=epochwise_version)
+        epochwise_version=epochwise_version,
+        preload=preload)
     adv_preds = PredictionsOnOneDistribution(
         preds_property_1=preds_adv_1,
         preds_property_2=preds_adv_2

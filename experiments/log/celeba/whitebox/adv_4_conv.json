@@ -1,6 +1,6 @@
 {
-    "name": "regression_adv_4",
-    "start time": "2022-04-01 18:45:43.521377",
+    "name": "adv_4_conv",
+    "start time": "2022-04-06 09:13:55.835518",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -37,7 +37,9 @@
             "weight_decay": 0,
             "get_best": true,
             "cpu": false,
-            "expect_extra": true
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null
         },
         "values": [
             0.0,
@@ -59,7 +61,7 @@
             "batch_size": 150,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
-            "train_sample": 500,
+            "train_sample": 700,
             "val_sample": 50,
             "save": true,
             "load": null,
@@ -77,7 +79,7 @@
             "start_n_conv": 0,
             "first_n_conv": null,
             "permutation_config": {
-                "focus": "all",
+                "focus": "conv",
                 "scale_invariance": false
             },
             "affinity_config": null
@@ -100,14 +102,14 @@
                     null
                 ],
                 "victim_acc": [
-                    0.16988277435302734,
-                    0.2266818881034851,
-                    0.18682830035686493,
-                    0.19369785487651825,
-                    0.23542071878910065
+                    6.843229906692763,
+                    2.586326388345862,
+                    8.536537292972207,
+                    3.3718777741882313,
+                    2.293038334293206
                 ]
             }
         }
     },
-    "save time": "2022-04-02 04:36:47.503089"
+    "save time": "2022-04-06 19:20:25.136581"
 }
