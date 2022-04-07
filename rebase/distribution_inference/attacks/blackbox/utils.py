@@ -72,7 +72,6 @@ def get_preds(loader, models: List[nn.Module],preload):
                 # Get prediction
                     prediction = model(data_points).detach()[:, 0]
                     predictions_on_model.append(prediction.cpu())
-                    del data_points
             else:
                 for data in loader:
                     data_points, labels, _ = data
@@ -81,6 +80,8 @@ def get_preds(loader, models: List[nn.Module],preload):
                     prediction = model(data_points).detach()[:, 0]
                     predictions_on_model.append(prediction.cpu())
             del model
+            ch.cuda.empty_cache()
+            gc.collect()
         predictions_on_model = ch.cat(predictions_on_model)
         predictions.append(predictions_on_model)
 
