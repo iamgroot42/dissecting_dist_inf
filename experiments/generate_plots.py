@@ -15,6 +15,10 @@ if __name__ == "__main__":
                         nargs='+',
                         help="Specify which attacks to plot",
                         type=str)
+    parser.add_argument("--ratios",
+                        nargs='+',
+                        help="Specify which ratios to plot",
+                        type=str)
     parser.add_argument("--plot",
                         help="Specify plot type",
                         choices=['violin', 'box', 'reg', 'line'],
@@ -52,13 +56,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Columns for axis and names
-    columns = [args.x, args.y, args.legend]
+    columns = [args.x, args.y, args.legend, "Epoch"]
 
     # Create plothelper object
     plothelper = PlotHelper(paths=args.log_path,
                             columns=columns,
                             legend_titles=args.legend_titles,
-                            attacks_wanted=args.wanted)
+                            attacks_wanted=args.wanted,
+                            ratios_wanted=args.ratios)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,

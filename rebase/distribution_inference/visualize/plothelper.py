@@ -17,15 +17,17 @@ class PlotHelper():
     def __init__(self,
                  paths: List[str] = [''],
                  loggers: List[AttackResult] = [None],
-                 columns=['Ratios', 'Values', 'Hues'],
+                 columns=['Ratios', 'Values', 'Hues', 'Epoch'],
                  legend_titles: List = None,
-                 attacks_wanted: List = None):
+                 attacks_wanted: List = None,
+                 ratios_wanted: List = None):
         self.df = []
         self.paths = paths
         self.loggers = loggers
         self.columns = columns
         self.attacks_wanted = attacks_wanted
-        if(len(self.columns) != 3):
+        self.ratios_wanted = ratios_wanted
+        if(len(self.columns) < 3):
             raise ValueError(
                 "columns argument must be of length 3")
         self.supported_plot_types = {
@@ -97,30 +99,58 @@ class PlotHelper():
             # Loss & Threshold attacks
             if(attack_res == "loss_and_threshold"):
                 for ratio in logger['result'][attack_res]:
+                    if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
+                        continue
                     ratios.append(ratio)  # add ratio
                     victim_results = logger['result'][attack_res][ratio]['victim_acc']
                     for results in victim_results:
                         loss = results[0]
                         threshold = results[1]
-                        self.df.append({
-                            self.columns[0]: float(ratio),
-                            self.columns[1]: loss,
-                            self.columns[2]: title_prefix + attack_names[0]})
-                        self.df.append({
-                            self.columns[0]: float(ratio),
-                            self.columns[1]: threshold,
-                            self.columns[2]: title_prefix + attack_names[1]})
+                        if type(loss) == list:
+                            assert len(loss) == len(threshold)
+                            for epoch, (l, t) in enumerate(zip(loss, threshold)):
+                                self.df.append({
+                                    self.columns[0]: float(ratio),
+                                    self.columns[1]: l,
+                                    self.columns[2]: title_prefix + attack_names[0],
+                                    self.columns[3]: epoch + 1})
+                                self.df.append({
+                                    self.columns[0]: float(ratio),
+                                    self.columns[1]: t,
+                                    self.columns[2]: title_prefix + attack_names[1],
+                                    self.columns[3]: epoch + 1})
+                        else:
+                            assert type(threshold) != list
+                            self.df.append({
+                                self.columns[0]: float(ratio),
+                                self.columns[1]: loss,
+                                self.columns[2]: title_prefix + attack_names[0]})
+                            self.df.append({
+                                self.columns[0]: float(ratio),
+                                self.columns[1]: threshold,
+                                self.columns[2]: title_prefix + attack_names[1]})
             # Per-point threshold attack, or white-box attack
             elif attack_res in ["threshold_perpoint", "affinity", "permutation_invariant"]:
                 for ratio in logger['result'][attack_res]:
+                    if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
+                        continue
                     ratios.append(ratio)  # add ratio
                     victim_results = logger['result'][attack_res][ratio]['victim_acc']
                     for results in victim_results:
-                        self.df.append({
-                            self.columns[0]: float(ratio),
-                            # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                            self.columns[1]: results, #* 100,
-                            self.columns[2]: title_prefix + attack_names})
+                        if type(results) == list:
+                            for epoch, result in enumerate(results):
+                                self.df.append({
+                                    self.columns[0]: float(ratio),
+                                    # Temporary (below) - ideally all results should be in [0, 100] across entire module
+                                    self.columns[1]: result,  # * 100,
+                                    self.columns[2]: title_prefix + attack_names,
+                                    self.columns[3]: epoch + 1})
+                        else:
+                            self.df.append({
+                                self.columns[0]: float(ratio),
+                                # Temporary (below) - ideally all results should be in [0, 100] across entire module
+                                self.columns[1]: results, #* 100,
+                                self.columns[2]: title_prefix + attack_names})
             else:
                 warnings.warn(warning_string(f"\nAttack type {attack_res} not supported\n"))
         if len(self.df) == 0:
@@ -183,13 +213,14 @@ class PlotHelper():
 
     # Plot values (attack results, etc) across time (model training
     def lineplot(self, title='', darkplot=True, dash=False):
+        assert self.columns[3] in self.df, "Epoch column not found"
+
         graph = seaborn.lineplot(
-            x=self.columns[0],
+            x=self.columns[3],
             y=self.columns[1],
             hue=self.columns[2],
-            data=self.data
+            data=self.df
         )
-
         self._graph_specific_options(graph, title, darkplot, dash)
 
         return graph
