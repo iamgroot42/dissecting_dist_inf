@@ -185,7 +185,7 @@ class CustomDatasetWrapper:
                 if epochwise_version:
                     if os.path.isdir(os.path.join(folder_path, mpath)):
                         # Make sure not accidentally looking into model with adv-trained models
-                        if not mpath.startswith("adv_train_"):
+                        if not (mpath.startswith("adv_train_") or mpath == "full"):
                             models_inside = []
                             # Sort according to epoch number in the name : %d_ format
                             files_inside = os.listdir(
@@ -234,7 +234,8 @@ class CustomDatasetWrapper:
                            on_cpu: bool = False,
                            shuffle: bool = True):
         """
-            Extract features for a given model
+            Extract features for a given model.
+            Make sure only the parts that are needed inside the model are extracted
         """
         # Get path to load models
         model_paths, folder_path, total_models = self._get_model_paths(

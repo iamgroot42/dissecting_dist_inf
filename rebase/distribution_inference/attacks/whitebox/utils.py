@@ -291,6 +291,7 @@ def get_weight_layers(model: BaseModel,
     if model.is_conv:
         # Model has convolutional layers
         # Process FC and Conv layers separately
+
         dims_conv, fvec_conv = _get_weight_layers(
             model.features,
             first_n=attack_config.first_n_conv,
@@ -307,7 +308,14 @@ def get_weight_layers(model: BaseModel,
             custom_layers=attack_config.custom_layers_fc,
             transpose_features=model.transpose_features,
             prune_mask=prune_mask,)
-        feature_vector = fvec_conv + fvec_fc
+        # If PIN requested only FC layers, return only FC layers
+        if attack_config.permutation_config:
+            if attack_config.permutation_config.focus == "fc":
+                feature_vector = fvec_fc
+            elif attack_config.permutation_config.focus == "conv":
+                feature_vector = fvec_conv
+            else:
+                feature_vector = fvec_conv + fvec_fc
         dimensions = (dims_conv, dims_fc)
     else:
         dims_fc, fvec_fc = _get_weight_layers(

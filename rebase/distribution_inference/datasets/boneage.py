@@ -13,6 +13,7 @@ from distribution_inference.models.core import BoneModel, DenseNet
 from distribution_inference.config import DatasetConfig, TrainConfig
 from distribution_inference.utils import ensure_dir_exists
 import distribution_inference.datasets.utils as utils
+from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
@@ -252,6 +253,11 @@ class BoneWrapper(base.CustomDatasetWrapper):
 
     def _filter(self, x):
         return x["gender"] == 1
+
+    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+        info_object = DatasetInformation()
+        model = info_object.get_model(cpu=on_cpu)
+        return load_model(model, path)
 
     def load_data(self):
         # Define DI object
