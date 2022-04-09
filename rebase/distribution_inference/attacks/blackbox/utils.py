@@ -80,8 +80,9 @@ def get_preds(loader, models: List[nn.Module],preload):
                     prediction = model(data_points).detach()[:, 0]
                     predictions_on_model.append(prediction.cpu())
             del model
-            ch.cuda.empty_cache()
             gc.collect()
+            ch.cuda.empty_cache()
+            
         predictions_on_model = ch.cat(predictions_on_model)
         predictions.append(predictions_on_model)
 
@@ -89,8 +90,9 @@ def get_preds(loader, models: List[nn.Module],preload):
     ground_truth = np.concatenate(ground_truth, axis=0)
     if preload:
         del inputs
-    ch.cuda.empty_cache()
     gc.collect()
+    ch.cuda.empty_cache()
+    
     return predictions.numpy(), ground_truth
 
 

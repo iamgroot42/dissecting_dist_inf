@@ -1,6 +1,4 @@
-python blackbox_attacks.py --load_config "./configs/new_census/dp0.1_both.json" --en "sex_dp0.1_both.json" & 
-python blackbox_attacks.py --load_config "./configs/new_census/dp0.1_victim.json" --en "sex_dp0.1_vic.json" &
-python blackbox_attacks.py --load_config "./configs/new_census/dp1.0_both.json" --en "sex_dp1.0_both.json" &
-python blackbox_attacks.py --load_config "./configs/new_census/dp1.0_victim.json" --en "sex_dp1.0_vic.json" & 
+python blackbox_attacks.py --load_config "./dp0.1_victim.json" --en "race_bbdp0.1_vic" & 
+#python whitebox_attacks.py --load_config "./wb_dp_vic.json" --en "race_wbdp0.1_vic" & 
 wait
 echo "finished"
