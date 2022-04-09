@@ -4,21 +4,23 @@ import torch as ch
 import torch.nn as nn
 import numpy as np
 from copy import deepcopy
+import os
 
-from distribution_inference.training.utils import AverageMeter, generate_adversarial_input
+from distribution_inference.training.utils import AverageMeter, generate_adversarial_input, save_model
 from distribution_inference.config import TrainConfig, AdvTrainingConfig
 from distribution_inference.training.dp import train as train_with_dp
 from distribution_inference.utils import warning_string
 
 
 def train(model, loaders, train_config: TrainConfig,
-          input_is_list: bool = False):
+          input_is_list: bool = False,
+          extra_options: dict = None):
     if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
-        return train_with_dp(model, loaders, train_config, input_is_list)
+        return train_with_dp(model, loaders, train_config, input_is_list, extra_options)
     else:
         # If DP training, call appropriate function
-        return train_without_dp(model, loaders, train_config, input_is_list)
+        return train_without_dp(model, loaders, train_config, input_is_list, extra_options)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
@@ -128,7 +130,9 @@ def validate_epoch(val_loader, model, criterion,
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
-def train_without_dp(model, loaders, train_config: TrainConfig, input_is_list: bool = False):
+def train_without_dp(model, loaders, train_config: TrainConfig,
+                     input_is_list: bool = False,
+                     extra_options: dict = None):
     # Get data loaders
     train_loader, val_loader = loaders
 
@@ -188,6 +192,26 @@ def train_without_dp(model, loaders, train_config: TrainConfig, input_is_list: b
         if train_config.get_best and vloss_compare < best_loss:
             best_loss = vloss_compare
             best_model = deepcopy(model)
+
+        if train_config.save_every_epoch:
+            # If adv training, suffix is a bit different
+            if train_config.misc_config and train_config.misc_config.adv_config:
+                suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
+            else:
+                suffix = "_%.2f.ch" % vacc
+
+            # Get model "name" and function to save model
+            model_num = extra_options.get("curren_model_num")
+            save_path_fn = extra_options.get("save_path_fn")
+
+            # Save model in current epoch state
+            file_name = os.path.join(str(model_num), str(
+                epoch + train_config.offset) + suffix)
+            save_path = save_path_fn(train_config, file_name)
+            # Make sure this directory exists
+            if not os.path.isdir(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
+            save_model(model, save_path)
 
     # Special case for CelebA
     # Return epsilon back to normal

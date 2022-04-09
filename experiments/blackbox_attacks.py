@@ -1,3 +1,6 @@
+"""
+    Script for executing black-box inference attacks.
+"""
 from simple_parsing import ArgumentParser
 from pathlib import Path
 import os
@@ -57,7 +60,8 @@ if __name__ == "__main__":
     models_vic_1 = ds_vic_1.get_models(train_config,
                                        n_models=attack_config.num_victim_models,
                                        on_cpu=attack_config.on_cpu,
-                                       shuffle=False)
+                                       shuffle=False,
+                                       epochwise_version=attack_config.train_config.save_every_epoch)
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -71,7 +75,8 @@ if __name__ == "__main__":
         models_vic_2 = ds_vic_2.get_models(train_config,
                                            n_models=attack_config.num_victim_models,
                                            on_cpu=attack_config.on_cpu,
-                                           shuffle=False)
+                                           shuffle=False,
+                                           epochwise_version=attack_config.train_config.save_every_epoch)
         for _ in range(attack_config.tries):
             models_adv_1 = ds_adv_1.get_models(train_adv_config,
                                                n_models=bb_attack_config.num_adv_models,
@@ -85,6 +90,7 @@ if __name__ == "__main__":
                 models_adv=(models_adv_1, models_adv_2),
                 ds_obj=ds_adv_1,
                 batch_size=bb_attack_config.batch_size,
+                epochwise_version=attack_config.train_config.save_every_epoch,
                 preload=bb_attack_config.preload
             )
             # Get victim and adv predictions on loaders for second ratio
@@ -93,6 +99,7 @@ if __name__ == "__main__":
                 models_adv=(models_adv_1, models_adv_2),
                 ds_obj=ds_adv_2,
                 batch_size=bb_attack_config.batch_size,
+                epochwise_version=attack_config.train_config.save_every_epoch,
                 preload=bb_attack_config.preload
             )
             # Wrap predictions to be used by the attack
@@ -118,7 +125,8 @@ if __name__ == "__main__":
                 result = attacker_obj.attack(
                     preds_adv, preds_vic,
                     ground_truth=(ground_truth_1, ground_truth_2),
-                    calc_acc=calculate_accuracies)
+                    calc_acc=calculate_accuracies,
+                    epochwise_version=attack_config.train_config.save_every_epoch)
 
                 logger.add_results(attack_type, prop_value,
                                    result[0][0], result[1][0])

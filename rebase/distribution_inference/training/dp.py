@@ -1,12 +1,14 @@
 import torch as ch
 import torch.nn as nn
 import numpy as np
+import os
 from tqdm import tqdm
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 from opacus.validators import ModuleValidator
 from opacus.privacy_engine import PrivacyEngine
 
 from distribution_inference.config import TrainConfig
+from distribution_inference.training.utils import save_model
 
 #  Ignore warnings from Opacus
 import warnings
@@ -23,7 +25,9 @@ def validate_model(model):
         raise ValueError("Model is not opacus compatible")
 
 
-def train(model, loaders, train_config: TrainConfig, input_is_list: bool = False):
+def train(model, loaders, train_config: TrainConfig,
+          input_is_list: bool = False,
+          extra_options: dict = None):
     """
         Train model with DP noise
     """
@@ -133,14 +137,31 @@ def train(model, loaders, train_config: TrainConfig, input_is_list: bool = False
         return np.mean(losses), np.mean(accuracies)
 
     #  EPOCHS
-    iterator = range(train_config.epochs)
+    iterator = range(1, train_config.epochs + 1)
     iterator = tqdm(iterator, desc="Epoch", unit="epoch")
     for epoch in iterator:
         loss, acc, epsilon = train_opacus(
             model, train_loader, optimizer, device)
         test_loss, test_acc = test_opacus(model, val_loader, device)
         iterator.set_description(
-            f"Epoch {epoch + 1} | Train Loss: {loss:.4f} | Train Accuracy: {acc:.3f} | ε={epsilon:.4f} | Test Loss: {test_loss:.4f} | Test Accuracy: {test_acc:.3f}")
+            f"Epoch {epoch} | Train Loss: {loss:.4f} | Train Accuracy: {acc:.3f} | ε={epsilon:.4f} | Test Loss: {test_loss:.4f} | Test Accuracy: {test_acc:.3f}")
+
+        if train_config.save_every_epoch:
+            # If adv training, suffix is a bit different
+            suffix = "_%.2f.ch" % test_acc
+
+            # Get model "name" and function to save model
+            model_num = extra_options.get("curren_model_num")
+            save_path_fn = extra_options.get("save_path_fn")
+
+            # Save model in current epoch state
+            file_name = os.path.join(str(model_num), str(
+                epoch + train_config.offset) + suffix)
+            save_path = save_path_fn(train_config, file_name)
+            # Make sure this directory exists
+            if not os.path.isdir(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
+            save_model(model, save_path)
 
     test_loss, test_acc = test_opacus(model, val_loader, device)
 

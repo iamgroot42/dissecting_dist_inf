@@ -1,6 +1,5 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
-from dataclasses import replace
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv

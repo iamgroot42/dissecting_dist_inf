@@ -7,6 +7,7 @@ from typing import List
 
 from distribution_inference.attacks.whitebox.permutation.permutation import PINAttack
 from distribution_inference.attacks.whitebox.affinity.affinity import AffinityAttack
+from distribution_inference.attacks.whitebox.core import BasicDataset
 from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.models.core import BaseModel
 from distribution_inference.utils import warning_string
@@ -41,22 +42,6 @@ def prepare_batched_data(X,
     if reduce:
         inputs = [x.view(-1, x.shape[-1]) for x in inputs]
     return inputs
-
-
-class BasicDataset(Dataset):
-    def __init__(self, X, Y=None):
-        self.X = X
-        self.Y = Y
-        if self.Y is not None:
-            assert len(self.X) == len(self.Y)
-
-    def __len__(self):
-        return len(self.X)
-
-    def __getitem__(self, idx):
-        if self.Y is None:
-            return self.X[idx]
-        return self.X[idx], self.Y[idx]
 
 
 def covert_data_to_loaders(X,
@@ -301,10 +286,12 @@ def _get_weight_layers(model: BaseModel,
 def get_weight_layers(model: BaseModel,
                       attack_config: WhiteBoxAttackConfig,
                       prune_mask=[]):
-
+    # TODO: Could speed this up by loading only relevant parts of the model
+    # depending on what the meta-classifier will be using
     if model.is_conv:
         # Model has convolutional layers
         # Process FC and Conv layers separately
+
         dims_conv, fvec_conv = _get_weight_layers(
             model.features,
             first_n=attack_config.first_n_conv,
@@ -321,7 +308,14 @@ def get_weight_layers(model: BaseModel,
             custom_layers=attack_config.custom_layers_fc,
             transpose_features=model.transpose_features,
             prune_mask=prune_mask,)
-        feature_vector = fvec_conv + fvec_fc
+        # If PIN requested only FC layers, return only FC layers
+        if attack_config.permutation_config:
+            if attack_config.permutation_config.focus == "fc":
+                feature_vector = fvec_fc
+            elif attack_config.permutation_config.focus == "conv":
+                feature_vector = fvec_conv
+            else:
+                feature_vector = fvec_conv + fvec_fc
         dimensions = (dims_conv, dims_fc)
     else:
         dims_fc, fvec_fc = _get_weight_layers(

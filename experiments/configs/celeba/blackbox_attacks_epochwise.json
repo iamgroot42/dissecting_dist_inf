@@ -1,0 +1,45 @@
+{
+    "train_config": {
+        "data_config": {
+            "name": "celeba",
+            "prop": "Young",
+            "classify": "Male",
+            "split": "adv",
+            "value": 0.0
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0,
+        "save_every_epoch": true
+    },
+    "tries": 5,
+    "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4
+    ],
+    "on_cpu": true,
+    "num_victim_models": 10,
+    "adv_diff_misc_config": false,
+    "black_box": {
+        "granularity": 0.05,
+        "num_adv_models": 50,
+        "batch_size": 512,
+        "attack_type": [
+            "loss_and_threshold",
+            "threshold_perpoint"
+        ],
+        "ratios": [
+            0.05,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            1.0
+        ],
+        "preload": true
+    }
+}

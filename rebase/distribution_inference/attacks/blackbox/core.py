@@ -37,7 +37,8 @@ class Attack:
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
-               calc_acc: Callable = None):
+               calc_acc: Callable = None,
+               epochwise_version: bool = False):
         """
             Preds contain predictions on either of the two distributions
             on the top level. Inside, they contain predictions from models
@@ -50,7 +51,8 @@ def threshold_test_per_dist(cal_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
                             y_gt: np.ndarray,
-                            config: BlackBoxAttackConfig):
+                            config: BlackBoxAttackConfig,
+                            epochwise_version: bool = False):
     """
         Perform threshold-test on predictions of adversarial and victim models,
         for each of the given ratios. Returns statistics on all ratios.
@@ -66,8 +68,12 @@ def threshold_test_per_dist(cal_acc: Callable,
     # Order points according to computed utility
     p1 = np.transpose(p1)[order][::-1]
     p2 = np.transpose(p2)[order][::-1]
-    pv1 = np.transpose(pv1)[order][::-1]
-    pv2 = np.transpose(pv2)[order][::-1]
+    if epochwise_version:
+        pv1 = [np.transpose(x)[order][::-1] for x in pv1]
+        pv2 = [np.transpose(x)[order][::-1] for x in pv2]
+    else:
+        pv1 = np.transpose(pv1)[order][::-1]
+        pv2 = np.transpose(pv2)[order][::-1]
     yg = y_gt[order][::-1]
 
     adv_accs, allaccs_1, allaccs_2, f_accs = [], [], [], []
@@ -76,7 +82,11 @@ def threshold_test_per_dist(cal_acc: Callable,
         # Get first <ratio> percentile of points
         leng = int(ratio * p1.shape[0])
         p1_use, p2_use, yg_use = p1[:leng], p2[:leng], yg[:leng]
-        pv1_use, pv2_use = pv1[:leng], pv2[:leng]
+        if epochwise_version:
+            pv1_use = [x[:leng] for x in pv1]
+            pv2_use = [x[:leng] for x in pv2]
+        else:
+            pv1_use, pv2_use = pv1[:leng], pv2[:leng]
 
         # Calculate accuracies for these points in [0,100]
         accs_1 = 100 * cal_acc(p1_use, yg_use)
@@ -87,22 +97,43 @@ def threshold_test_per_dist(cal_acc: Callable,
         tracc, threshold, rule = find_threshold_acc(
             accs_1, accs_2, granularity=config.granularity)
         adv_accs.append(100 * tracc)
-        accs_victim_1 = 100 * cal_acc(pv1_use, yg_use)
-        accs_victim_2 = 100 * cal_acc(pv2_use, yg_use)
+        if epochwise_version:
+            accs_victim_1 = [100 * cal_acc(pv1_use_inside, yg_use)
+                             for pv1_use_inside in pv1_use]
+            accs_victim_2 = [100 * cal_acc(pv2_use_inside, yg_use)
+                             for pv2_use_inside in pv2_use]
+        else:
+            accs_victim_1 = 100 * cal_acc(pv1_use, yg_use)
+            accs_victim_2 = 100 * cal_acc(pv2_use, yg_use)
         allaccs_1.append(accs_victim_1)
         allaccs_2.append(accs_victim_2)
 
         # Get accuracy on victim models using these thresholds
-        combined = np.concatenate((accs_victim_1, accs_victim_2))
-        classes = np.concatenate(
-            (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
-        specific_acc = get_threshold_acc(
-            combined, classes, threshold, rule)
-        f_accs.append(100 * specific_acc)
+        if epochwise_version:
+            combined = [np.concatenate((x, y)) for (
+                x, y) in zip(accs_victim_1, accs_victim_2)]
+            classes = [np.concatenate((np.zeros_like(x), np.ones_like(y))) for (
+                x, y) in zip(accs_victim_1, accs_victim_2)]
+            specific_acc = [get_threshold_acc(
+                x, y, threshold, rule) for (x, y) in zip(combined, classes)]
+            f_accs.append([100 * x for x in specific_acc])
+        else:
+            combined = np.concatenate((accs_victim_1, accs_victim_2))
+            classes = np.concatenate(
+                (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
+            specific_acc = get_threshold_acc(
+                combined, classes, threshold, rule)
+            f_accs.append(100 * specific_acc)
 
     allaccs_1 = np.array(allaccs_1)
     allaccs_2 = np.array(allaccs_2)
-    return np.array(adv_accs), np.array(f_accs), (allaccs_1, allaccs_2)
+    f_accs = np.array(f_accs)
+    if epochwise_version:
+        allaccs_1 = np.transpose(allaccs_1, (1, 0, 2))
+        allaccs_2 = np.transpose(allaccs_2, (1, 0, 2))
+        f_accs = f_accs.T
+
+    return np.array(adv_accs), f_accs, (allaccs_1, allaccs_2)
 
 
 def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):

@@ -1,6 +1,5 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
-from dataclasses import replace
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
@@ -116,7 +115,7 @@ if __name__ == "__main__":
             )
 
             # Get seed-data
-            seed_data_loader = get_seed_data_loader(
+            seed_data_ds, seed_data_loader = get_seed_data_loader(
                 [ds_adv_1, ds_adv_2],
                 wb_attack_config,
                 num_samples_use=wb_attack_config.affinity_config.num_samples_use)
@@ -127,6 +126,9 @@ if __name__ == "__main__":
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
                 wb_attack_config)
+            # Save seed-data in attack object, since this is needed
+            # To use model later in evaluation mode, if loaded from memory
+            attacker_obj.register_seed_data(seed_data_ds)
 
             # Make affinity features for train (adv) models
             features_train = attacker_obj.make_affinity_features(

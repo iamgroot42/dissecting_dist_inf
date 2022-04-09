@@ -6,9 +6,7 @@
 import torch as ch
 import numpy as np
 from os import environ
-from collections import OrderedDict
 import torch.nn as nn
-import torch.optim as optim
 from torchvision import transforms
 
 from robustness.model_utils import make_and_restore_model
@@ -16,29 +14,11 @@ from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFA
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
 
-from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
-from copy import deepcopy
 from PIL import Image
 from tqdm import tqdm
 import pandas as pd
 from typing import List
 import os
-
-
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-
-def log(x):
-    print(f"{bcolors.WARNING}%s{bcolors.ENDC}" % x)
 
 
 class DataPaths:
@@ -289,17 +269,6 @@ class Decoder(nn.Module):
         return self.decoder(x_)
 
 
-class BasicDataset(ch.utils.data.Dataset):
-    def __init__(self, X, Y):
-        self.X, self.Y = X, Y
-
-    def __len__(self):
-        return len(self.Y)
-
-    def __getitem__(self, index):
-        return self.X[index], self.Y[index]
-
-
 def compute_delta_values(logits, weights, actual_label=None):
     # Iterate through all possible classes, calculate flip probabilities
     actual_label = ch.argmax(logits)
@@ -316,12 +285,6 @@ def get_these_params(model, identifier):
         if name == identifier:
             return param
     return None
-
-
-def flash_utils(args):
-    log_statement("==> Arguments:")
-    for arg in vars(args):
-        print(arg, " : ", getattr(args, arg))
 
 
 class MNISTFlatModel(nn.Module):
@@ -379,332 +342,6 @@ def get_cropped_faces(cropmodel, x):
 
     return ch.stack(x_cropped, 0), indices
 
-
-# Function to extract model parameters
-def get_weight_layers(m, normalize=False, transpose=True,
-                      first_n=np.inf, start_n=0,
-                      custom_layers=None,
-                      conv=False, include_all=False,
-                      prune_mask=[]):
-    dims, dim_kernels, weights, biases = [], [], [], []
-    i, j = 0, 0
-
-    # Sort and store desired layers, if specified
-    custom_layers = sorted(custom_layers) if custom_layers is not None else None
-
-    track = 0
-    for name, param in m.named_parameters():
-        if "weight" in name:
-
-            param_data = param.data.detach().cpu()
-
-            # Apply pruning masks if provided
-            if len(prune_mask) > 0:
-                param_data = param_data * prune_mask[track]
-                track += 1
-
-            if transpose:
-                param_data = param_data.T
-
-            weights.append(param_data)
-            if conv:
-                dims.append(weights[-1].shape[2])
-                dim_kernels.append(weights[-1].shape[0] * weights[-1].shape[1])
-            else:
-                dims.append(weights[-1].shape[0])
-        if "bias" in name:
-            biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
-
-        # Assume each layer has weight & bias
-        i += 1
-
-        if custom_layers is None:
-            # If requested, start looking from start_n layer
-            if (i - 1) // 2 < start_n:
-                dims, dim_kernels, weights, biases = [], [], [], []
-                continue
-
-            # If requested, look at only first_n layers
-            if i // 2 > first_n - 1:
-                break
-        else:
-            # If this layer was not asked for, omit corresponding weights & biases
-            if i // 2 != custom_layers[j // 2]:
-                dims = dims[:-1]
-                dim_kernels = dim_kernels[:-1]
-                weights = weights[:-1]
-                biases = biases[:-1]
-            else:
-                # Specified layer was found, increase count
-                j += 1
-
-            # Break if all layers were processed
-            if len(custom_layers) == j // 2:
-                break
-
-    if custom_layers is not None and len(custom_layers) != j // 2:
-        raise ValueError("Custom layers requested do not match actual model")
-
-    if include_all:
-        if conv:
-            middle_dim = weights[-1].shape[3]
-        else:
-            middle_dim = weights[-1].shape[1]
-
-    if normalize:
-        min_w = min([ch.min(x).item() for x in weights])
-        max_w = max([ch.max(x).item() for x in weights])
-        weights = [(w - min_w) / (max_w - min_w) for w in weights]
-        weights = [w / max_w for w in weights]
-
-    cctd = []
-    for w, b in zip(weights, biases):
-        if conv:
-            b_exp = b.unsqueeze(0).unsqueeze(0)
-            b_exp = b_exp.expand(w.shape[0], w.shape[1], 1, -1)
-            combined = ch.cat((w, b_exp), 2).transpose(2, 3)
-            combined = combined.view(-1, combined.shape[2], combined.shape[3])
-        else:
-            combined = ch.cat((w, b), 0).T
-
-        cctd.append(combined)
-
-    if conv:
-        if include_all:
-            return (dims, dim_kernels, middle_dim), cctd
-        return (dims, dim_kernels), cctd
-    if include_all:
-        return (dims, middle_dim), cctd
-    return dims, cctd
-
-
-class PermInvConvModel(nn.Module):
-    def __init__(self, dim_channels, dim_kernels,
-                 inside_dims=[64, 8], n_classes=2,
-                 dropout=0.5, only_latent=False,
-                 scale_invariance=False):
-        super(PermInvConvModel, self).__init__()
-        self.dim_channels = dim_channels
-        self.dim_kernels = dim_kernels
-        self.only_latent = only_latent
-        self.scale_invariance = scale_invariance
-
-        assert len(dim_channels) == len(
-            dim_kernels), "Kernel size information missing!"
-
-        self.dropout = dropout
-        self.layers = []
-        prev_layer = 0
-
-        # If binary, need only one output
-        if n_classes == 2:
-            n_classes = 1
-
-        # One network per kernel location
-        def make_mini(y):
-            layers = [
-                nn.Dropout(self.dropout),
-                nn.Linear(y, inside_dims[0]),
-                nn.ReLU(),
-            ]
-            for i in range(1, len(inside_dims)):
-                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
-                layers.append(nn.ReLU())
-            layers.append(nn.Dropout(self.dropout))
-
-            return nn.Sequential(*layers)
-
-        # For each layer of kernels
-        for i, dim in enumerate(self.dim_channels):
-            # +1 for bias
-            # prev_layer for previous layer
-            if i > 0:
-                prev_layer = inside_dims[-1] * dim
-
-            # For each pixel in the kernel
-            # Concatenated along pixels in kernel
-            self.layers.append(
-                make_mini(prev_layer + (1 + dim) * dim_kernels[i]))
-
-        self.layers = nn.ModuleList(self.layers)
-
-        # Experimental param: if scale invariance, also store overall scale multiplier
-        dim_for_scale_invariance = 1 if self.scale_invariance else 0
-
-        # Final network to combine them all
-        # layer representations together
-        if not self.only_latent:
-            self.rho = nn.Linear(
-                inside_dims[-1] * len(self.dim_channels) + dim_for_scale_invariance,
-                n_classes)
-
-    def forward(self, params):
-        reps = []
-        for_prev = None
-
-        if self.scale_invariance:
-            # Keep track of multiplier (with respect to smallest nonzero weight) across layers
-            # For ease of computation, we will store in log scale
-            scale_invariance_multiplier = ch.ones((params[0].shape[0]))
-            # Shift to appropriate device
-            scale_invariance_multiplier = scale_invariance_multiplier.to(params[0].device)
-
-        for param, layer in zip(params, self.layers):
-            # shape: (n_samples, n_pixels_in_kernel, channels_out, channels_in)
-            prev_shape = param.shape
-
-            # shape: (n_samples, channels_out, n_pixels_in_kernel, channels_in)
-            param = param.transpose(1, 2)
-
-            # shape: (n_samples, channels_out, n_pixels_in_kernel * channels_in)
-            param = ch.flatten(param, 2)
-
-            if self.scale_invariance:
-                # TODO: Vectorize
-                for i in range(param.shape[0]):
-                    # Scaling mechanism- pick largest weight, scale weights
-                    # such that largest weight becomes 1
-                    scale_factor = ch.norm(param[i])
-                    scale_invariance_multiplier[i] += ch.log(scale_factor)
-                    # Scale parameter matrix (if it's not all zeros)
-                    if scale_factor != 0:
-                        param[i] /= scale_factor
-
-            if for_prev is None:
-                param_eff = param
-            else:
-                prev_rep = for_prev.repeat(1, param.shape[1], 1)
-                param_eff = ch.cat((param, prev_rep), -1)
-
-            # shape: (n_samples * channels_out, channels_in_eff)
-            param_eff = param_eff.view(
-                param_eff.shape[0] * param_eff.shape[1], -1)
-
-            # shape: (n_samples * channels_out, inside_dims[-1])
-            pp = layer(param_eff.reshape(-1, param_eff.shape[-1]))
-
-            # shape: (n_samples, channels_out, inside_dims[-1])
-            pp = pp.view(prev_shape[0], prev_shape[2], -1)
-
-            # shape: (n_samples, inside_dims[-1])
-            processed = ch.sum(pp, -2)
-
-            # Store previous layer's representation
-            # shape: (n_samples, channels_out * inside_dims[-1])
-            for_prev = pp.view(pp.shape[0], -1)
-
-            # shape: (n_samples, 1, channels_out * inside_dims[-1])
-            for_prev = for_prev.unsqueeze(-2)
-
-            # Store representation for this layer
-            reps.append(processed)
-
-        reps = ch.cat(reps, 1)
-
-        # Add invariance multiplier
-        if self.scale_invariance:
-            scale_invariance_multiplier = ch.unsqueeze(scale_invariance_multiplier, 1)
-            reps = ch.cat((reps, scale_invariance_multiplier), 1)
-
-        if self.only_latent:
-            return reps
-
-        logits = self.rho(reps)
-        return logits
-
-
-class PermInvModel(nn.Module):
-    def __init__(self, dims: List[int], inside_dims: List[int] = [64, 8],
-                 n_classes: int = 2, dropout: float = 0.5,
-                 only_latent: bool = False):
-        super(PermInvModel, self).__init__()
-        self.dims = dims
-        self.dropout = dropout
-        self.only_latent = only_latent
-        self.final_act_size = inside_dims[-1] * len(dims)
-        self.layers = []
-        prev_layer = 0
-
-        # If binary, need only one output
-        if n_classes == 2:
-            n_classes = 1
-
-        def make_mini(y):
-            layers = [
-                nn.Linear(y, inside_dims[0]),
-                nn.ReLU()
-            ]
-            for i in range(1, len(inside_dims)):
-                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
-                layers.append(nn.ReLU())
-            layers.append(nn.Dropout(self.dropout))
-
-            return nn.Sequential(*layers)
-
-        for i, dim in enumerate(self.dims):
-            # +1 for bias
-            # prev_layer for previous layer
-            # input dimension per neuron
-            if i > 0:
-                prev_layer = inside_dims[-1] * dim
-            self.layers.append(make_mini(prev_layer + 1 + dim))
-
-        self.layers = nn.ModuleList(self.layers)
-
-        if not self.only_latent:
-            # Final network to combine them all together
-            self.rho = nn.Linear(self.final_act_size, n_classes)
-
-    def forward(self, params) -> ch.Tensor:
-        reps = []
-        prev_layer_reps = None
-        is_batched = len(params[0].shape) > 2
-
-        for param, layer in zip(params, self.layers):
-
-            # Case where data is batched per layer
-            if is_batched:
-                if prev_layer_reps is None:
-                    param_eff = param
-                else:
-                    prev_layer_reps = prev_layer_reps.repeat(
-                        1, param.shape[1], 1)
-                    param_eff = ch.cat((param, prev_layer_reps), -1)
-
-                prev_shape = param_eff.shape
-                processed = layer(param_eff.view(-1, param_eff.shape[-1]))
-                processed = processed.view(
-                    prev_shape[0], prev_shape[1], -1)
-
-            else:
-                if prev_layer_reps is None:
-                    param_eff = param
-                else:
-                    prev_layer_reps = prev_layer_reps.repeat(param.shape[0], 1)
-                    # Include previous layer representation
-                    param_eff = ch.cat((param, prev_layer_reps), -1)
-                processed = layer(param_eff)
-
-            # Store this layer's representation
-            reps.append(ch.sum(processed, -2))
-
-            # Handle per-data/batched-data case together
-            if is_batched:
-                prev_layer_reps = processed.view(processed.shape[0], -1)
-            else:
-                prev_layer_reps = processed.view(-1)
-            prev_layer_reps = ch.unsqueeze(prev_layer_reps, -2)
-
-        if is_batched:
-            reps_c = ch.cat(reps, 1)
-        else:
-            reps_c = ch.unsqueeze(ch.cat(reps), 0)
-
-        if self.only_latent:
-            return reps_c
-
-        logits = self.rho(reps_c)
-        return logits
 
 
 class FullPermInvModel(nn.Module):
@@ -893,23 +530,6 @@ class CustomBertModel(nn.Module):
         return logits
 
 
-class AverageMeter(object):
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
-
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
-
-
 def ensure_dir_exists(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -922,46 +542,6 @@ def get_outputs(model, X, no_grad=False):
 
     return outputs[:, 0]
 
-
-def compute_metrics(dataset_true, dataset_pred,
-                    unprivileged_groups, privileged_groups):
-    """ Compute the key metrics """
-    from aif360.metrics import ClassificationMetric
-    classified_metric_pred = ClassificationMetric(
-        dataset_true,
-        dataset_pred,
-        unprivileged_groups=unprivileged_groups,
-        privileged_groups=privileged_groups)
-    metrics = OrderedDict()
-    metrics["Balanced accuracy"] = 0.5 * \
-        (classified_metric_pred.true_positive_rate() +
-         classified_metric_pred.true_negative_rate())
-    metrics["Statistical parity difference"] = \
-        classified_metric_pred.statistical_parity_difference()
-    metrics["Disparate impact"] = classified_metric_pred.disparate_impact()
-    metrics["Average odds difference"] = \
-        classified_metric_pred.average_odds_difference()
-    metrics["Equal opportunity difference"] = \
-        classified_metric_pred.equal_opportunity_difference()
-    metrics["Theil index"] = classified_metric_pred.theil_index()
-    metrics["False discovery rate difference"] = \
-        classified_metric_pred.false_discovery_rate_difference()
-    metrics["False discovery rate ratio"] = \
-        classified_metric_pred.false_discovery_rate_ratio()
-    metrics["False omission rate difference"] = \
-        classified_metric_pred.false_omission_rate_difference()
-    metrics["False omission rate ratio"] = \
-        classified_metric_pred.false_omission_rate_ratio()
-    metrics["False negative rate difference"] = \
-        classified_metric_pred.false_negative_rate_difference()
-    metrics["False negative rate ratio"] = \
-        classified_metric_pred.false_negative_rate_ratio()
-    metrics["False positive rate difference"] = \
-        classified_metric_pred.false_positive_rate_difference()
-    metrics["False positive rate ratio"] = \
-        classified_metric_pred.false_positive_rate_ratio()
-
-    return metrics
 
 
 def get_z_value(metric_1, metric_2):
@@ -977,133 +557,8 @@ def get_z_value(metric_1, metric_2):
     return Z
 
 
-def get_threshold_acc(X, Y, threshold, rule=None):
-    # Rule-1: everything above threshold is 1 class
-    acc_1 = np.mean((X >= threshold) == Y)
-    # Rule-2: everything below threshold is 1 class
-    acc_2 = np.mean((X <= threshold) == Y)
-
-    # If rule is specified, use that
-    if rule == 1:
-        return acc_1
-    elif rule == 2:
-        return acc_2
-
-    # Otherwise, find and use the one that gives the best acc
-    if acc_1 >= acc_2:
-        return acc_1, 1
-    return acc_2, 2
-
-
-def find_threshold_acc(accs_1, accs_2, granularity=0.1):
-    lower = min(np.min(accs_1), np.min(accs_2))
-    upper = max(np.max(accs_1), np.max(accs_2))
-    combined = np.concatenate((accs_1, accs_2))
-    # Want to predict first set as 0s, second set as 1s
-    classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
-    best_acc = 0.0
-    best_threshold = 0
-    best_rule = None
-    while lower <= upper:
-        best_of_two, rule = get_threshold_acc(combined, classes, lower)
-        if best_of_two > best_acc:
-            best_threshold = lower
-            best_acc = best_of_two
-            best_rule = rule
-
-        lower += granularity
-
-    return best_acc, best_threshold, best_rule
-
-
-def get_threshold_pred(X, Y, threshold, rule,
-                       get_pred: bool = False,
-                       confidence: bool = False):
-    if X.shape[1] != Y.shape[0]:
-        raise ValueError('Dimension mismatch between X and Y: %d and %d should match' % (X.shape[1], Y.shape[0]))
-    if X.shape[0] != threshold.shape[0]:
-        raise ValueError('Dimension mismatch between X and threshold: %d and %d should match' % (X.shape[0], threshold.shape[0]))
-    res = []
-    for i in range(X.shape[1]):
-        prob = np.average((X[:, i] <= threshold) == rule)
-        if confidence:
-            res.append(prob)
-        else:
-            res.append(prob >= 0.5)
-    res = np.array(res)
-    if confidence:
-        acc = np.mean((res >= 0.5) == Y)
-    else:    
-        acc = np.mean(res == Y)
-    if get_pred:
-        return res, acc
-    return acc
-
-
-def find_threshold_pred(pred_1, pred_2, granularity=0.005):
-    if pred_1.shape[0] != pred_2.shape[0]:
-        raise ValueError('dimension mismatch')
-    thres, rules = [], []
-    g = granularity
-    for i in tqdm(range(pred_1.shape[0])):
-        _, t, r = find_threshold_acc(pred_1[i], pred_2[i], g)
-        while r is None:
-            g = g/10
-            _, t, r = find_threshold_acc(pred_1[i], pred_2[i], g)
-        thres.append(t)
-        rules.append(r-1)
-    thres = np.array(thres)
-    rules = np.array(rules)
-    acc = get_threshold_pred(np.concatenate((pred_1, pred_2), axis=1), np.concatenate(
-        (np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1]))), thres, rules)
-    return acc, thres, rules
-
 def get_param_count(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
-# identity function
-class basic(ch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input):
-        # return input.clamp(min=0)
-        return input
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-
-# fake relu function
-class fakerelu(ch.autograd.Function):
-    @staticmethod
-    def forward(ctx, input):
-        # return input.clamp(min=0)
-        return input
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        return grad_output
-
-
-# Fake-relu module wrapper
-class FakeReluWrapper(nn.Module):
-    def __init__(self, inplace: bool = False):
-        super(FakeReluWrapper, self).__init__()
-        self.inplace = inplace
-
-    def forward(self, input: ch.Tensor):
-        return fakerelu.apply(input)
-
-
-# identity function module wrapper
-class BasicWrapper(nn.Module):
-    def __init__(self, inplace: bool = False):
-        super(BasicWrapper, self).__init__()
-        self.inplace = inplace
-
-    def forward(self, input: ch.Tensor):
-        return fakerelu.apply(input)
 
 
 def get_n_effective(acc, r0, r1):
@@ -1333,95 +788,6 @@ def check_if_inside_cluster():
     if environ.get('ISRIVANNA') == "1":
         return True
     return False
-
-
-class AffinityMetaClassifier(nn.Module):
-    def __init__(self, num_dim: int, numlayers: int,
-                 num_final: int = 16, only_latent: bool = False):
-        super(AffinityMetaClassifier, self).__init__()
-        self.num_dim = num_dim
-        self.numlayers = numlayers
-        self.only_latent = only_latent
-        self.num_final = num_final
-        self.final_act_size = num_final * self.numlayers
-        self.models = []
-
-        def make_small_model():
-            return nn.Sequential(
-                nn.Linear(self.num_dim, 1024),
-                nn.ReLU(),
-                nn.Linear(1024, 256),
-                nn.ReLU(),
-                nn.Linear(256, 64),
-                nn.ReLU(),
-                nn.Linear(64, self.num_final),
-            )
-        for _ in range(numlayers):
-            self.models.append(make_small_model())
-        self.models = nn.ModuleList(self.models)
-        if not self.only_latent:
-            self.final_layer = nn.Linear(self.num_final * self.numlayers, 1)
-
-    def forward(self, x) -> ch.Tensor:
-        # Get intermediate activations for each layer
-        # Aggreage them to get a single feature vector
-        all_acts = []
-        for i, model in enumerate(self.models):
-            all_acts.append(model(x[:, i]))
-        all_accs = ch.cat(all_acts, 1)
-        # Return pre-logit activations if requested
-        if self.only_latent:
-            return all_accs
-        return self.final_layer(all_accs)
-
-
-def make_affinity_feature(model, data, use_logit=False, detach=True, verbose=True):
-    """
-         Construct affinity matrix per layer based on affinity scores
-         for a given model. Model them in a way that does not
-         require graph-based models.
-    """
-    # Build affinity graph for given model and data
-    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-
-    # Start with getting layer-wise model features
-    model_features = model(data, get_all=True, detach_before_return=detach)
-    layerwise_features = []
-    for i, feature in enumerate(model_features):
-        # Old (before 2/4)
-        # Skip logits if asked not to use (default)
-        # if not use_logit and i == (len(model_features) - 1):
-            # break
-        scores = []
-        # Pair-wise iteration of all data
-        for i in range(len(data)-1):
-            others = feature[i+1:]
-            scores += cos(ch.unsqueeze(feature[i], 0), others)
-        layerwise_features.append(ch.stack(scores, 0))
-
-    # New (2/4)
-    # If asked to use logits, convert them to probability scores
-    # And then consider them as-it-is (instead of pair-wise comparison)
-    if use_logit:
-        logits = model_features[-1]
-        probs = ch.sigmoid(logits)
-        layerwise_features.append(probs)
-
-    concatenated_features = ch.stack(layerwise_features, 0)
-    return concatenated_features
-
-
-def make_affinity_features(models, data, use_logit=False, detach=True, verbose=True):
-    all_features = []
-    iterator = models
-    if verbose:
-        iterator = tqdm(iterator, desc="Building affinity matrix")
-    for model in iterator:
-        all_features.append(
-            make_affinity_feature(
-                model, data, use_logit=use_logit, detach=detach, verbose=verbose)
-        )
-    return ch.stack(all_features, 0)
 
 
 def coordinate_descent_new(models_train, models_val,

@@ -10,7 +10,8 @@ class LossAndThresholdAttack(Attack):
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
-               calc_acc: Callable = None):
+               calc_acc: Callable = None,
+               epochwise_version: bool = False):
         """
             Perform Threshold-Test and Loss-Test attacks using
             given accuracies of models.
@@ -24,14 +25,16 @@ class LossAndThresholdAttack(Attack):
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
             ground_truth[0],
-            self.config)
+            self.config,
+            epochwise_version=epochwise_version)
         # Get accuracies on second data distribution
         adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(
             calc_acc,
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
             ground_truth[1],
-            self.config)
+            self.config,
+            epochwise_version=epochwise_version)
 
         # Get best adv accuracies for both distributions, across all ratios
         chosen_distribution = 0
@@ -44,12 +47,27 @@ class LossAndThresholdAttack(Attack):
         # Of the chosen distribution, pick the one with the best accuracy
         # out of all given ratios
         chosen_ratio_index = np.argmax(adv_accs_use)
-        victim_acc_use = victim_accs_use[chosen_ratio_index]
+        if epochwise_version:
+            victim_acc_use = [x[chosen_ratio_index] for x in victim_accs_use]
+        else:
+            victim_acc_use = victim_accs_use[chosen_ratio_index]
         # Loss test
-        basic = self._loss_test(acc_1, acc_2)
+        if epochwise_version:
+            basic = []
+            for i in range(acc_1[0].shape[0]):
+                basic.append(
+                    self._loss_test(
+                        (acc_1[0][i], acc_1[1][i]),
+                        (acc_2[0][i], acc_2[1][i])
+                    )
+                )
+            basic_chosen = [x[chosen_ratio_index] for x in basic]
+        else:
+            basic = self._loss_test(acc_1, acc_2)
+            basic_chosen = basic[chosen_ratio_index]
 
         choice_information = (chosen_distribution, chosen_ratio_index)
-        return [[(victim_acc_use, basic[chosen_ratio_index])], [adv_accs_use[chosen_ratio_index]], choice_information]
+        return [[(victim_acc_use, basic_chosen)], [adv_accs_use[chosen_ratio_index]], choice_information]
 
     def _loss_test(self, acc_1, acc_2):
         basic = []
