@@ -2,10 +2,10 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Young",
-            "classify": "Male",
+            "prop": "Male",
+            "classify": "Smiling",
             "split": "adv",
-            "value": 0.0
+            "value": 0.5
         },
         "epochs": 0,
         "learning_rate": 0,

@@ -2,7 +2,10 @@
     "white_box": {
         "attack": "permutation_invariant",
         "epochs": 200,
-        "batch_size": 1000
+        "batch_size": 1000,
+        "permutation_config": {
+            "focus": "fc"
+        }
     },
     "train_config": {
         "data_config": {
@@ -14,7 +17,7 @@
         },
         "misc_config": {
             "dp_config": {
-                "epsilon": 0.1,
+                "epsilon": 1.0,
                 "delta": 0,
                 "max_grad_norm": 0,
                 "physical_batch_size": 0

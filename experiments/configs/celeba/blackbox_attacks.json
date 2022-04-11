@@ -2,14 +2,14 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Male",
-            "classify": "Smiling",
+            "prop": "Young",
+            "classify": "Male",
             "split": "adv",
             "value": 0.0
         },
         "misc_config": {
             "adv_config": {
-                "epsilon": 16,
+                "epsilon": 4,
                 "iters": 7,
                 "clip_min": -1,
                 "clip_max": 1,
@@ -39,6 +39,7 @@
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
+        "batch_size": 512,
         "attack_type": [
             "loss_and_threshold",
             "threshold_perpoint"
@@ -52,6 +53,8 @@
             0.4,
             0.5,
             1.0
-        ]
-    }
+        ],
+        "preload": true
+    },
+    "num_victim_models": 400
 }
