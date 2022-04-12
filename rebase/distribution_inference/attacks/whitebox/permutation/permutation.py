@@ -61,11 +61,10 @@ class PINAttack(Attack):
             get_save_path(),
             model_dir,
             data_config.name,
-            data_config.prop)
+            data_config.prop,
+            self.config.permutation_config.focus)
         if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
-        save_path = os.path.join(
-            save_path, self.config.permutation_config.focus)
 
         # Make sure folder exists
         ensure_dir_exists(save_path)

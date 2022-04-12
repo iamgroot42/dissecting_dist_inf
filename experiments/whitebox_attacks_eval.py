@@ -4,6 +4,7 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
 import warnings
+import os
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
@@ -22,7 +23,7 @@ if __name__ == "__main__":
         "--en", help="experiment name",
         type=str, required=True)
     parser.add_argument(
-        "--path", help="path to trained model",
+        "--path", help="path to trained models directory",
         type=str, required=True)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
@@ -49,6 +50,14 @@ if __name__ == "__main__":
         warnings.warn(warning_string(
             "\nTesting one meta-classifier against multiple ratios.\n"))
 
+    # Make sure a model is present for each value to be tested
+    values_to_test = [str(x) for x in attack_config.values]
+    folders = os.listdir(args.path)
+    for value in values_to_test:
+        if value not in folders:
+            raise ValueError(
+                f"No model found for value {value} in {args.path}")
+
     # Print out arguments
     flash_utils(attack_config)
 
@@ -74,13 +83,6 @@ if __name__ == "__main__":
         on_cpu=attack_config.on_cpu,
         shuffle=False,
         epochwise_version=attack_config.train_config.save_every_epoch)
-
-    # Create attacker object
-    attacker_obj = get_attack(wb_attack_config.attack)(
-        dims, wb_attack_config)
-
-    # Load model
-    attacker_obj.load_model(args.path)
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -109,15 +111,27 @@ if __name__ == "__main__":
             epochwise_version=attack_config.train_config.save_every_epoch
         )
 
-        # Execute attack
-        chosen_accuracy = attacker_obj.eval_attack(
-            test_loader=test_loader,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+        # Look at all models
+        attack_model_path_dir = os.path.join(args.path, str(prop_value))
+        for attack_model_path in os.listdir(attack_model_path_dir):
 
-        if not attack_config.train_config.save_every_epoch:
-            print("Test accuracy: %.3f" % chosen_accuracy)
-        logger.add_results(wb_attack_config.attack,
-                           prop_value, chosen_accuracy, None)
+            # Create attacker object
+            attacker_obj = get_attack(wb_attack_config.attack)(
+                dims, wb_attack_config)
+
+            # Load model
+            attacker_obj.load_model(os.path.join(
+                attack_model_path_dir, attack_model_path))
+
+            # Execute attack
+            chosen_accuracy = attacker_obj.eval_attack(
+                test_loader=test_loader,
+                epochwise_version=attack_config.train_config.save_every_epoch)
+
+            if not attack_config.train_config.save_every_epoch:
+                print("Test accuracy: %.3f" % chosen_accuracy)
+            logger.add_results(wb_attack_config.attack,
+                               prop_value, chosen_accuracy, None)
 
     # Save logger results
     logger.save()
