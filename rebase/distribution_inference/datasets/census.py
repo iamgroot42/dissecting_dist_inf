@@ -71,7 +71,7 @@ class DatasetInformation(base.DatasetInformation):
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios,},
                          property_focus={"sex": 'Female', "race": 'White'})
-    def get_model(cpu: bool = False) -> nn.Module:
+    def get_model(self,cpu: bool = False) -> nn.Module:
         clf = PortedMLPClassifier()
         if not cpu:
             clf = clf.cuda()
@@ -233,8 +233,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
                                 filter_prop=self.prop,
-                                custom_limit=custom_limit,
-                                scale=self.scale)
+                                custom_limit=custom_limit)
 
     def get_loaders(self, batch_size, custom_limit=None,
                     shuffle: bool = True,

@@ -3,18 +3,20 @@ from tqdm import tqdm
 import pandas as pd
 import torch as ch
 
-from distribution_inference.datasets import new_census, celeba, boneage
+from distribution_inference.datasets import new_census, celeba, boneage,census
 
 DATASET_INFO_MAPPING = {
     "new_census": new_census.DatasetInformation,
     "celeba": celeba.DatasetInformation,
-    "boneage": boneage.DatasetInformation
+    "boneage": boneage.DatasetInformation,
+    "old_census":census.DatasetInformation
 }
 
 DATASET_WRAPPER_MAPPING = {
     "new_census": new_census.CensusWrapper,
     "celeba": celeba.CelebaWrapper,
-    "boneage": boneage.BoneWrapper
+    "boneage": boneage.BoneWrapper,
+    "old_census":census.CensusWrapper,
 }
 
 

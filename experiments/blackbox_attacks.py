@@ -57,6 +57,7 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
     # Load victim models for first value
+    print(attack_config.on_cpu)
     models_vic_1 = ds_vic_1.get_models(train_config,
                                        n_models=attack_config.num_victim_models,
                                        on_cpu=attack_config.on_cpu,
