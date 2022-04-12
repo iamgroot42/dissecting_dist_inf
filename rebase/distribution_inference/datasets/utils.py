@@ -5,7 +5,6 @@ import torch as ch
 
 from distribution_inference.datasets import new_census, celeba, boneage
 
-
 DATASET_INFO_MAPPING = {
     "new_census": new_census.DatasetInformation,
     "celeba": celeba.DatasetInformation,
@@ -37,6 +36,7 @@ def get_dataset_information(dataset_name: str):
 # https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/
 def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
+
 
 
 def filter(df, condition, ratio, verbose: bool = True):

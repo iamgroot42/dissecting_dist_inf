@@ -12,11 +12,29 @@ from distribution_inference.config import TrainConfig, DatasetConfig
 from distribution_inference.models.core import PortedMLPClassifier
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
-from joblib import load, dump
-#from distribution_inference.training.utils import load_model
+from joblib import load
+from tqdm import tqdm
+import argparse
+from distribution_inference.training.utils import load_model,save_model
 ACTIVATION_DIMS = [32, 16, 8, 1]
 def skload_model(path):
     return load(path)
+
+def get_models(folder_path):
+    """
+        Load models from given directory.
+    """
+    paths = os.listdir(folder_path)
+    models = []
+    names = []
+    for mpath in tqdm(paths):
+        p = os.path.join(folder_path, mpath)
+        if os.path.isfile(p):
+            model = skload_model(p)
+            models.append(model)
+            names.append(mpath)
+    return models,names
+
 def port_mlp_to_ch(clf):
     """
         Extract weights from MLPClassifier and port
@@ -31,7 +49,7 @@ def port_mlp_to_ch(clf):
         nn_model.layers[i].bias = nn.Parameter(b)
         i += 2  # Account for ReLU as well
 
-    nn_model = nn_model.cuda()
+    #nn_model = nn_model.cuda()
     return nn_model
 
 
@@ -43,34 +61,20 @@ def convert_to_torch(clfs):
     return np.array([port_mlp_to_ch(clf) for clf in clfs], dtype=object)
 
 
-def layer_output(data, MLP, layer=0, get_all=False):
-    """
-        For a given model and some data, get output for each layer's activations < layer.
-        If get_all is True, return all activations unconditionally.
-    """
-    L = data.copy()
-    all = []
-    for i in range(layer):
-        L = ACTIVATIONS['relu'](
-            np.matmul(L, MLP.coefs_[i]) + MLP.intercepts_[i])
-        if get_all:
-            all.append(L)
-    if get_all:
-        return all
-    return L
+
 class DatasetInformation(base.DatasetInformation):
     def __init__(self):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Census",
                          data_path="census",
-                         models_path="models_census/50_50_new",
+                         models_path="models_census/50_50_new/normal",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios,},
                          property_focus={"sex": 'Female', "race": 'White'})
-    def get_model(max_iter=40,
-        hidden_layer_sizes=(32, 16, 8),):
-        clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes,
-                        max_iter=max_iter)
+    def get_model(cpu: bool = False) -> nn.Module:
+        clf = PortedMLPClassifier()
+        if not cpu:
+            clf = clf.cuda()
         return clf
 
 class _CensusIncome:
@@ -243,17 +247,15 @@ class CensusWrapper(base.CustomDatasetWrapper):
                                    num_workers=1)
 
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
-        model = skload_model(path)
-        chmodel = port_mlp_to_ch(model)
-        if on_cpu:
-            chmodel = chmodel.cpu()
-        return chmodel
+        info_object = DatasetInformation()
+        model = info_object.get_model(cpu=on_cpu)
+        return load_model(model, path)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
         
-        save_path = os.path.join(base_models_dir, self.split,self.prop)
+        save_path = os.path.join(base_models_dir,self.prop,self.split)
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
         # Make sure this directory exists
@@ -365,3 +367,32 @@ def cal_n(df, con, ratio):
             qi = ratio * n/(1 - ratio)
             return qi, n
         return 0, n
+
+if __name__ == "__main__":
+    "run to convert sklearn model to pytorch, have to comment out distribution_inference.datasets.util due to circular importing"
+    info = DatasetInformation()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--suffix', 
+                        default='50_50_new', help="device number")
+    args = parser.parse_args()        
+    BMD = "/p/adversarialml/as9rw/models_census"
+    BMD = os.path.join(BMD,args.suffix)
+    b = os.path.join(BMD,'normal')
+    for s in ["adv","victim"]:
+        pa = os.path.join(BMD,s)
+        for p in ['sex','race']:
+            pat = os.path.join(pa,p)
+            print(pat)
+            for x in os.listdir(pat):
+                models,names = get_models(os.path.join(pat,x))
+                save_path = os.path.join(b,p,s,x)
+                if models!= []:
+                    if not os.path.isdir(save_path):
+                        os.makedirs(save_path)
+                    models = convert_to_torch(models)
+                    for (m,n) in zip(models,names):
+                        save_model(m,os.path.join(save_path,n))
+
+
+
