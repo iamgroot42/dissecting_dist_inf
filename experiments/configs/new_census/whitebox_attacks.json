@@ -5,7 +5,8 @@
         "batch_size": 1000,
         "permutation_config": {
             "focus": "fc"
-        }
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {
@@ -15,20 +16,12 @@
             "squeeze": true,
             "value": 0.5
         },
-        "misc_config": {
-            "dp_config": {
-                "epsilon": 1.0,
-                "delta": 0,
-                "max_grad_norm": 0,
-                "physical_batch_size": 0
-            }
-        },
         "epochs": 0,
         "learning_rate": 0,
-        "batch_size": 0
+        "batch_size": 0,
+        "save_every_epoch": false
     },
-    "adv_diff_misc_config": true,
-    "adv_misc_config": null,
+    "num_victim_models": 1000,
     "tries": 5,
     "values": [
         0.0,
@@ -36,7 +29,6 @@
         0.2,
         0.3,
         0.4,
-        0.5,
         0.6,
         0.7,
         0.8,

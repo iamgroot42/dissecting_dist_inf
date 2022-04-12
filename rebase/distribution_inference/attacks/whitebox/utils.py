@@ -111,12 +111,27 @@ def wrap_into_loader(features_list: List,
                      labels_list: List[float] = [0., 1.],
                      shuffle: bool = False,
                      num_workers: int = 2,
-                     wrap_with_loader: bool = True):
+                     wrap_with_loader: bool = True,
+                     epochwise_version: bool = False):
     """
         Wrap given features of models from N distributions
         into X and Y, to be used for model training. Use given list of
         labels for each distribution.
     """
+    # Special case if epoch-wise version
+    if epochwise_version:
+        loaders_list = []
+        # We want one loader per epoch
+        n_epochs = len(features_list[0][0])
+        for i in range(n_epochs):
+            loaders_list.append(
+                wrap_into_loader(
+                    [features[:, i] for features in features_list],
+                    batch_size, labels_list, shuffle, num_workers,
+                    wrap_with_loader, epochwise_version=False))
+        return loaders_list
+
+    # Everything else:
     X, Y = [], []
     for features, label in zip(features_list, labels_list):
         X.append(features)

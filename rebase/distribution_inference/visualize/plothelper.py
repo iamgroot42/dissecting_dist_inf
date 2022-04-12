@@ -1,3 +1,6 @@
+from distribution_inference.attacks.utils import get_attack_name
+from distribution_inference.utils import warning_string
+from distribution_inference.logging.core import AttackResult
 import seaborn
 import matplotlib.pyplot as plt
 import json
@@ -7,10 +10,6 @@ import warnings
 from typing import List
 import matplotlib as mpl
 mpl.rcParams['figure.dpi'] = 200
-
-from distribution_inference.logging.core import AttackResult
-from distribution_inference.utils import warning_string
-from distribution_inference.attacks.utils import get_attack_name
 
 
 class PlotHelper():
@@ -142,19 +141,21 @@ class PlotHelper():
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                    self.columns[1]: result, # * 100,
+                                    self.columns[1]: result,  # * 100,
                                     self.columns[2]: title_prefix + attack_names,
                                     self.columns[3]: epoch + 1})
                         else:
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                self.columns[1]: results, # * 100,
+                                self.columns[1]: results,  # * 100,
                                 self.columns[2]: title_prefix + attack_names})
             else:
-                warnings.warn(warning_string(f"\nAttack type {attack_res} not supported\n"))
+                warnings.warn(warning_string(
+                    f"\nAttack type {attack_res} not supported\n"))
         if len(self.df) == 0:
-            raise ValueError("None of the attacks in given results are supported for plotting")
+            raise ValueError(
+                "None of the attacks in given results are supported for plotting")
 
     def get_appropriate_plotter_fn(self, plot_type):
         plotter_fn = self.supported_plot_types.get(plot_type, None)
