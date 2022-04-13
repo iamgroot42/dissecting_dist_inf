@@ -61,11 +61,10 @@ class PINAttack(Attack):
             get_save_path(),
             model_dir,
             data_config.name,
-            data_config.prop)
+            data_config.prop,
+            self.config.permutation_config.focus)
         if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
-        save_path = os.path.join(
-            save_path, self.config.permutation_config.focus)
 
         # Make sure folder exists
         ensure_dir_exists(save_path)
@@ -74,6 +73,32 @@ class PINAttack(Attack):
             save_path,
             f"{attack_specific_info_string}.ch")
         ch.save(self.model.state_dict(), model_save_path)
+
+    def _eval_attack(self, test_loader, epochwise_version: bool = False):
+        """
+            Evaluate attack on test data
+        """
+        regression = (self.config.regression_config is not None)
+        if regression:
+            loss_fn = nn.MSELoss()
+        else:
+            if self.config.binary:
+                loss_fn = nn.BCEWithLogitsLoss()
+            else:
+                loss_fn = nn.CrossEntropyLoss()
+
+        if epochwise_version:
+            evals = []
+            # One loader per epoch
+            for test_datum_loader in tqdm(test_loader):
+                evals.append(
+                    self._test(self.model, loss_fn,
+                               loader=test_datum_loader,
+                               verbose=False)[0])
+            return evals
+        else:
+            return self._test(self.model, loss_fn,
+                              loader=test_loader, verbose=True)[0]
 
     def execute_attack(self,
                        train_loader: Tuple[List, List],
@@ -229,7 +254,8 @@ class PINAttack(Attack):
               model, loss_fn,
               loader: ch.utils.data.DataLoader,
               element_wise: bool = False,
-              get_preds: bool = False):
+              get_preds: bool = False,
+              verbose: bool = False):
         # Set model to evaluation mode
         model.eval()
         regression = (self.config.regression_config is not None)
@@ -239,7 +265,10 @@ class PINAttack(Attack):
         loss = [] if element_wise else 0
         all_outputs = []
 
-        for param_batch, y_batch in loader:
+        iterator = loader
+        if verbose:
+            iterator = tqdm(loader)
+        for param_batch, y_batch in iterator:
             outputs = []
             if self.config.gpu:
                 y_batch = y_batch.cuda(0)

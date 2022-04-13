@@ -5,36 +5,29 @@
         "batch_size": 150,
         "train_sample": 800,
         "val_sample": 0,
+        "save":true,
         "permutation_config": {
-            "focus": "fc"
+            "focus": "all"
         }
     },
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Young",
-            "classify": "Male",
+            "prop": "Male",
+            "classify": "Smiling",
             "split": "adv",
-            "value": 0.0
+            "value": 0.5
         },
-        "misc_config": {
-            "adv_config": {
-                "epsilon": 4,
-                "iters": 7,
-                "clip_min": -1,
-                "clip_max": 1,
-                "random_restarts": 1,
-                "scale_by_255": true
-            }
-        },
+       
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
     "tries": 5,
     "values": [
-        0.0, 0.1, 0.2, 0.3, 0.4, 0.6
+        0.0, 0.1, 0.2, 0.3, 0.4, 0.6,0.7,0.8,0.9,1.0
     ],
     "on_cpu": true,
     "num_victim_models": 400
+    
 }

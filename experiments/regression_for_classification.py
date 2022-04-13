@@ -105,7 +105,7 @@ if __name__ == "__main__":
         dims, wb_attack_config)
 
     # Load regression model
-    attacker_obj.load_model(args.patth)
+    attacker_obj.load_model(args.path)
 
     # Execute attack
     # chosen_mse = attacker_obj.execute_attack(
