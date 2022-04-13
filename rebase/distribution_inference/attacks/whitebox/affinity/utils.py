@@ -19,6 +19,7 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
     """
         Collect data from given datasets and wrap into a dataloader.
     """
+    warnings.warn(warning_string("\nCollecting seed data\n"))
     all_data = []
     # For each given loader
     for ds in ds_list:

@@ -3,6 +3,7 @@ import os
 import warnings
 import torch as ch
 import torch.nn as nn
+import numpy as np
 from tqdm import tqdm
 
 from distribution_inference.attacks.whitebox.core import Attack, BasicDataset
@@ -23,6 +24,7 @@ class AffinityAttack(Attack):
         if self.frac_retain_pairs > 1 or self.frac_retain_pairs < 0:
             raise ValueError(
                 f"frac_retain_pairs must be in [0, 1] when provided as a float, got {self.frac_retain_pairs}")
+        self.retained_pairs = None
 
     def _prepare_model(self):
         if self.num_dim is None:
@@ -73,10 +75,41 @@ class AffinityAttack(Attack):
                 model, loader,
                 detach=detach)
             all_features.append(affinity_feature)
-        # seed_data = ch.stack(all_features, 0)
+
         seed_data = all_features
 
-        #TODO: Do something with frac_retain_pairs
+        # Retain only a fraction of all pairs
+        if self.frac_retain_pairs < 1:
+            # First-time (on train data)
+            num_eff_layers = num_layers if self.use_logit else num_layers - 1
+            if self.retained_pairs is None:
+                # Collect STD values across models (per layer)
+                std_values = []
+                for i in range(num_eff_layers):
+                    std_values.append(
+                        ch.std(ch.stack([x[i] for x in seed_data]), 0))
+                # Sort std values in descending order (per layer) and store indices
+                std_values = map(lambda x: x.sort(
+                    descending=True)[1], std_values)
+                # Pick top frac_retain_pairs values indices per layer
+                n_features_retain = int(self.frac_retain_pairs*num_features)
+                self.retained_pairs = list(
+                    map(lambda x: x[:n_features_retain].cpu().numpy(), std_values))
+                # Make a count array to keep track of top pairs per layer
+                count_array = np.zeros((num_features,))
+                for i in range(num_eff_layers):
+                    count_array[self.retained_pairs[i]] += 1
+                # Ouf of these, pick the top self.frac_retain_pairs
+                self.retained_pairs = np.sort(np.argsort(
+                    count_array)[::-1][:n_features_retain])
+
+            # Consider only self.retained_pairs indices
+            def selection_lambda(x):
+                selected = [x[i][self.retained_pairs] for i in range(num_eff_layers)]
+                if self.use_logit:
+                    selected.append(x[-1])
+                return selected
+            seed_data = list(map(selection_lambda, seed_data))
 
         # Set num_dim
         self.num_dim = num_features

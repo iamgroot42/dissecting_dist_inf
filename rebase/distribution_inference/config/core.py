@@ -159,6 +159,7 @@ class AffinityAttackConfig(Serializable):
     """How many examples to compute pair-wise similarities for"""
     layer_agnostic: bool = False
     """Whether to use layer-agnostic version of meta-classifier"""
+    inner_dims: Optional[List[int]] = field(default_factory=lambda: [1024, 64])
 
 
 @dataclass
