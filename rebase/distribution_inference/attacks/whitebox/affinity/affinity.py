@@ -28,7 +28,8 @@ class AffinityAttack(Attack):
 
     def _prepare_model(self):
         if self.num_dim is None:
-            raise ValueError("num_dim must be set before calling _prepare_model")
+            raise ValueError(
+                "num_dim must be set before calling _prepare_model")
         self.model = AffinityMetaClassifier(
             self.num_dim,
             self.num_layers,
@@ -79,39 +80,41 @@ class AffinityAttack(Attack):
         seed_data = all_features
 
         # Retain only a fraction of all pairs
-        if self.frac_retain_pairs < 1:
+        if self.frac_retain_pairs < 1 and self.retained_pairs is None:
             # First-time (on train data)
             num_eff_layers = num_layers if self.use_logit else num_layers - 1
-            if self.retained_pairs is None:
-                # Collect STD values across models (per layer)
-                std_values = []
-                for i in range(num_eff_layers):
-                    std_values.append(
-                        ch.std(ch.stack([x[i] for x in seed_data]), 0))
-                # Sort std values in descending order (per layer) and store indices
-                std_values = map(lambda x: x.sort(
-                    descending=True)[1], std_values)
-                # Pick top frac_retain_pairs values indices per layer
-                n_features_retain = int(self.frac_retain_pairs*num_features)
-                self.retained_pairs = list(
-                    map(lambda x: x[:n_features_retain].cpu().numpy(), std_values))
-                # Make a count array to keep track of top pairs per layer
-                count_array = np.zeros((num_features,))
-                for i in range(num_eff_layers):
-                    count_array[self.retained_pairs[i]] += 1
-                # Ouf of these, pick the top self.frac_retain_pairs
-                self.retained_pairs = np.sort(np.argsort(
-                    count_array)[::-1][:n_features_retain])
+            # Collect STD values across models (per layer)
+            std_values = []
+            for i in range(num_eff_layers):
+                std_values.append(
+                    ch.std(ch.stack([x[i] for x in seed_data]), 0))
+            # Sort std values in descending order (per layer) and store indices
+            std_values = map(lambda x: x.sort(
+                descending=True)[1], std_values)
+            # Pick top frac_retain_pairs values indices per layer
+            n_features_retain = int(self.frac_retain_pairs*num_features)
+            self.retained_pairs = list(
+                map(lambda x: x[:n_features_retain].cpu().numpy(), std_values))
+            # Make a count array to keep track of top pairs per layer
+            count_array = np.zeros((num_features,))
+            for i in range(num_eff_layers):
+                count_array[self.retained_pairs[i]] += 1
+            # Ouf of these, pick the top self.frac_retain_pairs
+            self.retained_pairs = np.sort(np.argsort(
+                count_array)[::-1][:n_features_retain])
 
             # Consider only self.retained_pairs indices
+            # For future cases, _make_affinity_feature() will handle
+            # the case where self.retained_pairs is not None
             def selection_lambda(x):
-                selected = [x[i][self.retained_pairs] for i in range(num_eff_layers)]
+                selected = [x[i][self.retained_pairs]
+                            for i in range(num_eff_layers)]
                 if self.use_logit:
                     selected.append(x[-1])
                 return selected
             seed_data = list(map(selection_lambda, seed_data))
 
-        # Set num_dim
+        # Set num_dim (returned value adjusted to handle retained_pairs)
         self.num_dim = num_features
         self.num_logit_features = num_logit_features
         self.num_layers = num_layers
@@ -138,11 +141,25 @@ class AffinityAttack(Attack):
             if self.use_logit and i == len(model_features) - 1:
                 break
             scores = []
+            pairs_so_far = 0
             # Pair-wise iteration of all data
             for j in range(feature.shape[0]-1):
                 others = feature[j+1:]
-                scores += cos(ch.unsqueeze(feature[j], 0), others)
-            layerwise_features.append(ch.stack(scores, 0))
+                if self.retained_pairs is not None:
+                    # Optimization- if self.retained_pairs is not None, only
+                    # consider those indices for computing cosine similarity
+                    relevant_pairs = self.retained_pairs - pairs_so_far
+                    relevant_pairs = relevant_pairs[relevant_pairs >= 0]
+                    relevant_pairs = relevant_pairs[relevant_pairs < len(others)]
+                    # relevant_pairs -= pairs_so_far
+                    pairs_so_far += len(others)
+                    others = others[relevant_pairs]
+                if len(others) != 0:
+                    scores += cos(ch.unsqueeze(feature[j], 0), others)
+            stacked_scores = ch.stack(scores, 0)
+            # if self.retained_pairs is not None:
+            #     stacked_scores = stacked_scores[self.retained_pairs]
+            layerwise_features.append(stacked_scores)
 
         num_layers = len(layerwise_features)
         # If asked to use logits, convert them to probability scores
@@ -222,7 +239,7 @@ class AffinityAttack(Attack):
                                                   train_config=train_config,
                                                   input_is_list=True)
         self.trained_model = True
-        return test_acc
+        return test_acc * 100
 
     def save_model(self,
                    data_config: DatasetConfig,
@@ -232,7 +249,7 @@ class AffinityAttack(Attack):
         """
         if not self.trained_model:
             warnings.warn(warning_string(
-                "\nAttack being saved without training."))
+                "\nAttack being saved without training.\n"))
         if self.config.regression_config:
             model_dir = "affinity/regression"
         else:
@@ -242,7 +259,7 @@ class AffinityAttack(Attack):
             model_dir,
             data_config.name,
             data_config.prop)
-        if self.config.regression_config is not None:
+        if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
 
         # Make sure folder exists
@@ -252,10 +269,18 @@ class AffinityAttack(Attack):
             save_path, f"{attack_specific_info_string}.ch")
         ch.save({
             "model": self.model.state_dict(),
-            "seed_data_ds": self.seed_data_ds
+            "seed_data_ds": self.seed_data_ds,
+            "retained_pairs": self.retained_pairs,
+            "num_dim": self.num_dim,
+            "num_logit_features": self.num_logit_features,
+            "num_layers": self.num_layers
         }, model_save_path)
 
     def load_model(self, load_path: str):
         checkpoint = ch.load(load_path)
         self.model.load_state_dict(checkpoint["model"])
         self.seed_data_ds = checkpoint["seed_data_ds"]
+        self.retained_pairs = checkpoint["retained_pairs"]
+        self.num_dim = checkpoint["num_dim"]
+        self.num_logit_features = checkpoint["num_logit_features"]
+        self.num_layers = checkpoint["num_layers"]

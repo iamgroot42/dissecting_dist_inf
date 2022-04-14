@@ -22,7 +22,6 @@ class AffinityMetaClassifier(nn.Module):
         self.num_logit = num_logit
         self.only_latent = config.only_latent
         self.layer_agnostic = config.layer_agnostic
-        self.frac_retain_pairs = config.frac_retain_pairs
         self.inner_dims = config.inner_dims
         assert len(self.inner_dims) >= 1, "inner_dims must have at least 1 element"
 
@@ -41,7 +40,7 @@ class AffinityMetaClassifier(nn.Module):
 
         # Make one model per feature layer
         for _ in range(num_layers):
-            inside_dim = int(self.num_dim * self.frac_retain_pairs)
+            inside_dim = self.num_dim
             self.models.append(make_small_model(inside_dim))
         # If logits are also going to be provided, have a model for them as well
         if self.num_logit > 0:
