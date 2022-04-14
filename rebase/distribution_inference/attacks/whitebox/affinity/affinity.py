@@ -16,8 +16,10 @@ from distribution_inference.training.core import train
 
 class AffinityAttack(Attack):
     def __init__(self,
+                 dims: List[int],
                  config: WhiteBoxAttackConfig):
         super().__init__(config)
+        # dims not used for this attack
         self.num_dim = None
         self.use_logit = not self.config.affinity_config.only_latent
         self.frac_retain_pairs = self.config.affinity_config.frac_retain_pairs
@@ -278,9 +280,11 @@ class AffinityAttack(Attack):
 
     def load_model(self, load_path: str):
         checkpoint = ch.load(load_path)
-        self.model.load_state_dict(checkpoint["model"])
         self.seed_data_ds = checkpoint["seed_data_ds"]
         self.retained_pairs = checkpoint["retained_pairs"]
         self.num_dim = checkpoint["num_dim"]
         self.num_logit_features = checkpoint["num_logit_features"]
         self.num_layers = checkpoint["num_layers"]
+        # Prepare and load weights into model
+        self._prepare_model()
+        self.model.load_state_dict(checkpoint["model"])

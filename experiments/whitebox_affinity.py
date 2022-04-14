@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
-                wb_attack_config)
+                None, wb_attack_config)
             # Save seed-data in attack object, since this is needed
             # To use model later in evaluation mode, if loaded from memory
             attacker_obj.register_seed_data(seed_data_ds)
