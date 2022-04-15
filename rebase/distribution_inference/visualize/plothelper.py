@@ -57,6 +57,8 @@ class PlotHelper():
 
         # Convert data to dataframe
         self.df = pd.DataFrame(self.df)
+        # Print out means
+        print(self.df.groupby(self.columns[2])[self.columns[1]].mean())
 
     def _parse_results(self, list_of_things, are_paths: bool):
         for i, thing in enumerate(list_of_things):

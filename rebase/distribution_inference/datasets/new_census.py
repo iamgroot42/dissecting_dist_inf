@@ -37,7 +37,7 @@ class DatasetInformation(base.DatasetInformation):
         return model
 
     def generate_victim_adversary_splits(self,
-                                         adv_ratio = None,
+                                         adv_ratio=None,
                                          test_ratio: float = 0.33,
                                          num_tries: int = None):
         """
@@ -47,7 +47,8 @@ class DatasetInformation(base.DatasetInformation):
         """
         def cal_q(df, condition):
             qualify = np.nonzero((condition(df)).to_numpy())[0]
-            notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
+            notqualify = np.nonzero(np.logical_not(
+                (condition(df)).to_numpy()))[0]
             return len(qualify), len(notqualify)
 
         x = pickle.load(
@@ -253,7 +254,8 @@ class CensusWrapper(base.CustomDatasetWrapper):
                                 custom_limit=custom_limit,
                                 scale=self.scale)
 
-    def get_loaders(self, batch_size, custom_limit=None,
+    def get_loaders(self, batch_size: int,
+                    custom_limit=None,
                     shuffle: bool = True,
                     eval_shuffle: bool = False):
         train_data, val_data, _ = self.load_data(custom_limit)

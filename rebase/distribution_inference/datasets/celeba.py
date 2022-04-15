@@ -69,7 +69,8 @@ class DatasetInformation(base.DatasetInformation):
             return np.array(vals)
 
         # Take note of original ratios
-        ratios = np.array([attrs[pp].mean() for pp in self.self.preserve_properties])
+        ratios = np.array([attrs[pp].mean()
+                          for pp in self.self.preserve_properties])
 
         iterator = tqdm(range(n_tries))
         best_splits = None, None
@@ -134,7 +135,8 @@ class DatasetInformation(base.DatasetInformation):
         filenames = np.array(splits.index.tolist())
 
         # 0 train, 1 validation, 2 test
-        train_mask = np.logical_or(splits[1].values == 0, splits[1].values == 1)
+        train_mask = np.logical_or(
+            splits[1].values == 0, splits[1].values == 1)
         test_mask = splits[1].values == 2
 
         # Splits on test data
@@ -175,7 +177,8 @@ class CelebACustomBinary(base.CustomDataset):
         self.attr_dict = attr_dict
         self.transform = transform
         self.info_object = DatasetInformation()
-        self.classify_index = self.info_object.supported_properties.index(classify)
+        self.classify_index = self.info_object.supported_properties.index(
+            classify)
 
         # Get filenames
         with open(filelist_path) as f:
@@ -214,10 +217,10 @@ class CelebACustomBinary(base.CustomDataset):
         def condition(x): return x[prop] == 1
 
         parsed_df = utils.heuristic(
-                        df, condition, ratio,
-                        cwise_sample, class_imbalance=1.0,
-                        n_tries=100, class_col=label_name,
-                        verbose=True)
+            df, condition, ratio,
+            cwise_sample, class_imbalance=1.0,
+            n_tries=100, class_col=label_name,
+            verbose=True)
         # Extract filenames from parsed DF
         return parsed_df["filename"].tolist()
 
@@ -317,9 +320,12 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             transform=self.test_transforms)
         return ds_train, ds_val
 
-    def get_loaders(self, batch_size, shuffle=True,
-                    eval_shuffle=False, val_factor=2,
-                    num_workers=16, prefetch_factor=20):
+    def get_loaders(self, batch_size: int,
+                    shuffle: bool = True,
+                    eval_shuffle: bool = False,
+                    val_factor: int = 2,
+                    num_workers: int = 16,
+                    prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,

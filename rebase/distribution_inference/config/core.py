@@ -157,9 +157,12 @@ class AffinityAttackConfig(Serializable):
     """What fraction of pairs to use when training classifier"""
     num_samples_use: int = None
     """How many examples to compute pair-wise similarities for"""
-    layer_agnostic: bool = False
+    layer_agnostic: Optional[bool] = False
     """Whether to use layer-agnostic version of meta-classifier"""
     inner_dims: Optional[List[int]] = field(default_factory=lambda: [1024, 64])
+    """Dimensions of inner layers"""
+    shared_layerwise_params: Optional[bool] = False
+    """Use same layer-wise model for all layers?"""
 
 
 @dataclass

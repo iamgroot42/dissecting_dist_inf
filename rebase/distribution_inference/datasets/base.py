@@ -97,7 +97,7 @@ class CustomDatasetWrapper:
         self.info_object = None
         self.skip_data = skip_data
 
-    def get_loaders(self, batch_size,
+    def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
                     val_factor: float = 1,
@@ -181,6 +181,10 @@ class CustomDatasetWrapper:
                 if i >= n_models:
                     break
 
+                # Skip models with model_num below train_config.offset
+                if not (mpath.startswith("adv_train_") or mpath == "full") and int(mpath.split("_")[0]) <= train_config.offset:
+                    continue
+
                 # Skip any directories we may stumble upon
                 if epochwise_version:
                     if os.path.isdir(os.path.join(folder_path, mpath)):
@@ -248,6 +252,10 @@ class CustomDatasetWrapper:
                 # Break reading if requested number of models is reached
                 if i >= n_models:
                     break
+
+                # Skip models with model_num below train_config.offset
+                if not (mpath.startswith("adv_train_") or mpath == "full") and int(mpath.split("_")[0]) <= train_config.offset:
+                    continue
 
                 # Skip any directories we may stumble upon
                 if epochwise_version:

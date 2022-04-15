@@ -74,9 +74,18 @@ class AffinityAttack(Attack):
         all_features = []
         for model in tqdm(models, desc="Building affinity matrix"):
             # Steps 2 & 3: get all model features and affinity scores
+
+            # Shift model to GPU if it is on CPU
+            if not next(model.parameters()).is_cuda:
+                model = model.cuda()
+
             affinity_feature, num_features, num_logit_features, num_layers = self._make_affinity_feature(
                 model, loader,
                 detach=detach)
+
+            # Done with model, shift back to CPU
+            model = model.cpu()
+
             all_features.append(affinity_feature)
 
         seed_data = all_features
@@ -158,7 +167,7 @@ class AffinityAttack(Attack):
                     others = others[relevant_pairs]
                 if len(others) != 0:
                     scores += cos(ch.unsqueeze(feature[j], 0), others)
-            stacked_scores = ch.stack(scores, 0)
+            stacked_scores = ch.stack(scores, 0).cpu()
             # if self.retained_pairs is not None:
             #     stacked_scores = stacked_scores[self.retained_pairs]
             layerwise_features.append(stacked_scores)
@@ -170,7 +179,7 @@ class AffinityAttack(Attack):
         if self.use_logit:
             logits = model_features[-1]
             probs = ch.sigmoid(logits).squeeze_(1)
-            layerwise_features.append(probs)
+            layerwise_features.append(probs.cpu())
             num_logit_features = probs.shape[0]
 
         num_features = layerwise_features[0].shape[0]

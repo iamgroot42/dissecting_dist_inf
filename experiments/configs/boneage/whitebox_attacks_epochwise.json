@@ -1,0 +1,30 @@
+{
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 100,
+        "batch_size": 1200,
+        "permutation_config": {
+            "focus": "fc"
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "boneage",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 20,
+        "learning_rate": 2e-3,
+        "batch_size": 8192,
+        "save_every_epoch": true
+    },
+    "tries": 5,
+    "values": [
+        0.2,
+        0.3,
+        0.4
+    ],
+    "num_victim_models": 10
+}
