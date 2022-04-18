@@ -6,8 +6,9 @@
         "affinity_config": {
             "num_final": 16,
             "frac_retain_pairs": 1.0,
-            "num_samples_use": 50
-        }
+            "num_samples_use": 25
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {

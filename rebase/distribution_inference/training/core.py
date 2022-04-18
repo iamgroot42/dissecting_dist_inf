@@ -198,7 +198,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             if train_config.misc_config and train_config.misc_config.adv_config:
                 suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
             else:
-                suffix = "_%.2f.ch" % vacc
+                suffix = "_tr%.2f_te%.2f.ch" % (tacc, vacc)
 
             # Get model "name" and function to save model
             model_num = extra_options.get("curren_model_num")

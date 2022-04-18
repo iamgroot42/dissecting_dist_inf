@@ -4,9 +4,13 @@
         "epochs": 120,
         "batch_size": 1000,
         "affinity_config": {
-            "num_final": 16,
+            "num_final": 8,
             "frac_retain_pairs": 1.0,
-            "num_samples_use": 50
+            "num_samples_use": 50,
+            "inner_dims": [
+                128,
+                32
+            ]
         }
     },
     "train_config": {

@@ -55,6 +55,10 @@ class MyAlexNet(BaseModel):
             FakeReluWrapper(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         ]
+        # Don't need EACH layer (too much memory) for now,
+        # can get away with skipping most layers
+        # self.valid_for_all_conv = [2, 5, 7, 9, 12]
+        self.valid_for_all_conv = [5, 9]
 
         clf_layers = [
             nn.Linear(64 * 6 * 6, 64),
@@ -63,6 +67,7 @@ class MyAlexNet(BaseModel):
             FakeReluWrapper(inplace=True),
             nn.Linear(32, num_classes),
         ]
+        self.valid_for_all_fc = [1, 3, 4]
 
         mapping = {0: 1, 1: 4, 2: 7, 3: 9, 4: 11, 5: 1, 6: 3}
         if self.latent_focus is not None:
@@ -75,13 +80,35 @@ class MyAlexNet(BaseModel):
         self.avgpool = nn.AdaptiveAvgPool2d((6, 6))
         self.classifier = nn.Sequential(*clf_layers)
 
-    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
+    def forward(self, x: ch.Tensor,
+                latent: int = None,
+                detach_before_return: bool = False,
+                get_all: bool = False) -> ch.Tensor:
 
         if latent is None:
-            x = self.features(x)
+            all_latents = []
+
+            # Function to collect latents (for given layers) from given model
+            def _collect_latents(model, wanted):
+                nonlocal x
+                for i, layer in enumerate(model):
+                    x = layer(x)
+                    if get_all and i in wanted:
+                        x_flat = x.view(x.size(0), -1)
+                        if detach_before_return:
+                            all_latents.append(x_flat.detach())
+                        else:
+                            all_latents.append(x_flat)
+
+            _collect_latents(self.features, self.valid_for_all_conv)
             x = self.avgpool(x)
             x = ch.flatten(x, 1)
-            x = self.classifier(x)
+            _collect_latents(self.classifier, self.valid_for_all_fc)
+
+            if get_all:
+                return all_latents
+            if detach_before_return:
+                return x.detach()
             return x
 
         if latent not in list(range(7)):
@@ -125,15 +152,15 @@ class MLPTwoLayer(BaseModel):
             nn.ReLU(),
             nn.Linear(16, num_classes),
         )
+        self.valid_for_all = [1, 3, 4]
 
     def forward(self, x,
                 detach_before_return: bool = False,
                 get_all: bool = False):
         all_latents = []
-        valid_for_all = [1, 3, 4]
         for i, layer in enumerate(self.layers):
             x = layer(x)
-            if get_all and i in valid_for_all:
+            if get_all and i in self.valid_for_all:
                 if detach_before_return:
                     all_latents.append(x.detach())
                 else:
@@ -152,45 +179,41 @@ class BoneModel(BaseModel):
                  fake_relu: bool = False,
                  latent_focus: int = None):
         super().__init__(is_conv=False)
-        if latent_focus is not None:
-            if latent_focus not in [0, 1]:
-                raise ValueError("Invalid interal layer requested")
+        # if latent_focus is not None:
+        #     if latent_focus not in [0, 1]:
+        #         raise ValueError("Invalid interal layer requested")
 
-        if fake_relu:
-            act_fn = BasicWrapper
-        else:
-            act_fn = nn.ReLU
+        # if fake_relu:
+        #     act_fn = BasicWrapper
+        # else:
+        #     act_fn = nn.ReLU
 
-        self.latent_focus = latent_focus
-        layers = [
+        self.layers = nn.Sequential(
             nn.Linear(n_inp, 128),
             FakeReluWrapper(inplace=True),
             nn.Linear(128, 64),
             FakeReluWrapper(inplace=True),
             nn.Linear(64, 1)
-        ]
+        )
+        self.valid_for_all = [1, 3, 4]
 
-        mapping = {0: 1, 1: 3}
-        if self.latent_focus is not None:
-            layers[mapping[self.latent_focus]] = act_fn(inplace=True)
-
-        self.layers = nn.Sequential(*layers)
-
-    def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
-        if latent is None:
-            return self.layers(x)
-
-        if latent not in [0, 1]:
-            raise ValueError("Invalid interal layer requested")
-
-        # First, second hidden layers correspond to outputs of
-        # Model layers 1, 3
-        latent = (latent * 2) + 1
-
+    def forward(self, x: ch.Tensor,
+                detach_before_return: bool = False,
+                get_all: bool = False) -> ch.Tensor:
+        all_latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)
-            if i == latent:
-                return x
+            if get_all and i in self.valid_for_all:
+                if detach_before_return:
+                    all_latents.append(x.detach())
+                else:
+                    all_latents.append(x)
+
+        if get_all:
+            return all_latents
+        if detach_before_return:
+            return x.detach()
+        return x
 
 
 class DenseNet(BaseModel):

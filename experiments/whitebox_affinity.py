@@ -93,20 +93,20 @@ if __name__ == "__main__":
             wrap_with_loader=False
         )
 
+        # Load all adv models
+        models_adv_1 = ds_vic_1.get_models(
+            train_config_adv,
+            n_models=attack_config.num_victim_models,
+            on_cpu=attack_config.on_cpu,
+            shuffle=False)
+
+        models_adv_2 = ds_vic_2.get_models(
+            train_config_adv,
+            n_models=attack_config.num_victim_models,
+            on_cpu=attack_config.on_cpu,
+            shuffle=False)
+
         for _ in range(attack_config.tries):
-            # Load adv models
-            models_adv_1 = ds_vic_1.get_models(
-                train_config_adv,
-                n_models=attack_config.num_victim_models,
-                on_cpu=attack_config.on_cpu,
-                shuffle=False)
-
-            models_adv_2 = ds_vic_2.get_models(
-                train_config_adv,
-                n_models=attack_config.num_victim_models,
-                on_cpu=attack_config.on_cpu,
-                shuffle=False)
-
             # Split into train, val models
             train_data, val_data = get_train_val_from_pool(
                 [models_adv_1, models_adv_2],
@@ -120,12 +120,9 @@ if __name__ == "__main__":
                 wb_attack_config,
                 num_samples_use=wb_attack_config.affinity_config.num_samples_use)
 
-            # TODO: Should also find a way to save and store this seed data
-            # Without the seed data, the meta-classifier is useless
-
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
-                wb_attack_config)
+                None, wb_attack_config)
             # Save seed-data in attack object, since this is needed
             # To use model later in evaluation mode, if loaded from memory
             attacker_obj.register_seed_data(seed_data_ds)
