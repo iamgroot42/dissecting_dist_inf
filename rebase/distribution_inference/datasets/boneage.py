@@ -17,13 +17,14 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self):
+    def __init__(self,epoch:bool=False):
         ratios = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
         super().__init__(name="RSNA-Boneage",
                          data_path="rsnabone/data",
                          models_path="models_boneage",
                          properties=["gender"],
-                         values={"gender": ratios})
+                         values={"gender": ratios},
+                         epoch_wise=epoch)
         self.supported_properties = ["gender"]
 
     def get_model(self,

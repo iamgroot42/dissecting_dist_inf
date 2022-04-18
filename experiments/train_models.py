@@ -38,7 +38,7 @@ if __name__ == "__main__":
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
-    ds_info = get_dataset_information(data_config.name)()
+    ds_info = get_dataset_information(data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
     ds = ds_wrapper_class(data_config)

@@ -15,14 +15,15 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self):
+    def __init__(self,epoch:bool=False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="New Census",
                          data_path="census_new/census_2019_1year",
                          models_path="models_new_census/60_40",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
-                         property_focus={"sex": 'female', "race": 'white'})
+                         property_focus={"sex": 'female', "race": 'white'},
+                         epoch_wise=epoch)
 
     def get_model(self, cpu: bool = False) -> nn.Module:
         model = MLPTwoLayer(n_inp=105)

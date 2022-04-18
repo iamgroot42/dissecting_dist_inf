@@ -15,13 +15,14 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self):
+    def __init__(self,epoch:bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Celeb-A",
                          data_path="celeba",
                          models_path="models_celeba/75_25",
-                         properties=["Male", "Young"],
-                         values={"Male": ratios, "Young": ratios})
+                         properties=["Male", "Young",],
+                         values={"Male": ratios, "Young": ratios},
+                         epoch_wise=epoch)
         self.preserve_properties = ['Smiling', 'Young', 'Male', 'Attractive']
         self.supported_properties = [
             '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',

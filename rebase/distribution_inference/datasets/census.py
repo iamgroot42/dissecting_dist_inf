@@ -63,14 +63,15 @@ def convert_to_torch(clfs):
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self):
+    def __init__(self,epoch:bool=False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Census",
                          data_path="census",
                          models_path="models_census/50_50_new/normal",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios,},
-                         property_focus={"sex": 'Female', "race": 'White'})
+                         property_focus={"sex": 'Female', "race": 'White'},
+                         epoch_wise=epoch)
     def get_model(self,cpu: bool = False) -> nn.Module:
         clf = PortedMLPClassifier()
         if not cpu:

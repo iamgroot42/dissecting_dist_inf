@@ -29,7 +29,8 @@ class DatasetInformation:
                  models_path: str,
                  properties: list,
                  values: dict,
-                 property_focus: dict = None):
+                 property_focus: dict = None,
+                 epoch_wise: bool=False):
         """
             data_path : path to dataset
             models_path: path to models
@@ -38,6 +39,9 @@ class DatasetInformation:
         """
         self.base_data_dir = os.path.join(Constants.base_data_directory, data_path)
         self.base_models_dir = os.path.join(Constants.base_models_directory, models_path)
+        self.epoch_wise = epoch_wise
+        if (epoch_wise):
+            self.base_models_dir = os.path.join(self.base_data_dir, "epoch_wise")
         self.name = name
         self.properties = properties
         self.values = values
