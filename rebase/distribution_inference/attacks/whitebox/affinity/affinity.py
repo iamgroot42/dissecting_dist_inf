@@ -284,7 +284,8 @@ class AffinityAttack(Attack):
             "retained_pairs": self.retained_pairs,
             "num_dim": self.num_dim,
             "num_logit_features": self.num_logit_features,
-            "num_layers": self.num_layers
+            "num_layers": self.num_layers,
+            "sequential_variant": self.sequential_variant
         }, model_save_path)
 
     def load_model(self, load_path: str):
@@ -294,6 +295,7 @@ class AffinityAttack(Attack):
         self.num_dim = checkpoint["num_dim"]
         self.num_logit_features = checkpoint["num_logit_features"]
         self.num_layers = checkpoint["num_layers"]
+        self.sequential_variant = checkpoint["sequential_variant"]
         # Prepare and load weights into model
         self._prepare_model()
         self.model.load_state_dict(checkpoint["model"])

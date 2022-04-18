@@ -1,3 +1,4 @@
+from unicodedata import bidirectional
 import torch as ch
 import torch.nn as nn
 from typing import List
@@ -23,6 +24,8 @@ class AffinityMetaClassifier(nn.Module):
         self.only_latent = config.only_latent
         self.layer_agnostic = config.layer_agnostic
         self.inner_dims = config.inner_dims
+        self.num_rnn_layers = config.num_rnn_layers
+        self.sequential_variant = config.sequential_variant
         self.shared_layerwise_params = config.shared_layerwise_params
         assert len(self.inner_dims) >= 1, "inner_dims must have at least 1 element"
 
@@ -56,8 +59,18 @@ class AffinityMetaClassifier(nn.Module):
 
         num_eff_layers = self.num_layers
         num_eff_layers += 1 if self.num_logit > 0 else 0
-        if not self.layer_agnostic:
+        if not (self.layer_agnostic or self.sequential_variant):
+            # Linear layer on top of concatenated embeddings
             self.final_layer = nn.Linear(self.num_final * num_eff_layers, 1)
+        if self.sequential_variant:
+            # Sequential model, process one embedding at a time
+            self.recurrent_layer = nn.GRU(
+                input_size=self.num_final,
+                hidden_size=self.num_final,
+                num_layers=self.num_rnn_layers,
+                batch_first=False,
+                bidirectional=False)
+            self.final_layer = nn.Linear(self.num_final, 1)
 
     def forward(self, x) -> ch.Tensor:
         # Get intermediate activations for each layer
@@ -65,7 +78,10 @@ class AffinityMetaClassifier(nn.Module):
         all_acts = []
         for i, model in enumerate(self.models):
             all_acts.append(model(x[i]))
-        all_acts = ch.cat(all_acts, 1)
+        if self.sequential_variant:
+            all_acts = ch.stack(all_acts)
+        else:
+            all_acts = ch.cat(all_acts, 1)
         # Return pre-logit activations if requested
         if self.only_latent:
             return all_acts
@@ -73,6 +89,13 @@ class AffinityMetaClassifier(nn.Module):
         # and return
         if self.layer_agnostic:
             return ch.mean(all_acts, 1).unsqueeze(1)
+        if self.sequential_variant:
+            # Sequential model, process one embedding at a time
+            # Initial hidden state defaults to 0s when not provided
+            all_acts, _ = self.recurrent_layer(all_acts)
+            # Reshape to be compatible with self.final_layer
+            all_acts = all_acts[-1, :]
+            all_acts = all_acts.contiguous()
         return self.final_layer(all_acts)
 
 

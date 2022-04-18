@@ -163,6 +163,10 @@ class AffinityAttackConfig(Serializable):
     """Dimensions of inner layers"""
     shared_layerwise_params: Optional[bool] = False
     """Use same layer-wise model for all layers?"""
+    sequential_variant: Optional[bool] = False
+    """Use sequential model instead of linear layer on concatenated embeddings?"""
+    num_rnn_layers: Optional[int] = 2
+    """Number of layers in RNN"""
 
 
 @dataclass
