@@ -96,13 +96,13 @@ if __name__ == "__main__":
         # Load all adv models
         models_adv_1 = ds_vic_1.get_models(
             train_config_adv,
-            n_models=attack_config.num_victim_models,
+            n_models=attack_config.num_total_adv_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False)
 
         models_adv_2 = ds_vic_2.get_models(
             train_config_adv,
-            n_models=attack_config.num_victim_models,
+            n_models=attack_config.num_total_adv_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False)
 

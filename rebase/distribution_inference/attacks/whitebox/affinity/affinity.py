@@ -245,12 +245,15 @@ class AffinityAttack(Attack):
         # as if in normal form
         # All we need to do is define loaders and call
         # normal training functions from training.core
+        # TODO: Add support for regression
         self.model, (test_loss, test_acc) = train(self.model,
                                                   (train_loader, test_loader),
                                                   train_config=train_config,
                                                   input_is_list=True)
         self.trained_model = True
-        return test_acc * 100
+        if not self.config.regression_config:
+            test_acc *= 100
+        return test_acc
 
     def save_model(self,
                    data_config: DatasetConfig,
