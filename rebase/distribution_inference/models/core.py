@@ -234,3 +234,65 @@ class DenseNet(BaseModel):
     def forward(self, x: ch.Tensor, latent: int = None) -> ch.Tensor:
         # TODO: Implement latent functionality
         return self.model(x)
+
+class PortedMLPClassifier(nn.Module):
+    def __init__(self):
+        super(PortedMLPClassifier, self).__init__()
+        layers = [
+            nn.Linear(in_features=42, out_features=32),
+            nn.ReLU(),
+            nn.Linear(in_features=32, out_features=16),
+            nn.ReLU(),
+            nn.Linear(in_features=16, out_features=8),
+            nn.ReLU(),
+            nn.Linear(in_features=8, out_features=1),
+        ]
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x: ch.Tensor,
+                latent: int = None,
+                get_all: bool = False,
+                detach_before_return: bool = True,
+                on_cpu: bool = False):
+        """
+        Args:
+            x: Input tensor of shape (batch_size, 42)
+            latent: If not None, return only the latent representation. Else, get requested latent layer's output
+            get_all: If True, return all activations
+            detach_before_return: If True, detach the latent representation before returning it
+            on_cpu: If True, return the latent representation on CPU
+        """
+        if latent is None and not get_all:
+            return self.layers(x)
+
+        if latent not in [0, 1, 2] and not get_all:
+            raise ValueError("Invald interal layer requested")
+
+        if latent is not None:
+            # First three hidden layers correspond to outputs of
+            # Model layers 1, 3, 5
+            latent = (latent * 2) + 1
+        valid_for_all = [1, 3, 5, 6]
+
+        latents = []
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            # Append activations for all layers (post-activation only)
+            if get_all and i in valid_for_all:
+                if detach_before_return:
+                    if on_cpu:
+                        latents.append(x.detach().cpu())
+                    else:
+                        latents.append(x.detach())
+                else:
+                    if on_cpu:
+                        latents.append(x.cpu())
+                    else:
+                        latents.append(x)
+            if i == latent:
+                if on_cpu:
+                    return x.cpu()
+                else:
+                    return x
+
+        return latents

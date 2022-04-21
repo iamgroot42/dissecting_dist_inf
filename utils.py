@@ -12,7 +12,7 @@ import torch.optim as optim
 from torchvision import transforms
 
 from robustness.model_utils import make_and_restore_model
-from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
+#from robustness.datasets import GenericBinary, CIFAR, ImageNet, SVHN, RobustCIFAR
 from robustness.tools import folder
 from robustness.tools.misc import log_statement
 
@@ -2141,10 +2141,10 @@ def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List,
         are ranked according to some utility estimate.
     """
     # Predictions by adversary's models
-    p1, p2 = preds_adv
+    (p1, p2) = preds_adv
     # Predictions by victim's models
-    pv1, pv2 = preds_victim
-
+    (pv1, pv2) = preds_victim
+    
     # Optimal order of point
     order = order_points(p1, p2)
 

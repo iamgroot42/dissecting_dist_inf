@@ -3,7 +3,7 @@
 """
 from simple_parsing import ArgumentParser
 from pathlib import Path
-
+import os
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
@@ -21,10 +21,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load_config", help="Specify config file",
         type=Path, required=True)
+    parser.add_argument('--gpu', 
+                        default='0,1,2,3', help="device number")  
     args = parser.parse_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
-
     # Extract configuration information from config file
     bb_attack_config: BlackBoxAttackConfig = attack_config.black_box
     train_config: TrainConfig = attack_config.train_config
@@ -55,6 +57,7 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
     # Load victim models for first value
+    print(attack_config.on_cpu)
     models_vic_1 = ds_vic_1.get_models(train_config,
                                        n_models=attack_config.num_victim_models,
                                        on_cpu=attack_config.on_cpu,

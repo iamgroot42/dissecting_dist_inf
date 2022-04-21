@@ -35,7 +35,7 @@
         1.0
     ],
     "on_cpu": true,
-    "adv_diff_misc_config": false,
+    
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
@@ -44,6 +44,7 @@
             "loss_and_threshold",
             "threshold_perpoint"
         ],
+        "preload":true,
         "ratios": [
             0.05,
             0.1,

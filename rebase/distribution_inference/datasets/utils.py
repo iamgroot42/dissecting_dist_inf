@@ -3,19 +3,20 @@ from tqdm import tqdm
 import pandas as pd
 import torch as ch
 
-from distribution_inference.datasets import new_census, celeba, boneage
-
+from distribution_inference.datasets import new_census, celeba, boneage,census
 
 DATASET_INFO_MAPPING = {
     "new_census": new_census.DatasetInformation,
     "celeba": celeba.DatasetInformation,
-    "boneage": boneage.DatasetInformation
+    "boneage": boneage.DatasetInformation,
+    "old_census":census.DatasetInformation
 }
 
 DATASET_WRAPPER_MAPPING = {
     "new_census": new_census.CensusWrapper,
     "celeba": celeba.CelebaWrapper,
-    "boneage": boneage.BoneWrapper
+    "boneage": boneage.BoneWrapper,
+    "old_census":census.CensusWrapper,
 }
 
 
@@ -37,6 +38,7 @@ def get_dataset_information(dataset_name: str):
 # https://tanelp.github.io/posts/a-bug-that-plagues-thousands-of-open-source-ml-projects/
 def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
+
 
 
 def filter(df, condition, ratio, verbose: bool = True):

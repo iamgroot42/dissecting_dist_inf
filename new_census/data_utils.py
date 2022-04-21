@@ -61,7 +61,7 @@ class CensusIncome:
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
                 TRAIN_DF), self.get_x_y(TEST_DF)
-
+            
             return (x_tr, y_tr), (x_te, y_te), cols
 
         if split == "all":

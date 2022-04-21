@@ -1,27 +1,41 @@
+import torch as ch
+from tokenize import String
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from simple_parsing import ArgumentParser
 from pathlib import Path
-
+from dataclasses import replace
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
 from distribution_inference.training.utils import save_model
 from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
-
+import os
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
+    parser.add_argument('--gpu', 
+                        default='0,1,2,3', help="device number")  
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path, required=True)
-    args, remaining_argv = parser.parse_known_args()
+    parser.add_argument(
+        "--split", help="split")
+    parser.add_argument(
+        "--ratio", help="ratio", type=float)
+    args = parser.parse_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    print(ch.cuda.device_count())
     # Attempt to extract as much information from config file as you can
     train_config = TrainConfig.load(args.load_config, drop_extra_fields=False)
-
+   
     # Extract configuration information from config file
     dp_config = None
     train_config: TrainConfig = train_config
     data_config: DatasetConfig = train_config.data_config
     misc_config: MiscTrainConfig = train_config.misc_config
+    if args.split:
+        data_config.split = args.split
+    if args.ratio:
+        data_config.value = args.ratio
     if misc_config is not None:
         dp_config: DPTrainingConfig = misc_config.dp_config
 

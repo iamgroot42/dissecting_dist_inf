@@ -130,8 +130,6 @@ class BlackBoxAttackConfig(Serializable):
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
     preload: Optional[bool] = False
-    """Pre-load data on GPU (always prefer if GPU has capacity)"""
-
 
 @dataclass
 class PermutationAttackConfig(Serializable):
@@ -249,15 +247,13 @@ class AttackConfig(Serializable):
     """Configuration for black-box attacks"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
-
+    
     tries: int = 1
     """Number of times to try each attack experiment"""
     num_victim_models: Optional[int] = 1000
     """Number of victim models (per distribution) to test on"""
     on_cpu: Optional[bool] = False
     """Keep models read on CPU?"""
-    adv_diff_misc_config: Optional[bool] = False
-    """If true, indicates adv models having different mist training config"""
     adv_misc_config: Optional[MiscTrainConfig] = None
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
     num_total_adv_models: Optional[int] = 1000

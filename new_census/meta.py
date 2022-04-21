@@ -41,11 +41,17 @@ if __name__ == "__main__":
     parser.add_argument('--trg', default=None, help='target ratios')
     parser.add_argument('--save', action="store_false", help='save model or not')
     parser.add_argument('--drop', action="store_true")
-    parser.add_argument('--scale', type=float, default=1.0)
-    parser.add_argument('--dp', type=float, default=None)
+    parser.add_argument('--scale',type=float,default=1.0)
+    parser.add_argument('--dp',type=float,default=None)
+    parser.add_argument('--b',action="store_true")
     args = parser.parse_args()
     utils.flash_utils(args)
-
+    adp=None
+    if args.b:
+        adp="DP_%.2f" %args.dp
+    dp = None
+    if args.dp:
+        dp = "DP_%.2f" %args.dp
     d_0 = args.d_0
     # Look at all folders inside path
     # One by one, run 0.5 v/s X experiments
@@ -84,10 +90,10 @@ if __name__ == "__main__":
         else:
 
             pos_w, pos_labels, _ = get_model_representations(
-            get_models_path(args.filter, "adv", d_0), 1, args.first_n)
+            get_models_path(args.filter, "adv", d_0,adp), 1, args.first_n)
             if args.dp:
                 pos_w_test, pos_labels_test, dims = get_model_representations(
-                get_models_path(args.filter, "victim", d_0,"DP_%.2f" % args.dp), 1, args.first_n)
+                get_models_path(args.filter, "victim", d_0,dp), 1, args.first_n)
             else:
                 pos_w_test, pos_labels_test, dims = get_model_representations(
                 get_models_path(args.filter, "victim", d_0), 1, args.first_n)
@@ -112,10 +118,10 @@ if __name__ == "__main__":
             else:
 
                 neg_w, neg_labels, _ = get_model_representations(
-                get_models_path(args.filter, "adv", tg), 0, args.first_n)
+                get_models_path(args.filter, "adv", tg,adp), 0, args.first_n)
                 if args.dp:
                     neg_w_test, neg_labels_test, dims = get_model_representations(
-                    get_models_path(args.filter, "victim", tg,"DP_%.2f" % args.dp), 0, args.first_n)
+                    get_models_path(args.filter, "victim", tg,dp), 0, args.first_n)
                 else:
                     neg_w_test, neg_labels_test, dims = get_model_representations(
                     get_models_path(args.filter, "victim", tg), 0, args.first_n)
@@ -211,14 +217,15 @@ if __name__ == "__main__":
 
     # Print data
     log_path = os.path.join(BASE_MODELS_DIR, args.filter, "meta_result")
-
+    if args.b:
+        log_path = os.path.join(log_path,"both_dp")
+    if args.dp:
+        l=os.path.join(log_path,dp)
     if args.scale != 1.0:
         log_path = os.path.join(log_path,"sample_size_scale:{}".format(args.scale))
 
     if args.drop:
         log_path = os.path.join(log_path,'drop')
-    if args.dp:
-        log_path = os.path.join(log_path,"DP_%.2f" % args.dp)
     utils.ensure_dir_exists(log_path)
     with open(os.path.join(log_path, "-".join([args.filter, args.d_0, str(args.start_n), str(args.first_n)])), "a") as wr:
         for i, tup in enumerate(data):

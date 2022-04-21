@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch as ch
 import os
 from tqdm import tqdm
-#from opacus import PrivacyEngine
+from opacus import PrivacyEngine
 import numpy as np
 from utils import check_if_inside_cluster,get_weight_layers
-#from opacus.utils.batch_memory_manager import BatchMemoryManager
-#from opacus.validators import ModuleValidator
+from opacus.utils.batch_memory_manager import BatchMemoryManager
+from opacus.validators import ModuleValidator
 
 #  Ignore warnings from Opacus
 import warnings
@@ -72,7 +72,7 @@ def get_model_representations(folder_path, label, first_n=np.inf, start_n=0):
         # Extract model parameters
         dims, fvec = get_weight_layers(
             model, first_n=first_n, start_n=start_n)
-        fvec = [x.cuda() for x in fvec]
+        fvec = [x.cpu() for x in fvec]
         vecs.append(fvec)
         labels.append(label)
     labels = np.array(labels)
