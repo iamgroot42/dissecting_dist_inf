@@ -86,6 +86,7 @@ if __name__ == "__main__":
                                                n_models=bb_attack_config.num_adv_models,
                                                on_cpu=attack_config.on_cpu)
             # Get victim and adv predictions on loaders for first ratio
+            
             preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
@@ -127,7 +128,8 @@ if __name__ == "__main__":
                     preds_adv, preds_vic,
                     ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies,
-                    epochwise_version=attack_config.train_config.save_every_epoch)
+                    epochwise_version=attack_config.train_config.save_every_epoch,
+                    multi=bb_attack_config.multi)
 
                 logger.add_results(attack_type, prop_value,
                                    result[0][0], result[1][0])

@@ -205,8 +205,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             save_path_fn = extra_options.get("save_path_fn")
 
             # Save model in current epoch state
-            file_name = os.path.join(str(model_num), str(
-                epoch + train_config.offset) + suffix)
+            file_name = os.path.join(str(epoch), str(
+                model_num + train_config.offset) + suffix)
             save_path = save_path_fn(train_config, file_name)
             # Make sure this directory exists
             if not os.path.isdir(os.path.dirname(save_path)):

@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Tuple, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions
+from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling
 from distribution_inference.config import BlackBoxAttackConfig
 
 
@@ -11,7 +11,8 @@ class PerPointThresholdAttack(Attack):
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
-               epochwise_version: bool = False):
+               epochwise_version: bool = False,
+                multi:int=0):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
@@ -21,13 +22,15 @@ class PerPointThresholdAttack(Attack):
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
             self.config,
-            epochwise_version=epochwise_version)
+            epochwise_version=epochwise_version,
+            multi=multi)
         # Get data for second distribution
         adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2 = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
             self.config,
-            epochwise_version=epochwise_version)
+            epochwise_version=epochwise_version,
+            multi=multi)
 
         # Get best adv accuracies for both distributions and compare
         chosen_distribution = 0
@@ -71,7 +74,8 @@ def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
 def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                                      preds_victim: PredictionsOnOneDistribution,
                                      config: BlackBoxAttackConfig,
-                                     epochwise_version: bool = False):
+                                     epochwise_version: bool = False,
+                                     multi:int=0):
     """
         Compute thresholds (based on probabilities) for each given datapoint,
         search for thresholds using given adv model's predictions.
@@ -80,6 +84,7 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
         Try this out with different values of "quartiles", where points
         are ranked according to some utility estimate.
     """
+    assert not (epochwise_version and multi), "No implementation for both epochwise and multi model"
     # Predictions by adversary's models
     p1, p2 = preds_adv.preds_property_1, preds_adv.preds_property_2
     # Predictions by victim's models
@@ -97,7 +102,9 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     else:
         pv1 = np.transpose(pv1)[order][::-1]
         pv2 = np.transpose(pv2)[order][::-1]
-
+    if multi:
+        pv1 = multi_model_sampling(pv1,multi)
+        pv2 = multi_model_sampling(pv2,multi)
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=config.granularity)
 

@@ -34,8 +34,10 @@ if __name__ == "__main__":
     misc_config: MiscTrainConfig = train_config.misc_config
     if args.split:
         data_config.split = args.split
-    if args.ratio:
+        train_config.data_config.split = args.split
+    if (args.ratio!=None):
         data_config.value = args.ratio
+        train_config.data_config.value = args.ratio
     if misc_config is not None:
         dp_config: DPTrainingConfig = misc_config.dp_config
 
@@ -55,7 +57,7 @@ if __name__ == "__main__":
     ds_info = get_dataset_information(data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
-    ds = ds_wrapper_class(data_config)
+    ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch)
 
     # Train models
     for i in range(1, train_config.num_models + 1):
@@ -75,7 +77,7 @@ if __name__ == "__main__":
         model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                      train_config=train_config,
                                      extra_options={
-                                        "curren_model_num": i + train_config.offset,
+                                        "curren_model_num": i,
                                         "save_path_fn": ds.get_save_path})
 
         # If saving only the final model

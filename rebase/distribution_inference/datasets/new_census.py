@@ -6,7 +6,6 @@ import numpy as np
 import os
 import torch as ch
 import torch.nn as nn
-
 from distribution_inference.config import TrainConfig, DatasetConfig
 from distribution_inference.models.core import MLPTwoLayer
 import distribution_inference.datasets.base as base
@@ -15,7 +14,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self,epoch:bool=False):
+    def __init__(self,epoch_wise:bool=False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="New Census",
                          data_path="census_new/census_2019_1year",
@@ -23,7 +22,7 @@ class DatasetInformation(base.DatasetInformation):
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
                          property_focus={"sex": 'female', "race": 'white'},
-                         epoch_wise=epoch)
+                         epoch_wise=epoch_wise)
 
     def get_model(self, cpu: bool = False) -> nn.Module:
         model = MLPTwoLayer(n_inp=105)
@@ -223,11 +222,10 @@ class _CensusIncome:
 
 class CensusSet(base.CustomDataset):
     def __init__(self, data, targets, squeeze=False):
-        self.data = ch.from_numpy(data).float()
-        self.targets = ch.from_numpy(targets).float()
+        self.data = ch.from_numpy(data).float().cuda()
+        self.targets = ch.from_numpy(targets).float().cuda()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
-
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]
@@ -243,11 +241,11 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
-
+        self.info_object = DatasetInformation(epoch_wise=epoch)
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
@@ -264,15 +262,15 @@ class CensusWrapper(base.CustomDatasetWrapper):
         self.ds_val = CensusSet(*val_data, squeeze=self.squeeze)
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
-                                   num_workers=1)
+                                   num_workers=0)
 
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
-        info_object = DatasetInformation()
+        info_object = self.info_object
         model = info_object.get_model(cpu=on_cpu)
         return load_model(model, path)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
-        info_object = DatasetInformation()
+        info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         dp_config = None
         if train_config.misc_config is not None:

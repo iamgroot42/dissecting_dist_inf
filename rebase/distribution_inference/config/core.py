@@ -130,6 +130,8 @@ class BlackBoxAttackConfig(Serializable):
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
     preload: Optional[bool] = False
+    """Multi model setting, number of victim models"""
+    multi: int = None
 
 @dataclass
 class PermutationAttackConfig(Serializable):

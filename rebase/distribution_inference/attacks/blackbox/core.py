@@ -46,17 +46,37 @@ class Attack:
         """
         raise NotImplementedError("Attack not implemented")
 
+def multi_model_sampling(arr,multi):
+    res=np.zeros(arr.shape)
+    if len(arr.shape)==2:
+        leng = arr.shape[1]
+        
+        for i in range(leng):
+            use=arr[:,np.random.permutation(leng)[:multi]]
+            use=np.average(use,axis=1)
+            res[:,i] = use
+    elif len(arr.shape)==1:
+        leng = arr.shape[0]
+        for i in range(leng):
+            use=arr[np.random.permutation(leng)[:multi]]
+            use=np.average(use)
+            res[i] = use
+    else:
+        raise ValueError("Dimension mismatch")
+    return res
 
 def threshold_test_per_dist(cal_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
                             y_gt: np.ndarray,
                             config: BlackBoxAttackConfig,
-                            epochwise_version: bool = False):
+                            epochwise_version: bool = False,
+                            multi:int=0):
     """
         Perform threshold-test on predictions of adversarial and victim models,
         for each of the given ratios. Returns statistics on all ratios.
     """
+    assert not (epochwise_version and multi), "No implementation for both epochwise and multi model"
     # Predictions made by the adversary's models
     p1, p2 = preds_adv.preds_property_1, preds_adv.preds_property_2
     # Predictions made by the  victim's models
@@ -87,7 +107,7 @@ def threshold_test_per_dist(cal_acc: Callable,
             pv2_use = [x[:leng] for x in pv2]
         else:
             pv1_use, pv2_use = pv1[:leng], pv2[:leng]
-
+        
         # Calculate accuracies for these points in [0,100]
         accs_1 = 100 * cal_acc(p1_use, yg_use)
         accs_2 = 100 * cal_acc(p2_use, yg_use)
@@ -105,6 +125,9 @@ def threshold_test_per_dist(cal_acc: Callable,
         else:
             accs_victim_1 = 100 * cal_acc(pv1_use, yg_use)
             accs_victim_2 = 100 * cal_acc(pv2_use, yg_use)
+        if multi:
+            accs_victim_1 = multi_model_sampling(accs_victim_1,multi)
+            accs_victim_2 = multi_model_sampling(accs_victim_2,multi)
         allaccs_1.append(accs_victim_1)
         allaccs_2.append(accs_victim_2)
 

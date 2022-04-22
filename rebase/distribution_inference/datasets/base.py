@@ -40,8 +40,8 @@ class DatasetInformation:
         self.base_data_dir = os.path.join(Constants.base_data_directory, data_path)
         self.base_models_dir = os.path.join(Constants.base_models_directory, models_path)
         self.epoch_wise = epoch_wise
-        if (epoch_wise):
-            self.base_models_dir = os.path.join(self.base_data_dir, "epoch_wise")
+        if epoch_wise:
+            self.base_models_dir = os.path.join(self.base_models_dir, "epoch_wise")
         self.name = name
         self.properties = properties
         self.values = values
@@ -114,7 +114,7 @@ class CustomDatasetWrapper:
             shuffle=shuffle,
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
-         
+            #pin_memory=True,
             prefetch_factor=prefetch_factor
             )
 
@@ -124,7 +124,7 @@ class CustomDatasetWrapper:
             shuffle=eval_shuffle,
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
-      
+            #pin_memory=True,
             prefetch_factor=prefetch_factor
             )
 
