@@ -8,7 +8,9 @@
             "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
             "shared_layerwise_params": true
-        }
+        },
+        "train_sample": 170,
+        "val_sample": 30
     },
     "train_config": {
         "data_config": {
@@ -22,7 +24,6 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "adv_diff_misc_config": true,
     "adv_misc_config": null,
     "tries": 3,
     "values": [

@@ -235,6 +235,7 @@ class DenseNet(BaseModel):
         # TODO: Implement latent functionality
         return self.model(x)
 
+
 class PortedMLPClassifier(nn.Module):
     def __init__(self):
         super(PortedMLPClassifier, self).__init__()

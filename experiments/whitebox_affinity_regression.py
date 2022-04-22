@@ -5,6 +5,7 @@ from distribution_inference.datasets.utils import get_dataset_wrapper, get_datas
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.attacks.whitebox.utils import get_attack, get_train_val_from_pool, wrap_into_loader
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
+from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
 
@@ -70,7 +71,7 @@ if __name__ == "__main__":
         for prop_value in attack_config.values:
             data_config_adv_specific, data_config_vic_specific = get_dfs_for_victim_and_adv(
                 data_config, prop_value=prop_value)
-            
+
             # Create new DS object for both and victim (for other ratio)
             ds_adv_specific = ds_wrapper_class(
                 data_config_adv_specific)
@@ -91,7 +92,7 @@ if __name__ == "__main__":
                 shuffle=False)
             models_adv_all.append(models_adv)
             models_vic_all.append(models_vic)
-        
+
         # Look at any additional requested ratios
         additional_values = None
         if wb_attack_config.regression_config.additional_values_to_test:
@@ -113,7 +114,7 @@ if __name__ == "__main__":
                     on_cpu=attack_config.on_cpu,
                     shuffle=False)
                 models_vic_all.append(models_vic)
-        
+
         # Generate all the seed data
         seed_data_ds, seed_data_loader = get_seed_data_loader(
             all_ds,
@@ -144,7 +145,11 @@ if __name__ == "__main__":
             labels_list=base_labels,
             wrap_with_loader=False
         )
-        
+
+        # Create attacker object
+        attacker_obj = get_attack(wb_attack_config.attack)(
+            None, wb_attack_config)
+
         # Make affinity features for train (adv) models
         features_train = attacker_obj.make_affinity_features(
             train_data[0], seed_data_loader)
@@ -156,16 +161,11 @@ if __name__ == "__main__":
             features_val = attacker_obj.make_affinity_features(
                 val_data[0], seed_data_loader)
 
-        # Create attacker object
-        attacker_obj = get_attack(wb_attack_config.attack)(
-            dims, wb_attack_config)
-
         # Execute attack
         chosen_mse = attacker_obj.execute_attack(
             train_data=(features_train, train_data[1]),
-            # TODO: Use val data as well
-            # val_data = (features_val, val_data[1]),
-            test_data=(features_test, test_data[1]),)
+            test_data=(features_test, test_data[1]),
+            val_data=(features_val, val_data[1]))
 
         print("Test MSE: %.3f" % chosen_mse)
         logger.add_results(wb_attack_config.attack,

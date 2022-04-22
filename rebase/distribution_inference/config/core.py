@@ -78,6 +78,23 @@ class MiscTrainConfig(Serializable):
 
 
 @dataclass
+class LRScheduler(Serializable):
+    """
+        Hyper-parameters for learning-rate scheduler
+    """
+    patient: Optional[int] = 5
+    """Number of epochs to wait before reducing learning rate"""
+    factor: Optional[float] = 0.1
+    """Factor to reduce learning rate by"""
+    cooldown: Optional[int] = 0
+    """Number of epochs to wait before reducing learning rate"""
+    mode: Optional[str] = "min"
+    """Mode to use for learning rate scheduler"""
+    verbose: Optional[bool] = True
+    """Whether to print out per-classifier stats"""
+
+
+@dataclass
 class TrainConfig(Serializable):
     """
         Configuration values for training models.
@@ -93,9 +110,10 @@ class TrainConfig(Serializable):
 
     misc_config: Optional[MiscTrainConfig] = None
     """Extra configuration for model training env"""
-
     verbose: Optional[bool] = False
     """Whether to print out per-classifier stats"""
+    lr_scheduler: Optional[LRScheduler] = None
+    """Use learning-rate scheduler?"""
     num_models: int = 1
     """Number of models to train"""
     offset: Optional[int] = 0
@@ -112,6 +130,8 @@ class TrainConfig(Serializable):
     """Save model after every epoch?"""
     extra_info: Optional[dict] = None
     """Optional dictionary to store misc information for dataset-specific args"""
+    regression: Optional[bool] = False
+    """Training for regression (MSE) or classification (BCE)?"""
 
 
 @dataclass
@@ -192,9 +212,9 @@ class WhiteBoxAttackConfig(Serializable):
     """Learning rate for meta-classifiers"""
     weight_decay: Optional[float] = 0.01
     """Weight-decay while training meta-classifiers"""
-    train_sample: Optional[int] = 800
+    train_sample: Optional[int] = 750
     """Number of models to train meta-classifiers on (per run)"""
-    val_sample: Optional[int] = 0
+    val_sample: Optional[int] = 50
     """Number of models to validate meta-classifiers on (per run)"""
     save: Optional[bool] = False
     """Save meta-classifiers?"""
@@ -247,7 +267,6 @@ class AttackConfig(Serializable):
     """Configuration for black-box attacks"""
     white_box: Optional[WhiteBoxAttackConfig] = None
     """Configuration for white-box attacks"""
-    
     tries: int = 1
     """Number of times to try each attack experiment"""
     num_victim_models: Optional[int] = 1000

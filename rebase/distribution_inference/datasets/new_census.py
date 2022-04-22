@@ -223,8 +223,8 @@ class _CensusIncome:
 
 class CensusSet(base.CustomDataset):
     def __init__(self, data, targets, squeeze=False):
-        self.data = ch.from_numpy(data).float()
-        self.targets = ch.from_numpy(targets).float()
+        self.data = ch.from_numpy(data).float().cuda()
+        self.targets = ch.from_numpy(targets).float().cuda()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
 
@@ -264,7 +264,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         self.ds_val = CensusSet(*val_data, squeeze=self.squeeze)
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
-                                   num_workers=1)
+                                   num_workers=0)
 
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         info_object = DatasetInformation()

@@ -12,10 +12,15 @@ from distribution_inference.utils import flash_utils
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
-        "--load_config", help="Specify config file", type=Path, required=True)
+        "--load_config", help="Specify config file", type=Path)
     args, remaining_argv = parser.parse_known_args()
     # Attempt to extract as much information from config file as you can
-    train_config = TrainConfig.load(args.load_config, drop_extra_fields=False)
+    config = TrainConfig.load(args.load_config, drop_extra_fields=False)
+    # Also give user the option to provide config values over CLI
+    parser = ArgumentParser(parents=[parser])
+    parser.add_arguments(TrainConfig, dest="train_config", default=config)
+    args = parser.parse_args(remaining_argv)
+    train_config = args.train_config
 
     # Extract configuration information from config file
     dp_config = None

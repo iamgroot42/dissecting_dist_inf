@@ -141,9 +141,8 @@ if __name__ == "__main__":
             # Execute attack
             chosen_accuracy = attacker_obj.execute_attack(
                 train_data=(features_train, train_data[1]),
-                # TODO: Use val data as well
-                # val_data = (features_val, val_data[1]),
-                test_data=(features_test, test_data[1]),)
+                test_data=(features_test, test_data[1]),
+                val_data=(features_val, val_data[1]))
 
             print("Test accuracy: %.3f" % chosen_accuracy)
             logger.add_results(wb_attack_config.attack,
