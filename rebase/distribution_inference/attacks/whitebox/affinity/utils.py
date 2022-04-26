@@ -43,15 +43,23 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
     basic_ds = BasicDataset(all_data)
     print(warning_string(f"Seed data has {len(basic_ds)} samples."))
     # Get loader using given dataset
+    loader = get_loader_for_seed_data(basic_ds, attack_config)
+    return basic_ds, loader
+
+
+def get_loader_for_seed_data(seed_data_ds, attack_config: WhiteBoxAttackConfig):
+    """
+        Wrap seed data in loader and return
+    """
     loader = DataLoader(
-        basic_ds,
+        seed_data_ds,
         batch_size=attack_config.batch_size,
         # batch_size=32,
         shuffle=False,
         num_workers=1,
         worker_init_fn=worker_init_fn,
         prefetch_factor=2)
-    return basic_ds, loader
+    return loader
 
 
 def wrap_into_x_y(features_list: List,

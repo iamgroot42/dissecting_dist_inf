@@ -1,16 +1,16 @@
 {
     "white_box": {
         "attack": "affinity",
-        "epochs": 100,
+        "epochs": 120,
         "batch_size": 1000,
         "affinity_config": {
             "num_final": 16,
             "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
-            "shared_layerwise_params": true
-        },
-        "regression_config": {},
-        "save": true
+            "shared_layerwise_params": true,
+            "sequential_variant": true,
+            "num_rnn_layers": 1
+        }
     },
     "train_config": {
         "data_config": {
@@ -24,7 +24,6 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "adv_misc_config": null,
     "tries": 3,
     "values": [
         0.0,
@@ -32,7 +31,6 @@
         0.2,
         0.3,
         0.4,
-        0.5,
         0.6,
         0.7,
         0.8,

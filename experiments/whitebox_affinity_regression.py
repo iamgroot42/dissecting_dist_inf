@@ -51,12 +51,6 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(data_config.name)()
 
-    # Create new DS object for both and victim
-    data_config_adv, data_config_victim = get_dfs_for_victim_and_adv(
-        data_config)
-    ds_adv = ds_wrapper_class(data_config_adv)
-    ds_vic = ds_wrapper_class(data_config_victim, skip_data=True)
-
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
@@ -84,7 +78,7 @@ if __name__ == "__main__":
                 train_config_adv,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=False)
+                shuffle=True)
             models_vic = ds_vic_specific.get_models(
                 train_config,
                 n_models=attack_config.num_victim_models,
@@ -149,6 +143,9 @@ if __name__ == "__main__":
         # Create attacker object
         attacker_obj = get_attack(wb_attack_config.attack)(
             None, wb_attack_config)
+        # Save seed-data in attack object, since this is needed
+        # To use model later in evaluation mode, if loaded from memory
+        attacker_obj.register_seed_data(seed_data_ds)
 
         # Make affinity features for train (adv) models
         features_train = attacker_obj.make_affinity_features(

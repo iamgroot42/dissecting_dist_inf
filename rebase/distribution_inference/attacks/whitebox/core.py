@@ -34,15 +34,19 @@ class Attack:
         """
         raise NotImplementedError("Must be implemented in subclass")
 
-    def eval_attack(self, test_loader, epochwise_version: bool = False):
+    def eval_attack(self, test_loader,
+                     epochwise_version: bool = False,
+                     get_preds: bool = False):
         """
             Evaluate attack on given test data
         """
         if not self.trained_model:
             warnings.warn(warning_string("\nModel not trained/loaded, being used for eval\n"))
-        return self._eval_attack(test_loader, epochwise_version)
+        return self._eval_attack(test_loader, epochwise_version, get_preds)
 
-    def _eval_attack(self, test_loader, epochwise_version: bool = False):
+    def _eval_attack(self, test_loader,
+                     epochwise_version: bool = False,
+                     get_preds: bool = False):
         raise NotImplementedError("Must be implemented in subclass")
 
     def load_model(self, path):

@@ -344,3 +344,38 @@ def get_weight_layers(model: BaseModel,
         dimensions = dims_fc
 
     return dimensions, feature_vector
+
+
+def eval_regression_preds_for_binary(regression_preds, test_loader, ratios, raw: bool = False):
+    """
+        Evaluate distinguishing accuracies for given test-loader, using
+        predictions from regression meta-classifier.
+    """
+    if raw:
+        Y_test = test_loader.numpy()
+    else:
+        # Collect all grouynd-truth labels
+        Y_test = []
+        for _, y_batch in test_loader:
+            Y_test.append(y_batch)
+        Y_test = ch.cat(Y_test, 0).numpy()
+
+    # Generate accuracy matrix
+    accuracy_matrix = np.zeros((len(ratios), len(ratios)))
+    for i in range(accuracy_matrix.shape[0]):
+        ratio_zero_indices = (Y_test == float(ratios[i]))
+        for j in range(i + 1, accuracy_matrix.shape[0]):
+            ratio_one_indices = (Y_test == float(ratios[j]))
+            # Get relevant GT for ratios[i] (0) v/s ratios[j] (1)
+            gt_z = Y_test[ratio_zero_indices] == float(ratios[j])
+            gt_o = Y_test[ratio_one_indices] == float(ratios[j])
+            # Get relevant preds
+            pred_z = regression_preds[ratio_zero_indices]
+            pred_o = regression_preds[ratio_one_indices]
+            pred_z = (pred_z >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+            pred_o = (pred_o >= (0.5 * (float(ratios[i]) + float(ratios[j]))))
+            # Compute accuracies and store
+            acc = np.concatenate((gt_z, gt_o), 0) == np.concatenate(
+                (pred_z, pred_o), 0)
+            accuracy_matrix[i, j] = np.mean(acc)
+    return accuracy_matrix

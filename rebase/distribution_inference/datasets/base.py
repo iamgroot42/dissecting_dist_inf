@@ -304,7 +304,7 @@ class CustomDatasetWrapper:
                 pbar.update(1)
 
         if len(feature_vectors) == 0:
-            raise ValueError("No models found in the given path")
+            raise ValueError(f"No models found in the given path {folder_path}")
 
         if epochwise_version:
             # Assert that all models have the same number of epochs

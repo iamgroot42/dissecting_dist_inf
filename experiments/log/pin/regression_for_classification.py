@@ -58,7 +58,7 @@ if __name__ == "__main__":
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
     # Load up model features for each of the values
-    collected_features_test = []
+    collected_features_train, collected_features_test = [], []
     for prop_value in attack_config.values:
         _, data_config_vic_specific = get_dfs_for_victim_and_adv(
             data_config, prop_value=prop_value)
@@ -96,9 +96,8 @@ if __name__ == "__main__":
     attacker_obj.load_model(args.path)
 
     # Evaluate attack on test loader
-    reression_preds = attacker_obj.eval_attack(test_loader, get_preds=True)
+    reression_preds = attacker_obj._eval_attack(test_loader, get_preds=True)
 
     # Get evaluation matrix
-    pred_matrix = eval_regression_preds_for_binary(
-        reression_preds, test_loader, attack_config.values)
+    pred_matrix = eval_regression_preds_for_binary(reression_preds, test_loader, attack_config.values)
     print(pred_matrix)

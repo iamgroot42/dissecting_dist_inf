@@ -5,16 +5,19 @@
         "batch_size": 500,
         "affinity_config": {
             "num_final": 16,
-            "frac_retain_pairs": 0.20,
+            "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
             "shared_layerwise_params": true
-        }
+        },
+        "train_sample": 700,
+        "regression_config": {},
+        "save": true
     },
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Young",
-            "classify": "Male",
+            "prop": "Male",
+            "classify": "Smiling",
             "split": "adv",
             "value": 0.5
         },
@@ -29,6 +32,7 @@
         0.2,
         0.3,
         0.4,
+        0.5,
         0.6,
         0.7,
         0.8,

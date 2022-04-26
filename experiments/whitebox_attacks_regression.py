@@ -50,12 +50,6 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(data_config.name)()
 
-    # Create new DS object for both and victim
-    data_config_adv, data_config_victim = get_dfs_for_victim_and_adv(
-        data_config)
-    ds_adv = ds_wrapper_class(data_config_adv, skip_data=True)
-    ds_vic = ds_wrapper_class(data_config_victim, skip_data=True)
-
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
