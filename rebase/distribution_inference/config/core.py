@@ -185,6 +185,10 @@ class AffinityAttackConfig(Serializable):
     """Use sequential model instead of linear layer on concatenated embeddings?"""
     num_rnn_layers: Optional[int] = 2
     """Number of layers in RNN"""
+    layers_to_target_conv: Optional[List[int]] = None
+    """Which conv layers of the model to target while extracting features?"""
+    layers_to_target_fc: Optional[List[int]] = None
+    """Which conv layers of the model to target while extracting features?"""
 
 
 @dataclass

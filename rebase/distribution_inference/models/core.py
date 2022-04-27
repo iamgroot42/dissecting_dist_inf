@@ -1,5 +1,6 @@
 import torch as ch
 import torch.nn as nn
+from typing import List
 from torchvision.models import densenet121
 
 from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
@@ -83,7 +84,13 @@ class MyAlexNet(BaseModel):
     def forward(self, x: ch.Tensor,
                 latent: int = None,
                 detach_before_return: bool = False,
-                get_all: bool = False) -> ch.Tensor:
+                get_all: bool = False,
+                layers_to_target_conv: List[int] = None,
+                layers_to_target_fc: List[int] = None,) -> ch.Tensor:
+
+        # Override list of layers if given
+        valid_conv = layers_to_target_conv if layers_to_target_conv else self.valid_for_all_conv
+        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
 
         if latent is None:
             all_latents = []
@@ -100,10 +107,10 @@ class MyAlexNet(BaseModel):
                         else:
                             all_latents.append(x_flat)
 
-            _collect_latents(self.features, self.valid_for_all_conv)
+            _collect_latents(self.features, valid_conv)
             x = self.avgpool(x)
             x = ch.flatten(x, 1)
-            _collect_latents(self.classifier, self.valid_for_all_fc)
+            _collect_latents(self.classifier, valid_fc)
 
             if get_all:
                 return all_latents
@@ -152,15 +159,21 @@ class MLPTwoLayer(BaseModel):
             nn.ReLU(),
             nn.Linear(16, num_classes),
         )
-        self.valid_for_all = [1, 3, 4]
+        self.valid_for_all_fc = [1, 3, 4]
 
     def forward(self, x,
                 detach_before_return: bool = False,
-                get_all: bool = False):
+                get_all: bool = False,
+                layers_to_target_conv: List[int] = None,
+                layers_to_target_fc: List[int] = None,):
+
+        # Override list of layers if given
+        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
+
         all_latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)
-            if get_all and i in self.valid_for_all:
+            if get_all and i in valid_fc:
                 if detach_before_return:
                     all_latents.append(x.detach())
                 else:
@@ -195,15 +208,21 @@ class BoneModel(BaseModel):
             FakeReluWrapper(inplace=True),
             nn.Linear(64, 1)
         )
-        self.valid_for_all = [1, 3, 4]
+        self.valid_for_all_fc = [1, 3, 4]
 
     def forward(self, x: ch.Tensor,
                 detach_before_return: bool = False,
-                get_all: bool = False) -> ch.Tensor:
+                get_all: bool = False,
+                layers_to_target_conv: List[int] = None,
+                layers_to_target_fc: List[int] = None,) -> ch.Tensor:
+
+        # Override list of layers if given
+        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
+
         all_latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)
-            if get_all and i in self.valid_for_all:
+            if get_all and i in valid_fc:
                 if detach_before_return:
                     all_latents.append(x.detach())
                 else:

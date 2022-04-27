@@ -51,7 +51,9 @@ class AffinityAttack(Attack):
                 data = data.cuda()
             model_features = model(
                 data, get_all=True,
-                detach_before_return=detach)
+                detach_before_return=detach,
+                layers_to_target_conv=self.config.affinity_config.layers_to_target_conv,
+                layers_to_target_fc=self.config.affinity_config.layers_to_target_fc)
             if features is None:
                 features = [[x] for x in model_features]
             else:

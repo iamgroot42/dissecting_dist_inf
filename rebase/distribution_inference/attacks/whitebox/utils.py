@@ -75,13 +75,13 @@ def covert_data_to_loaders(X,
 
     # Get loader using given dataset
     loader = DataLoader(
-            ds,
-            batch_size=batch_size,
-            shuffle=shuffle,
-            num_workers=num_workers,
-            collate_fn=collate_fn,
-            worker_init_fn=utils.worker_init_fn,
-            prefetch_factor=2)
+        ds,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        collate_fn=collate_fn,
+        worker_init_fn=utils.worker_init_fn,
+        prefetch_factor=2)
     return loader
 
 
@@ -346,7 +346,8 @@ def get_weight_layers(model: BaseModel,
     return dimensions, feature_vector
 
 
-def eval_regression_preds_for_binary(regression_preds, test_loader, ratios, raw: bool = False):
+def eval_regression_preds_for_binary(regression_preds, test_loader,
+                                     ratios, raw: bool = False):
     """
         Evaluate distinguishing accuracies for given test-loader, using
         predictions from regression meta-classifier.

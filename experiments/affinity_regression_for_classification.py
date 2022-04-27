@@ -85,7 +85,8 @@ if __name__ == "__main__":
         collected_models_test,
         batch_size=wb_attack_config.batch_size,
         shuffle=False,
-        wrap_with_loader=False
+        wrap_with_loader=False,
+        labels_list=test_labels
     )
 
     # Create attacker object
