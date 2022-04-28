@@ -1,0 +1,33 @@
+{
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 100,
+        "batch_size": 150,
+        "train_sample": 500,
+        "val_sample": 50,
+        "regression_config": {
+            "additional_values_to_test": null
+        },
+        "permutation_config": {
+            "focus": "all"
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "celeba",
+            "prop": "Male",
+            "classify": "Smiling",
+            "split": "adv",
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "values": [
+        0.0,
+        0.5
+    ],
+    "on_cpu": true,
+    "num_victim_models": 20
+}

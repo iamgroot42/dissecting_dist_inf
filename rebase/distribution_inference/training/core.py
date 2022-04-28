@@ -86,7 +86,8 @@ def validate_epoch(val_loader, model, criterion,
                    adv_config: AdvTrainingConfig = None,
                    expect_extra: bool = True,
                    input_is_list: bool = False,
-                   regression: bool = False):
+                   regression: bool = False,
+                   get_preds: bool = False):
     model.eval()
     val_loss = AverageMeter()
     adv_val_loss = AverageMeter()
@@ -94,7 +95,7 @@ def validate_epoch(val_loader, model, criterion,
         val_acc = AverageMeter()
         adv_val_acc = AverageMeter()
 
-
+    collected_preds = []
     with ch.set_grad_enabled(adv_config is not None):
         for tuple in val_loader:
             if expect_extra:
@@ -109,6 +110,8 @@ def validate_epoch(val_loader, model, criterion,
             N = labels.size(0)
 
             outputs = model(data)[:, 0]
+            if get_preds:
+                collected_preds.append(outputs.detach().cpu().numpy())
             if not regression:
                 prediction = (outputs >= 0)
                 val_acc.update(prediction.eq(
@@ -141,12 +144,26 @@ def validate_epoch(val_loader, model, criterion,
                       (val_loss.avg, val_acc.avg, adv_val_loss.avg, adv_val_acc.avg))
         print()
 
+    if get_preds:
+        collected_preds = np.concatenate(collected_preds, axis=0)
+
     if adv_config is None:
         if regression:
-            return val_loss.avg, None
-        return val_loss.avg, val_acc.avg
+            if get_preds:
+                return val_loss.avg, None, collected_preds
+            else:
+                return val_loss.avg, None
+        if get_preds:
+            return val_loss.avg, val_acc.avg, collected_preds
+        else:
+            return val_loss.avg, val_acc.avg
     if regression:
-        return (val_loss.avg, adv_val_loss.avg), (None, None)
+        if get_preds:
+            return (val_loss.avg, adv_val_loss.avg), (None, None), collected_preds
+        else:
+            return (val_loss.avg, adv_val_loss.avg), (None, None)
+    if get_preds:
+        return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg), collected_preds    
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
@@ -293,10 +310,11 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         test_loss, test_acc = validate_epoch(
                 test_loader,
                 model, criterion,
-                verbose=train_config.verbose,
+                verbose=False,
                 adv_config=adv_config,
                 expect_extra=train_config.expect_extra,
-                input_is_list=input_is_list)
+                input_is_list=input_is_list,
+                regression=train_config.regression)
     else:
         test_loss, test_acc = vloss, vacc
 

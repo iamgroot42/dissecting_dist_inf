@@ -1,6 +1,7 @@
 from typing import List
 import os
 import warnings
+from wsgiref import validate
 import torch as ch
 import torch.nn as nn
 import numpy as np
@@ -11,7 +12,7 @@ from distribution_inference.attacks.whitebox.affinity.models import AffinityMeta
 from distribution_inference.config import WhiteBoxAttackConfig, DatasetConfig, TrainConfig
 from distribution_inference.utils import warning_string, get_save_path, ensure_dir_exists
 from distribution_inference.models.core import BaseModel
-from distribution_inference.training.core import train
+from distribution_inference.training.core import train, validate_epoch
 
 
 class AffinityAttack(Attack):
@@ -50,7 +51,9 @@ class AffinityAttack(Attack):
                 data = data.cuda()
             model_features = model(
                 data, get_all=True,
-                detach_before_return=detach)
+                detach_before_return=detach,
+                layers_to_target_conv=self.config.affinity_config.layers_to_target_conv,
+                layers_to_target_fc=self.config.affinity_config.layers_to_target_fc)
             if features is None:
                 features = [[x] for x in model_features]
             else:
@@ -263,9 +266,9 @@ class AffinityAttack(Attack):
             train_config=train_config,
             input_is_list=True)
         self.trained_model = True
-        if not self.config.regression_config:
-            test_acc *= 100
-        return test_acc
+        if self.config.regression_config:
+            return test_loss
+        return test_acc * 100
 
     def save_model(self,
                    data_config: DatasetConfig,
@@ -299,8 +302,7 @@ class AffinityAttack(Attack):
             "retained_pairs": self.retained_pairs,
             "num_dim": self.num_dim,
             "num_logit_features": self.num_logit_features,
-            "num_layers": self.num_layers,
-            "sequential_variant": self.sequential_variant
+            "num_layers": self.num_layers
         }, model_save_path)
 
     def load_model(self, load_path: str):
@@ -310,7 +312,66 @@ class AffinityAttack(Attack):
         self.num_dim = checkpoint["num_dim"]
         self.num_logit_features = checkpoint["num_logit_features"]
         self.num_layers = checkpoint["num_layers"]
-        self.sequential_variant = checkpoint["sequential_variant"]
         # Prepare and load weights into model
         self._prepare_model()
         self.model.load_state_dict(checkpoint["model"])
+
+    def _eval_attack(self, test_loader,
+                     epochwise_version: bool = False,
+                     get_preds: bool = False):
+        def collate_fn(data):
+            features, labels = zip(*data)
+            # Combine them per-layer
+            x = [[] for _ in range(len(features[0]))]
+            for feature in features:
+                for i, layer_feature in enumerate(feature):
+                    x[i].append(layer_feature)
+
+            x = [ch.stack(x_, 0) for x_ in x]
+            y = ch.tensor(labels).float()
+
+            return x, y
+
+        class BasicDataset(ch.utils.data.Dataset):
+            def __init__(self, X, Y):
+                self.X = X
+                self.Y = Y
+                assert len(self.X) == len(self.Y)
+
+            def __len__(self):
+                return len(self.X)
+
+            def __getitem__(self, idx):
+                return self.X[idx], self.Y[idx]
+
+        # Create laoaders out of all the given data
+        def get_loader(data, shuffle):
+            ds = BasicDataset(data[0], data[1])
+            return ch.utils.data.DataLoader(
+                ds, batch_size=self.config.batch_size,
+                collate_fn=collate_fn,
+                shuffle=shuffle)
+
+        # Create loaders
+        test_loader_ = get_loader(test_loader, False)
+
+        # Evaluate model
+        if (self.config.regression_config is not None):
+            criterion = nn.MSELoss()
+        else:
+            criterion = nn.BCEWithLogitsLoss()
+        test_loss, test_acc, preds = validate_epoch(
+            test_loader_,
+            self.model,
+            criterion=criterion,
+            input_is_list=True,
+            expect_extra=False,
+            regression=(self.config.regression_config is not None),
+            get_preds=get_preds)
+
+        # Process returned results
+        if get_preds:
+            return preds
+        if self.config.regression_config:
+            return test_loss
+        return test_acc * 100

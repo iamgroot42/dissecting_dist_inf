@@ -74,7 +74,9 @@ class PINAttack(Attack):
             f"{attack_specific_info_string}.ch")
         ch.save(self.model.state_dict(), model_save_path)
 
-    def _eval_attack(self, test_loader, epochwise_version: bool = False):
+    def _eval_attack(self, test_loader,
+                     epochwise_version: bool = False,
+                     get_preds: bool = False):
         """
             Evaluate attack on test data
         """
@@ -94,11 +96,18 @@ class PINAttack(Attack):
                 evals.append(
                     self._test(self.model, loss_fn,
                                loader=test_datum_loader,
+                               get_preds=get_preds,
                                verbose=False)[0])
             return evals
         else:
-            return self._test(self.model, loss_fn,
-                              loader=test_loader, verbose=True)[0]
+            test_results = self._test(self.model, loss_fn,
+                                      loader=test_loader,
+                                      get_preds=get_preds,
+                                      verbose=True)
+            if get_preds:
+                return test_results[2]
+            else:
+                return test_results[0]
 
     def execute_attack(self,
                        train_loader: Tuple[List, List],

@@ -35,6 +35,11 @@ if __name__ == "__main__":
             # Scale epsilon by 255 if requested
             if train_config.misc_config.adv_config.scale_by_255:
                 train_config.misc_config.adv_config.epsilon /= 255
+    # Do the same if adv_misc_config is present
+    if attack_config.adv_misc_config is not None:
+        if attack_config.adv_misc_config.adv_config:
+            if attack_config.adv_misc_config.adv_config.scale_by_255:
+                attack_config.adv_misc_config.adv_config.epsilon /= 255
 
     # Make sure regression config is not being used here
     if wb_attack_config.regression_config:
