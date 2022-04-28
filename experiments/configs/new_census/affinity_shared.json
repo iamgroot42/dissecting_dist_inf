@@ -5,15 +5,15 @@
         "batch_size": 1000,
         "affinity_config": {
             "num_final": 16,
-            "frac_retain_pairs": 1.0,
-            "num_samples_use": 50
-        },
-        "save": true
+            "frac_retain_pairs": 0.2,
+            "num_samples_use": 50,
+            "shared_layerwise_params": true
+        }
     },
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "sex",
+            "prop": "race",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
@@ -22,9 +22,7 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "adv_diff_misc_config": true,
-    "adv_misc_config": null,
-    "tries": 5,
+    "tries": 3,
     "values": [
         0.0,
         0.1,

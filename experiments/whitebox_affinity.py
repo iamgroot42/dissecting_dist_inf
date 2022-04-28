@@ -94,15 +94,15 @@ if __name__ == "__main__":
         )
 
         # Load all adv models
-        models_adv_1 = ds_vic_1.get_models(
+        models_adv_1 = ds_adv_1.get_models(
             train_config_adv,
-            n_models=attack_config.num_victim_models,
+            n_models=attack_config.num_total_adv_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False)
 
-        models_adv_2 = ds_vic_2.get_models(
+        models_adv_2 = ds_adv_2.get_models(
             train_config_adv,
-            n_models=attack_config.num_victim_models,
+            n_models=attack_config.num_total_adv_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False)
 
@@ -141,9 +141,8 @@ if __name__ == "__main__":
             # Execute attack
             chosen_accuracy = attacker_obj.execute_attack(
                 train_data=(features_train, train_data[1]),
-                # TODO: Use val data as well
-                # val_data = (features_val, val_data[1]),
-                test_data=(features_test, test_data[1]),)
+                test_data=(features_test, test_data[1]),
+                val_data=(features_val, val_data[1]))
 
             print("Test accuracy: %.3f" % chosen_accuracy)
             logger.add_results(wb_attack_config.attack,

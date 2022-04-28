@@ -22,7 +22,7 @@ def load_stuff(model_dir, args, max_read):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='US Census')
+    parser = argparse.ArgumentParser(description='RSNA BoneAge')
     parser.add_argument('--batch_size', type=int, default=1000)
     parser.add_argument('--testing', action="store_true", help="Testing mode")
     parser.add_argument('--ratios', help="Ratios to use", default=None)
@@ -120,4 +120,5 @@ if __name__ == "__main__":
     ax2.set_ylabel(r"MSE")
 
     sns_plot.set_xticklabels(sns_plot.get_xticklabels(), rotation=60)
-    sns_plot.figure.savefig("plots/regression_plots.pdf", bbox_inches='tight')
+    #sns_plot.figure.savefig("plots/regression_plots.pdf", bbox_inches='tight')
+    sns_plot.figure.savefig("plots/regression_plots.png", bbox_inches='tight')

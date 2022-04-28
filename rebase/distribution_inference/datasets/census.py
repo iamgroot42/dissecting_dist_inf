@@ -1,24 +1,22 @@
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.model_selection import train_test_split
-import pickle
+import os
+import argparse
 import pandas as pd
 import numpy as np
-import os
 import torch as ch
 import torch.nn as nn
-from sklearn.neural_network import MLPClassifier
-from sklearn.neural_network._base import ACTIVATIONS
+from joblib import load
+from tqdm import tqdm
+from sklearn.model_selection import StratifiedShuffleSplit
 from distribution_inference.config import TrainConfig, DatasetConfig
 from distribution_inference.models.core import PortedMLPClassifier
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
-from joblib import load
-from tqdm import tqdm
-import argparse
-from distribution_inference.training.utils import load_model,save_model
-ACTIVATION_DIMS = [32, 16, 8, 1]
+from distribution_inference.training.utils import load_model, save_model
+
+
 def skload_model(path):
     return load(path)
+
 
 def get_models(folder_path):
     """
@@ -33,7 +31,8 @@ def get_models(folder_path):
             model = skload_model(p)
             models.append(model)
             names.append(mpath)
-    return models,names
+    return models, names
+
 
 def port_mlp_to_ch(clf):
     """
@@ -61,22 +60,23 @@ def convert_to_torch(clfs):
     return np.array([port_mlp_to_ch(clf) for clf in clfs], dtype=object)
 
 
-
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self,epoch:bool=False):
+    def __init__(self, epoch: bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Census",
                          data_path="census",
                          models_path="models_census/50_50_new/normal",
                          properties=["sex", "race"],
-                         values={"sex": ratios, "race": ratios,},
+                         values={"sex": ratios, "race": ratios, },
                          property_focus={"sex": 'Female', "race": 'White'},
                          epoch_wise=epoch)
-    def get_model(self,cpu: bool = False) -> nn.Module:
+
+    def get_model(self, cpu: bool = False) -> nn.Module:
         clf = PortedMLPClassifier()
         if not cpu:
             clf = clf.cuda()
         return clf
+
 
 class _CensusIncome:
     def __init__(self):
@@ -254,8 +254,8 @@ class CensusWrapper(base.CustomDatasetWrapper):
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
-        
-        save_path = os.path.join(base_models_dir,self.prop,self.split)
+
+        save_path = os.path.join(base_models_dir, self.prop, self.split)
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
         # Make sure this directory exists
@@ -263,6 +263,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
             os.makedirs(save_path)
 
         return save_path
+
 
 def con_b(df):
     return (df['sex:Female'] == 1) & (df['race:White'] == 1)
@@ -281,7 +282,7 @@ def con_n(df):
 
 
 con_l = [con_b, con_f, con_w, con_n]
-# Fet appropriate filter with sub-sampling according to ratio and property
+# Get appropriate filter with sub-sampling according to ratio and property
 
 
 def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
@@ -368,31 +369,29 @@ def cal_n(df, con, ratio):
             return qi, n
         return 0, n
 
+
 if __name__ == "__main__":
     "run to convert sklearn model to pytorch, have to comment out distribution_inference.datasets.util due to circular importing"
     info = DatasetInformation()
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--suffix', 
+    parser.add_argument('--suffix',
                         default='50_50_new', help="device number")
-    args = parser.parse_args()        
+    args = parser.parse_args()
     BMD = "/p/adversarialml/as9rw/models_census"
-    BMD = os.path.join(BMD,args.suffix)
-    b = os.path.join(BMD,'normal')
-    for s in ["adv","victim"]:
-        pa = os.path.join(BMD,s)
-        for p in ['sex','race']:
-            pat = os.path.join(pa,p)
+    BMD = os.path.join(BMD, args.suffix)
+    b = os.path.join(BMD, 'normal')
+    for s in ["adv", "victim"]:
+        pa = os.path.join(BMD, s)
+        for p in ['sex', 'race']:
+            pat = os.path.join(pa, p)
             print(pat)
             for x in os.listdir(pat):
-                models,names = get_models(os.path.join(pat,x))
-                save_path = os.path.join(b,p,s,x)
-                if models!= []:
+                models, names = get_models(os.path.join(pat, x))
+                save_path = os.path.join(b, p, s, x)
+                if models != []:
                     if not os.path.isdir(save_path):
                         os.makedirs(save_path)
                     models = convert_to_torch(models)
-                    for (m,n) in zip(models,names):
-                        save_model(m,os.path.join(save_path,n))
-
-
-
+                    for (m, n) in zip(models, names):
+                        save_model(m, os.path.join(save_path, n))

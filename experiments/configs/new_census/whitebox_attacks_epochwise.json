@@ -18,7 +18,8 @@
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0,
-        "save_every_epoch": true
+        "save_every_epoch": true,
+        "offset": 10
     },
     "num_victim_models": 10,
     "values": [

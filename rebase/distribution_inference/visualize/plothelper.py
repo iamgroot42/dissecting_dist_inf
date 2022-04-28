@@ -85,9 +85,6 @@ class PlotHelper():
         return logger
 
     def _parse(self, logger, legend_entry_index: int = None):
-        # Values for plot
-        ratios = []
-
         # Look at all the results
         for attack_res in logger['result']:
             if self.attacks_wanted is not None and attack_res not in self.attacks_wanted:
@@ -102,7 +99,6 @@ class PlotHelper():
                 for ratio in logger['result'][attack_res]:
                     if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
                         continue
-                    ratios.append(ratio)  # add ratio
                     victim_results = logger['result'][attack_res][ratio]['victim_acc']
                     for results in victim_results:
                         loss = results[1]
@@ -135,7 +131,6 @@ class PlotHelper():
                 for ratio in logger['result'][attack_res]:
                     if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
                         continue
-                    ratios.append(ratio)  # add ratio
                     victim_results = logger['result'][attack_res][ratio]['victim_acc']
                     for results in victim_results:
                         if type(results) == list:
@@ -168,9 +163,6 @@ class PlotHelper():
     def _graph_specific_options(self, graph, title='',
                                 darkplot=True, dash=True):
         graph.set_title(title)
-        if darkplot:
-            # Set dark background
-            plt.style.use('dark_background')
         # Add dividing line in centre
         lower, upper = plt.gca().get_xlim()
         if dash:
@@ -183,6 +175,9 @@ class PlotHelper():
 
     # Box plot, returns a graph object given a logger object
     def boxplot(self, title='', darkplot=True, dash=True):
+        if darkplot:
+            # Set dark background
+            plt.style.use('dark_background')
         graph = seaborn.boxplot(
             x=self.columns[0], y=self.columns[1],
             hue=self.columns[2], data=self.df)
@@ -196,6 +191,9 @@ class PlotHelper():
 
     # Violin plot, returns a graph object given a logger object
     def violinplot(self, title='', darkplot=True, dash=True):
+        if darkplot:
+            # Set dark background
+            plt.style.use('dark_background')
         graph = seaborn.violinplot(
             x=self.columns[0], y=self.columns[1],
             hue=self.columns[2], data=self.df)
@@ -207,6 +205,9 @@ class PlotHelper():
     # Regression plot, returns a graph object given a logger object
     # This plot does not take hues
     def regplot(self, title='', darkplot=True, dash=True):
+        if darkplot:
+            # Set dark background
+            plt.style.use('dark_background')
         graph = seaborn.regplot(
             x=self.columns[0], y=self.columns[1], data=self.df)
 
@@ -218,6 +219,9 @@ class PlotHelper():
     def lineplot(self, title='', darkplot=True, dash=False):
         assert self.columns[3] in self.df, "Epoch column not found"
 
+        if darkplot:
+            # Set dark background
+            plt.style.use('dark_background')
         graph = seaborn.lineplot(
             x=self.columns[3],
             y=self.columns[1],

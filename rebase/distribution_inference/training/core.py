@@ -27,10 +27,12 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
                 verbose: bool = True,
                 adv_config: AdvTrainingConfig = None,
                 expect_extra: bool = True,
-                input_is_list: bool = False):
+                input_is_list: bool = False,
+                regression: bool = False):
     model.train()
     train_loss = AverageMeter()
-    train_acc = AverageMeter()
+    if not regression:
+        train_acc = AverageMeter()
     iterator = train_loader
     if verbose:
         iterator = tqdm(train_loader)
@@ -61,14 +63,21 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
         loss = criterion(outputs, labels.float())
         loss.backward()
         optimizer.step()
-        prediction = (outputs >= 0)
-        train_acc.update(prediction.eq(
-            labels.view_as(prediction)).sum().item()/N)
+        if not regression:
+            prediction = (outputs >= 0)
+            train_acc.update(prediction.eq(
+                labels.view_as(prediction)).sum().item()/N)
         train_loss.update(loss.item())
 
         if verbose:
-            iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f' % (
-                epoch, train_loss.avg, train_acc.avg))
+            if regression:
+                iterator.set_description('[Train] Epoch %d, Loss: %.5f' % (
+                    epoch, train_loss.avg))
+            else:
+                iterator.set_description('[Train] Epoch %d, Loss: %.5f, Acc: %.4f' % (
+                    epoch, train_loss.avg, train_acc.avg))
+    if regression:
+        return train_loss.avg, None
     return train_loss.avg, train_acc.avg
 
 
@@ -76,12 +85,15 @@ def validate_epoch(val_loader, model, criterion,
                    verbose: bool = True,
                    adv_config: AdvTrainingConfig = None,
                    expect_extra: bool = True,
-                   input_is_list: bool = False):
+                   input_is_list: bool = False,
+                   regression: bool = False):
     model.eval()
     val_loss = AverageMeter()
-    val_acc = AverageMeter()
     adv_val_loss = AverageMeter()
-    adv_val_acc = AverageMeter()
+    if not regression:
+        val_acc = AverageMeter()
+        adv_val_acc = AverageMeter()
+
 
     with ch.set_grad_enabled(adv_config is not None):
         for tuple in val_loader:
@@ -97,36 +109,44 @@ def validate_epoch(val_loader, model, criterion,
             N = labels.size(0)
 
             outputs = model(data)[:, 0]
-            prediction = (outputs >= 0)
+            if not regression:
+                prediction = (outputs >= 0)
+                val_acc.update(prediction.eq(
+                    labels.view_as(prediction)).sum().item()/N)
+            val_loss.update(criterion(outputs, labels.float()).item())
 
             if adv_config is not None:
                 adv_x = generate_adversarial_input(model, data, adv_config)
                 outputs_adv = model(adv_x)[:, 0]
-                prediction_adv = (outputs_adv >= 0)
-
-                adv_val_acc.update(prediction_adv.eq(
-                    labels.view_as(prediction_adv)).sum().item()/N)
-
+                if not regression:
+                    prediction_adv = (outputs_adv >= 0)
+                    adv_val_acc.update(prediction_adv.eq(
+                        labels.view_as(prediction_adv)).sum().item()/N)
                 adv_val_loss.update(
                     criterion(outputs_adv, labels.float()).item())
 
-            val_acc.update(prediction.eq(
-                labels.view_as(prediction)).sum().item()/N)
-
-            val_loss.update(criterion(outputs, labels.float()).item())
-
     if verbose:
         if adv_config is None:
-            print('[Validation], Loss: %.5f, Accuracy: %.4f' %
-                  (val_loss.avg, val_acc.avg))
+            if regression:
+                print('[Validation], Loss: %.5f,' % val_loss.avg)
+            else:
+                print('[Validation], Loss: %.5f, Accuracy: %.4f' %
+                      (val_loss.avg, val_acc.avg))
         else:
-            print('[Validation], Loss: %.5f, Accuracy: %.4f | Adv-Loss: %.5f, Adv-Accuracy: %.4f' %
-                  (val_loss.avg, val_acc.avg,
-                   adv_val_loss.avg, adv_val_acc.avg))
+            if regression:
+                print('[Validation], Loss: %.5f | Adv-Loss: %.5f' %
+                      (val_loss.avg,  adv_val_loss.avg))
+            else:
+                print('[Validation], Loss: %.5f, Accuracy: %.4f | Adv-Loss: %.5f, Adv-Accuracy: %.4f' %
+                      (val_loss.avg, val_acc.avg, adv_val_loss.avg, adv_val_acc.avg))
         print()
 
     if adv_config is None:
+        if regression:
+            return val_loss.avg, None
         return val_loss.avg, val_acc.avg
+    if regression:
+        return (val_loss.avg, adv_val_loss.avg), (None, None)
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
@@ -134,14 +154,36 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
                      input_is_list: bool = False,
                      extra_options: dict = None):
     # Get data loaders
-    train_loader, val_loader = loaders
+    if len(loaders) == 2:
+        train_loader, test_loader = loaders
+        val_loader = None
+        if train_config.get_best:
+            print(warning_string("\nUsing test-data to pick best-performing model\n"))
+    else:
+        train_loader, test_loader, val_loader = loaders
 
     # Define optimizer, loss function
     optimizer = ch.optim.Adam(
         model.parameters(),
         lr=train_config.learning_rate,
         weight_decay=train_config.weight_decay)
-    criterion = nn.BCEWithLogitsLoss().cuda()
+    if train_config.regression:
+        criterion = nn.MSELoss()
+    else:
+        criterion = nn.BCEWithLogitsLoss()
+    # LR Scheduler
+    if train_config.lr_scheduler is not None:
+        scheduler_config = train_config.lr_scheduler
+        if len(loaders) == 2:
+            print(warning_string("\nUsing LR scheduler on test data\n"))
+        lr_scheduler = ch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode=scheduler_config.mode,
+            factor=scheduler_config.factor,
+            patience=scheduler_config.patience,
+            cooldown=scheduler_config.cooldown,
+            verbose=scheduler_config.verbose)
+    else:
+        lr_scheduler = None
 
     iterator = range(1, train_config.epochs + 1)
     if not train_config.verbose:
@@ -164,26 +206,48 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
 
     best_model, best_loss = None, np.inf
     for epoch in iterator:
-        _, tacc = train_epoch(train_loader, model,
+        tloss, tacc = train_epoch(train_loader, model,
                               criterion, optimizer, epoch,
                               verbose=train_config.verbose,
                               adv_config=adv_config,
                               expect_extra=train_config.expect_extra,
-                              input_is_list=input_is_list)
+                              input_is_list=input_is_list,
+                              regression=train_config.regression)
 
+        # Get metrics on val data, if available
+        if val_loader is not None:
+            use_loader_for_metric_log = val_loader
+        else:
+            use_loader_for_metric_log = test_loader
         vloss, vacc = validate_epoch(
-            val_loader, model, criterion,
+            use_loader_for_metric_log,
+            model, criterion,
             verbose=train_config.verbose,
             adv_config=adv_config,
             expect_extra=train_config.expect_extra,
-            input_is_list=input_is_list)
+            input_is_list=input_is_list,
+            regression=train_config.regression)
+
+        # LR Scheduler, if requested
+        if lr_scheduler is not None:
+            lr_scheduler.step(vloss)
+
+        # Log appropriate metrics
         if not train_config.verbose:
             if adv_config is None:
-                iterator.set_description(
-                    "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
+                if train_config.regression:
+                    iterator.set_description(
+                        "train_loss: %.2f | val_loss: %.2f |" % (tloss, vloss))
+                else:
+                    iterator.set_description(
+                        "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
             else:
-                iterator.set_description(
-                    "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (100 * tacc, 100 * vacc[0], 100 * vacc[1]))
+                if train_config.regression:
+                    iterator.set_description(
+                        "train_loss: %.2f | val_loss: %.2f | adv_val_loss: %.2f" % (tloss, vloss[0], vloss[1]))
+                else:
+                    iterator.set_description(
+                        "train_acc: %.2f | val_acc: %.2f | adv_val_acc: %.2f" % (100 * tacc, 100 * vacc[0], 100 * vacc[1]))
 
         vloss_compare = vloss
         if adv_config is not None:
@@ -196,9 +260,15 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         if train_config.save_every_epoch:
             # If adv training, suffix is a bit different
             if train_config.misc_config and train_config.misc_config.adv_config:
-                suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
+                if train_config.regression:
+                    suffix = "_%.4f_adv_%.4f.ch" % (vloss[0], vloss[1])
+                else:
+                    suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
             else:
-                suffix = "_tr%.2f_te%.2f.ch" % (tacc, vacc)
+                if train_config.regression:
+                    suffix = "_tr%.4f_te%.4f.ch" % (tloss, vloss)
+                else:
+                    suffix = "_tr%.2f_te%.2f.ch" % (tacc, vacc)
 
             # Get model "name" and function to save model
             model_num = extra_options.get("curren_model_num")
@@ -218,6 +288,18 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
     if train_config.misc_config is not None and train_config.data_config.name == "celeba":
         adv_config.epsilon /= 2
 
+    # Use test-loader to compute final test metrics
+    if val_loader is not None:
+        test_loss, test_acc = validate_epoch(
+                test_loader,
+                model, criterion,
+                verbose=train_config.verbose,
+                adv_config=adv_config,
+                expect_extra=train_config.expect_extra,
+                input_is_list=input_is_list)
+    else:
+        test_loss, test_acc = vloss, vacc
+
     if train_config.get_best:
-        return best_model, (vloss, vacc)
-    return vloss, vacc
+        return best_model, (test_loss, test_acc)
+    return test_loss, test_acc

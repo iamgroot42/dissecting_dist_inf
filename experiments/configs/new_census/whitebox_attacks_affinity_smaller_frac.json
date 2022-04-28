@@ -5,7 +5,7 @@
         "batch_size": 1000,
         "affinity_config": {
             "num_final": 16,
-            "frac_retain_pairs": 0.5,
+            "frac_retain_pairs": 0.1,
             "num_samples_use": 50
         }
     },

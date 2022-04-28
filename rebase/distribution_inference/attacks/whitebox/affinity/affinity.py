@@ -161,7 +161,8 @@ class AffinityAttack(Attack):
                     # consider those indices for computing cosine similarity
                     relevant_pairs = self.retained_pairs - pairs_so_far
                     relevant_pairs = relevant_pairs[relevant_pairs >= 0]
-                    relevant_pairs = relevant_pairs[relevant_pairs < len(others)]
+                    relevant_pairs = relevant_pairs[relevant_pairs < len(
+                        others)]
                     # relevant_pairs -= pairs_so_far
                     pairs_so_far += len(others)
                     others = others[relevant_pairs]
@@ -185,7 +186,10 @@ class AffinityAttack(Attack):
         num_features = layerwise_features[0].shape[0]
         return layerwise_features, num_features, num_logit_features, num_layers
 
-    def execute_attack(self, train_data, test_data):
+    def execute_attack(self,
+                       train_data,
+                       test_data,
+                       val_data=None):
         """
             Define and train meta-classifier
         """
@@ -202,6 +206,7 @@ class AffinityAttack(Attack):
             weight_decay=self.config.weight_decay,
             get_best=True,
             expect_extra=False,
+            regression=(self.config.regression_config is not None),
         )
 
         def collate_fn(data):
@@ -237,20 +242,30 @@ class AffinityAttack(Attack):
                 collate_fn=collate_fn,
                 shuffle=shuffle)
 
+        # Create loaders
         train_loader = get_loader(train_data, True)
         test_loader = get_loader(test_data, False)
+        if val_data is not None:
+            val_loader = get_loader(val_data, False)
+            loaders = (train_loader, test_loader, val_loader)
+        else:
+            loaders = (train_loader, test_loader)
 
         # Train model
         # For this attack, we have features
         # as if in normal form
         # All we need to do is define loaders and call
         # normal training functions from training.core
-        self.model, (test_loss, test_acc) = train(self.model,
-                                                  (train_loader, test_loader),
-                                                  train_config=train_config,
-                                                  input_is_list=True)
+        # TODO: Add support for regression
+        self.model, (test_loss, test_acc) = train(
+            self.model,
+            loaders,
+            train_config=train_config,
+            input_is_list=True)
         self.trained_model = True
-        return test_acc * 100
+        if not self.config.regression_config:
+            test_acc *= 100
+        return test_acc
 
     def save_model(self,
                    data_config: DatasetConfig,
@@ -284,7 +299,8 @@ class AffinityAttack(Attack):
             "retained_pairs": self.retained_pairs,
             "num_dim": self.num_dim,
             "num_logit_features": self.num_logit_features,
-            "num_layers": self.num_layers
+            "num_layers": self.num_layers,
+            "sequential_variant": self.sequential_variant
         }, model_save_path)
 
     def load_model(self, load_path: str):
@@ -294,6 +310,7 @@ class AffinityAttack(Attack):
         self.num_dim = checkpoint["num_dim"]
         self.num_logit_features = checkpoint["num_logit_features"]
         self.num_layers = checkpoint["num_layers"]
+        self.sequential_variant = checkpoint["sequential_variant"]
         # Prepare and load weights into model
         self._prepare_model()
         self.model.load_state_dict(checkpoint["model"])
