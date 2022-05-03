@@ -152,6 +152,7 @@ class BlackBoxAttackConfig(Serializable):
     preload: Optional[bool] = False
     """Multi model setting, number of victim models"""
     multi: int = None
+    multi2: int = None
 
 @dataclass
 class PermutationAttackConfig(Serializable):

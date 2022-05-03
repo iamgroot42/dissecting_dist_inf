@@ -1,7 +1,7 @@
 import numpy as np
 from typing import List, Tuple, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling
+from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling,get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
 
 
@@ -12,7 +12,8 @@ class PerPointThresholdAttack(Attack):
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
                epochwise_version: bool = False,
-                multi:int=0):
+                multi:int=0,
+                multi2:int=0):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
@@ -23,14 +24,16 @@ class PerPointThresholdAttack(Attack):
             preds_vic.preds_on_distr_1,
             self.config,
             epochwise_version=epochwise_version,
-            multi=multi)
+            multi=multi,
+            multi2=multi2)
         # Get data for second distribution
         adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2 = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
             self.config,
             epochwise_version=epochwise_version,
-            multi=multi)
+            multi=multi,
+            multi2=multi2)
 
         # Get best adv accuracies for both distributions and compare
         chosen_distribution = 0
@@ -55,16 +58,21 @@ class PerPointThresholdAttack(Attack):
         return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information]
 
 
-def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
+def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule,multi2:int):
     """
         Run perpoint threshold test (confidence)
         for a given "quartile" ratio
     """
+    if multi2:
+        preds, acc = get_threshold_pred_multi(
+        preds_1, preds_2, threshold, rule, get_pred=True,
+        multi2=multi2)
+    else:
     # Combine predictions into one vector
-    combined = np.concatenate((preds_1, preds_2), axis=1)
+        combined = np.concatenate((preds_1, preds_2), axis=1)
 
     # Compute accuracy for given predictions, thresholds, and rules
-    preds, acc = get_threshold_pred(
+        preds, acc = get_threshold_pred(
         combined, classes, threshold, rule, get_pred=True,
         confidence=True)
 
@@ -75,7 +83,8 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                                      preds_victim: PredictionsOnOneDistribution,
                                      config: BlackBoxAttackConfig,
                                      epochwise_version: bool = False,
-                                     multi:int=0):
+                                     multi:int=0,
+                                     multi2:int=0):
     """
         Compute thresholds (based on probabilities) for each given datapoint,
         search for thresholds using given adv model's predictions.
@@ -85,6 +94,8 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
         are ranked according to some utility estimate.
     """
     assert not (epochwise_version and multi), "No implementation for both epochwise and multi model"
+    assert not (multi2 and multi), "No implementation for both multi model"
+    assert not (epochwise_version and multi2), "No implementation for both epochwise and multi model"
     # Predictions by adversary's models
     p1, p2 = preds_adv.preds_property_1, preds_adv.preds_property_2
     # Predictions by victim's models
@@ -144,7 +155,7 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                 victim_pred.append(pred)
         else:
             victim_acc, victim_pred = _perpoint_threshold_on_ratio(
-                pv1_use, pv2_use, classes_victim, thres_use, rs_use)
+                pv1_use, pv2_use, classes_victim, thres_use, rs_use,multi2)
         victim_accs.append(victim_acc)
         # Keep track of predictions on victim's models
         victim_preds.append(victim_pred)
