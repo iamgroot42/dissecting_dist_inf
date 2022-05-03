@@ -58,7 +58,7 @@ class PerPointThresholdAttack(Attack):
         return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information]
 
 
-def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule,multi2:int):
+def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule,multi2:int=0):
     """
         Run perpoint threshold test (confidence)
         for a given "quartile" ratio

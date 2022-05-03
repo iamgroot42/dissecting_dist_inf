@@ -230,13 +230,13 @@ def get_threshold_acc_multi(X1, X2, threshold, multi2:int, rule=None):
         x = X2[np.random.permutation(l2)[:multi2]]
         X2_use1.append(np.mean(x>=threshold)>=0.5)
         X2_use2.append(np.mean(x<=threshold)>=0.5)
-    Y=np.concatenate(Y1,Y2)
+    Y=np.concatenate((Y1,Y2))
     X1_use1 = np.array(X1_use1)
     X1_use2 = np.array(X1_use2)
     X2_use1 = np.array(X2_use1)
     X2_use2 = np.array(X2_use2)
-    M1 = np.concatenate(X1_use1,X2_use1)
-    M2 = np.concatenate(X1_use2,X2_use2)
+    M1 = np.concatenate((X1_use1,X2_use1))
+    M2 = np.concatenate((X1_use2,X2_use2))
     # Rule-1: everything above threshold is 1 class
     acc_1 = np.mean(M1 == Y)
     # Rule-2: everything below threshold is 1 class
@@ -370,7 +370,7 @@ def get_threshold_pred_multi(X1,X2,threshold, rule,multi2:int,
     r1 = np.array(r1)
     r2 = np.array(r2)
     acc = (np.mean(r1==Y1)+np.mean(r2==Y2))/2
-    res = np.concatenate(r1,r2)
+    res = np.concatenate((r1,r2))
     # Return predictions, if requested
     if get_pred:
         return res, acc

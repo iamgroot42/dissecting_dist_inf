@@ -129,7 +129,8 @@ if __name__ == "__main__":
                     ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies,
                     epochwise_version=attack_config.train_config.save_every_epoch,
-                    multi=bb_attack_config.multi)
+                    multi=bb_attack_config.multi,
+                    multi2=bb_attack_config.multi2)
 
                 logger.add_results(attack_type, prop_value,
                                    result[0][0], result[1][0])
