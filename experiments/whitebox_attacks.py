@@ -101,21 +101,22 @@ if __name__ == "__main__":
             shuffle=False,
         )
 
-        for trial in range(attack_config.tries):
-            # Load adv models for both ratios
-            dims, features_adv_1 = ds_adv_1.get_model_features(
-                train_config_adv,
-                wb_attack_config,
-                n_models=attack_config.num_total_adv_models,
-                on_cpu=attack_config.on_cpu,
-                shuffle=True)
-            _, features_adv_2 = ds_adv_2.get_model_features(
-                train_config_adv,
-                wb_attack_config,
-                n_models=attack_config.num_total_adv_models,
-                on_cpu=attack_config.on_cpu,
-                shuffle=True)
+        # Load adv models for both ratios
+        dims, features_adv_1 = ds_adv_1.get_model_features(
+            train_config_adv,
+            wb_attack_config,
+            n_models=attack_config.num_total_adv_models,
+            on_cpu=attack_config.on_cpu,
+            shuffle=True)
+        _, features_adv_2 = ds_adv_2.get_model_features(
+            train_config_adv,
+            wb_attack_config,
+            n_models=attack_config.num_total_adv_models,
+            on_cpu=attack_config.on_cpu,
+            shuffle=True)
 
+        # Run attack trials
+        for trial in range(attack_config.tries):
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
                 dims, wb_attack_config)

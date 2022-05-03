@@ -30,28 +30,33 @@ class DatasetInformation:
                  properties: list,
                  values: dict,
                  property_focus: dict = None,
-                 epoch_wise: bool=False):
+                 epoch_wise: bool = False):
         """
             data_path : path to dataset
             models_path: path to models
             properties: list of properties supported for experiments
             values(dict): list of values for each property
         """
-        self.base_data_dir = os.path.join(Constants.base_data_directory, data_path)
-        self.base_models_dir = os.path.join(Constants.base_models_directory, models_path)
+        self.base_data_dir = os.path.join(
+            Constants.base_data_directory, data_path)
+        self.base_models_dir = os.path.join(
+            Constants.base_models_directory, models_path)
         self.epoch_wise = epoch_wise
         if (epoch_wise):
-            self.base_models_dir = os.path.join(self.base_data_dir, "epoch_wise")
+            self.base_models_dir = os.path.join(
+                self.base_data_dir, "epoch_wise")
         self.name = name
         self.properties = properties
         self.values = values
         self.property_focus = property_focus
 
     def get_model(self, cpu: bool = False) -> nn.Module:
-        raise NotImplementedError(f"Implement method to model for {self.name} dataset")
+        raise NotImplementedError(
+            f"Implement method to model for {self.name} dataset")
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
-        raise NotImplementedError(f"DP Training not supported for {self.name} dataset")
+        raise NotImplementedError(
+            f"DP Training not supported for {self.name} dataset")
 
     def generate_victim_adversary_splits(self, adv_ratio: float, test_ratio: float, num_tries: int):
         """
@@ -59,7 +64,8 @@ class DatasetInformation:
             using the given dataset. Use this method only once for the
             same set of experiments.
         """
-        raise NotImplementedError("Dataset does not have a method to generate victim and adversary splits")
+        raise NotImplementedError(
+            "Dataset does not have a method to generate victim and adversary splits")
 
 
 class CustomDataset(Dataset):
@@ -115,7 +121,7 @@ class CustomDatasetWrapper:
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
             prefetch_factor=prefetch_factor
-            )
+        )
 
         test_loader = DataLoader(
             self.ds_val,
@@ -124,7 +130,7 @@ class CustomDatasetWrapper:
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
             prefetch_factor=prefetch_factor
-            )
+        )
 
         return train_loader, test_loader
 
@@ -133,7 +139,8 @@ class CustomDatasetWrapper:
             Return path to directory where models will be saved,
             for a given configuration.
         """
-        raise NotImplementedError("Function to fetch model save path not implemented")
+        raise NotImplementedError(
+            "Function to fetch model save path not implemented")
 
     def get_save_path(self, train_config: TrainConfig, name: str) -> str:
         """
@@ -223,7 +230,8 @@ class CustomDatasetWrapper:
                 pbar.update()
 
         if len(models) == 0:
-            raise ValueError(f"No models found in the given path {folder_path}")
+            raise ValueError(
+                f"No models found in the given path {folder_path}")
 
         if epochwise_version:
             # Assert that all models have the same number of epochs
@@ -280,7 +288,8 @@ class CustomDatasetWrapper:
                                     on_cpu=on_cpu)
                                 # Extract model features
                                 # Get model params, shift to GPU
-                                dims, feature_vector = get_weight_layers(model, attack_config)
+                                dims, feature_vector = get_weight_layers(
+                                    model, attack_config)
                                 features_inside.append(feature_vector)
                             feature_vectors.append(features_inside)
                             i += 1
@@ -296,7 +305,8 @@ class CustomDatasetWrapper:
 
                     # Extract model features
                     # Get model params, shift to GPU
-                    dims, feature_vector = get_weight_layers(model, attack_config)
+                    dims, feature_vector = get_weight_layers(
+                        model, attack_config)
                     feature_vectors.append(feature_vector)
                     i += 1
 
@@ -304,7 +314,8 @@ class CustomDatasetWrapper:
                 pbar.update(1)
 
         if len(feature_vectors) == 0:
-            raise ValueError(f"No models found in the given path {folder_path}")
+            raise ValueError(
+                f"No models found in the given path {folder_path}")
 
         if epochwise_version:
             # Assert that all models have the same number of epochs

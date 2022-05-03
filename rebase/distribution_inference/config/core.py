@@ -82,7 +82,7 @@ class LRScheduler(Serializable):
     """
         Hyper-parameters for learning-rate scheduler
     """
-    patient: Optional[int] = 5
+    patience: Optional[int] = 5
     """Number of epochs to wait before reducing learning rate"""
     factor: Optional[float] = 0.1
     """Factor to reduce learning rate by"""
@@ -110,10 +110,10 @@ class TrainConfig(Serializable):
 
     misc_config: Optional[MiscTrainConfig] = None
     """Extra configuration for model training env"""
-    verbose: Optional[bool] = False
-    """Whether to print out per-classifier stats"""
     lr_scheduler: Optional[LRScheduler] = None
     """Use learning-rate scheduler?"""
+    verbose: Optional[bool] = False
+    """Whether to print out per-classifier stats"""
     num_models: int = 1
     """Number of models to train"""
     offset: Optional[int] = 0
@@ -150,6 +150,7 @@ class BlackBoxAttackConfig(Serializable):
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
     preload: Optional[bool] = False
+
 
 @dataclass
 class PermutationAttackConfig(Serializable):
