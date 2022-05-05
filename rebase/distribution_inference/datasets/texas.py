@@ -81,21 +81,43 @@ class DatasetInformation(base.DatasetInformation):
                    "source_of_admission", "length_of_stay",
                    "pat_age", "pat_status", "race", "ethnicity",
                    "total_charges", "admitting_diagnosis", "label"]
-        relevant_columns = ["sex", "race", "ethnicity", "label"]
+        relevant_columns = ["sex", "race", "ethnicity"]
         relevant_indices = [columns.index(x) for x in relevant_columns]
 
-        # Convert y to 'In most frequent 15 categories or not?'
+        # Skip classes that have either have all 1s or 0s for relevant columns
         labels, counts = np.unique(y, return_counts=True)
-        top_fifteen = labels[np.argsort(counts)[-15:]]
-        y = 1 * np.isin(y, top_fifteen)
-        x = np.concatenate((x, y[:, None]), axis=1)
+        labels_to_skip = []
+        for ri in relevant_indices:
+            for label in labels:
+                mean_ratio = np.mean(x[(y == label), ri])
+                if mean_ratio < 0.2 or mean_ratio > 0.8:
+                    labels_to_skip.append(label)
+        labels_to_skip = list(set(labels_to_skip))
+        if len(labels_to_skip) > 0:
+            pick_these = np.logical_not(np.isin(y, labels_to_skip))
+            x = x[pick_these]
+            y = y[pick_these]
+            # Recompute labels and their counts
+            labels, counts = np.unique(y, return_counts=True)
+
+        # Pick only top 20 classes out of the remaining ones
+        # Ditch everything else
+        top_n = labels[np.argsort(counts)[-20:]]
+        which_to_keep = np.isin(y, top_n)
+        x = x[which_to_keep]
+        y = y[which_to_keep]
+        # Renumber labels to 0, 1, 2, according to their frequency
+        label_map = {x: i for i, x in enumerate(top_n)}
+        y = np.array([label_map[x] for x in y])
 
         # Convert race to white/non-white: 0.75 is White (0), rest are non-White (1)
         x[:, columns.index("race")] = 1 * (x[:, columns.index("race")] != 0.75)
 
+        # TODO: Account for labels in split creation as well
+
         # Function to split data, on the basis of hospital IDs
         # Useful for victim/adv splits as well as train/val splits
-        def create_split(data_, ratio):
+        def create_split(data_, ratio, labels_):
             # We ideally want a split of the hospitals such that the
             # resulting distributions are as similar as possible
             data = np.copy(data_)
@@ -136,6 +158,9 @@ class DatasetInformation(base.DatasetInformation):
             x_victim, test_ratio)
         adv_train_ids, _ = create_split(
             x_adv, test_ratio)
+
+        # Add 'label' to end of x
+        x = np.concatenate((x, np.expand_dims(y, axis=1)), axis=1)
 
         # Create a dataframe out of original data (to process)
         df = pd.DataFrame(x, columns=columns)
@@ -251,9 +276,9 @@ class _Texas:
 
         # TODO- Figure out appropriate sub-sample sizes
         # For this dataaset
-        prop_wise_subsample_sizes = {
+        prop_wise_sample_sizes = {
             "adv": {
-                "sex": (10000, 1200),
+                "sex": (15000, 5000),
                 "race": (1400, 900),
                 "ethnicity": (1000, 1000)
             },
@@ -265,16 +290,16 @@ class _Texas:
         }
 
         if custom_limit is None:
-            subsample_size = prop_wise_subsample_sizes[split][filter_prop][is_test]
-            subsample_size = int(scale*subsample_size)
+            sample_size = prop_wise_sample_sizes[split][filter_prop][is_test]
+            sample_size = int(scale*sample_size)
         else:
-            subsample_size = custom_limit
-        return utils.heuristic(df, lambda_fn, ratio,
-                               subsample_size,
-                               class_imbalance=1.0,
-                               n_tries=5,
-                               class_col='label',
-                               verbose=True)
+            sample_size = custom_limit
+        return utils.multiclass_heuristic(
+            df, lambda_fn, ratio,
+            sample_size,
+            n_tries=5,
+            class_col='label',
+            verbose=True)
 
 
 class TexasSet(base.CustomDataset):
@@ -300,9 +325,10 @@ class TexasSet(base.CustomDataset):
 # Wrapper for easier access to dataset
 class TexasWrapper(base.CustomDatasetWrapper):
     def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
-        super().__init__(data_config, skip_data)
+        # super().__init__(data_config, skip_data)
         if not skip_data:
-            self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
+            # self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
+            self.ds = _Texas(drop_senstive_cols=True)
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
@@ -318,6 +344,7 @@ class TexasWrapper(base.CustomDatasetWrapper):
         train_data, val_data, _ = self.load_data(custom_limit)
         self.ds_train = TexasSet(*train_data, squeeze=self.squeeze)
         self.ds_val = TexasSet(*val_data, squeeze=self.squeeze)
+        print(len(self.ds_train), len(self.ds_val))
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 

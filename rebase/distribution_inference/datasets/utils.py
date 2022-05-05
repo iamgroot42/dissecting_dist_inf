@@ -1,3 +1,4 @@
+from distribution_inference.utils import warning_string
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
@@ -79,7 +80,6 @@ def heuristic(df, condition, ratio: float,
         pckd_df = filter(df, condition, ratio, verbose=False)
         zero_ids = np.nonzero(pckd_df[class_col].to_numpy() == 0)[0]
         one_ids = np.nonzero(pckd_df[class_col].to_numpy() == 1)[0]
-
         # Sub-sample data, if requested
         if cwise_sample is not None:
             if class_imbalance >= 1:
@@ -98,6 +98,62 @@ def heuristic(df, condition, ratio: float,
             # Combine them together
             pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
             pckd_df = pckd_df.iloc[pckd]
+
+        vals.append(condition(pckd_df).mean())
+        pckds.append(pckd_df)
+
+        # Print best ratio so far in descripton
+        if verbose:
+            iterator.set_description(
+                "%.4f" % (ratio + np.min([np.abs(zz-ratio) for zz in vals])))
+
+    vals = np.abs(np.array(vals) - ratio)
+    # Pick the one closest to desired ratio
+    picked_df = pckds[np.argmin(vals)]
+    return picked_df.reset_index(drop=True)
+
+
+def multiclass_heuristic(
+        df, condition, ratio: float,
+        total_samples: int,
+        n_tries: int = 1000,
+        class_col: str = "label",
+        verbose: bool = True):
+    """
+        Heuristic for ratio-based sampling, implemented
+        for the multi-class setting.
+    """
+    vals, pckds = [], []
+    iterator = range(n_tries)
+    if verbose:
+        iterator = tqdm(iterator)
+
+    class_labels, class_counts = np.unique(
+        df[class_col].to_numpy(), return_counts=True)
+    class_counts = class_counts / (1. * np.sum(class_counts))
+    per_class_samples = class_counts * total_samples
+    for _ in iterator:
+        # For each class
+        inner_pckds = []
+        for i, cid in enumerate(class_labels):
+            # Find rows that have that specific class label
+            df_i = df[df[class_col] == cid]
+            pcked_df = filter(df_i, condition, ratio, verbose=True)
+            # Randomly sample from this set
+            # Since sampling is uniform at random, should preserve ratio
+            # Either way- we pick a sample that is closest to desired ratio
+            # So that aspect should be covered anyway
+            if int(per_class_samples[i]) < 1:
+                raise ValueError(f"Not enough data to sample from class {cid}")
+            if int(per_class_samples[i]) > len(pcked_df):
+                print(warning_string(
+                    f"Requested {int(per_class_samples[i])} but only {len(pcked_df)} avaiable for class {cid}"))
+            else:
+                pcked_df = pcked_df.sample(
+                    int(per_class_samples[i]), replace=True).reset_index(drop=True)
+                inner_pckds.append(pcked_df)
+        # Concatenate all inner_pckds into one
+        pckd_df = pd.concat(inner_pckds)
 
         vals.append(condition(pckd_df).mean())
         pckds.append(pckd_df)

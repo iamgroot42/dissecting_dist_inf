@@ -96,7 +96,7 @@ def get_preds(loader, models: List[nn.Module],
         del inputs
     gc.collect()
     ch.cuda.empty_cache()
-    
+
     return predictions.numpy(), ground_truth
 
 
@@ -137,7 +137,7 @@ def get_vic_adv_preds_on_distr(
     # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
     _, loader = ds_obj.get_loaders(batch_size=batch_size)
 
-    # TODO: Use preload logic here to speed things even more up
+    # TODO: Use preload logic here to speed things even more
 
     # Get predictions for first set of models
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(

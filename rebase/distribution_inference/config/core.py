@@ -190,6 +190,8 @@ class AffinityAttackConfig(Serializable):
     """Which conv layers of the model to target while extracting features?"""
     layers_to_target_fc: Optional[List[int]] = None
     """Which conv layers of the model to target while extracting features?"""
+    perpoint_based_selection: Optional[int] = 0
+    """If > 0, use same selection logic used by Per-Point Threshold Test with these many models"""
 
 
 @dataclass
