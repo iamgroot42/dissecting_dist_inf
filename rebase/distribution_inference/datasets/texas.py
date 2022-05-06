@@ -17,7 +17,8 @@ from distribution_inference.training.utils import load_model
 class DatasetInformation(base.DatasetInformation):
     def __init__(self, epoch: bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        self.num_features = 5266
+        self.num_features = 3611
+        self.num_classes = 20
         super().__init__(name="Texas 100 v2",
                          data_path="texas_100_v2/",
                          models_path="models_texas",
@@ -31,13 +32,15 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch)
 
     def get_model(self, cpu: bool = False) -> nn.Module:
-        model = MLPFourLayer(n_inp=self.num_features)
+        model = MLPFourLayer(n_inp=self.num_features,
+                             num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()
         return model
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
-        model = MLPFourLayer(n_inp=self.num_features)
+        model = MLPFourLayer(n_inp=self.num_features,
+                             num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()
         return model
@@ -58,7 +61,7 @@ class DatasetInformation(base.DatasetInformation):
 
     def generate_victim_adversary_splits(self,
                                          adv_ratio=0.25,
-                                         test_ratio: float = 0.33,
+                                         test_ratio: float = 0.25,
                                          num_tries: int = 300):
         """
             Generate and store data offline for victim and adversary
@@ -84,7 +87,7 @@ class DatasetInformation(base.DatasetInformation):
         relevant_columns = ["sex", "race", "ethnicity"]
         relevant_indices = [columns.index(x) for x in relevant_columns]
 
-        # Skip classes that have either have all 1s or 0s for relevant columns
+        # Skip classes that have either have mostly 1s or 0s for relevant columns
         labels, counts = np.unique(y, return_counts=True)
         labels_to_skip = []
         for ri in relevant_indices:
@@ -114,6 +117,11 @@ class DatasetInformation(base.DatasetInformation):
         x[:, columns.index("race")] = 1 * (x[:, columns.index("race")] != 0.75)
 
         # TODO: Account for labels in split creation as well
+        # Function to convery labels to one-hot
+        def to_onehot(z):
+            onehot = np.zeros((z.size, y.max()+1))
+            onehot[np.arange(z.size), z] = 1
+            return onehot
 
         # Function to split data, on the basis of hospital IDs
         # Useful for victim/adv splits as well as train/val splits
@@ -122,6 +130,8 @@ class DatasetInformation(base.DatasetInformation):
             # resulting distributions are as similar as possible
             data = np.copy(data_)
             thcic_ids = np.unique(data[:, 0])
+            # Convert labels to onehot
+            onehot_labels = to_onehot(labels_)
 
             best_splits, best_dist = None, np.inf
             # Keep trying different random splits
@@ -139,6 +149,12 @@ class DatasetInformation(base.DatasetInformation):
                     data[relevant_indices_vic][:, relevant_indices], 0)
                 adv_sim = np.mean(
                     data[relevant_indices_adv][:, relevant_indices], 0)
+                # Also use onehot representation in similarities
+                vic_label_sim = np.mean(onehot_labels[relevant_indices_vic], 0)
+                adv_label_sim = np.mean(onehot_labels[relevant_indices_adv], 0)
+                # Combine label-sim to normal-sim
+                vic_sim = np.concatenate((vic_sim, vic_label_sim))
+                adv_sim = np.concatenate((adv_sim, adv_label_sim))
                 # Look at their L-2 distance
                 vic_dist = np.linalg.norm(vic_sim - adv_sim)
                 if vic_dist < best_dist:
@@ -149,15 +165,15 @@ class DatasetInformation(base.DatasetInformation):
             return best_splits
 
         # First, create victim-adv split
-        victim_ids, adv_ids = create_split(x, adv_ratio)
-        x_victim = x[victim_ids]
-        x_adv = x[adv_ids]
+        victim_ids, adv_ids = create_split(x, adv_ratio, y)
+        x_victim, y_victim = x[victim_ids], y[victim_ids]
+        x_adv, y_adv = x[adv_ids], y[adv_ids]
 
         # Now, create train-test splits for both victim and adv
         victim_train_ids, _ = create_split(
-            x_victim, test_ratio)
+            x_victim, test_ratio, y_victim)
         adv_train_ids, _ = create_split(
-            x_adv, test_ratio)
+            x_adv, test_ratio, y_adv)
 
         # Add 'label' to end of x
         x = np.concatenate((x, np.expand_dims(y, axis=1)), axis=1)
@@ -278,12 +294,12 @@ class _Texas:
         # For this dataaset
         prop_wise_sample_sizes = {
             "adv": {
-                "sex": (15000, 5000),
+                "sex": (14000, 3000),
                 "race": (1400, 900),
                 "ethnicity": (1000, 1000)
             },
             "victim": {
-                "sex": (3000, 2000),
+                "sex": (40000, 8000),
                 "race": (2100, 1400),
                 "ethnicity": (100, 100)
             },
@@ -325,10 +341,10 @@ class TexasSet(base.CustomDataset):
 # Wrapper for easier access to dataset
 class TexasWrapper(base.CustomDatasetWrapper):
     def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
-        # super().__init__(data_config, skip_data)
+        super().__init__(data_config, skip_data)
         if not skip_data:
-            # self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
-            self.ds = _Texas(drop_senstive_cols=True)
+            self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
+            # self.ds = _Texas(drop_senstive_cols=True)
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,

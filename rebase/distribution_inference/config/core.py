@@ -131,7 +131,9 @@ class TrainConfig(Serializable):
     extra_info: Optional[dict] = None
     """Optional dictionary to store misc information for dataset-specific args"""
     regression: Optional[bool] = False
-    """Training for regression (MSE) or classification (BCE)?"""
+    """Training for regression (MSE)?"""
+    multi_class: Optional[bool] = False
+    """Training for multi-class classification?"""
 
 
 @dataclass

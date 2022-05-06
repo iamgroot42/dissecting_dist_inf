@@ -79,11 +79,15 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
         on victim model's predictions.
         Try this out with different values of "quartiles", where points
         are ranked according to some utility estimate.
+        If preds_victim is None, computes metrics and datapoints
+        only for the adversary.
     """
+    victim_preds_present = (preds_victim is not None)
     # Predictions by adversary's models
     p1, p2 = preds_adv.preds_property_1, preds_adv.preds_property_2
-    # Predictions by victim's models
-    pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
+    if victim_preds_present:
+        # Predictions by victim's models
+        pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
 
     # Optimal order of point
     order = order_points(p1, p2)
@@ -91,12 +95,13 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     # Order points according to computed utility
     p1 = np.transpose(p1)[order][::-1]
     p2 = np.transpose(p2)[order][::-1]
-    if epochwise_version:
-        pv1 = [np.transpose(x)[order][::-1] for x in pv1]
-        pv2 = [np.transpose(x)[order][::-1] for x in pv2]
-    else:
-        pv1 = np.transpose(pv1)[order][::-1]
-        pv2 = np.transpose(pv2)[order][::-1]
+    if victim_preds_present:
+        if epochwise_version:
+            pv1 = [np.transpose(x)[order][::-1] for x in pv1]
+            pv2 = [np.transpose(x)[order][::-1] for x in pv2]
+        else:
+            pv1 = np.transpose(pv1)[order][::-1]
+            pv2 = np.transpose(pv2)[order][::-1]
 
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=config.granularity)
@@ -104,50 +109,55 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     # Ground truth
     classes_adv = np.concatenate(
         (np.zeros(p1.shape[1]), np.ones(p2.shape[1])))
-    if epochwise_version:
-        classes_victim = [np.concatenate(
-            (np.zeros(x.shape[1]), np.ones(y.shape[1]))) for (x, y) in zip(pv1, pv2)]
-    else:
-        classes_victim = np.concatenate(
-            (np.zeros(pv1.shape[1]), np.ones(pv2.shape[1])))
+    if victim_preds_present:
+        if epochwise_version:
+            classes_victim = [np.concatenate(
+                (np.zeros(x.shape[1]), np.ones(y.shape[1]))) for (x, y) in zip(pv1, pv2)]
+        else:
+            classes_victim = np.concatenate(
+                (np.zeros(pv1.shape[1]), np.ones(pv2.shape[1])))
 
     adv_accs, victim_accs, victim_preds, adv_preds = [], [], [], []
     for ratio in config.ratios:
         # Get first <ratio> percentile of points
         leng = int(ratio * p1.shape[0])
         p1_use, p2_use = p1[:leng], p2[:leng]
-        if epochwise_version:
-            pv1_use = [x[:leng] for x in pv1]
-            pv2_use = [x[:leng] for x in pv2]
-        else:
-            pv1_use, pv2_use = pv1[:leng], pv2[:leng]
         thres_use, rs_use = thres[:leng], rs[:leng]
+        if victim_preds_present:
+            if epochwise_version:
+                pv1_use = [x[:leng] for x in pv1]
+                pv2_use = [x[:leng] for x in pv2]
+            else:
+                pv1_use, pv2_use = pv1[:leng], pv2[:leng]
 
         # Compute accuracy for given data size on adversary's models
         adv_acc, adv_pred = _perpoint_threshold_on_ratio(
             p1_use, p2_use, classes_adv, thres_use, rs_use)
         adv_accs.append(adv_acc)
-        # Compute accuracy for given data size on victim's models
-        if epochwise_version:
-            victim_acc, victim_pred = [], []
-            for (x, y, c) in zip(pv1_use, pv2_use, classes_victim):
-                acc, pred = _perpoint_threshold_on_ratio(
-                    x, y, c, thres_use, rs_use)
-                victim_acc.append(acc)
-                victim_pred.append(pred)
-        else:
-            victim_acc, victim_pred = _perpoint_threshold_on_ratio(
-                pv1_use, pv2_use, classes_victim, thres_use, rs_use)
-        victim_accs.append(victim_acc)
-        # Keep track of predictions on victim's models
+        if victim_preds_present:
+            # Compute accuracy for given data size on victim's models
+            if epochwise_version:
+                victim_acc, victim_pred = [], []
+                for (x, y, c) in zip(pv1_use, pv2_use, classes_victim):
+                    acc, pred = _perpoint_threshold_on_ratio(
+                        x, y, c, thres_use, rs_use)
+                    victim_acc.append(acc)
+                    victim_pred.append(pred)
+            else:
+                victim_acc, victim_pred = _perpoint_threshold_on_ratio(
+                    pv1_use, pv2_use, classes_victim, thres_use, rs_use)
+            victim_accs.append(victim_acc)
+            # Keep track of predictions on victim's models
         victim_preds.append(victim_pred)
         adv_preds.append(adv_pred)
 
     adv_accs = np.array(adv_accs)
-    victim_accs = np.array(victim_accs)
-    victim_preds = np.array(victim_preds, dtype=object)
     adv_preds = np.array(adv_preds, dtype=object)
+    if victim_preds_present:
+        victim_accs = np.array(victim_accs)
+        victim_preds = np.array(victim_preds, dtype=object)
     if epochwise_version:
-        victim_preds = np.transpose(victim_preds, (1, 0, 2))
+        if victim_preds_present:
+            victim_preds = np.transpose(victim_preds, (1, 0, 2))
         victim_accs = victim_accs.T
     return adv_accs, adv_preds, victim_accs, victim_preds

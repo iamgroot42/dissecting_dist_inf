@@ -28,7 +28,8 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
                 adv_config: AdvTrainingConfig = None,
                 expect_extra: bool = True,
                 input_is_list: bool = False,
-                regression: bool = False):
+                regression: bool = False,
+                multi_class: bool = False):
     model.train()
     train_loss = AverageMeter()
     if not regression:
@@ -37,10 +38,13 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
     if verbose:
         iterator = tqdm(train_loader)
     for tuple in iterator:
+        # Extract data
         if expect_extra:
             data, labels, _ = tuple
         else:
             data, labels = tuple
+
+        # Support for using same code for AMC
         if input_is_list:
             data = [x.cuda() for x in data]
         else:
@@ -51,20 +55,27 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
         if adv_config is None:
             # Clear accumulated gradients
             optimizer.zero_grad()
-            outputs = model(data)[:, 0]
+            outputs = model(data)
+            if not multi_class:
+                outputs = outputs[:, 0]
         else:
-            # Adversarial inputs
+            # Generate adversarial inputs
             adv_x = generate_adversarial_input(model, data, adv_config)
             # Important to zero grad after above call, else model gradients
             # get accumulated over attack too
             optimizer.zero_grad()
-            outputs = model(adv_x)[:, 0]
+            outputs = model(adv_x)
+            if not multi_class:
+                outputs = outputs[:, 0]
 
-        loss = criterion(outputs, labels.float())
+        loss = criterion(outputs, labels.long() if multi_class else labels.float())
         loss.backward()
         optimizer.step()
         if not regression:
-            prediction = (outputs >= 0)
+            if multi_class:
+                prediction = outputs.argmax(dim=1)
+            else:
+                prediction = (outputs >= 0)
             train_acc.update(prediction.eq(
                 labels.view_as(prediction)).sum().item()/N)
         train_loss.update(loss.item())
@@ -87,7 +98,8 @@ def validate_epoch(val_loader, model, criterion,
                    expect_extra: bool = True,
                    input_is_list: bool = False,
                    regression: bool = False,
-                   get_preds: bool = False):
+                   get_preds: bool = False,
+                   multi_class: bool = False):
     model.eval()
     val_loss = AverageMeter()
     adv_val_loss = AverageMeter()
@@ -109,24 +121,41 @@ def validate_epoch(val_loader, model, criterion,
             labels = labels.cuda()
             N = labels.size(0)
 
-            outputs = model(data)[:, 0]
+            # Get model outputs
+            outputs = model(data)
+            if not multi_class:
+                outputs = outputs[:, 0]
+
             if get_preds:
                 collected_preds.append(outputs.detach().cpu().numpy())
             if not regression:
-                prediction = (outputs >= 0)
+                if multi_class:
+                    prediction = outputs.argmax(dim=1)
+                else:
+                    prediction = (outputs >= 0)
                 val_acc.update(prediction.eq(
                     labels.view_as(prediction)).sum().item()/N)
-            val_loss.update(criterion(outputs, labels.float()).item())
+            val_loss_specific = criterion(
+                outputs, labels.long() if multi_class else labels.float())
+            val_loss.update(val_loss_specific.item())
 
             if adv_config is not None:
                 adv_x = generate_adversarial_input(model, data, adv_config)
-                outputs_adv = model(adv_x)[:, 0]
+                # Get model outputs
+                outputs_adv = model(adv_x)
+                if not multi_class:
+                    outputs = outputs[:, 0]
+
                 if not regression:
-                    prediction_adv = (outputs_adv >= 0)
+                    if multi_class:
+                        prediction_adv = outputs_adv.argmax(dim=1)
+                    else:
+                        prediction_adv = (outputs_adv >= 0)
                     adv_val_acc.update(prediction_adv.eq(
                         labels.view_as(prediction_adv)).sum().item()/N)
-                adv_val_loss.update(
-                    criterion(outputs_adv, labels.float()).item())
+                adv_loss_specific = criterion(
+                    outputs_adv, labels.long() if multi_class else labels.float())
+                adv_val_loss.update(adv_loss_specific.item())
 
     if verbose:
         if adv_config is None:
@@ -186,6 +215,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         weight_decay=train_config.weight_decay)
     if train_config.regression:
         criterion = nn.MSELoss()
+    elif train_config.multi_class:
+        criterion = nn.CrossEntropyLoss()
     else:
         criterion = nn.BCEWithLogitsLoss()
     # LR Scheduler
@@ -224,26 +255,27 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
     best_model, best_loss = None, np.inf
     for epoch in iterator:
         tloss, tacc = train_epoch(train_loader, model,
-                              criterion, optimizer, epoch,
-                              verbose=train_config.verbose,
-                              adv_config=adv_config,
-                              expect_extra=train_config.expect_extra,
-                              input_is_list=input_is_list,
-                              regression=train_config.regression)
+                                  criterion, optimizer, epoch,
+                                  verbose=train_config.verbose,
+                                  adv_config=adv_config,
+                                  expect_extra=train_config.expect_extra,
+                                  input_is_list=input_is_list,
+                                  regression=train_config.regression,
+                                  multi_class=train_config.multi_class)
 
         # Get metrics on val data, if available
         if val_loader is not None:
             use_loader_for_metric_log = val_loader
         else:
             use_loader_for_metric_log = test_loader
-        vloss, vacc = validate_epoch(
-            use_loader_for_metric_log,
-            model, criterion,
-            verbose=train_config.verbose,
-            adv_config=adv_config,
-            expect_extra=train_config.expect_extra,
-            input_is_list=input_is_list,
-            regression=train_config.regression)
+        vloss, vacc = validate_epoch(use_loader_for_metric_log,
+                                     model, criterion,
+                                     verbose=train_config.verbose,
+                                     adv_config=adv_config,
+                                     expect_extra=train_config.expect_extra,
+                                     input_is_list=input_is_list,
+                                     regression=train_config.regression,
+                                     multi_class=train_config.multi_class)
 
         # LR Scheduler, if requested
         if lr_scheduler is not None:
@@ -314,7 +346,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
                 adv_config=adv_config,
                 expect_extra=train_config.expect_extra,
                 input_is_list=input_is_list,
-                regression=train_config.regression)
+                regression=train_config.regression,
+                multi_class=train_config.multi_class)
     else:
         test_loss, test_acc = vloss, vacc
 

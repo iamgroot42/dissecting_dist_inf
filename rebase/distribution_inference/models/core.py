@@ -190,11 +190,11 @@ class MLPFourLayer(BaseModel):
     def __init__(self, n_inp: int, num_classes: int = 1):
         super().__init__(is_conv=False)
         self.layers = nn.Sequential(
-            nn.Linear(n_inp, 256),
+            nn.Linear(n_inp, 128),
             nn.ReLU(),
-            nn.Linear(256, 32),
+            nn.Linear(128, 16),
             nn.ReLU(),
-            nn.Linear(32, num_classes),
+            nn.Linear(16, num_classes),
         )
         self.valid_for_all_fc = [1, 3, 4]
 

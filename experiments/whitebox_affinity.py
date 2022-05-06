@@ -1,11 +1,12 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
+import numpy as np
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.attacks.whitebox.utils import wrap_into_loader, get_attack, get_train_val_from_pool
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
-from distribution_inference.utils import flash_utils
+from distribution_inference.utils import flash_utils, warning_string
 from distribution_inference.logging.core import AttackResult
 from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader
 
@@ -118,12 +119,29 @@ if __name__ == "__main__":
                 wb_config=wb_attack_config,
                 wrap_with_loader=False
             )
-
             # Get seed-data
-            seed_data_ds, seed_data_loader = get_seed_data_loader(
-                [ds_adv_1, ds_adv_2],
-                wb_attack_config,
-                num_samples_use=wb_attack_config.affinity_config.num_samples_use)
+            if wb_attack_config.affinity_config.perpoint_based_selection > 0:
+                print(warning_string("Using Per-Point criteria for seed-data selection"))
+                # Take a random sample of adv models
+                models_adv_1_sample = np.random.choice(
+                    models_adv_1,
+                    wb_attack_config.affinity_config.perpoint_based_selection,
+                    replace=False)
+                models_adv_2_sample = np.random.choice(
+                    models_adv_2,
+                    wb_attack_config.affinity_config.perpoint_based_selection,
+                    replace=False)
+                # Get seed-data
+                seed_data_ds, seed_data_loader = get_seed_data_loader(
+                    [ds_adv_1, ds_adv_2],
+                    wb_attack_config,
+                    num_samples_use=wb_attack_config.affinity_config.num_samples_use,
+                    adv_models=[models_adv_1_sample, models_adv_2_sample])
+            else:
+                seed_data_ds, seed_data_loader = get_seed_data_loader(
+                    [ds_adv_1, ds_adv_2],
+                    wb_attack_config,
+                    num_samples_use=wb_attack_config.affinity_config.num_samples_use)
 
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
