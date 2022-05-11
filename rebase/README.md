@@ -1,5 +1,19 @@
 # distribution_inference: Package
 
+This package implements various useful functionalities needed in the distributiin-inference pipeline.
+Folder structure:
+
+- `attacks`: Implementations for attacks
+- `config`: Dataclasses for various configurations used in the package.
+- `datasets`: Wrappers for various datasets.
+- `logging`: Code-logging functionality, used for saving results of experiments.
+- `models`: Implementations for models.
+- `neff`: Computing n_leaked values.
+- `training`: Training models (and some of the meta-classifiers)
+- `visualize`: Generating graphs
+
+A write-up on the Affinity Meta-Classifier can be found in `AMC.md`
+
 ### Installing the package
 
 Run `pip install -e .` to install the package.
