@@ -15,9 +15,12 @@
     "tries": 5,
     "values": [
         0.0,
+        0.1,
         0.2,
         0.3,
         0.4,
+        0.6,
+        0.7,
         0.8,
         0.9,
         1.0
@@ -25,10 +28,11 @@
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
+        "multi_class": true,
         "batch_size": 1000,
         "attack_type": [
-            "loss_and_threshold",
-            "threshold_perpoint"
+            "threshold_perpoint",
+            "loss_and_threshold"
         ],
         "ratios": [
             0.05,

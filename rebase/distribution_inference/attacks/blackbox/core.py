@@ -54,8 +54,7 @@ def threshold_test_per_dist(calc_acc: Callable,
                             preds_victim: PredictionsOnOneDistribution,
                             y_gt: np.ndarray,
                             config: BlackBoxAttackConfig,
-                            epochwise_version: bool = False,
-                            multi_class: bool = False):
+                            epochwise_version: bool = False):
     """
         Perform threshold-test on predictions of adversarial and victim models,
         for each of the given ratios. Returns statistics on all ratios.
@@ -69,14 +68,16 @@ def threshold_test_per_dist(calc_acc: Callable,
     order = order_points(p1, p2)
 
     # Order points according to computed utility
-    p1 = np.transpose(p1)[order][::-1]
-    p2 = np.transpose(p2)[order][::-1]
+    multi_class = config.multi_class
+    transpose_order = (1, 0, 2) if multi_class else (1, 0)
+    p1 = np.transpose(p1, transpose_order)[order][::-1]
+    p2 = np.transpose(p2, transpose_order)[order][::-1]
     if epochwise_version:
-        pv1 = [np.transpose(x)[order][::-1] for x in pv1]
-        pv2 = [np.transpose(x)[order][::-1] for x in pv2]
+        pv1 = [np.transpose(x, transpose_order)[order][::-1] for x in pv1]
+        pv2 = [np.transpose(x, transpose_order)[order][::-1] for x in pv2]
     else:
-        pv1 = np.transpose(pv1)[order][::-1]
-        pv2 = np.transpose(pv2)[order][::-1]
+        pv1 = np.transpose(pv1, transpose_order)[order][::-1]
+        pv2 = np.transpose(pv2, transpose_order)[order][::-1]
     yg = y_gt[order][::-1]
 
     adv_accs, allaccs_1, allaccs_2, f_accs = [], [], [], []
@@ -146,11 +147,21 @@ def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):
         Find thresholds and rules for differentiating between two
         sets of predictions.
     """
-    lower = min(np.min(accs_1), np.min(accs_2))
-    upper = max(np.max(accs_1), np.max(accs_2))
-    combined = np.concatenate((accs_1, accs_2))
+    if len(accs_1.shape) == 2:
+        # TODO: Implement the rest of this variant
+        # For now, we will use loss values for the multi-class case
+        # Multi-dimension vase with raw logit values
+        # Convert to probabilities, then compute class-wise
+        # threshold scores
+        combined = np.concatenate((accs_1, accs_2), 0)
+        lower, upper = np.min(combined, 0), np.max(combined, 0)
+    else:
+        # Binary-classification, so values are
+        # either actual accuracies, or single logit values
+        combined = np.concatenate((accs_1, accs_2))
+        lower, upper = np.min(combined), np.max(combined)
     # Want to predict first set as 0s, second set as 1s
-    classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
+    classes = np.concatenate((np.zeros(accs_1.shape[0]), np.ones(accs_2.shape[0])))
     best_acc = 0.0
     best_threshold = 0
     best_rule = None

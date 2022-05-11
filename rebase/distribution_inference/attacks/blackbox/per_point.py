@@ -1,4 +1,5 @@
 import numpy as np
+import torch as ch
 from typing import List, Tuple, Callable
 
 from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions
@@ -16,18 +17,24 @@ class PerPointThresholdAttack(Attack):
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
         """
+        # For the multi-class case, we do not want to work with direct logit values
+        # Scale them to get post-softmax probabilities
+        # TODO: Actually do that
+
         # Get data for first distribution
         adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1 = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
             self.config,
-            epochwise_version=epochwise_version)
+            epochwise_version=epochwise_version,
+            ground_truth=ground_truth[0])
         # Get data for second distribution
         adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2 = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
             self.config,
-            epochwise_version=epochwise_version)
+            epochwise_version=epochwise_version,
+            ground_truth=ground_truth[1])
 
         # Get best adv accuracies for both distributions and compare
         chosen_distribution = 0
@@ -71,7 +78,8 @@ def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
 def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                                      preds_victim: PredictionsOnOneDistribution,
                                      config: BlackBoxAttackConfig,
-                                     epochwise_version: bool = False):
+                                     epochwise_version: bool = False,
+                                     ground_truth: Tuple[List, List] = None,):
     """
         Compute thresholds (based on probabilities) for each given datapoint,
         search for thresholds using given adv model's predictions.
@@ -84,24 +92,34 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     """
     victim_preds_present = (preds_victim is not None)
     # Predictions by adversary's models
-    p1, p2 = preds_adv.preds_property_1, preds_adv.preds_property_2
+    p1 = preds_adv.preds_property_1.copy()
+    p2 = preds_adv.preds_property_2.copy()
     if victim_preds_present:
         # Predictions by victim's models
-        pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
+        pv1 = preds_victim.preds_property_1.copy()
+        pv2 = preds_victim.preds_property_2.copy()
 
     # Optimal order of point
     order = order_points(p1, p2)
 
     # Order points according to computed utility
-    p1 = np.transpose(p1)[order][::-1]
-    p2 = np.transpose(p2)[order][::-1]
+    transpose_order = (1, 0, 2) if config.multi_class else (1, 0)
+    p1 = np.transpose(p1, transpose_order)[order][::-1]
+    p2 = np.transpose(p2, transpose_order)[order][::-1]
     if victim_preds_present:
         if epochwise_version:
-            pv1 = [np.transpose(x)[order][::-1] for x in pv1]
-            pv2 = [np.transpose(x)[order][::-1] for x in pv2]
+            pv1 = [np.transpose(x, transpose_order)[order][::-1] for x in pv1]
+            pv2 = [np.transpose(x, transpose_order)[order][::-1] for x in pv2]
         else:
-            pv1 = np.transpose(pv1)[order][::-1]
-            pv2 = np.transpose(pv2)[order][::-1]
+            pv1 = np.transpose(pv1, transpose_order)[order][::-1]
+            pv2 = np.transpose(pv2, transpose_order)[order][::-1]
+
+    if config.multi_class:
+        # If multi-class, replace predictions with loss values
+        assert ground_truth is not None, "Need ground-truth for multi-class setting"
+        y_gt = ground_truth[order][::-1]
+        p1, p2 = np_compute_losses(p1, y_gt), np_compute_losses(p2, y_gt)
+        pv1, pv2 = np_compute_losses(pv1, y_gt), np_compute_losses(pv2, y_gt)
 
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=config.granularity)
@@ -161,3 +179,16 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
             victim_preds = np.transpose(victim_preds, (1, 0, 2))
         victim_accs = victim_accs.T
     return adv_accs, adv_preds, victim_accs, victim_preds
+
+
+def np_compute_losses(preds, labels):
+    """
+        Convert to PyTorch tensors, compute crossentropyloss
+        Convert back to numpy arrays, return.
+    """
+    preds_ch = ch.from_numpy(preds.copy()).transpose(0, 1)
+    labels_ch = ch.from_numpy(labels.copy()).long()
+    loss = ch.nn.CrossEntropyLoss(reduction='none')
+    loss_vals = [loss(pred_ch, labels_ch).numpy() for pred_ch in preds_ch]
+    loss_vals = np.array(loss_vals)
+    return loss_vals.T

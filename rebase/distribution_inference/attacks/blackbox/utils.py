@@ -33,8 +33,10 @@ def calculate_accuracies(data, labels,
     """
     # Get predictions from each model (each model outputs logits)
     if multi_class:
-        preds = np.argmax(data, axis=1).astype('int')
+        assert len(data.shape) == 3, "Multi-class data must be 3D"
+        preds = np.argmax(data, axis=2).astype('int')
     else:
+        assert len(data.shape) == 2, "Data should be 2D"
         if use_logit:
             preds = (data >= 0).astype('int')
         else:
@@ -111,12 +113,13 @@ def get_preds(loader, models: List[nn.Module],
     return predictions.numpy(), ground_truth
 
 
-def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
-                               models_adv: List[nn.Module],
-                               loader,
-                               epochwise_version: bool = False,
-                               preload: bool = False,
-                               multi_class: bool = False):
+def _get_preds_for_vic_and_adv(
+        models_vic: List[nn.Module],
+        models_adv: List[nn.Module],
+        loader,
+        epochwise_version: bool = False,
+        preload: bool = False,
+        multi_class: bool = False):
     # Get predictions for victim models and data
     if epochwise_version:
         # Track predictions for each epoch
@@ -137,7 +140,7 @@ def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
     preds_adv, ground_truth_repeat = get_preds(
         loader, models_adv, preload=preload,
         multi_class=multi_class)
-    assert np.all(ground_truth == ground_truth_repeat), "Val loader is probably shuffling data!"
+    assert np.all(ground_truth == ground_truth_repeat), "Val loader is shuffling data!"
     return preds_vic, preds_adv, ground_truth
 
 
