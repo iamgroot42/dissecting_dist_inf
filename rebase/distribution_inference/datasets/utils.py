@@ -138,7 +138,7 @@ def multiclass_heuristic(
         for i, cid in enumerate(class_labels):
             # Find rows that have that specific class label
             df_i = df[df[class_col] == cid]
-            pcked_df = filter(df_i, condition, ratio, verbose=True)
+            pcked_df = filter(df_i, condition, ratio, verbose=False)
             # Randomly sample from this set
             # Since sampling is uniform at random, should preserve ratio
             # Either way- we pick a sample that is closest to desired ratio
@@ -150,8 +150,8 @@ def multiclass_heuristic(
                     f"Requested {int(per_class_samples[i])} but only {len(pcked_df)} avaiable for class {cid}"))
             else:
                 pcked_df = pcked_df.sample(
-                    int(per_class_samples[i]), replace=True).reset_index(drop=True)
-                inner_pckds.append(pcked_df)
+                    int(per_class_samples[i]), replace=True)
+            inner_pckds.append(pcked_df.reset_index(drop=True))
         # Concatenate all inner_pckds into one
         pckd_df = pd.concat(inner_pckds)
 

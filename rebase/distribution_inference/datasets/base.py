@@ -152,6 +152,14 @@ class CustomDatasetWrapper:
             return prefix
         return os.path.join(prefix, name)
 
+    # Check with this model exists
+    def check_if_exists(self, model_check_path, model_id):
+        # Get folder of models to check
+        for model_name in os.listdir(model_check_path):
+            if model_name.startswith(model_id + "_"):
+                return True
+        return False
+
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         """Load model from a given path"""
         raise NotImplementedError("Function to load model not implemented")

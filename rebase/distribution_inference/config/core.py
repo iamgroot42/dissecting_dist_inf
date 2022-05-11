@@ -152,6 +152,9 @@ class BlackBoxAttackConfig(Serializable):
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
     preload: Optional[bool] = False
+    """Pre-load data while launching attack (faster, if memory available)?"""
+    multi_class: Optional[bool] = False
+    """Are the model logits > 1 dimension?"""
 
 
 @dataclass
@@ -239,6 +242,8 @@ class WhiteBoxAttackConfig(Serializable):
     """Whether to train on GPU or CPU"""
     shuffle: Optional[bool] = True
     """Shuffle train data in each epoch?"""
+    multi_class: Optional[bool] = False
+    """Are the model logits > 1 dimension?"""
 
     # Valid for MLPs
     custom_layers_fc: Optional[List[int]] = None

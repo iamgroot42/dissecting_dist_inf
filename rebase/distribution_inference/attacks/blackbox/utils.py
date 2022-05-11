@@ -24,26 +24,33 @@ def get_attack(attack_name: str):
     return wrapper
 
 
-def calculate_accuracies(data, labels, use_logit: bool = True):
+def calculate_accuracies(data, labels,
+                         use_logit: bool = True,
+                         multi_class: bool = False):
     """
         Function to compute model-wise average-accuracy on
-            given data.
+        given data.
     """
     # Get predictions from each model (each model outputs logits)
-    if use_logit:
-        preds = (data >= 0).astype('int')
+    if multi_class:
+        preds = np.argmax(data, axis=1).astype('int')
     else:
-        preds = (data >= 0.5).astype('int')
+        if use_logit:
+            preds = (data >= 0).astype('int')
+        else:
+            preds = (data >= 0.5).astype('int')
 
     # Repeat ground-truth (across models)
-    expanded_gt = np.repeat(np.expand_dims(labels, axis=1), preds.shape[1], axis=1)
+    expanded_gt = np.repeat(np.expand_dims(
+        labels, axis=1), preds.shape[1], axis=1)
 
     return np.average(1. * (preds == expanded_gt), axis=0)
 
 
 def get_preds(loader, models: List[nn.Module],
               preload: bool = False,
-              verbose: bool = True):
+              verbose: bool = True,
+              multi_class: bool = False):
     """
         Get predictions for given models on given data
     """
@@ -75,7 +82,9 @@ def get_preds(loader, models: List[nn.Module],
             # Skip multiple CPU-CUDA copy ops
             if preload:
                 for data_batch in inputs:
-                    prediction = model(data_batch).detach()[:, 0]
+                    prediction = model(data_batch).detach()
+                    if not multi_class:
+                        prediction = prediction[:, 0]
                     predictions_on_model.append(prediction.cpu())
             else:
                 # Iterate through data-loader
@@ -83,7 +92,9 @@ def get_preds(loader, models: List[nn.Module],
                     data_points, labels, _ = data
                     data_points = data_points.cuda()
                     # Get prediction
-                    prediction = model(data_points).detach()[:, 0]
+                    prediction = model(data_points).detach()
+                    if not multi_class:
+                        prediction = prediction[:, 0]
                     predictions_on_model.append(prediction.cpu())
         predictions_on_model = ch.cat(predictions_on_model)
         predictions.append(predictions_on_model)
@@ -104,7 +115,8 @@ def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
                                models_adv: List[nn.Module],
                                loader,
                                epochwise_version: bool = False,
-                               preload: bool = False):
+                               preload: bool = False,
+                               multi_class: bool = False):
     # Get predictions for victim models and data
     if epochwise_version:
         # Track predictions for each epoch
@@ -112,17 +124,19 @@ def _get_preds_for_vic_and_adv(models_vic: List[nn.Module],
         for models_inside_vic in tqdm(models_vic):
             preds_vic_inside, ground_truth = get_preds(
                 loader, models_inside_vic, preload=preload,
-                verbose=False)
+                verbose=False, multi_class=multi_class)
             # In epoch-wise mode, we need prediction results
             # across epochs, not models
             for i, p in enumerate(preds_vic_inside):
                 preds_vic[i].append(p)
     else:
         preds_vic, ground_truth = get_preds(
-            loader, models_vic, preload=preload)
+            loader, models_vic, preload=preload,
+            multi_class=multi_class)
     # Get predictions for adversary models and data
     preds_adv, ground_truth_repeat = get_preds(
-        loader, models_adv, preload=preload)
+        loader, models_adv, preload=preload,
+        multi_class=multi_class)
     assert np.all(ground_truth == ground_truth_repeat), "Val loader is probably shuffling data!"
     return preds_vic, preds_adv, ground_truth
 
@@ -133,7 +147,8 @@ def get_vic_adv_preds_on_distr(
         ds_obj: CustomDatasetWrapper,
         batch_size: int,
         epochwise_version: bool = False,
-        preload: bool = False):
+        preload: bool = False,
+        multi_class: bool = False):
     # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
     _, loader = ds_obj.get_loaders(batch_size=batch_size)
 
@@ -143,12 +158,14 @@ def get_vic_adv_preds_on_distr(
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
         models_vic[0], models_adv[0], loader,
         epochwise_version=epochwise_version,
-        preload=preload)
+        preload=preload,
+        multi_class=multi_class)
     # Get predictions for second set of models
     preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
         models_vic[1], models_adv[1], loader,
         epochwise_version=epochwise_version,
-        preload=preload)
+        preload=preload,
+        multi_class=multi_class)
     adv_preds = PredictionsOnOneDistribution(
         preds_property_1=preds_adv_1,
         preds_property_2=preds_adv_2

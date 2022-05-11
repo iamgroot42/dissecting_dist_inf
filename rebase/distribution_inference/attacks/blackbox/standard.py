@@ -26,7 +26,8 @@ class LossAndThresholdAttack(Attack):
             preds_vic.preds_on_distr_1,
             ground_truth[0],
             self.config,
-            epochwise_version=epochwise_version)
+            epochwise_version=epochwise_version,
+            multi_class=self.config.multi_class)
         # Get accuracies on second data distribution
         adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(
             calc_acc,
@@ -34,7 +35,8 @@ class LossAndThresholdAttack(Attack):
             preds_vic.preds_on_distr_2,
             ground_truth[1],
             self.config,
-            epochwise_version=epochwise_version)
+            epochwise_version=epochwise_version,
+            multi_class=self.config.multi_class)
 
         # Get best adv accuracies for both distributions, across all ratios
         chosen_distribution = 0

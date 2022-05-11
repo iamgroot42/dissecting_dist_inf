@@ -295,13 +295,13 @@ class _Texas:
         prop_wise_sample_sizes = {
             "adv": {
                 "sex": (14000, 3000),
-                "race": (1400, 900),
-                "ethnicity": (1000, 1000)
+                "race": (14000, 3000),
+                "ethnicity": (9000, 2000)
             },
             "victim": {
                 "sex": (40000, 8000),
-                "race": (2100, 1400),
-                "ethnicity": (100, 100)
+                "race": (35000, 8000),
+                "ethnicity": (35000, 8000)
             },
         }
 
@@ -313,9 +313,9 @@ class _Texas:
         return utils.multiclass_heuristic(
             df, lambda_fn, ratio,
             sample_size,
-            n_tries=5,
+            n_tries=10,
             class_col='label',
-            verbose=True)
+            verbose=False)
 
 
 class TexasSet(base.CustomDataset):
@@ -344,7 +344,6 @@ class TexasWrapper(base.CustomDatasetWrapper):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
-            # self.ds = _Texas(drop_senstive_cols=True)
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
@@ -360,7 +359,6 @@ class TexasWrapper(base.CustomDatasetWrapper):
         train_data, val_data, _ = self.load_data(custom_limit)
         self.ds_train = TexasSet(*train_data, squeeze=self.squeeze)
         self.ds_val = TexasSet(*val_data, squeeze=self.squeeze)
-        print(len(self.ds_train), len(self.ds_val))
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 

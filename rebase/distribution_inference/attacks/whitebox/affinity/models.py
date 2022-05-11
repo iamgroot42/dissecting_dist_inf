@@ -12,11 +12,13 @@ class AffinityMetaClassifier(nn.Module):
                  num_dim: int,
                  num_layers: int,
                  config: AffinityAttackConfig,
-                 num_logit: int = 0):
+                 num_logit: int = 0,
+                 multi_class:  bool = False):
         super().__init__()
         self.num_dim = num_dim
         self.num_layers = num_layers
         self.num_final = config.num_final
+        self.multi_class = multi_class
         self.final_act_size = self.num_final * self.num_layers
         self.models = []
         self.num_logit = num_logit
@@ -52,12 +54,12 @@ class AffinityMetaClassifier(nn.Module):
             for _ in range(num_layers):
                 self.models.append(make_small_model(inside_dim))
         # If logits are also going to be provided, have a model for them as well
-        if self.num_logit > 0:
+        if self.num_logit > 0 and not self.multi_class:
             self.models.append(make_small_model(self.num_logit))
         self.models = nn.ModuleList(self.models)
 
         num_eff_layers = self.num_layers
-        num_eff_layers += 1 if self.num_logit > 0 else 0
+        num_eff_layers += 1 if (self.num_logit > 0 and not self.multi_class) else 0
         if not (self.layer_agnostic or self.sequential_variant):
             # Linear layer on top of concatenated embeddings
             self.final_layer = nn.Linear(self.num_final * num_eff_layers, 1)
@@ -132,3 +134,16 @@ class WeightAndActMeta(nn.Module):
         # Combine them
         all_acts = ch.cat([act, weights], 1)
         return self.combination_layer(all_acts)
+
+
+class AffinityGraphMetaClassifier(nn.Module):
+    def __init__(self,
+                 num_dim: int,
+                 num_layers: int,
+                 config: AffinityAttackConfig,
+                 num_logit: int = 0,
+                 multi_class:  bool = False):
+        pass
+
+    def forward(self, x) -> ch.Tensor:
+        pass

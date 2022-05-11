@@ -47,8 +47,12 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
                 # Use per-point threshold test criteria to pick points, instead of random sample
                 if len(adv_models) > 2:
                     raise NotImplementedError("Per-point based selection not supported for regression")
-                preds_1, _ = get_preds(test_loader, adv_models[0], verbose=True)
-                preds_2, _ = get_preds(test_loader, adv_models[1], verbose=True)
+                preds_1, _ = get_preds(
+                    test_loader, adv_models[0],
+                    verbose=True, multi_class=attack_config.multi_class)
+                preds_2, _ = get_preds(
+                    test_loader, adv_models[1],
+                    verbose=True, multi_class=attack_config.multi_class)
                 ordering = order_points(preds_1, preds_2)
                 data = data[ordering][:num_samples_use]
             else:
