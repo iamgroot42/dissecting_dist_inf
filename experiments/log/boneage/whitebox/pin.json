@@ -73,7 +73,7 @@
         "num_total_adv_models": 1000
     },
     "result": {
-        "affinity": {
+        "permutation_invariant": {
             "0.2": {
                 "adv_acc": [
                     null,

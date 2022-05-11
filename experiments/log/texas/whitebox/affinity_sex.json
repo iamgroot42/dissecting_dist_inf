@@ -1,14 +1,14 @@
 {
-    "name": "affinity_400",
-    "start time": "2022-04-23 08:42:29.506047",
+    "name": "affinity_sex",
+    "start time": "2022-05-10 10:00:02.062368",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "new_census",
+                "name": "texas",
                 "prop": "sex",
                 "value": 0.5,
                 "split": "adv",
-                "drop_senstive_cols": false,
+                "drop_senstive_cols": true,
                 "scale": 1.0,
                 "augment": false,
                 "classify": null,
@@ -19,8 +19,8 @@
             "learning_rate": 0.0,
             "batch_size": 0,
             "misc_config": null,
-            "verbose": false,
             "lr_scheduler": null,
+            "verbose": false,
             "num_models": 1,
             "offset": 0,
             "weight_decay": 0,
@@ -29,19 +29,13 @@
             "expect_extra": true,
             "save_every_epoch": false,
             "extra_info": null,
-            "regression": false
+            "regression": false,
+            "multi_class": false
         },
         "values": [
-            0.0,
             0.1,
-            0.2,
-            0.3,
-            0.4,
             0.6,
-            0.7,
-            0.8,
-            0.9,
-            1.0
+            0.7
         ],
         "black_box": null,
         "white_box": {
@@ -50,7 +44,7 @@
             "batch_size": 1000,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
-            "train_sample": 350,
+            "train_sample": 750,
             "val_sample": 50,
             "save": false,
             "load": null,
@@ -59,6 +53,7 @@
             "binary": true,
             "gpu": true,
             "shuffle": true,
+            "multi_class": true,
             "custom_layers_fc": null,
             "start_n_fc": 0,
             "first_n_fc": null,
@@ -78,138 +73,69 @@
                 ],
                 "shared_layerwise_params": true,
                 "sequential_variant": false,
-                "num_rnn_layers": 2
+                "num_rnn_layers": 2,
+                "layers_to_target_conv": null,
+                "layers_to_target_fc": null,
+                "perpoint_based_selection": 0
             }
         },
-        "tries": 3,
-        "num_victim_models": 1000,
+        "tries": 5,
+        "num_victim_models": 500,
         "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000
     },
     "result": {
         "affinity": {
-            "0.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    99.8,
-                    100.0,
-                    99.75
-                ]
-            },
             "0.1": {
                 "adv_acc": [
                     null,
                     null,
-                    null
-                ],
-                "victim_acc": [
-                    86.55,
-                    86.9,
-                    87.75
-                ]
-            },
-            "0.2": {
-                "adv_acc": [
                     null,
                     null,
                     null
                 ],
                 "victim_acc": [
-                    74.1,
-                    80.89999999999999,
-                    82.55
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    67.85,
-                    61.650000000000006,
-                    67.75
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    58.8,
-                    57.05,
-                    57.05
+                    64.7,
+                    50.5,
+                    50.0,
+                    51.800000000000004,
+                    53.300000000000004
                 ]
             },
             "0.6": {
                 "adv_acc": [
                     null,
                     null,
+                    null,
+                    null,
                     null
                 ],
                 "victim_acc": [
-                    50.05,
+                    53.400000000000006,
                     50.0,
-                    50.0
+                    50.0,
+                    50.0,
+                    57.3
                 ]
             },
             "0.7": {
                 "adv_acc": [
                     null,
                     null,
-                    null
-                ],
-                "victim_acc": [
-                    71.6,
-                    69.8,
-                    75.75
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
                     null,
                     null,
                     null
                 ],
                 "victim_acc": [
-                    79.4,
-                    78.64999999999999,
-                    75.7
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    92.30000000000001,
-                    88.6,
-                    80.15
-                ]
-            },
-            "1.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    95.25,
-                    98.2,
-                    97.8
+                    51.9,
+                    54.0,
+                    53.300000000000004,
+                    53.7,
+                    50.0
                 ]
             }
         }
     },
-    "save time": "2022-04-23 13:08:21.628395"
+    "save time": "2022-05-10 16:13:05.844612"
 }

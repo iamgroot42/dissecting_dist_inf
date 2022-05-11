@@ -5,11 +5,21 @@
             "prop": "Young",
             "classify": "Male",
             "split": "adv",
-            "value": 0.0
+            "value": 0.5
         },
         "misc_config": {
             "adv_config": {
-                "epsilon": 4,
+                "epsilon": 16,
+                "iters": 7,
+                "clip_min": -1,
+                "clip_max": 1,
+                "random_restarts": 1,
+                "scale_by_255": true
+            }
+        },
+        "adv_misc_config": {
+            "adv_config": {
+                "epsilon": 16,
                 "iters": 7,
                 "clip_min": -1,
                 "clip_max": 1,
@@ -35,7 +45,6 @@
         1.0
     ],
     "on_cpu": true,
-    
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
@@ -44,7 +53,6 @@
             "loss_and_threshold",
             "threshold_perpoint"
         ],
-        "preload":true,
         "ratios": [
             0.05,
             0.1,
@@ -56,5 +64,5 @@
         ],
         "preload": true
     },
-    "num_victim_models": 400
+    "num_victim_models": 500
 }

@@ -1,6 +1,7 @@
 """
     Script for executing black-box inference attacks.
 """
+from audioop import mul
 from simple_parsing import ArgumentParser
 from pathlib import Path
 import os
@@ -92,7 +93,8 @@ if __name__ == "__main__":
                 ds_obj=ds_adv_1,
                 batch_size=bb_attack_config.batch_size,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                preload=bb_attack_config.preload
+                preload=bb_attack_config.preload,
+                multi_class=bb_attack_config.multi_class
             )
             # Get victim and adv predictions on loaders for second ratio
             preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
@@ -101,7 +103,8 @@ if __name__ == "__main__":
                 ds_obj=ds_adv_2,
                 batch_size=bb_attack_config.batch_size,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                preload=bb_attack_config.preload
+                preload=bb_attack_config.preload,
+                multi_class=bb_attack_config.multi_class
             )
             # Wrap predictions to be used by the attack
             preds_adv = PredictionsOnDistributions(

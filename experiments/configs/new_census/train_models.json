@@ -2,9 +2,9 @@
     "data_config": {
         "name": "new_census",
         "prop": "race",
-        "split": "adv",
+        "split": "victim",
         "squeeze": true,
-        "value": 0.9
+        "value": 0.2
     },
     "offset": 0,
     "epochs": 20,
