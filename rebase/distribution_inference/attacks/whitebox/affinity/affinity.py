@@ -94,12 +94,11 @@ class AffinityAttack(Attack):
         seed_data = all_features
 
         # Retain only a fraction of all pairs
+        # First-time (on train data)
         if self.frac_retain_pairs < 1 and self.retained_pairs is None:
-            # First-time (on train data)
-            num_eff_layers = num_layers - 1 if (self.use_logit and not self.config.multi_class) else num_layers
             # Collect STD values across models (per layer)
             std_values = []
-            for i in range(num_eff_layers):
+            for i in range(num_layers):
                 std_values.append(
                     ch.std(ch.stack([x[i] for x in seed_data]), 0))
             # Sort std values in descending order (per layer) and store indices
@@ -111,7 +110,7 @@ class AffinityAttack(Attack):
                 map(lambda x: x[:n_features_retain].cpu().numpy(), std_values))
             # Make a count array to keep track of top pairs per layer
             count_array = np.zeros((num_features,))
-            for i in range(num_eff_layers):
+            for i in range(num_layers):
                 count_array[self.retained_pairs[i]] += 1
             # Ouf of these, pick the top self.frac_retain_pairs
             self.retained_pairs = np.sort(np.argsort(
@@ -122,7 +121,7 @@ class AffinityAttack(Attack):
             # the case where self.retained_pairs is not None
             def selection_lambda(x):
                 selected = [x[i][self.retained_pairs]
-                            for i in range(num_eff_layers)]
+                            for i in range(num_layers)]
                 if self.use_logit and not self.config.multi_class:
                     selected.append(x[-1])
                 return selected

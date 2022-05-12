@@ -13,7 +13,7 @@ class AffinityMetaClassifier(nn.Module):
                  num_layers: int,
                  config: AffinityAttackConfig,
                  num_logit: int = 0,
-                 multi_class:  bool = False):
+                 multi_class: bool = False):
         super().__init__()
         self.num_dim = num_dim
         self.num_layers = num_layers
@@ -134,16 +134,3 @@ class WeightAndActMeta(nn.Module):
         # Combine them
         all_acts = ch.cat([act, weights], 1)
         return self.combination_layer(all_acts)
-
-
-class AffinityGraphMetaClassifier(nn.Module):
-    def __init__(self,
-                 num_dim: int,
-                 num_layers: int,
-                 config: AffinityAttackConfig,
-                 num_logit: int = 0,
-                 multi_class:  bool = False):
-        pass
-
-    def forward(self, x) -> ch.Tensor:
-        pass
