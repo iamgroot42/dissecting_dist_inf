@@ -214,8 +214,8 @@ def get_threshold_acc(X, Y, threshold, rule=None):
     return acc_2, 2
 
 def get_threshold_acc_multi(X1, X2, threshold, multi2:int, rule=None):
-    l1 = X1.shape[0]//multi2
-    l2 = X2.shape[0]//multi2
+    l1 = X1.shape[0]
+    l2 = X2.shape[0]
     Y1 = np.zeros(l1)
     Y2 = np.ones(l2)
     X1_use1 = []
@@ -336,8 +336,8 @@ def get_threshold_pred_multi(X1,X2,threshold, rule,multi2:int,
     # Y Shape: (n_models)
     # threshold shape: (n_samples)
     res = []
-    l1 = X1.shape[1]//multi2
-    l2 = X2.shape[1]//multi2
+    l1 = X1.shape[1]
+    l2 = X2.shape[1]
     Y1 = np.zeros(l1)
     Y2 = np.ones(l2)
     res1 = []
