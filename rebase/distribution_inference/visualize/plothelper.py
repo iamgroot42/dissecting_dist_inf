@@ -19,13 +19,15 @@ class PlotHelper():
                  columns=['Ratios', 'Values', 'Hues', 'Epoch'],
                  legend_titles: List = None,
                  attacks_wanted: List = None,
-                 ratios_wanted: List = None):
+                 ratios_wanted: List = None,
+                 no_legend: bool = False):
         self.df = []
         self.paths = paths
         self.loggers = loggers
         self.columns = columns
         self.attacks_wanted = attacks_wanted
         self.ratios_wanted = ratios_wanted
+        self.no_legend = no_legend
         if(len(self.columns) < 3):
             raise ValueError(
                 "columns argument must be of length 3")
@@ -173,6 +175,9 @@ class PlotHelper():
                         linewidth=1.0, linestyle='--')
         # Make sure axis label not cut off
         plt.tight_layout()
+
+        if self.no_legend:
+            plt.legend([],[], frameon=False)
 
     # Box plot, returns a graph object given a logger object
     def boxplot(self, title='', darkplot=True, dash=True):

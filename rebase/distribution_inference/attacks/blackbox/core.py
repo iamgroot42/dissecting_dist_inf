@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from typing import List, Tuple, Callable
 import numpy as np
 from tqdm import tqdm
@@ -22,6 +23,7 @@ class PredictionsOnDistributions:
         Wrapper to store predictions on two distributions,
         for models trained on two different training distributions.
     """
+
     def __init__(self,
                  preds_on_distr_1: PredictionsOnOneDistribution,
                  preds_on_distr_2: PredictionsOnOneDistribution):
@@ -65,7 +67,7 @@ def multi_model_sampling(arr,multi):
         raise ValueError("Dimension mismatch")
     return res
 
-def threshold_test_per_dist(cal_acc: Callable,
+def threshold_test_per_dist(calc_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
                             y_gt: np.ndarray,
@@ -89,14 +91,16 @@ def threshold_test_per_dist(cal_acc: Callable,
     order = order_points(p1, p2)
 
     # Order points according to computed utility
-    p1 = np.transpose(p1)[order][::-1]
-    p2 = np.transpose(p2)[order][::-1]
+    multi_class = config.multi_class
+    transpose_order = (1, 0, 2) if multi_class else (1, 0)
+    p1 = np.transpose(p1, transpose_order)[order][::-1]
+    p2 = np.transpose(p2, transpose_order)[order][::-1]
     if epochwise_version:
-        pv1 = [np.transpose(x)[order][::-1] for x in pv1]
-        pv2 = [np.transpose(x)[order][::-1] for x in pv2]
+        pv1 = [np.transpose(x, transpose_order)[order][::-1] for x in pv1]
+        pv2 = [np.transpose(x, transpose_order)[order][::-1] for x in pv2]
     else:
-        pv1 = np.transpose(pv1)[order][::-1]
-        pv2 = np.transpose(pv2)[order][::-1]
+        pv1 = np.transpose(pv1, transpose_order)[order][::-1]
+        pv2 = np.transpose(pv2, transpose_order)[order][::-1]
     yg = y_gt[order][::-1]
 
     adv_accs, allaccs_1, allaccs_2, f_accs = [], [], [], []
@@ -112,8 +116,8 @@ def threshold_test_per_dist(cal_acc: Callable,
             pv1_use, pv2_use = pv1[:leng], pv2[:leng]
         
         # Calculate accuracies for these points in [0,100]
-        accs_1 = 100 * cal_acc(p1_use, yg_use)
-        accs_2 = 100 * cal_acc(p2_use, yg_use)
+        accs_1 = 100 * calc_acc(p1_use, yg_use, multi_class=multi_class)
+        accs_2 = 100 * calc_acc(p2_use, yg_use, multi_class=multi_class)
 
         # Find a threshold on these accuracies that maximizes
         # distinguishing accuracy
@@ -121,13 +125,15 @@ def threshold_test_per_dist(cal_acc: Callable,
             accs_1, accs_2, granularity=config.granularity)
         adv_accs.append(100 * tracc)
         if epochwise_version:
-            accs_victim_1 = [100 * cal_acc(pv1_use_inside, yg_use)
+            accs_victim_1 = [100 * calc_acc(pv1_use_inside, yg_use, multi_class=multi_class)
                              for pv1_use_inside in pv1_use]
-            accs_victim_2 = [100 * cal_acc(pv2_use_inside, yg_use)
+            accs_victim_2 = [100 * calc_acc(pv2_use_inside, yg_use, multi_class=multi_class)
                              for pv2_use_inside in pv2_use]
         else:
-            accs_victim_1 = 100 * cal_acc(pv1_use, yg_use)
-            accs_victim_2 = 100 * cal_acc(pv2_use, yg_use)
+            accs_victim_1 = 100 * \
+                calc_acc(pv1_use, yg_use, multi_class=multi_class)
+            accs_victim_2 = 100 * \
+                calc_acc(pv2_use, yg_use, multi_class=multi_class)
         if multi:
             accs_victim_1 = multi_model_sampling(accs_victim_1,multi)
             accs_victim_2 = multi_model_sampling(accs_victim_2,multi)
@@ -171,11 +177,21 @@ def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):
         Find thresholds and rules for differentiating between two
         sets of predictions.
     """
-    lower = min(np.min(accs_1), np.min(accs_2))
-    upper = max(np.max(accs_1), np.max(accs_2))
-    combined = np.concatenate((accs_1, accs_2))
+    if len(accs_1.shape) == 2:
+        # TODO: Implement the rest of this variant
+        # For now, we will use loss values for the multi-class case
+        # Multi-dimension vase with raw logit values
+        # Convert to probabilities, then compute class-wise
+        # threshold scores
+        combined = np.concatenate((accs_1, accs_2), 0)
+        lower, upper = np.min(combined, 0), np.max(combined, 0)
+    else:
+        # Binary-classification, so values are
+        # either actual accuracies, or single logit values
+        combined = np.concatenate((accs_1, accs_2))
+        lower, upper = np.min(combined), np.max(combined)
     # Want to predict first set as 0s, second set as 1s
-    classes = np.concatenate((np.zeros_like(accs_1), np.ones_like(accs_2)))
+    classes = np.concatenate((np.zeros(accs_1.shape[0]), np.ones(accs_2.shape[0])))
     best_acc = 0.0
     best_threshold = 0
     best_rule = None
@@ -275,7 +291,8 @@ def find_threshold_pred(pred_1, pred_2,
     thres = np.array(thres)
     rules = np.array(rules)
     predictions_combined = np.concatenate((pred_1, pred_2), axis=1)
-    ground_truth = np.concatenate((np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1])))
+    ground_truth = np.concatenate(
+        (np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1])))
     acc = get_threshold_pred(predictions_combined, ground_truth, thres, rules)
     return acc, thres, rules
 
@@ -381,6 +398,15 @@ def order_points(p1s, p2s):
         Estimate utility of individual points, done by taking
         absolute difference in their predictions.
     """
-    abs_dif = np.absolute(np.sum(p1s, axis=0) - np.sum(p2s, axis=0))
-    inds = np.argsort(abs_dif)
+    # TODO: This ranking should ideally on probabilities, not logits
+    if p1s.shape != p2s.shape:
+        raise ValueError(f"Both predictions should be same shape, got {p1s.shape} and {p2s.shape}")
+    # Simple binary-classification case
+    abs_diff = np.absolute(np.sum(p1s, axis=0) - np.sum(p2s, axis=0))
+    # TODO: Is this really the best way to rank points?
+    if len(p1s.shape) == 3:
+        # Handle multi-class case
+        abs_diff = np.mean(abs_diff, 1)
+
+    inds = np.argsort(abs_diff)
     return inds

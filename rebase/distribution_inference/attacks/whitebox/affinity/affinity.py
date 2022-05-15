@@ -1,7 +1,6 @@
 from typing import List
 import os
 import warnings
-from wsgiref import validate
 import torch as ch
 import torch.nn as nn
 import numpy as np
@@ -37,7 +36,8 @@ class AffinityAttack(Attack):
             self.num_dim,
             self.num_layers,
             self.config.affinity_config,
-            self.num_logit_features,)
+            self.num_logit_features,
+            self.config.multi_class,)
         if self.config.gpu:
             self.model = self.model.cuda()
 
@@ -94,12 +94,11 @@ class AffinityAttack(Attack):
         seed_data = all_features
 
         # Retain only a fraction of all pairs
+        # First-time (on train data)
         if self.frac_retain_pairs < 1 and self.retained_pairs is None:
-            # First-time (on train data)
-            num_eff_layers = num_layers if self.use_logit else num_layers - 1
             # Collect STD values across models (per layer)
             std_values = []
-            for i in range(num_eff_layers):
+            for i in range(num_layers):
                 std_values.append(
                     ch.std(ch.stack([x[i] for x in seed_data]), 0))
             # Sort std values in descending order (per layer) and store indices
@@ -111,7 +110,7 @@ class AffinityAttack(Attack):
                 map(lambda x: x[:n_features_retain].cpu().numpy(), std_values))
             # Make a count array to keep track of top pairs per layer
             count_array = np.zeros((num_features,))
-            for i in range(num_eff_layers):
+            for i in range(num_layers):
                 count_array[self.retained_pairs[i]] += 1
             # Ouf of these, pick the top self.frac_retain_pairs
             self.retained_pairs = np.sort(np.argsort(
@@ -122,8 +121,8 @@ class AffinityAttack(Attack):
             # the case where self.retained_pairs is not None
             def selection_lambda(x):
                 selected = [x[i][self.retained_pairs]
-                            for i in range(num_eff_layers)]
-                if self.use_logit:
+                            for i in range(num_layers)]
+                if self.use_logit and not self.config.multi_class:
                     selected.append(x[-1])
                 return selected
             seed_data = list(map(selection_lambda, seed_data))
@@ -152,8 +151,13 @@ class AffinityAttack(Attack):
         layerwise_features = []
         for i, feature in enumerate(model_features):
             # If got to logit, break- will handle outside of loop
+            # Unless multi-class
             if self.use_logit and i == len(model_features) - 1:
-                break
+                if self.config.multi_class:
+                    # Convert feature to softmax
+                    feature = ch.softmax(feature, 1)
+                else:
+                    break
             scores = []
             pairs_so_far = 0
             # Pair-wise iteration of all data
@@ -177,10 +181,10 @@ class AffinityAttack(Attack):
             layerwise_features.append(stacked_scores)
 
         num_layers = len(layerwise_features)
-        # If asked to use logits, convert them to probability scores
+        # If asked to use logits and binary case, convert them to probability scores
         # And then consider them as-it-is (instead of pair-wise comparison)
         num_logit_features = 0
-        if self.use_logit:
+        if self.use_logit and not self.config.multi_class:
             logits = model_features[-1]
             probs = ch.sigmoid(logits).squeeze_(1)
             layerwise_features.append(probs.cpu())

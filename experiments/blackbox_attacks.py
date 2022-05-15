@@ -57,12 +57,12 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
     # Load victim models for first value
-    print(attack_config.on_cpu)
-    models_vic_1 = ds_vic_1.get_models(train_config,
-                                       n_models=attack_config.num_victim_models,
-                                       on_cpu=attack_config.on_cpu,
-                                       shuffle=False,
-                                       epochwise_version=attack_config.train_config.save_every_epoch)
+    models_vic_1 = ds_vic_1.get_models(
+        train_config,
+        n_models=attack_config.num_victim_models,
+        on_cpu=attack_config.on_cpu,
+        shuffle=False,
+        epochwise_version=attack_config.train_config.save_every_epoch)
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -73,18 +73,21 @@ if __name__ == "__main__":
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
         # Load victim models for other value
-        models_vic_2 = ds_vic_2.get_models(train_config,
-                                           n_models=attack_config.num_victim_models,
-                                           on_cpu=attack_config.on_cpu,
-                                           shuffle=False,
-                                           epochwise_version=attack_config.train_config.save_every_epoch)
+        models_vic_2 = ds_vic_2.get_models(
+            train_config,
+            n_models=attack_config.num_victim_models,
+            on_cpu=attack_config.on_cpu,
+            shuffle=False,
+            epochwise_version=attack_config.train_config.save_every_epoch)
         for _ in range(attack_config.tries):
-            models_adv_1 = ds_adv_1.get_models(train_adv_config,
-                                               n_models=bb_attack_config.num_adv_models,
-                                               on_cpu=attack_config.on_cpu)
-            models_adv_2 = ds_adv_2.get_models(train_adv_config,
-                                               n_models=bb_attack_config.num_adv_models,
-                                               on_cpu=attack_config.on_cpu)
+            models_adv_1 = ds_adv_1.get_models(
+                train_adv_config,
+                n_models=bb_attack_config.num_adv_models,
+                on_cpu=attack_config.on_cpu)
+            models_adv_2 = ds_adv_2.get_models(
+                train_adv_config,
+                n_models=bb_attack_config.num_adv_models,
+                on_cpu=attack_config.on_cpu)
             # Get victim and adv predictions on loaders for first ratio
             
             preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
@@ -93,7 +96,8 @@ if __name__ == "__main__":
                 ds_obj=ds_adv_1,
                 batch_size=bb_attack_config.batch_size,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                preload=bb_attack_config.preload
+                preload=bb_attack_config.preload,
+                multi_class=bb_attack_config.multi_class
             )
             # Get victim and adv predictions on loaders for second ratio
             preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
@@ -102,7 +106,8 @@ if __name__ == "__main__":
                 ds_obj=ds_adv_2,
                 batch_size=bb_attack_config.batch_size,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                preload=bb_attack_config.preload
+                preload=bb_attack_config.preload,
+                multi_class=bb_attack_config.multi_class
             )
             # Wrap predictions to be used by the attack
             preds_adv = PredictionsOnDistributions(
@@ -120,7 +125,6 @@ if __name__ == "__main__":
             # For each requested attack
             for attack_type in bb_attack_config.attack_type:
                 # Create attacker object
-                print(attack_type)
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
 
                 # Launch attack

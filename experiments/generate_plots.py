@@ -43,6 +43,9 @@ if __name__ == "__main__":
                         default='Attack',
                         help="legend title",
                         type=str)
+    parser.add_argument("--nolegend",
+                        action="store_true",
+                        help="Skip legend?",)
     parser.add_argument("--legend_titles",
                         nargs='+',
                         help="Titles for legends",
@@ -53,6 +56,9 @@ if __name__ == "__main__":
     parser.add_argument("--dash",
                         action="store_true",
                         help="add dashed line midway?",)
+    parser.add_argument("--pdf",
+                        action="store_true",
+                        help="Save PDF instead of PNG",)
     args = parser.parse_args()
 
     # Columns for axis and names
@@ -63,12 +69,14 @@ if __name__ == "__main__":
                             columns=columns,
                             legend_titles=args.legend_titles,
                             attacks_wanted=args.wanted,
-                            ratios_wanted=args.ratios)
+                            ratios_wanted=args.ratios,
+                            no_legend=args.nolegend)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,
                        dash=args.dash)
 
     # Save plot
-    graph.figure.savefig(os.path.join(
-        './plots', '%s_%s.png' % (args.savepath, args.plot)))
+    suffix = "pdf" if args.pdf else "png"
+    graph.figure.savefig(os.path.join('%s_%s.%s' %
+                         (args.savepath, args.plot, suffix)))

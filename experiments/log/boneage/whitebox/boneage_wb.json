@@ -1,1 +1,175 @@
-{"name": "boneage_wb", "start time": "2022-04-14 18:46:59.641911", "attack_config": {"train_config": {"data_config": {"name": "boneage", "prop": "sex", "value": 0.5, "split": "adv", "drop_senstive_cols": false, "scale": 1.0, "augment": false, "classify": null, "cwise_samples": null, "squeeze": true}, "epochs": 20, "learning_rate": 0.002, "batch_size": 8192, "misc_config": null, "verbose": false, "num_models": 1, "offset": 0, "weight_decay": 0, "get_best": true, "cpu": false, "expect_extra": true, "save_every_epoch": false, "extra_info": null}, "values": [0.2, 0.3, 0.4, 0.6, 0.7, 0.8], "black_box": null, "white_box": {"attack": "permutation_invariant", "epochs": 100, "batch_size": 1200, "learning_rate": 0.001, "weight_decay": 0.01, "train_sample": 800, "val_sample": 0, "save": true, "load": null, "regression_config": null, "eval_every": 10, "binary": true, "gpu": true, "shuffle": true, "custom_layers_fc": null, "start_n_fc": 0, "first_n_fc": null, "custom_layers_conv": null, "start_n_conv": 0, "first_n_conv": null, "permutation_config": {"focus": "fc", "scale_invariance": false}, "affinity_config": null}, "tries": 5, "num_victim_models": 1000, "on_cpu": true, "adv_misc_config": null, "num_total_adv_models": 1000}, "result": {"permutation_invariant": {"0.2": {"adv_acc": [null, null, null, null, null], "victim_acc": [98.95, 99.9, 99.2, 99.5, 100.0]}, "0.3": {"adv_acc": [null, null, null, null, null], "victim_acc": [98.9, 97.85, 99.95, 99.95, 98.55]}, "0.4": {"adv_acc": [null, null, null, null, null], "victim_acc": [90.85, 92.85, 92.5, 74.45, 83.85]}, "0.6": {"adv_acc": [null, null, null, null, null], "victim_acc": [50.0, 87.45, 72.9, 75.15, 80.8]}, "0.7": {"adv_acc": [null, null, null, null, null], "victim_acc": [93.65, 99.1, 89.05, 99.4, 98.8]}, "0.8": {"adv_acc": [null, null, null, null, null], "victim_acc": [100.0, 99.5, 100.0, 100.0, 99.6]}}}, "save time": "2022-04-14 22:01:05.510725"}
+{
+    "name": "boneage_wb",
+    "start time": "2022-04-14 18:46:59.641911",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "boneage",
+                "prop": "sex",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": null,
+                "cwise_samples": null,
+                "squeeze": true
+            },
+            "epochs": 20,
+            "learning_rate": 0.002,
+            "batch_size": 8192,
+            "misc_config": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null
+        },
+        "values": [
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8
+        ],
+        "black_box": null,
+        "white_box": {
+            "attack": "permutation_invariant",
+            "epochs": 100,
+            "batch_size": 1200,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 800,
+            "val_sample": 0,
+            "save": true,
+            "load": null,
+            "regression_config": null,
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": {
+                "focus": "fc",
+                "scale_invariance": false
+            },
+            "affinity_config": null
+        },
+        "tries": 5,
+        "num_victim_models": 1000,
+        "on_cpu": true,
+        "adv_misc_config": null,
+        "num_total_adv_models": 1000
+    },
+    "result": {
+        "permutation_invariant": {
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.95,
+                    99.9,
+                    99.2,
+                    99.5,
+                    100.0
+                ]
+            },
+            "0.3": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.9,
+                    97.85,
+                    99.95,
+                    99.95,
+                    98.55
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    90.85,
+                    92.85,
+                    92.5,
+                    74.45,
+                    83.85
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    50.0,
+                    87.45,
+                    72.9,
+                    75.15,
+                    80.8
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    93.65,
+                    99.1,
+                    89.05,
+                    99.4,
+                    98.8
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    99.5,
+                    100.0,
+                    100.0,
+                    99.6
+                ]
+            }
+        }
+    },
+    "save time": "2022-04-14 22:01:05.510725"
+}

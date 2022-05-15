@@ -42,7 +42,10 @@ def save_model(model, path):
 
 
 def load_model(model, path):
-    model.load_state_dict(ch.load(path))
+    try:
+        model.load_state_dict(ch.load(path))
+    except:
+        raise Exception("Could not load model from {}".format(path))
     return model
 
 

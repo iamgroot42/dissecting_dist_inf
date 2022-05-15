@@ -9,8 +9,8 @@
             "num_samples_use": 50,
             "shared_layerwise_params": true
         },
-        "train_sample": 170,
-        "val_sample": 30
+        "train_sample": 80,
+        "val_sample": 20
     },
     "train_config": {
         "data_config": {

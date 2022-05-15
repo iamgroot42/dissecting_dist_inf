@@ -1,13 +1,9 @@
 # Formalizing and Estimating Distribution Inference Risks
 
-Exploratory experiments and meta-classifier property-inference attacks on various datasets across several domains.
+Exploratory experiments and attacks on various datasets across several domains.
 Folder structure:
 
-- `boneage` : Experiments on the [RSNA Bone-Age](https://www.kaggle.com/kmader/rsna-bone-age) task, reduced to binary prediction
-- `arxiv` : Experiments on the [ogbn-arxiv](https://ogb.stanford.edu/docs/nodeprop/) node-classfication task
-- `census` : Experiments on the [Adult Income](https://www.kaggle.com/uciml/adult-census-income) dataset
-- `new census` : Experiments on the [New Census](https://github.com/bargavj/EvaluatingDPML/blob/master/CENSUS_DATA_README.ipynb) dataset
-- `celeba` : Experiments on the [Celeb-A](https://www.kaggle.com/jessicali9530/celeba-dataset) dataset
-- `botnets`: Experiments on [HarvardNLP's Botnet Detection](https://github.com/harvardnlp/botnet-detection) datasets
+- `rebase` : Main package that includes functionality for training models, launching white-box and black-box attacks, and logging & generating plots
+- `experiments` : Contains scripts to use the package for experiments.
+- `old_version` : Older version of the repository, containing dataset-wise experiments.
 
-Everything else: archived code

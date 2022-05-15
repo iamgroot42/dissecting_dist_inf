@@ -7,13 +7,14 @@
             "num_final": 16,
             "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
-            "shared_layerwise_params": true
+            "shared_layerwise_params": true,
+            "perpoint_based_selection": 50
         }
     },
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "race",
+            "prop": "sex",
             "split": "adv",
             "squeeze": true,
             "value": 0.5

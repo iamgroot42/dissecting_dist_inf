@@ -1,22 +1,25 @@
+from distribution_inference.utils import warning_string
 import numpy as np
 from tqdm import tqdm
 import pandas as pd
 import torch as ch
 
-from distribution_inference.datasets import new_census, celeba, boneage,census
+from distribution_inference.datasets import new_census, celeba, boneage,census, texas
 
 DATASET_INFO_MAPPING = {
     "new_census": new_census.DatasetInformation,
     "celeba": celeba.DatasetInformation,
     "boneage": boneage.DatasetInformation,
-    "old_census":census.DatasetInformation
+    "old_census": census.DatasetInformation,
+    "texas": texas.DatasetInformation,
 }
 
 DATASET_WRAPPER_MAPPING = {
     "new_census": new_census.CensusWrapper,
     "celeba": celeba.CelebaWrapper,
     "boneage": boneage.BoneWrapper,
-    "old_census":census.CensusWrapper,
+    "old_census": census.CensusWrapper,
+    "texas": texas.TexasWrapper,
 }
 
 
@@ -40,7 +43,6 @@ def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 
-
 def filter(df, condition, ratio, verbose: bool = True):
     qualify = np.nonzero((condition(df)).to_numpy())[0]
     notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
@@ -62,23 +64,22 @@ def filter(df, condition, ratio, verbose: bool = True):
         return df.iloc[notqualify]
 
 
-def heuristic(df, condition, ratio,
-              cwise_sample,
+def heuristic(df, condition, ratio: float,
+              cwise_sample: int,
               class_imbalance: float = 2.0,
               n_tries: int = 1000,
-              class_col="label",
+              class_col: str = "label",
               verbose: bool = True):
     vals, pckds = [], []
     iterator = range(n_tries)
     if verbose:
         iterator = tqdm(iterator)
     for _ in iterator:
+        # Binary class- simply sample (as requested)
+        # From each class
         pckd_df = filter(df, condition, ratio, verbose=False)
-
-        # Class-balanced sampling
         zero_ids = np.nonzero(pckd_df[class_col].to_numpy() == 0)[0]
         one_ids = np.nonzero(pckd_df[class_col].to_numpy() == 1)[0]
-
         # Sub-sample data, if requested
         if cwise_sample is not None:
             if class_imbalance >= 1:
@@ -86,15 +87,73 @@ def heuristic(df, condition, ratio,
                     zero_ids)[:int(class_imbalance * cwise_sample)]
                 one_ids = np.random.permutation(
                     one_ids)[:cwise_sample]
-            else:
+            elif class_imbalance < 1:
                 zero_ids = np.random.permutation(
                     zero_ids)[:cwise_sample]
                 one_ids = np.random.permutation(
                     one_ids)[:int(1 / class_imbalance * cwise_sample)]
+            else:
+                raise ValueError(f"Invalid class_imbalance value: {class_imbalance}")
 
-        # Combine them together
-        pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
-        pckd_df = pckd_df.iloc[pckd]
+            # Combine them together
+            pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
+            pckd_df = pckd_df.iloc[pckd]
+
+        vals.append(condition(pckd_df).mean())
+        pckds.append(pckd_df)
+
+        # Print best ratio so far in descripton
+        if verbose:
+            iterator.set_description(
+                "%.4f" % (ratio + np.min([np.abs(zz-ratio) for zz in vals])))
+
+    vals = np.abs(np.array(vals) - ratio)
+    # Pick the one closest to desired ratio
+    picked_df = pckds[np.argmin(vals)]
+    return picked_df.reset_index(drop=True)
+
+
+def multiclass_heuristic(
+        df, condition, ratio: float,
+        total_samples: int,
+        n_tries: int = 1000,
+        class_col: str = "label",
+        verbose: bool = True):
+    """
+        Heuristic for ratio-based sampling, implemented
+        for the multi-class setting.
+    """
+    vals, pckds = [], []
+    iterator = range(n_tries)
+    if verbose:
+        iterator = tqdm(iterator)
+
+    class_labels, class_counts = np.unique(
+        df[class_col].to_numpy(), return_counts=True)
+    class_counts = class_counts / (1. * np.sum(class_counts))
+    per_class_samples = class_counts * total_samples
+    for _ in iterator:
+        # For each class
+        inner_pckds = []
+        for i, cid in enumerate(class_labels):
+            # Find rows that have that specific class label
+            df_i = df[df[class_col] == cid]
+            pcked_df = filter(df_i, condition, ratio, verbose=False)
+            # Randomly sample from this set
+            # Since sampling is uniform at random, should preserve ratio
+            # Either way- we pick a sample that is closest to desired ratio
+            # So that aspect should be covered anyway
+            if int(per_class_samples[i]) < 1:
+                raise ValueError(f"Not enough data to sample from class {cid}")
+            if int(per_class_samples[i]) > len(pcked_df):
+                print(warning_string(
+                    f"Requested {int(per_class_samples[i])} but only {len(pcked_df)} avaiable for class {cid}"))
+            else:
+                pcked_df = pcked_df.sample(
+                    int(per_class_samples[i]), replace=True)
+            inner_pckds.append(pcked_df.reset_index(drop=True))
+        # Concatenate all inner_pckds into one
+        pckd_df = pd.concat(inner_pckds)
 
         vals.append(condition(pckd_df).mean())
         pckds.append(pckd_df)

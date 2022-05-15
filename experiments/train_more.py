@@ -11,10 +11,11 @@ from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainC
 from distribution_inference.utils import flash_utils
 import os
 
+
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
-    parser.add_argument('--gpu', 
-                        default='0,1,2,3', help="device number")  
+    parser.add_argument('--gpu',
+                        default='0,1,2,3', help="device number")
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path, required=True)
     parser.add_argument(
@@ -26,7 +27,7 @@ if __name__ == "__main__":
     print(ch.cuda.device_count())
     # Attempt to extract as much information from config file as you can
     train_config = TrainConfig.load(args.load_config, drop_extra_fields=False)
-   
+
     # Extract configuration information from config file
     dp_config = None
     train_config: TrainConfig = train_config
@@ -54,7 +55,8 @@ if __name__ == "__main__":
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
-    ds_info = get_dataset_information(data_config.name)(train_config.save_every_epoch)
+    ds_info = get_dataset_information(
+        data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
     ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch)
@@ -77,8 +79,8 @@ if __name__ == "__main__":
         model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                      train_config=train_config,
                                      extra_options={
-                                        "curren_model_num": i,
-                                        "save_path_fn": ds.get_save_path})
+            "curren_model_num": i + train_config.offset,
+            "save_path_fn": ds.get_save_path})
 
         # If saving only the final model
         if not train_config.save_every_epoch:

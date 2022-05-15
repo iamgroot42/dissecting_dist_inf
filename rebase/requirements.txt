@@ -1,4 +1,4 @@
-git+https://github.com/iamgroot42/SimpleParsing
+git+https://github.com/lebrice/SimpleParsing
 git+https://github.com/iamgroot42/cleverhans
 git+https://github.com/iamgroot42/opacus
 git+https://github.com/iamgroot42/robustness

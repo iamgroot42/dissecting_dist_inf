@@ -11,11 +11,15 @@ from distribution_inference.datasets.utils import collect_data, worker_init_fn
 from distribution_inference.training.core import train
 from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.utils import warning_string
+from distribution_inference.models.core import BaseModel
+from distribution_inference.attacks.blackbox.utils import get_preds
+from distribution_inference.attacks.blackbox.core import order_points
 
 
 def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
                          attack_config: WhiteBoxAttackConfig,
-                         num_samples_use: int = None):
+                         num_samples_use: int = None,
+                         adv_models: List[BaseModel] = None):
     """
         Collect data from given datasets and wrap into a dataloader.
     """
@@ -27,17 +31,37 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
         _, test_loader = ds.get_loaders(
             attack_config.batch_size,
             eval_shuffle=True)
+
         # Collect this data
         data, _ = collect_data(test_loader)
-        # Randomly pick num_samples_use samples
+
+        # Collect preds on adv data, if given
+        # Use these for picking top points
         if num_samples_use is not None:
+
             if num_samples_use > len(data):
                 warnings.warn(warning_string(
                     f"\nRequested using {num_samples_use} samples, but only {len(data)} samples available for {ds}.\n"))
-            data = data[np.random.choice(
-                data.shape[0], num_samples_use, replace=False)]
+
+            if adv_models is not None:
+                # Use per-point threshold test criteria to pick points, instead of random sample
+                if len(adv_models) > 2:
+                    raise NotImplementedError("Per-point based selection not supported for regression")
+                preds_1, _ = get_preds(
+                    test_loader, adv_models[0],
+                    verbose=True, multi_class=attack_config.multi_class)
+                preds_2, _ = get_preds(
+                    test_loader, adv_models[1],
+                    verbose=True, multi_class=attack_config.multi_class)
+                ordering = order_points(preds_1, preds_2)
+                data = data[ordering][:num_samples_use]
+            else:
+                # Randomly pick num_samples_use samples
+                data = data[np.random.choice(
+                    data.shape[0], num_samples_use, replace=False)]
 
         all_data.append(data)
+
     all_data = ch.cat(all_data, dim=0)
     # Create a dataset out of this
     basic_ds = BasicDataset(all_data)

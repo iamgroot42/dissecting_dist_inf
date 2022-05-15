@@ -82,7 +82,7 @@ class LRScheduler(Serializable):
     """
         Hyper-parameters for learning-rate scheduler
     """
-    patient: Optional[int] = 5
+    patience: Optional[int] = 5
     """Number of epochs to wait before reducing learning rate"""
     factor: Optional[float] = 0.1
     """Factor to reduce learning rate by"""
@@ -110,10 +110,10 @@ class TrainConfig(Serializable):
 
     misc_config: Optional[MiscTrainConfig] = None
     """Extra configuration for model training env"""
-    verbose: Optional[bool] = False
-    """Whether to print out per-classifier stats"""
     lr_scheduler: Optional[LRScheduler] = None
     """Use learning-rate scheduler?"""
+    verbose: Optional[bool] = False
+    """Whether to print out per-classifier stats"""
     num_models: int = 1
     """Number of models to train"""
     offset: Optional[int] = 0
@@ -131,7 +131,9 @@ class TrainConfig(Serializable):
     extra_info: Optional[dict] = None
     """Optional dictionary to store misc information for dataset-specific args"""
     regression: Optional[bool] = False
-    """Training for regression (MSE) or classification (BCE)?"""
+    """Training for regression (MSE)?"""
+    multi_class: Optional[bool] = False
+    """Training for multi-class classification?"""
 
 
 @dataclass
@@ -153,6 +155,10 @@ class BlackBoxAttackConfig(Serializable):
     """Multi model setting, number of victim models"""
     multi: int = None
     multi2: int = None
+    """Pre-load data while launching attack (faster, if memory available)?"""
+    multi_class: Optional[bool] = False
+    """Are the model logits > 1 dimension?"""
+
 
 @dataclass
 class PermutationAttackConfig(Serializable):
@@ -192,6 +198,8 @@ class AffinityAttackConfig(Serializable):
     """Which conv layers of the model to target while extracting features?"""
     layers_to_target_fc: Optional[List[int]] = None
     """Which conv layers of the model to target while extracting features?"""
+    perpoint_based_selection: Optional[int] = 0
+    """If > 0, use same selection logic used by Per-Point Threshold Test with these many models"""
 
 
 @dataclass
@@ -237,6 +245,8 @@ class WhiteBoxAttackConfig(Serializable):
     """Whether to train on GPU or CPU"""
     shuffle: Optional[bool] = True
     """Shuffle train data in each epoch?"""
+    multi_class: Optional[bool] = False
+    """Are the model logits > 1 dimension?"""
 
     # Valid for MLPs
     custom_layers_fc: Optional[List[int]] = None

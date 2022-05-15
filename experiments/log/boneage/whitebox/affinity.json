@@ -1,6 +1,6 @@
 {
     "name": "affinity",
-    "start time": "2022-04-15 10:29:11.213815",
+    "start time": "2022-04-23 08:32:44.647725",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -20,6 +20,7 @@
             "batch_size": 0,
             "misc_config": null,
             "verbose": false,
+            "lr_scheduler": null,
             "num_models": 1,
             "offset": 0,
             "weight_decay": 0,
@@ -27,7 +28,8 @@
             "cpu": false,
             "expect_extra": true,
             "save_every_epoch": false,
-            "extra_info": null
+            "extra_info": null,
+            "regression": false
         },
         "values": [
             0.2,
@@ -44,8 +46,8 @@
             "batch_size": 500,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
-            "train_sample": 800,
-            "val_sample": 0,
+            "train_sample": 750,
+            "val_sample": 50,
             "save": false,
             "load": null,
             "regression_config": null,
@@ -70,13 +72,14 @@
                     1024,
                     64
                 ],
-                "shared_layerwise_params": false
+                "shared_layerwise_params": true,
+                "sequential_variant": false,
+                "num_rnn_layers": 2
             }
         },
         "tries": 5,
         "num_victim_models": 1000,
         "on_cpu": true,
-        "adv_diff_misc_config": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000
     },
@@ -91,11 +94,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    87.05000000000001,
+                    98.25,
+                    99.55000000000001,
+                    99.30000000000001,
+                    99.9
                 ]
             },
             "0.3": {
@@ -107,10 +110,11 @@
                     null
                 ],
                 "victim_acc": [
-                    99.8,
-                    74.55,
-                    99.8,
-                    99.64999999999999
+                    91.85,
+                    98.05,
+                    93.85,
+                    98.3,
+                    98.7
                 ]
             },
             "0.4": {
@@ -122,11 +126,11 @@
                     null
                 ],
                 "victim_acc": [
-                    91.55,
-                    92.85,
-                    93.15,
-                    90.10000000000001,
-                    94.5
+                    69.45,
+                    86.55000000000001,
+                    72.3,
+                    79.45,
+                    75.55
                 ]
             },
             "0.6": {
@@ -138,11 +142,11 @@
                     null
                 ],
                 "victim_acc": [
-                    93.0,
-                    94.5,
-                    90.35,
-                    92.95,
-                    95.49999999999999
+                    71.7,
+                    83.99999999999999,
+                    79.5,
+                    74.75,
+                    83.60000000000001
                 ]
             },
             "0.7": {
@@ -154,11 +158,11 @@
                     null
                 ],
                 "victim_acc": [
-                    99.55000000000001,
-                    99.8,
-                    99.7,
-                    100.0,
-                    99.95
+                    98.55000000000001,
+                    98.55000000000001,
+                    92.6,
+                    96.6,
+                    97.75
                 ]
             },
             "0.8": {
@@ -171,13 +175,13 @@
                 ],
                 "victim_acc": [
                     100.0,
+                    92.65,
                     100.0,
                     100.0,
-                    100.0,
-                    100.0
+                    99.8
                 ]
             }
         }
     },
-    "save time": "2022-04-15 19:13:26.532967"
+    "save time": "2022-04-23 23:39:16.447188"
 }
