@@ -152,6 +152,9 @@ class BlackBoxAttackConfig(Serializable):
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
     preload: Optional[bool] = False
+    """Multi model setting, number of victim models"""
+    multi: int = None
+    multi2: int = None
     """Pre-load data while launching attack (faster, if memory available)?"""
     multi_class: Optional[bool] = False
     """Are the model logits > 1 dimension?"""

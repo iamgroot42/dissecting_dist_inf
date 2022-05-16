@@ -35,8 +35,10 @@ if __name__ == "__main__":
     misc_config: MiscTrainConfig = train_config.misc_config
     if args.split:
         data_config.split = args.split
-    if args.ratio:
+        train_config.data_config.split = args.split
+    if (args.ratio!=None):
         data_config.value = args.ratio
+        train_config.data_config.value = args.ratio
     if misc_config is not None:
         dp_config: DPTrainingConfig = misc_config.dp_config
 
@@ -57,7 +59,7 @@ if __name__ == "__main__":
         data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
-    ds = ds_wrapper_class(data_config)
+    ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch)
 
     # Train models
     for i in range(1, train_config.num_models + 1):

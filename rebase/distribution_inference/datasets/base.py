@@ -120,6 +120,7 @@ class CustomDatasetWrapper:
             shuffle=shuffle,
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
+            #pin_memory=True,
             prefetch_factor=prefetch_factor
         )
 
@@ -129,6 +130,7 @@ class CustomDatasetWrapper:
             shuffle=eval_shuffle,
             num_workers=num_workers,
             worker_init_fn=utils.worker_init_fn,
+            #pin_memory=True,
             prefetch_factor=prefetch_factor
         )
 

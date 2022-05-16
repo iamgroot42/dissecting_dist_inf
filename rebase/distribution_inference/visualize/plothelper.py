@@ -104,8 +104,8 @@ class PlotHelper():
                         continue
                     victim_results = logger['result'][attack_res][ratio]['victim_acc']
                     for results in victim_results:
-                        loss = results[0]
-                        threshold = results[1]
+                        loss = results[1]
+                        threshold = results[0]
                         if type(loss) == list:
                             assert len(loss) == len(threshold)
                             for epoch, (l, t) in enumerate(zip(loss, threshold)):
