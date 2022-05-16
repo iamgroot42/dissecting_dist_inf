@@ -289,7 +289,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
                         "train_loss: %.2f | val_loss: %.2f |" % (tloss, vloss))
                 else:
                     iterator.set_description(
-                        "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
+                        "train_acc: %.2f | val_acc: %.2f | train_loss: %.3f | val_loss: %.3f" % (100 * tacc, 100 * vacc, tloss, vloss))
             else:
                 if train_config.regression:
                     iterator.set_description(
