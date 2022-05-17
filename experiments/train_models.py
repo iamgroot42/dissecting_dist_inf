@@ -43,7 +43,8 @@ if __name__ == "__main__":
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
-    ds_info = get_dataset_information(data_config.name)(train_config.save_every_epoch)
+    ds_info = get_dataset_information(
+        data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
     ds = ds_wrapper_class(data_config)
@@ -54,7 +55,8 @@ if __name__ == "__main__":
         if not train_config.save_every_epoch:
             save_path = ds.get_save_path(train_config, None)
             if ds.check_if_exists(save_path, str(i + train_config.offset)):
-                print(f"Model {i + train_config.offset} already exists. Skipping training.")
+                print(
+                    f"Model {i + train_config.offset} already exists. Skipping training.")
                 continue
 
         print("Training classifier %d / %d" % (i, train_config.num_models))

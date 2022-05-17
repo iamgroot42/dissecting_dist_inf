@@ -50,7 +50,8 @@ def train(model, loaders, train_config: TrainConfig,
             f"Computed Delta {delta_computed} | Given  Delta {dp_config.delta}")
 
     # Generally, it should be set to be less than the inverse of the size of the training dataset.
-    assert dp_config.delta < 1 / len(train_loader.dataset), "delta should be < the inverse of the size of the training dataset"
+    assert dp_config.delta < 1 / \
+        len(train_loader.dataset), "delta should be < the inverse of the size of the training dataset"
 
     device = ch.device("cuda")
     model = model.to(device)

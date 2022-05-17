@@ -13,8 +13,8 @@ class PerPointThresholdAttack(Attack):
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
                epochwise_version: bool = False,
-                multi:int=0,
-                multi2:int=0):
+               multi: int = 0,
+               multi2: int = 0):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
@@ -65,23 +65,23 @@ class PerPointThresholdAttack(Attack):
         return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information]
 
 
-def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule,multi2:int=0):
+def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule, multi2: int = 0):
     """
         Run perpoint threshold test (confidence)
         for a given "quartile" ratio
     """
     if multi2:
         preds, acc = get_threshold_pred_multi(
-        preds_1, preds_2, threshold, rule, get_pred=True,
-        multi2=multi2)
+            preds_1, preds_2, threshold, rule, get_pred=True,
+            multi2=multi2)
     else:
-    # Combine predictions into one vector
+        # Combine predictions into one vector
         combined = np.concatenate((preds_1, preds_2), axis=1)
 
-    # Compute accuracy for given predictions, thresholds, and rules
+        # Compute accuracy for given predictions, thresholds, and rules
         preds, acc = get_threshold_pred(
-        combined, classes, threshold, rule, get_pred=True,
-        confidence=True)
+            combined, classes, threshold, rule, get_pred=True,
+            confidence=True)
 
     return 100 * acc, preds
 
@@ -90,8 +90,8 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                                      preds_victim: PredictionsOnOneDistribution,
                                      config: BlackBoxAttackConfig,
                                      epochwise_version: bool = False,
-                                     multi:int=0,
-                                     multi2:int=0,
+                                     multi: int = 0,
+                                     multi2: int = 0,
                                      ground_truth: Tuple[List, List] = None,):
     """
         Compute thresholds (based on probabilities) for each given datapoint,
@@ -130,8 +130,8 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
             pv1 = np.transpose(pv1, transpose_order)[order][::-1]
             pv2 = np.transpose(pv2, transpose_order)[order][::-1]
         if multi:
-            pv1 = multi_model_sampling(pv1,multi)
-            pv2 = multi_model_sampling(pv2,multi)
+            pv1 = multi_model_sampling(pv1, multi)
+            pv2 = multi_model_sampling(pv2, multi)
     if config.multi_class:
         # If multi-class, replace predictions with loss values
         assert ground_truth is not None, "Need ground-truth for multi-class setting"
