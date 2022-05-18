@@ -8,7 +8,7 @@ import torch as ch
 import torch.nn as nn
 
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPFourLayer
+from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -32,14 +32,14 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch)
 
     def get_model(self, cpu: bool = False) -> nn.Module:
-        model = MLPFourLayer(n_inp=self.num_features,
+        model = MLPFiveLayer(n_inp=self.num_features,
                              num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()
         return model
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
-        model = MLPFourLayer(n_inp=self.num_features,
+        model = MLPFiveLayer(n_inp=self.num_features,
                              num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()

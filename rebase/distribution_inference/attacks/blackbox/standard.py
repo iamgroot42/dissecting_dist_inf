@@ -89,7 +89,7 @@ class LossAndThresholdAttack(Attack):
 
     def _loss_multi(self, acc_1, acc_2,multi2:int):
         basic = []
-        l=acc_1[0].shape[1]//multi2
+        l=acc_1[0].shape[1]
         for r in range(len(self.config.ratios)):
             preds_1 = []
             preds_2 = []

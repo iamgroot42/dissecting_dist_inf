@@ -79,7 +79,8 @@ if __name__ == "__main__":
             on_cpu=attack_config.on_cpu,
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch)
-        for _ in range(attack_config.tries):
+        for t in range(attack_config.tries):
+            print("Ratio: {}, Trial: {}".format(prop_value,t))
             models_adv_1 = ds_adv_1.get_models(
                 train_adv_config,
                 n_models=bb_attack_config.num_adv_models,
@@ -126,7 +127,7 @@ if __name__ == "__main__":
             for attack_type in bb_attack_config.attack_type:
                 # Create attacker object
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
-
+                
                 # Launch attack
                 result = attacker_obj.attack(
                     preds_adv, preds_vic,

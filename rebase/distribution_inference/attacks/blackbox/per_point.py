@@ -176,12 +176,12 @@ def perpoint_threshold_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                 victim_acc, victim_pred = [], []
                 for (x, y, c) in zip(pv1_use, pv2_use, classes_victim):
                     acc, pred = _perpoint_threshold_on_ratio(
-                        x, y, c, thres_use, rs_use)
+                        x, y, c, thres_use, rs_use,multi2)
                     victim_acc.append(acc)
                     victim_pred.append(pred)
             else:
                 victim_acc, victim_pred = _perpoint_threshold_on_ratio(
-                    pv1_use, pv2_use, classes_victim, thres_use, rs_use)
+                    pv1_use, pv2_use, classes_victim, thres_use, rs_use,multi2)
             victim_accs.append(victim_acc)
             # Keep track of predictions on victim's models
         victim_preds.append(victim_pred)

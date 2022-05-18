@@ -222,6 +222,45 @@ class MLPFourLayer(BaseModel):
             return x.detach()
         return x
 
+class MLPFiveLayer(BaseModel):
+    def __init__(self, n_inp: int, num_classes: int = 1):
+        super().__init__(is_conv=False)
+        self.layers = nn.Sequential(
+            nn.Linear(n_inp, 1024),
+            nn.ReLU(),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.Linear(512, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, num_classes),
+        )
+        self.valid_for_all_fc = [1, 3, 5,7,9]
+
+    def forward(self, x,
+                detach_before_return: bool = False,
+                get_all: bool = False,
+                layers_to_target_conv: List[int] = None,
+                layers_to_target_fc: List[int] = None,):
+
+        # Override list of layers if given
+        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
+
+        all_latents = []
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            if get_all and i in valid_fc:
+                if detach_before_return:
+                    all_latents.append(x.detach())
+                else:
+                    all_latents.append(x)
+
+        if get_all:
+            return all_latents
+        if detach_before_return:
+            return x.detach()
+        return x
 
 class BoneModel(BaseModel):
     def __init__(self,
