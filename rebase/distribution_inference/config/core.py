@@ -161,6 +161,8 @@ class BlackBoxAttackConfig(Serializable):
     """Are the model logits > 1 dimension?"""
     save: Optional[bool] = False
     """Save predictions?"""
+    tune_final_threshold: Optional[bool] = False
+    """Tune final classification threshold, instead of a blind 0.5?"""
 
 
 @dataclass
