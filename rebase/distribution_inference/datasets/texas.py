@@ -15,9 +15,9 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self, epoch: bool = False):
+    def __init__(self, epoch: bool = False, num_dropped_features: int = 0):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        self.num_features = 3611
+        self.num_features = 3611 + 3
         self.num_classes = 20
         super().__init__(name="Texas 100 v2",
                          data_path="texas_100_v2/",
@@ -29,17 +29,20 @@ class DatasetInformation(base.DatasetInformation):
                              "sex": 'female',
                              "race": 'white',
                              "ethnicity": 'hispanic'},
-                         epoch_wise=epoch)
+                         epoch_wise=epoch,
+                         num_dropped_features=num_dropped_features)
 
     def get_model(self, cpu: bool = False) -> nn.Module:
-        model = MLPFiveLayer(n_inp=self.num_features,
+        num_eff_features = self.num_features - self.num_dropped_features
+        model = MLPFourLayer(n_inp=num_eff_features,
                              num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()
         return model
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
-        model = MLPFiveLayer(n_inp=self.num_features,
+        num_eff_features = self.num_features - self.num_dropped_features
+        model = MLPFourLayer(n_inp=num_eff_features,
                              num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()
@@ -307,7 +310,7 @@ class _Texas:
 
         if custom_limit is None:
             sample_size = prop_wise_sample_sizes[split][filter_prop][is_test]
-            sample_size = int(scale*sample_size)
+            sample_size = int(scale * sample_size)
         else:
             sample_size = custom_limit
         return utils.multiclass_heuristic(
@@ -344,6 +347,7 @@ class TexasWrapper(base.CustomDatasetWrapper):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
+        self.num_features_drop = 3
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
@@ -363,12 +367,14 @@ class TexasWrapper(base.CustomDatasetWrapper):
                                    eval_shuffle=eval_shuffle,)
 
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
-        info_object = DatasetInformation()
+        info_object = DatasetInformation(
+            num_dropped_features=self.num_features_drop)
         model = info_object.get_model(cpu=on_cpu)
         return load_model(model, path)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
-        info_object = DatasetInformation()
+        info_object = DatasetInformation(
+            num_dropped_features=self.num_features_drop)
         base_models_dir = info_object.base_models_dir
         dp_config = None
         if train_config.misc_config is not None:

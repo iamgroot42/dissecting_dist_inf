@@ -68,7 +68,8 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             if not multi_class:
                 outputs = outputs[:, 0]
 
-        loss = criterion(outputs, labels.long() if multi_class else labels.float())
+        loss = criterion(outputs, labels.long()
+                         if multi_class else labels.float())
         loss.backward()
         optimizer.step()
         if not regression:
@@ -192,7 +193,7 @@ def validate_epoch(val_loader, model, criterion,
         else:
             return (val_loss.avg, adv_val_loss.avg), (None, None)
     if get_preds:
-        return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg), collected_preds    
+        return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg), collected_preds
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
 
 
@@ -289,7 +290,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
                         "train_loss: %.2f | val_loss: %.2f |" % (tloss, vloss))
                 else:
                     iterator.set_description(
-                        "train_acc: %.2f | val_acc: %.2f |" % (100 * tacc, 100 * vacc))
+                        "train_acc: %.2f | val_acc: %.2f | train_loss: %.3f | val_loss: %.3f" % (100 * tacc, 100 * vacc, tloss, vloss))
             else:
                 if train_config.regression:
                     iterator.set_description(
@@ -340,14 +341,14 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
     # Use test-loader to compute final test metrics
     if val_loader is not None:
         test_loss, test_acc = validate_epoch(
-                test_loader,
-                model, criterion,
-                verbose=False,
-                adv_config=adv_config,
-                expect_extra=train_config.expect_extra,
-                input_is_list=input_is_list,
-                regression=train_config.regression,
-                multi_class=train_config.multi_class)
+            test_loader,
+            model, criterion,
+            verbose=False,
+            adv_config=adv_config,
+            expect_extra=train_config.expect_extra,
+            input_is_list=input_is_list,
+            regression=train_config.regression,
+            multi_class=train_config.multi_class)
     else:
         test_loss, test_acc = vloss, vacc
 

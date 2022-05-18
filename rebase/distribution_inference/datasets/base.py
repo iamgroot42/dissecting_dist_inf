@@ -30,7 +30,8 @@ class DatasetInformation:
                  properties: list,
                  values: dict,
                  property_focus: dict = None,
-                 epoch_wise: bool = False):
+                 epoch_wise: bool = False,
+                 num_dropped_features: int = 0):
         """
             data_path : path to dataset
             models_path: path to models
@@ -49,6 +50,7 @@ class DatasetInformation:
         self.properties = properties
         self.values = values
         self.property_focus = property_focus
+        self.num_dropped_features = num_dropped_features
 
     def get_model(self, cpu: bool = False) -> nn.Module:
         raise NotImplementedError(
@@ -106,6 +108,7 @@ class CustomDatasetWrapper:
         # Or set them inside get_loaders
         self.info_object = None
         self.skip_data = skip_data
+        self.num_features_drop = 0
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,

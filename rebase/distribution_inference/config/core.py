@@ -145,19 +145,22 @@ class BlackBoxAttackConfig(Serializable):
     """Which attacks to compute performance for"""
     ratios: Optional[List[float]] = field(default_factory=lambda: [1.0])
     """List of ratios (percentiles) to try"""
-    granularity: float = 0.005
-    """Graunularity while finding threshold candidates"""
     batch_size: int = 256
     """Batch size to use for loaders when generating predictions"""
     num_adv_models: int = 50
     """Number of models adversary uses per distribution (for estimating statistics)"""
+    granularity: Optional[float] = 0.005
+    """Graunularity while finding threshold candidates"""
     preload: Optional[bool] = False
-    """Multi model setting, number of victim models"""
-    multi: int = None
-    multi2: int = None
     """Pre-load data while launching attack (faster, if memory available)?"""
+    multi: Optional[int] = None
+    """Multi model setting (1), number of victim models"""
+    multi2: Optional[int] = None
+    """Multi model setting (2), number of victim models"""
     multi_class: Optional[bool] = False
     """Are the model logits > 1 dimension?"""
+    save: Optional[bool] = False
+    """Save predictions?"""
 
 
 @dataclass

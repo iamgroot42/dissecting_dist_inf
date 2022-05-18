@@ -226,6 +226,7 @@ class CensusSet(base.CustomDataset):
         self.targets = ch.from_numpy(targets).float()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
+
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]

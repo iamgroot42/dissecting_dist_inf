@@ -17,15 +17,15 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self,epoch:bool=False):
+    def __init__(self, epoch: bool = False):
         ratios = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
         super().__init__(name="RSNA-Boneage",
                          data_path="rsnabone/data",
                          models_path="models_boneage",
-                         properties=["gender"],
-                         values={"gender": ratios},
+                         properties=["gender", "age"],
+                         values={"gender": ratios, "age": ratios},
                          epoch_wise=epoch)
-        self.supported_properties = ["gender"]
+        self.supported_properties = ["gender", "age"]
 
     def get_model(self,
                   cpu: bool = False,
@@ -40,7 +40,7 @@ class DatasetInformation(base.DatasetInformation):
 
     def _stratified_df_split(df, second_ratio: float):
         # Get new column for stratification purposes
-        def fn(row): return str(row.gender) + str(row.label)
+        def fn(row): return str(row.gender) + str(row.age)
         col = df.apply(fn, axis=1)
         df = df.assign(stratify=col.values)
 
@@ -70,7 +70,7 @@ class DatasetInformation(base.DatasetInformation):
         df['gender'] = df['male'].map(lambda x: 0 if x else 1)
 
         # Binarize into bone-age <=132 and >132 (roughly-balanced split)
-        df['label'] = df['boneage'].map(lambda x: 1 * (x > 132))
+        df['age'] = df['boneage'].map(lambda x: 1 * (x > 132))
         df.dropna(inplace=True)
 
         # Drop temporary columns
@@ -152,9 +152,9 @@ class DatasetInformation(base.DatasetInformation):
             base_path, split_second_ratio=adv_ratio)
 
         def useful_stats(df):
-            print("%d | %.2f | %.2f" % (
+            print("Size: %d | Age ratio: %.2f | Gender ratio: %.2f" % (
                 len(df),
-                df["label"].mean(),
+                df["age"].mean(),
                 df["gender"].mean()))
 
         # Save these splits
@@ -183,7 +183,8 @@ class DatasetInformation(base.DatasetInformation):
 
 
 class BoneDataset(base.CustomDataset):
-    def __init__(self, df, argument=None, processed=False):
+    def __init__(self, df, argument=None, processed=False,
+                 classify: str = "age", property: str = "gender"):
         if processed:
             self.features = argument
         else:
@@ -191,6 +192,8 @@ class BoneDataset(base.CustomDataset):
         self.processed = processed
         self.df = df
         self.num_samples = len(self.df)
+        self.classify = classify
+        self.property = property
 
     def __getitem__(self, index):
         if self.processed:
@@ -201,10 +204,10 @@ class BoneDataset(base.CustomDataset):
             if self.transform:
                 X = self.transform(X)
 
-        y = ch.tensor(int(self.df['label'][index]))
-        gender = ch.tensor(int(self.df['gender'][index]))
+        y = ch.tensor(int(self.df[self.classify][index]))
+        prop_label = ch.tensor(int(self.df[self.property][index]))
 
-        return X, y, (gender)
+        return X, y, (prop_label)
 
 
 class _RawBoneWrapper:
@@ -252,12 +255,18 @@ class BoneWrapper(base.CustomDatasetWrapper):
         # Call parent constructor
         super().__init__(data_config, skip_data)
         self.sample_sizes = {
-            "adv": (700, 200),
-            "victim": (1400, 400)
+            "gender": {
+                "adv": (700, 200),
+                "victim": (1400, 400)
+            },
+            "age": {
+                "adv": (7000, 2000),
+                "victim": (1400, 400)
+            }
         }
 
     def _filter(self, x):
-        return x["gender"] == 1
+        return x[self.prop] == 1
 
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         info_object = DatasetInformation()
@@ -270,14 +279,16 @@ class BoneWrapper(base.CustomDatasetWrapper):
         # Get DF files for train, val
         df_train, df_val = self.info_object._get_df(self.split)
         # Filter to achieve desired ratios and sample-sizes
-        n_train, n_test = self.sample_sizes[self.split]
+        n_train, n_test = self.sample_sizes[self.prop][self.split]
         self.df_train = utils.heuristic(
             df_train, self._filter, self.ratio,
             n_train, class_imbalance=1.0,
+            class_col=self.classify,
             n_tries=300)
         self.df_val = utils.heuristic(
             df_val, self._filter, self.ratio,
             n_test, class_imbalance=1.0,
+            class_col=self.classify,
             n_tries=300)
         # Create datasets using these DF objects
         features = self._get_features()
@@ -301,7 +312,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
-        subfolder_prefix = os.path.join(self.split, str(self.ratio))
+        subfolder_prefix = os.path.join(self.split, self.prop, str(self.ratio))
         if train_config.extra_info and train_config.extra_info.get("full_model"):
             subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
