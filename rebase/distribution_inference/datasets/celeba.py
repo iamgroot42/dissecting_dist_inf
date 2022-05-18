@@ -308,7 +308,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         cwise_sample = prop_wise_subsample_sizes[self.classify][self.split][self.prop]
         if self.cwise_samples is not None:
-            self.cwise_sample = self.cwise_samples
+            cwise_sample = (self.cwise_samples, self.cwise_samples)
 
         # Create datasets
         ds_train = CelebACustomBinary(
