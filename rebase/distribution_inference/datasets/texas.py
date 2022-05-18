@@ -347,7 +347,8 @@ class TexasWrapper(base.CustomDatasetWrapper):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
-        self.num_features_drop = 3
+        if data_config.drop_senstive_cols:
+            self.num_features_drop += 3
 
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
@@ -357,10 +358,9 @@ class TexasWrapper(base.CustomDatasetWrapper):
                                 scale=self.scale)
 
     def get_loaders(self, batch_size: int,
-                    custom_limit=None,
                     shuffle: bool = True,
                     eval_shuffle: bool = False):
-        train_data, val_data, _ = self.load_data(custom_limit)
+        train_data, val_data, _ = self.load_data(self.cwise_samples)
         self.ds_train = TexasSet(*train_data, squeeze=self.squeeze)
         self.ds_val = TexasSet(*val_data, squeeze=self.squeeze)
         return super().get_loaders(batch_size, shuffle=shuffle,

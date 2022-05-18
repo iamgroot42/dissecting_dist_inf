@@ -63,8 +63,8 @@ class DatasetConfig(Serializable):
     """Use data augmentation?"""
     classify: Optional[str] = None
     """Which classification task to use"""
-    cwise_samples: Optional[dict] = None
-    """Mapping between property/task/split and number of samples"""
+    cwise_samples: Optional[int] = None
+    """Number of samples for train & test to use (override existing values)"""
     squeeze: Optional[bool] = False
     """Whether to squeeze label data (because of extra dimension)"""
 

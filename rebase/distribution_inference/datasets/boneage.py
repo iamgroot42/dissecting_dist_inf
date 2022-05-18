@@ -279,7 +279,10 @@ class BoneWrapper(base.CustomDatasetWrapper):
         # Get DF files for train, val
         df_train, df_val = self.info_object._get_df(self.split)
         # Filter to achieve desired ratios and sample-sizes
-        n_train, n_test = self.sample_sizes[self.prop][self.split]
+        if self.cwise_samples is None:
+            n_train, n_test = self.sample_sizes[self.prop][self.split]
+        else:
+            n_train, n_test = self.cwise_samples, self.cwise_samples
         self.df_train = utils.heuristic(
             df_train, self._filter, self.ratio,
             n_train, class_imbalance=1.0,

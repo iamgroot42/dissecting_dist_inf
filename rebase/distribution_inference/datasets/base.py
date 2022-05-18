@@ -208,7 +208,7 @@ class CustomDatasetWrapper:
                     break
 
                 # Skip models with model_num below train_config.offset
-                if not (mpath.startswith("adv_train_") or mpath == "full") and int(mpath.split("_")[0]) <= train_config.offset:
+                if not (mpath.startswith("adv_train_") or mpath == "full" or mpath == "drop") and int(mpath.split("_")[0]) <= train_config.offset:
                     continue
 
                 # Skip any directories we may stumble upon
@@ -281,7 +281,7 @@ class CustomDatasetWrapper:
                     break
 
                 # Skip models with model_num below train_config.offset
-                if not (mpath.startswith("adv_train_") or mpath == "full") and int(mpath.split("_")[0]) <= train_config.offset:
+                if not (mpath.startswith("adv_train_") or mpath == "full" or mpath == "drop") and int(mpath.split("_")[0]) <= train_config.offset:
                     continue
 
                 # Skip any directories we may stumble upon

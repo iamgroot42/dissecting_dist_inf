@@ -247,6 +247,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)
+
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
@@ -255,10 +256,9 @@ class CensusWrapper(base.CustomDatasetWrapper):
                                 scale=self.scale)
 
     def get_loaders(self, batch_size: int,
-                    custom_limit=None,
                     shuffle: bool = True,
                     eval_shuffle: bool = False):
-        train_data, val_data, _ = self.load_data(custom_limit)
+        train_data, val_data, _ = self.load_data(self.cwise_samples)
         self.ds_train = CensusSet(*train_data, squeeze=self.squeeze)
         self.ds_val = CensusSet(*val_data, squeeze=self.squeeze)
         return super().get_loaders(batch_size, shuffle=shuffle,

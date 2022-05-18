@@ -8,3 +8,4 @@ do*.sh
 plots/*
 # Torch weight files
 *.pth
+.vscode/*
