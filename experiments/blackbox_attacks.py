@@ -21,8 +21,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load_config", help="Specify config file",
         type=Path, required=True)
-    parser.add_argument('--gpu', 
-                        default='0,1,2,3', help="device number")  
+    parser.add_argument('--gpu',
+                        default='0,1,2,3', help="device number")
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     attack_config: AttackConfig = AttackConfig.load(
@@ -89,7 +89,7 @@ if __name__ == "__main__":
                 n_models=bb_attack_config.num_adv_models,
                 on_cpu=attack_config.on_cpu)
             # Get victim and adv predictions on loaders for first ratio
-            
+
             preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
@@ -132,12 +132,14 @@ if __name__ == "__main__":
                     preds_adv, preds_vic,
                     ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies,
-                    epochwise_version=attack_config.train_config.save_every_epoch,
-                    multi=bb_attack_config.multi,
-                    multi2=bb_attack_config.multi2)
+                    epochwise_version=attack_config.train_config.save_every_epoch)
 
                 logger.add_results(attack_type, prop_value,
                                    result[0][0], result[1][0])
+
+                # Save predictions, if requested
+                if bb_attack_config.save and attacker_obj.supports_saving_preds:
+                    save_dic = attacker_obj.wrap_preds_to_save(result)
 
     # Summarize results over runs, for each ratio and attack
     logger.save()
