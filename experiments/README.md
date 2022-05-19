@@ -13,17 +13,17 @@ Folder structure:
 
 ## Launching black-box attacks
 
-`python blackbox_attacks.py --load_config your_config_file.json -en name_for_your_experiment`
+`python blackbox_attacks.py --load_config your_config_file.json --en name_for_your_experiment`
 
 ## Launching Permutation-Invariant Network meta-classifier attacks
 
 ### For binary classification
 
-`python whitebox_attacks.py --load_config your_config_file.json -en name_for_your_experiment`
+`python whitebox_attacks.py --load_config your_config_file.json --en name_for_your_experiment`
 
 ### For direct regression
 
-`python whitebox_attacks_regression.py --load_config your_config_file.json -en name_for_your_experiment`
+`python whitebox_attacks_regression.py --load_config your_config_file.json --en name_for_your_experiment`
 
 ### For using regression variant (saved) to perform binary classification
 
@@ -33,11 +33,11 @@ Folder structure:
 
 ### For binary classification
 
-`python whitebox_aaffinity.py --load_config your_config_file.json -en name_for_your_experiment`
+`python whitebox_aaffinity.py --load_config your_config_file.json --en name_for_your_experiment`
 
 ### For direct regression
 
-`python whitebox_affinity_regression.py --load_config your_config_file.json -en name_for_your_experiment`
+`python whitebox_affinity_regression.py --load_config your_config_file.json --en name_for_your_experiment`
 
 ### For using regression variant (saved) to perform binary classification
 

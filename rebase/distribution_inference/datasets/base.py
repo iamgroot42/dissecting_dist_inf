@@ -342,3 +342,34 @@ class CustomDatasetWrapper:
 
         feature_vectors = np.array(feature_vectors, dtype='object')
         return dims, feature_vectors
+    def get_features(self,
+                           train_config: TrainConfig,
+                           attack_config: WhiteBoxAttackConfig,
+                           models,
+                           on_cpu: bool = False,
+                           shuffle: bool = True
+                           ):
+        """
+            Extract features for an array of models.
+            Make sure only the parts that are needed inside the model are extracted
+            Not compatible with epochwise yet
+        """
+        
+        feature_vectors = []
+        for m in models:
+            dims, feature_vector = get_weight_layers(
+                        model, attack_config)
+            feature_vectors.append(feature_vector)
+
+        if len(feature_vectors) == 0:
+            raise ValueError(
+                f"No models found")
+
+
+        if len(feature_vectors) != len(models):
+            warnings.warn(warning_string(
+                f"\nNumber of models loaded ({len(feature_vectors)}) is less than requested ({n_models})"))
+
+        feature_vectors = np.array(feature_vectors, dtype='object')
+        return dims, feature_vectors
+

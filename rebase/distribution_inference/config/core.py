@@ -161,6 +161,8 @@ class BlackBoxAttackConfig(Serializable):
     """Are the model logits > 1 dimension?"""
     save: Optional[bool] = False
     """Save predictions?"""
+    tune_final_threshold: Optional[bool] = False
+    """Tune final classification threshold, instead of a blind 0.5?"""
 
 
 @dataclass
@@ -185,6 +187,8 @@ class AffinityAttackConfig(Serializable):
     """Ignore logits (output) layer"""
     frac_retain_pairs: float = 1.0
     """What fraction of pairs to use when training classifier"""
+    better_retain_pair: bool = False
+    """Compute STD across different models, instead of over all models"""
     num_samples_use: int = None
     """How many examples to compute pair-wise similarities for"""
     layer_agnostic: Optional[bool] = False
@@ -297,3 +301,14 @@ class AttackConfig(Serializable):
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
     num_total_adv_models: Optional[int] = 1000
     """Total number of adversarial models to load"""
+
+@dataclass
+class CombineAttackConfig(AttackConfig):
+    """
+        Configuration for decision tree attack combining whitebox and blackbox
+    """
+    wb_path: str
+    """path for metaclassifier"""
+    save_bb: Optional[bool] = False
+    """save bb results independently"""
+    

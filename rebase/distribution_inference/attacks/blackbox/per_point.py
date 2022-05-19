@@ -1,6 +1,6 @@
 import numpy as np
 import torch as ch
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Union
 
 from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling,get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
@@ -26,14 +26,14 @@ class PerPointThresholdAttack(Attack):
         # TODO: Actually do that
 
         # Get data for first distribution
-        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1 = perpoint_threshold_test_per_dist(
+        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, final_thresholds_1,classes_use = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
             self.config,
             epochwise_version=epochwise_version,
             ground_truth=ground_truth[0])
         # Get data for second distribution
-        adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2 = perpoint_threshold_test_per_dist(
+        adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2, final_thresholds_2, classes_use = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_2,
             preds_vic.preds_on_distr_2,
             self.config,
@@ -43,11 +43,16 @@ class PerPointThresholdAttack(Attack):
         # Get best adv accuracies for both distributions and compare
         chosen_distribution = 0
         if np.max(adv_accs_1) > np.max(adv_accs_2):
-            adv_accs_use, adv_preds_use, victim_accs_use, victim_preds_use = adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1
+            adv_accs_use, adv_preds_use = adv_accs_1, adv_preds_1
+            victim_accs_use, victim_preds_use = victim_accs_1, victim_preds_1
+            final_thresholds_use = final_thresholds_1
+            
         else:
-            adv_accs_use, adv_preds_use, victim_accs_use, victim_preds_use = adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2
+            adv_accs_use, adv_preds_use = adv_accs_2, adv_preds_2
+            victim_accs_use, victim_preds_use = victim_accs_2, victim_preds_2
+            final_thresholds_use = final_thresholds_2
             chosen_distribution = 1
-
+          
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         chosen_ratio_index = np.argmax(adv_accs_use)
         if epochwise_version:
@@ -58,9 +63,10 @@ class PerPointThresholdAttack(Attack):
             victim_pred_use = victim_preds_use[chosen_ratio_index]
         adv_acc_use = adv_accs_use[chosen_ratio_index]
         adv_pred_use = adv_preds_use[chosen_ratio_index]
+        final_threshold_use = final_thresholds_use[chosen_ratio_index]
 
-        choice_information = (chosen_distribution, chosen_ratio_index)
-        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information]
+        choice_information = (chosen_distribution, chosen_ratio_index, final_threshold_use)
+        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information,classes_use]
 
     def wrap_preds_to_save(self, result: List):
         victim_preds = result[0][1]
@@ -72,12 +78,17 @@ class PerPointThresholdAttack(Attack):
 def _perpoint_threshold_on_ratio(
         preds_1, preds_2, classes,
         threshold, rule,
-        multi2: int = 0):
+        multi2: int = 0,
+        tune_final_threshold: Union[bool, float] = False):
     """
         Run perpoint threshold test (confidence)
         for a given "quartile" ratio
     """
     if multi2:
+        # TODO: Implement later
+        if tune_final_threshold:
+            raise NotImplementedError("Tuning final threshold not implemented for multi2")
+
         preds, acc = get_threshold_pred_multi(
             preds_1, preds_2, threshold, rule, get_pred=True,
             multi2=multi2)
@@ -86,11 +97,11 @@ def _perpoint_threshold_on_ratio(
         combined = np.concatenate((preds_1, preds_2), axis=1)
 
         # Compute accuracy for given predictions, thresholds, and rules
-        preds, acc = get_threshold_pred(
+        preds, acc, final_thresh = get_threshold_pred(
             combined, classes, threshold, rule, get_pred=True,
-            confidence=True)
+            tune_final_threshold=tune_final_threshold)
 
-    return 100 * acc, preds
+    return 100 * acc, preds, final_thresh
 
 
 def perpoint_threshold_test_per_dist(
@@ -160,7 +171,7 @@ def perpoint_threshold_test_per_dist(
             classes_victim = np.concatenate(
                 (np.zeros(pv1.shape[1]), np.ones(pv2.shape[1])))
 
-    adv_accs, victim_accs, victim_preds, adv_preds = [], [], [], []
+    adv_accs, victim_accs, victim_preds, adv_preds, adv_final_thress = [], [], [], [], []
     for ratio in config.ratios:
         # Get first <ratio> percentile of points
         leng = int(ratio * p1.shape[0])
@@ -174,28 +185,34 @@ def perpoint_threshold_test_per_dist(
                 pv1_use, pv2_use = pv1[:leng], pv2[:leng]
 
         # Compute accuracy for given data size on adversary's models
-        adv_acc, adv_pred = _perpoint_threshold_on_ratio(
-            p1_use, p2_use, classes_adv, thres_use, rs_use)
+        adv_acc, adv_pred, adv_final_thres = _perpoint_threshold_on_ratio(
+            p1_use, p2_use, classes_adv, thres_use, rs_use,
+            tune_final_threshold=config.tune_final_threshold,)
         adv_accs.append(adv_acc)
         if victim_preds_present:
             # Compute accuracy for given data size on victim's models
             if epochwise_version:
                 victim_acc, victim_pred = [], []
                 for (x, y, c) in zip(pv1_use, pv2_use, classes_victim):
-                    acc, pred = _perpoint_threshold_on_ratio(
-                        x, y, c, thres_use, rs_use,config.multi2)
+                    acc, pred, _ = _perpoint_threshold_on_ratio(
+                        x, y, c, thres_use, rs_use,
+                        config.multi2,
+                        tune_final_threshold=adv_final_thres)
                     victim_acc.append(acc)
                     victim_pred.append(pred)
             else:
-                victim_acc, victim_pred = _perpoint_threshold_on_ratio(
-                    pv1_use, pv2_use, classes_victim, thres_use, rs_use,config.multi2)
+                victim_acc, victim_pred, _ = _perpoint_threshold_on_ratio(
+                    pv1_use, pv2_use, classes_victim, thres_use, rs_use,
+                    config.multi2, tune_final_threshold=adv_final_thres)
             victim_accs.append(victim_acc)
             # Keep track of predictions on victim's models
         victim_preds.append(victim_pred)
         adv_preds.append(adv_pred)
+        adv_final_thress.append(adv_final_thres)
 
     adv_accs = np.array(adv_accs)
     adv_preds = np.array(adv_preds, dtype=object)
+    adv_final_thress = np.array(adv_final_thress)
     if victim_preds_present:
         victim_accs = np.array(victim_accs)
         victim_preds = np.array(victim_preds, dtype=object)
@@ -203,7 +220,7 @@ def perpoint_threshold_test_per_dist(
         if victim_preds_present:
             victim_preds = np.transpose(victim_preds, (1, 0, 2))
         victim_accs = victim_accs.T
-    return adv_accs, adv_preds, victim_accs, victim_preds
+    return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv,classes_victim)
 
 
 def np_compute_losses(preds, labels):

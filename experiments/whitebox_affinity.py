@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
             # Make affinity features for train (adv) models
             features_train = attacker_obj.make_affinity_features(
-                train_data[0], seed_data_loader)
+                train_data[0], seed_data_loader, labels=train_data[1])
             # Make affinity features for victim models
             features_test = attacker_obj.make_affinity_features(
                 test_data[0], seed_data_loader)

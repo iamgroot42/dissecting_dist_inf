@@ -1,4 +1,4 @@
-from typing import List, Tuple, Callable
+from typing import List, Tuple, Callable, Union
 import numpy as np
 from tqdm import tqdm
 
@@ -310,13 +310,13 @@ def find_threshold_pred(pred_1, pred_2,
     predictions_combined = np.concatenate((pred_1, pred_2), axis=1)
     ground_truth = np.concatenate(
         (np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1])))
-    acc = get_threshold_pred(predictions_combined, ground_truth, thres, rules)
+    acc, _ = get_threshold_pred(predictions_combined, ground_truth, thres, rules)
     return acc, thres, rules
 
 
 def get_threshold_pred(X, Y, threshold, rule,
                        get_pred: bool = False,
-                       confidence: bool = False):
+                       tune_final_threshold: Union[bool, float] = False):
     """
         Get distinguishing accuracy between distributions, given predictions
         for models on datapoints, and thresholds with prediction rules.
@@ -326,7 +326,6 @@ def get_threshold_pred(X, Y, threshold, rule,
             threshold: thresholds for prediction rules
             rule: prediction rules
             get_pred: whether to return predictions
-            confidence: currently no real value. May be removed soon
     """
     # X Shape: (n_samples, n_models)
     # Y Shape: (n_models)
@@ -343,25 +342,24 @@ def get_threshold_pred(X, Y, threshold, rule,
     for i in range(X.shape[1]):
         # Compute expected P[distribution=1] using given data, threshold, rules
         prob = np.average((X[:, i] <= threshold) == rule)
-
-        if confidence:
-            # Store direct average P[distribution=1]
-            res.append(prob)
-        else:
-            # If majority (>0.5) points indicate some distribution,
-            # it must be that one indeed
-            res.append(prob >= 0.5)
-
+        # Store direct average P[distribution=1]
+        res.append(prob)
     res = np.array(res)
-    if confidence:
-        acc = np.mean((res >= 0.5) == Y)
-    else:
-        acc = np.mean(res == Y)
+
+    # Default threshold value- 0.5
+    final_threshold = 0.5
+    if type(tune_final_threshold) != bool:
+        # Use provided threshold
+        final_threshold = tune_final_threshold
+    elif tune_final_threshold is True:
+        # Requested generation of threshold
+        final_threshold = find_max_acc_threshold(res, Y)
+    acc = np.mean((res >= final_threshold) == Y)
 
     # Return predictions, if requested
     if get_pred:
-        return res, acc
-    return acc
+        return res, acc, final_threshold
+    return acc, final_threshold
 
 
 def get_threshold_pred_multi(
@@ -431,3 +429,28 @@ def order_points(p1s, p2s):
 
     inds = np.argsort(abs_diff)
     return inds
+
+
+def find_max_acc_threshold(preds, labels, granularity=0.01):
+    """
+        Find the threshold that maximizes accuracy.
+        Assume preds are in [0, 1]
+    """
+    best_threshold = 0
+    best_acc = 0
+    qualifying_thresholds_list = []
+    # Should pick the threshold with maximum gap between predictions
+    # Not just the one that provides best accuracy
+    for threshold in np.arange(0.0, 1.0, granularity):
+        y_pred = (preds >= threshold).astype(int)
+        acc = np.mean(y_pred == labels)
+        if acc > best_acc:
+            qualifying_thresholds_list = []
+            best_acc = acc
+            best_threshold = threshold
+        if acc == best_acc:
+            qualifying_thresholds_list.append(threshold)
+    # Of all thresholds that have 'best' accuracy, pick median
+    # Most likely to be robust to changes in predictions
+    best_threshold = np.median(qualifying_thresholds_list)
+    return best_threshold

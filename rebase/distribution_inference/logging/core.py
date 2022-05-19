@@ -49,11 +49,15 @@ class Result:
 class AttackResult(Result):
     def __init__(self,
                  experiment_name: str,
-                 attack_config: AttackConfig):
+                 attack_config: AttackConfig,
+                 aname:str=None):
         # Infer path from data_config inside attack_config
         dataset_name = attack_config.train_config.data_config.name
         # Figure out if BB attack or WB attack
-        attack_name = "blackbox" if attack_config.white_box is None else "whitebox"
+        if aname:
+            attack_name = aname
+        else:
+            attack_name = "blackbox" if attack_config.white_box is None else "whitebox"
         save_path = get_save_path()
         path = Path(os.path.join(save_path, dataset_name, attack_name))
         super().__init__(path, experiment_name)
