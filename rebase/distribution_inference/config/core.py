@@ -189,6 +189,10 @@ class AffinityAttackConfig(Serializable):
     """What fraction of pairs to use when training classifier"""
     better_retain_pair: bool = False
     """Compute STD across different models, instead of over all models"""
+    optimal_data_identity: bool = False
+    """Heuristic to identify most useful samples"""
+    model_sample_for_optimal_data_identity: int = 50
+    """Number of models to sample to identify optimal points"""
     num_samples_use: int = None
     """How many examples to compute pair-wise similarities for"""
     layer_agnostic: Optional[bool] = False
