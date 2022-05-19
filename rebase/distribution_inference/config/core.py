@@ -187,6 +187,8 @@ class AffinityAttackConfig(Serializable):
     """Ignore logits (output) layer"""
     frac_retain_pairs: float = 1.0
     """What fraction of pairs to use when training classifier"""
+    better_retain_pair: bool = False
+    """Compute STD across different models, instead of over all models"""
     num_samples_use: int = None
     """How many examples to compute pair-wise similarities for"""
     layer_agnostic: Optional[bool] = False
