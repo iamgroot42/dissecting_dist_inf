@@ -33,7 +33,7 @@
             1.0
         ],
         "preload": true,
-        "multi2": 50
+        "multi": 50
     },
     "values": [
         0.2,
