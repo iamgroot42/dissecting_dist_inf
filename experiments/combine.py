@@ -175,6 +175,7 @@ if __name__ == "__main__":
             [features_vic_1, features_vic_2],
             batch_size=wb_attack_config.batch_size,
             shuffle=False,
+            wrap_with_loader = False,
             epochwise_version=attack_config.train_config.save_every_epoch)
             _, features_adv_1 = ds_adv_1.get_features(
             train_config,
@@ -186,6 +187,7 @@ if __name__ == "__main__":
             models = models_adv_2)
             wb_train_loader = wrap_into_loader(
             [features_adv_1, features_adv_2],
+             wrap_with_loader = False,
             batch_size=wb_attack_config.batch_size,
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch)
