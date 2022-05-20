@@ -249,14 +249,14 @@ def get_threshold_acc_multi(X1, X2, threshold, multi2: int, rule=None):
     # For first set of models
     for i in range(l1):
         # For random sample of models
-        x = X1[np.random.permutation(l1)[:multi2]]
+        x = X1[np.random.permutation(l1)[:1]]#multi2]]
         # Try both classification rules
         X1_use1.append(np.mean(x >= threshold) >= 0.5)
         X1_use2.append(np.mean(x <= threshold) >= 0.5)
     # For second set of models
     for i in range(l2):
         # For random sample of models
-        x = X2[np.random.permutation(l2)[:multi2]]
+        x = X2[np.random.permutation(l2)[:1]]#multi2]]
         # Try both classification rules
         X2_use1.append(np.mean(x >= threshold) >= 0.5)
         X2_use2.append(np.mean(x <= threshold) >= 0.5)
@@ -396,10 +396,10 @@ def get_threshold_pred_multi(
     res1 = np.array(res1)
     res2 = np.array(res2)
     for i in range(l1):
-        x = res1[np.random.permutation(l1)[:multi2]]
+        x = res1[np.random.permutation(l1)[:1]]#multi2]]
         r1.append(np.mean(x) >= 0.5)
     for i in range(l1):
-        x = res2[np.random.permutation(l2)[:multi2]]
+        x = res2[np.random.permutation(l2)[:1]]#multi2]]
         r2.append(np.mean(x) >= 0.5)
     r1 = np.array(r1)
     r2 = np.array(r2)

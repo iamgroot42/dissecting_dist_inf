@@ -307,7 +307,7 @@ class CombineAttackConfig(AttackConfig):
     """
         Configuration for decision tree attack combining whitebox and blackbox
     """
-    wb_path: str
+    wb_path: Optional[str] = None
     """path for metaclassifier"""
     save_bb: Optional[bool] = False
     """save bb results independently"""

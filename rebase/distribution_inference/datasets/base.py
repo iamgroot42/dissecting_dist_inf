@@ -345,9 +345,7 @@ class CustomDatasetWrapper:
     def get_features(self,
                            train_config: TrainConfig,
                            attack_config: WhiteBoxAttackConfig,
-                           models,
-                           on_cpu: bool = False,
-                           shuffle: bool = True
+                           models
                            ):
         """
             Extract features for an array of models.
@@ -358,7 +356,7 @@ class CustomDatasetWrapper:
         feature_vectors = []
         for m in models:
             dims, feature_vector = get_weight_layers(
-                        model, attack_config)
+                        m, attack_config)
             feature_vectors.append(feature_vector)
 
         if len(feature_vectors) == 0:

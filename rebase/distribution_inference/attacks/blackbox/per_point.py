@@ -92,6 +92,7 @@ def _perpoint_threshold_on_ratio(
         preds, acc = get_threshold_pred_multi(
             preds_1, preds_2, threshold, rule, get_pred=True,
             multi2=multi2)
+        final_thresh = None
     else:
         # Combine predictions into one vector
         combined = np.concatenate((preds_1, preds_2), axis=1)
@@ -188,6 +189,8 @@ def perpoint_threshold_test_per_dist(
         adv_acc, adv_pred, adv_final_thres = _perpoint_threshold_on_ratio(
             p1_use, p2_use, classes_adv, thres_use, rs_use,
             tune_final_threshold=config.tune_final_threshold,)
+        if not config.tune_final_threshold:
+            adv_final_thres = config.tune_final_threshold
         adv_accs.append(adv_acc)
         if victim_preds_present:
             # Compute accuracy for given data size on victim's models

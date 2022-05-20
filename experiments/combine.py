@@ -5,23 +5,13 @@ from distribution_inference.datasets.utils import get_dataset_wrapper, get_datas
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
-from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig, CombineAttackConfig
-from distribution_inference.utils import flash_utils
+from distribution_inference.config import DatasetConfig, WhiteBoxAttackConfig, BlackBoxAttackConfig, TrainConfig, CombineAttackConfig
+from distribution_inference.utils import flash_utils, ensure_dir_exists
 from distribution_inference.logging.core import AttackResult
-from distribution_inference.attacks.whitebox.utils import get_attack, wrap_into_loader
+from distribution_inference.attacks.whitebox.utils import  wrap_into_loader
+import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
-def visualize_dt_contour(clf):
-    """
-        Given decision tree that works on 2 input features in [0, 1]
-        visualize its decision boundary. Will be helpful in visualizing
-        just how much importance it gives to each of the two features.
-    """
-    granularity = 0.01
-    xx, yy = np.meshgrid(np.arange(0, 1 + granularity, granularity), np.arange(0, 1 + granularity, granularity))
-    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
-    plt.contourf(xx, yy, Z)
-    plt.savefig('dt_contour.png')
+from joblib import load, dump
 
 #a bit messy in this file. Might need to move something out to functions in rebase
 if __name__ == "__main__":
@@ -95,10 +85,9 @@ if __name__ == "__main__":
     dims, features_vic_1 = ds_vic_1.get_features(
         train_config,
         wb_attack_config,
-        models = models_vic_1,
-        on_cpu=attack_config.on_cpu,
-        shuffle=False,
-        epochwise_version=attack_config.train_config.save_every_epoch)
+        models = models_vic_1)
+    tpath = "./trees"
+    ensure_dir_exists(tpath)
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -110,10 +99,7 @@ if __name__ == "__main__":
         # Load victim models for other value
         models_vic_2 = ds_vic_2.get_models(
             train_config,
-            n_models=attack_config.num_victim_models,
-            on_cpu=attack_config.on_cpu,
-            shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+            n_models=attack_config.num_victim_models)
         attack_model_path_dir = os.path.join(attack_config.wb_path, str(prop_value))
         attack_model_paths = []
         for a in os.listdir(attack_model_path_dir):
@@ -161,7 +147,7 @@ if __name__ == "__main__":
             )
 
            #actually only perpoint
-            for attack_type in [bb_attack_config.attack_type]:
+            for attack_type in bb_attack_config.attack_type:
                 # Create attacker object
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
                 
@@ -183,10 +169,7 @@ if __name__ == "__main__":
             _, features_vic_2 = ds_vic_2.get_features(
             train_config,
             wb_attack_config,
-            models  = models_vic_2,
-            on_cpu=attack_config.on_cpu,
-            shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+            models  = models_vic_2)
             
             wb_test_loader = wrap_into_loader(
             [features_vic_1, features_vic_2],
@@ -196,24 +179,18 @@ if __name__ == "__main__":
             _, features_adv_1 = ds_adv_1.get_features(
             train_config,
             wb_attack_config,
-            models = models_adv_1,
-            on_cpu=attack_config.on_cpu,
-            shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+            models = models_adv_1)
             _, features_adv_2 = ds_adv_2.get_features(
             train_config,
             wb_attack_config,
-            models = models_adv_2,
-            on_cpu=attack_config.on_cpu,
-            shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+            models = models_adv_2)
             wb_train_loader = wrap_into_loader(
             [features_adv_1, features_adv_2],
             batch_size=wb_attack_config.batch_size,
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch)
             # Create attacker object
-            attacker_obj = get_attack(wb_attack_config.attack)(
+            attacker_obj = wu.get_attack(wb_attack_config.attack)(
                 dims, wb_attack_config)
 
             # Load model
@@ -230,6 +207,7 @@ if __name__ == "__main__":
             #decision tree
             clf = DecisionTreeClassifier(max_depth=2)
             clf.fit(preds_adv, labels_adv)
+            dump(clf,os.path.join(tpath,str(prop_value)))
             logger.add_results("Combine", prop_value,
                                 clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack

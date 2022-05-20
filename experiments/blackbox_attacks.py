@@ -40,7 +40,6 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(attack_config)
-
     # Define logger
     logger = AttackResult(args.en, attack_config)
 
@@ -68,7 +67,7 @@ if __name__ == "__main__":
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
             data_config, prop_value=prop_value)
-
+        
         # Create new DS object for both and victim (for other ratio)
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
