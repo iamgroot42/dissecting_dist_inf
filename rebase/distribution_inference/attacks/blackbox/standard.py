@@ -90,7 +90,7 @@ class LossAndThresholdAttack(Attack):
             preds_2 = []
             for i in range(l):
                 # Pick 'multi2' random samples
-                sampling = np.random.permutation(l)[:1]#self.config.multi2]
+                sampling = np.random.permutation(l)[:self.config.multi2]
                 # Equivalent to majority voting on each model's prediction
                 preds_1.append(
                     np.mean(acc_1[0][r, sampling] > acc_2[0][r, sampling]) >= 0.5)
