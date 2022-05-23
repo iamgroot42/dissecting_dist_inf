@@ -7,9 +7,9 @@
             "num_final": 16,
             "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
-            "shared_layerwise_params": true,
-            "perpoint_based_selection": 50
-        }
+            "shared_layerwise_params": true
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {
@@ -23,7 +23,7 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 1,
+    "tries": 5,
     "black_box": {
         "granularity" : 0.05,
         "num_adv_models": 50,
@@ -47,13 +47,8 @@
         0.1,
         0.2,
         0.3,
-        0.4,
-        0.6,
-        0.7,
-        0.8,
-        0.9,
-        1.0
+        0.4
+        
     ],
-    "wb_path": "/p/adversarialml/as9rw/amc_for_testing/sex",
-    "save_bb" : true
+    "wb_path": "/p/adversarialml/as9rw/amc_models_for_yifu/sex"
 }
