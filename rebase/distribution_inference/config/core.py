@@ -311,4 +311,7 @@ class CombineAttackConfig(AttackConfig):
     """path for metaclassifier"""
     save_bb: Optional[bool] = False
     """save bb results independently"""
-    
+    save_data: Optional[bool] = False
+    """save model, data point, and predictions used by bb"""
+    restore_data: Optional[str] = None
+    """path to restore bb"""

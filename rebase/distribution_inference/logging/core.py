@@ -5,7 +5,7 @@ from copy import deepcopy
 from datetime import datetime
 import os
 from simple_parsing.helpers import Serializable
-
+import pickle
 from distribution_inference.config import AttackConfig
 from distribution_inference.utils import get_save_path
 
@@ -17,13 +17,19 @@ class Result:
         self.start = datetime.now()
         self.dic = {'name': name, 'start time': str(self.start)}
 
-    def save(self):
+    def save(self, jsob:bool=True):
         self.save_t = datetime.now()
         self.dic['save time'] = str(self.save_t)
-        save_p = self.path.joinpath(f"{self.name}.json")
+        
         self.path.mkdir(parents=True, exist_ok=True)
-        with save_p.open('w') as f:
-            json.dump(self.dic, f)
+        if jsob:
+            save_p = self.path.joinpath(f"{self.name}.json")
+            with save_p.open('w') as f:
+                json.dump(self.dic, f)
+        else:
+            save_p = self.path.joinpath(f"{self.name}.p")
+            with save_p.open('w') as f:
+                pickle.dump(self.dic,f)
 
     def not_empty_dic(self, dic: dict, key):
         if key not in dic:
@@ -44,8 +50,7 @@ class Result:
             k = keys.pop(0)
             self.not_empty_dic(dic, k)
             self.check_rec(dic[k], keys)
-
-
+    
 class AttackResult(Result):
     def __init__(self,
                  experiment_name: str,
@@ -75,3 +80,27 @@ class AttackResult(Result):
             self.dic['result'][attack][prop]['victim_acc'].append(vacc)
         else:
             self.dic['result'][attack][prop]['victim_acc'] = [vacc]
+
+class IntermediateResult(Result):
+    def __init__(self,
+                 name: str,
+                 attack_config: AttackConfig):
+        dataset_name = attack_config.train_config.data_config.name
+        save_path = get_save_path()
+        path = Path(os.path.join(save_path, dataset_name, "Intermediate_result"))
+        super().__init__(path, name)
+        self.dic["attack_config"] = deepcopy(attack_config)
+
+    def _add_results(self, item:str,value,trial:int):
+        self.check_rec(self.dic, [item, prop])
+        self.dic[item][prop][trial] = value
+    
+    def add_model_name(self,names:List[str],trial:int):
+        _add_results("model_names",names,trial)
+
+    def add_points(self):
+        pass
+    def add_bb(self,preds:List,labels:List,trial:int):
+        _add_results("blackbox",(preds,labels),trial)
+
+    def add_model(self,model):
