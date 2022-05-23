@@ -8,7 +8,7 @@ from distribution_inference.attacks.whitebox.utils import wrap_into_loader, get_
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils, warning_string
 from distribution_inference.logging.core import AttackResult
-from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader
+from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader, identify_relevant_points, make_ds_and_loader
 
 
 if __name__ == "__main__":
@@ -119,8 +119,16 @@ if __name__ == "__main__":
                 wb_config=wb_attack_config,
                 wrap_with_loader=False
             )
+
+            # Create attacker object
+            attacker_obj = get_attack(wb_attack_config.attack)(
+                None, wb_attack_config)
+
             # Get seed-data
             if wb_attack_config.affinity_config.perpoint_based_selection > 0:
+                if wb_attack_config.affinity_config.optimal_data_identity:
+                    raise NotImplementedError("optimal_data_identity not supported with per-point selection yet")
+
                 print(warning_string("Using Per-Point criteria for seed-data selection"))
                 # Take a random sample of adv models
                 models_adv_1_sample = np.random.choice(
@@ -138,14 +146,41 @@ if __name__ == "__main__":
                     num_samples_use=wb_attack_config.affinity_config.num_samples_use,
                     adv_models=[models_adv_1_sample, models_adv_2_sample])
             else:
-                seed_data_ds, seed_data_loader = get_seed_data_loader(
-                    [ds_adv_1, ds_adv_2],
-                    wb_attack_config,
-                    num_samples_use=wb_attack_config.affinity_config.num_samples_use)
+                # Identify optimal data to use (for features) using heuristic
+                if wb_attack_config.affinity_config.optimal_data_identity:
+                    # Collect all data
+                    seed_data_all_ds, seed_data_all_loader, seed_data_all = get_seed_data_loader(
+                        [ds_adv_1, ds_adv_2],
+                        wb_attack_config,
+                        also_get_raw_data=True)
+                    # Take random samples from both models
+                    models_adv_1_sample = np.random.choice(
+                        models_adv_1,
+                        wb_attack_config.affinity_config.model_sample_for_optimal_data_identity,
+                        replace=False)
+                    models_adv_2_sample = np.random.choice(
+                        models_adv_2,
+                        wb_attack_config.affinity_config.model_sample_for_optimal_data_identity,
+                        replace=False)
+                    models_adv_sample = np.concatenate(
+                        (models_adv_1_sample, models_adv_2_sample), axis=0, dtype=object)
+                    # Use those to determine 'optimal' data
+                    all_features = attacker_obj.make_affinity_features(
+                        models_adv_sample, seed_data_all_loader,
+                        return_raw_features=True)
+                    wanted_ids = identify_relevant_points(
+                        all_features,
+                        len(seed_data_all_ds),
+                        wb_attack_config.affinity_config.num_samples_use)
+                    # Create loaders corresponding to these datapoints
+                    seed_data_ds, seed_data_loader = make_ds_and_loader(
+                        seed_data_all, wb_attack_config, wanted_ids)
+                else:
+                    seed_data_ds, seed_data_loader = get_seed_data_loader(
+                        [ds_adv_1, ds_adv_2],
+                        wb_attack_config,
+                        num_samples_use=wb_attack_config.affinity_config.num_samples_use)
 
-            # Create attacker object
-            attacker_obj = get_attack(wb_attack_config.attack)(
-                None, wb_attack_config)
             # Save seed-data in attack object, since this is needed
             # To use model later in evaluation mode, if loaded from memory
             attacker_obj.register_seed_data(seed_data_ds)

@@ -69,7 +69,8 @@ class AffinityAttack(Attack):
                                models: List[BaseModel],
                                loader: ch.utils.data.DataLoader,
                                detach: bool = True,
-                               labels: bool = None):
+                               labels: bool = None,
+                               return_raw_features: bool = False):
         """
             Construct affinity matrix per layer based on affinity scores
             for a given model. Model them in a way that does not
@@ -84,8 +85,8 @@ class AffinityAttack(Attack):
                 model = model.cuda()
 
             affinity_feature, num_features, num_logit_features, num_layers = self._make_affinity_feature(
-                model, loader,
-                detach=detach)
+                    model, loader, detach=detach,
+                    point_wise_scores=return_raw_features)
 
             # Done with model, shift back to CPU
             model = model.cpu()
@@ -93,6 +94,8 @@ class AffinityAttack(Attack):
             all_features.append(affinity_feature)
 
         seed_data = all_features
+        if return_raw_features:
+            return seed_data
 
         # Retain only a fraction of all pairs
         # First-time (on train data)
@@ -168,7 +171,8 @@ class AffinityAttack(Attack):
     def _make_affinity_feature(self,
                                model: BaseModel,
                                loader: ch.utils.data.DataLoader,
-                               detach: bool = True):
+                               detach: bool = True,
+                               point_wise_scores: bool = False):
         """
             Construct affinity matrix per layer based on affinity scores
             for a given model. Model them in a way that does not
@@ -205,11 +209,17 @@ class AffinityAttack(Attack):
                     pairs_so_far += len(others)
                     others = others[relevant_pairs]
                 if len(others) != 0:
-                    scores += cos(ch.unsqueeze(feature[j], 0), others)
+                    features_now = cos(ch.unsqueeze(feature[j], 0), others)
+                    scores += features_now
             stacked_scores = ch.stack(scores, 0).cpu()
             # if self.retained_pairs is not None:
             #     stacked_scores = stacked_scores[self.retained_pairs]
             layerwise_features.append(stacked_scores)
+
+        # 'point_wise_scores' does not look at logits
+        # So return right away'
+        if point_wise_scores:
+            return layerwise_features, None, None, None
 
         num_layers = len(layerwise_features)
         # If asked to use logits and binary case, convert them to probability scores
