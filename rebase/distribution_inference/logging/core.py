@@ -91,16 +91,19 @@ class IntermediateResult(Result):
         super().__init__(path, name)
         self.dic["attack_config"] = deepcopy(attack_config)
 
-    def _add_results(self, item:str,value,trial:int):
+    def _add_results(self, item:str,prop,value,trial:int):
         self.check_rec(self.dic, [item, prop])
         self.dic[item][prop][trial] = value
     
-    def add_model_name(self,names:List[str],trial:int):
-        _add_results("model_names",names,trial)
+    def add_model_name(self,prop,names:List,trial:int):
+        self._add_results("model_names",prop,names,trial)
+    
+    def add_points(self,prop,points:List,trial:int):
+        self._add_results("adv points",prop,points,trial)
+    def add_bb(self,prop,model_preds,preds,labels,trial:int):
+        self._add_results("blackbox",prop,(models_preds,preds,labels),trial)
 
-    def add_points(self):
-        pass
-    def add_bb(self,preds:List,labels:List,trial:int):
-        _add_results("blackbox",(preds,labels),trial)
-
-    def add_model(self,model):
+    def add_model(self,prop,model,trial:int):
+        self._add_results("model",prop,model,trial)
+    def save(self):
+        super.save(jsob=False)

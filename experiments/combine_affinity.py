@@ -8,7 +8,7 @@ from distribution_inference.attacks.blackbox.core import PredictionsOnDistributi
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, WhiteBoxAttackConfig, BlackBoxAttackConfig, TrainConfig, CombineAttackConfig
 from distribution_inference.utils import flash_utils, ensure_dir_exists,warning_string
-from distribution_inference.logging.core import AttackResult
+from distribution_inference.logging.core import AttackResult, IntermediateResult
 from distribution_inference.attacks.whitebox.utils import  wrap_into_loader
 import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
@@ -64,6 +64,7 @@ if __name__ == "__main__":
 
     # Define logger
     logger = AttackResult(args.en, attack_config,aname = "Combine")
+    DataLogger = IntermediateResult(args.en,attack_config)
     if attack_config.save_bb:
         bb_logger = AttackResult(args.en+"_bb", attack_config,aname = "blackbox")
     # Get dataset wrapper
@@ -79,12 +80,13 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
     # Load victim models for first value
-    models_vic_1 = ds_vic_1.get_models(
+    models_vic_1,vic1_names = ds_vic_1.get_models(
         train_config,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
         shuffle=False,
-        epochwise_version=attack_config.train_config.save_every_epoch)
+        epochwise_version=attack_config.train_config.save_every_epoch,
+                get_names=True)
     
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -95,9 +97,10 @@ if __name__ == "__main__":
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
         # Load victim models for other value
-        models_vic_2 = ds_vic_2.get_models(
+        models_vic_2 ,vic2_names= ds_vic_2.get_models(
             train_config,
-            n_models=attack_config.num_victim_models)
+            n_models=attack_config.num_victim_models,
+                get_names=True)
         attack_model_path_dir = os.path.join(attack_config.wb_path, str(prop_value))
         attack_model_paths = []
         for a in os.listdir(attack_model_path_dir):
@@ -105,17 +108,19 @@ if __name__ == "__main__":
         #in case the number of trials doesn't match the # of metaclassifier
         for (t,attack_model_path) in zip(range(attack_config.tries),attack_model_paths):
             print("Ratio: {}, Trial: {}".format(prop_value,t))
-            models_adv_1 = ds_adv_1.get_models(
+            models_adv_1,adv1_names = ds_adv_1.get_models(
                 train_adv_config,
                 n_models=bb_attack_config.num_adv_models,
-                on_cpu=attack_config.on_cpu)
-            models_adv_2 = ds_adv_2.get_models(
+                on_cpu=attack_config.on_cpu,
+                get_names=True)
+            models_adv_2, adv2_names = ds_adv_2.get_models(
                 train_adv_config,
                 n_models=bb_attack_config.num_adv_models,
-                on_cpu=attack_config.on_cpu)
+                on_cpu=attack_config.on_cpu,
+                get_names=True)
             # Get victim and adv predictions on loaders for first ratio
             #only support default random selection of points
-            seed_data_ds, seed_data_loader,adv_l = get_seed_data_loader(
+            seed_data_ds, seed_data_loader,adv_l,raw_data = get_seed_data_loader(
                         [ds_adv_1, ds_adv_2],
                         wb_attack_config,
                         num_samples_use=wb_attack_config.affinity_config.num_samples_use)
@@ -137,11 +142,11 @@ if __name__ == "__main__":
                 multi_class=bb_attack_config.multi_class
             )
             # Wrap predictions to be used by the attack
-            preds_adv = PredictionsOnDistributions(
+            bbm_preds_adv = PredictionsOnDistributions(
                 preds_on_distr_1=preds_adv_on_1,
                 preds_on_distr_2=preds_adv_on_2
             )
-            preds_vic = PredictionsOnDistributions(
+            bbm_preds_vic = PredictionsOnDistributions(
                 preds_on_distr_1=preds_vic_on_1,
                 preds_on_distr_2=preds_vic_on_2
             )
@@ -153,7 +158,7 @@ if __name__ == "__main__":
                 
                 # Launch attack
                 result = attacker_obj.attack(
-                    preds_adv, preds_vic,
+                    bbm_preds_adv, bbm_preds_vic,
                     ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies,
                     epochwise_version=attack_config.train_config.save_every_epoch)
@@ -224,10 +229,17 @@ if __name__ == "__main__":
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 get_preds = True)
             #decision tree
+            preds_adv = np.concatenate((wb_preds_adv, bb_preds_adv), axis=1)
+            preds_vic = np.concatenate((wb_preds_vic, bb_preds_vic), axis=1)
             clf = DecisionTreeClassifier(max_depth=2)
             clf.fit(preds_adv, labels_adv)
-            dump(clf,os.path.join(tpath,str(prop_value)))
+            #log results
+            DataLogger.add_model_name(prop_value,(adv1_names,adv2_names),t)
+            DataLogger.add_model(prop_value,clf,t)
+            DataLogger.add_bb(prop_value,bbm_preds_adv,bb_preds_adv,labels_adv,t)
+            DataLogger.add_points(prop_value,raw_data)
             logger.add_results("Combine", prop_value,
                                 clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack
     logger.save()
+    DataLogger.save()

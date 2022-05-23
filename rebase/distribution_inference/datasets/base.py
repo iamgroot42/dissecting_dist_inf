@@ -190,7 +190,8 @@ class CustomDatasetWrapper:
                    n_models: int = None,
                    on_cpu: bool = False,
                    shuffle: bool = True,
-                   epochwise_version: bool = False):
+                   epochwise_version: bool = False,
+                   get_names:bool=False):
         """
             Load models. Either return list of requested models, or a 
             list of list of models, where each nested list is the model's
@@ -201,6 +202,7 @@ class CustomDatasetWrapper:
             train_config, n_models, shuffle)
         i = 0
         models = []
+        mp = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
             for mpath in model_paths:
                 # Break reading if requested number of models is reached
@@ -229,6 +231,7 @@ class CustomDatasetWrapper:
                                 models_inside.append(model)
                             models.append(models_inside)
                             i += 1
+                            mp.append(os.path.join(mpath,mpath_inside))
                     else:
                         # Not a folder- we want to look only at epoch_wise information
                         continue
@@ -239,6 +242,7 @@ class CustomDatasetWrapper:
                         folder_path, mpath), on_cpu=on_cpu)
                     models.append(model)
                     i += 1
+                    mp.append(mpath)
 
                 pbar.update()
 
@@ -255,8 +259,10 @@ class CustomDatasetWrapper:
         if n_models is not None and len(models) != n_models:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))
-
-        return np.array(models, dtype='object')
+        if get_names:
+            return np.array(models, dtype='object'),mp
+        else:
+            return np.array(models, dtype='object')
 
     def get_model_features(self,
                            train_config: TrainConfig,

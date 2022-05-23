@@ -72,7 +72,7 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
     if also_get_raw_data:
         _, l1 = make_ds_and_loader(all_data[0], attack_config)
         _, l2 = make_ds_and_loader(all_data[1], attack_config)
-        return basic_ds, loader, (l1,l2)
+        return basic_ds, loader, (l1,l2),all_data
     return basic_ds, loader
 
 
