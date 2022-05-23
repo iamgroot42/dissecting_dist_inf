@@ -142,7 +142,33 @@ def _get_preds_for_vic_and_adv(
         multi_class=multi_class)
     assert np.all(ground_truth == ground_truth_repeat), "Val loader is shuffling data!"
     return preds_vic, preds_adv, ground_truth
-
+def get_vic_adv_preds_on_distr_seed(
+    models_vic: Tuple[List[nn.Module], List[nn.Module]],
+    models_adv: Tuple[List[nn.Module], List[nn.Module]],
+    loader,
+        epochwise_version: bool = False,
+        preload: bool = False,
+        multi_class: bool = False    ):
+    preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
+        models_vic[0], models_adv[0], loader,
+        epochwise_version=epochwise_version,
+        preload=preload,
+        multi_class=multi_class)
+    # Get predictions for second set of models
+    preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
+        models_vic[1], models_adv[1], loader,
+        epochwise_version=epochwise_version,
+        preload=preload,
+        multi_class=multi_class)
+    adv_preds = PredictionsOnOneDistribution(
+        preds_property_1=preds_adv_1,
+        preds_property_2=preds_adv_2
+    )
+    vic_preds = PredictionsOnOneDistribution(
+        preds_property_1=preds_vic_1,
+        preds_property_2=preds_vic_2
+    )
+    return (adv_preds, vic_preds, ground_truth)
 
 def get_vic_adv_preds_on_distr(
         models_vic: Tuple[List[nn.Module], List[nn.Module]],

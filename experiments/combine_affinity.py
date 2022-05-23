@@ -1,18 +1,19 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
 import os
+import numpy as np
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
-from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
+from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr,get_vic_adv_preds_on_distr_seed
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, WhiteBoxAttackConfig, BlackBoxAttackConfig, TrainConfig, CombineAttackConfig
-from distribution_inference.utils import flash_utils, ensure_dir_exists
+from distribution_inference.utils import flash_utils, ensure_dir_exists,warning_string
 from distribution_inference.logging.core import AttackResult
 from distribution_inference.attacks.whitebox.utils import  wrap_into_loader
 import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
 from joblib import load, dump
-
+from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader, identify_relevant_points, make_ds_and_loader
 #a bit messy in this file. Might need to move something out to functions in rebase
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -52,6 +53,8 @@ if __name__ == "__main__":
     if not wb_attack_config:
         raise ValueError(
             "This script need whitebox config")
+    if wb_attack_config.attack!="affinity":
+        raise ValueError("This script only takes affinity attack")
     # Make sure regression config is not being used here
     if wb_attack_config.regression_config:
         raise ValueError(
@@ -82,12 +85,7 @@ if __name__ == "__main__":
         on_cpu=attack_config.on_cpu,
         shuffle=False,
         epochwise_version=attack_config.train_config.save_every_epoch)
-    dims, features_vic_1 = ds_vic_1.get_features(
-        train_config,
-        wb_attack_config,
-        models = models_vic_1)
-    tpath = "./trees"
-    ensure_dir_exists(tpath)
+    
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -116,22 +114,24 @@ if __name__ == "__main__":
                 n_models=bb_attack_config.num_adv_models,
                 on_cpu=attack_config.on_cpu)
             # Get victim and adv predictions on loaders for first ratio
-
-            preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
+            #only support default random selection of points
+            seed_data_ds, seed_data_loader,adv_l = get_seed_data_loader(
+                        [ds_adv_1, ds_adv_2],
+                        wb_attack_config,
+                        num_samples_use=wb_attack_config.affinity_config.num_samples_use)
+            preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr_seed(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
-                ds_obj=ds_adv_1,
-                batch_size=bb_attack_config.batch_size,
+                loader = adv_l[0],
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 preload=bb_attack_config.preload,
                 multi_class=bb_attack_config.multi_class
             )
             # Get victim and adv predictions on loaders for second ratio
-            preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
+            preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr_seed(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
-                ds_obj=ds_adv_2,
-                batch_size=bb_attack_config.batch_size,
+                loader=adv_l[1],
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 preload=bb_attack_config.preload,
                 multi_class=bb_attack_config.multi_class
@@ -166,10 +166,28 @@ if __name__ == "__main__":
                 bb_preds_adv = result[1][1]
                 bb_preds_vic = result[0][1]
                #done with bb, now wb
-            _, features_vic_2 = ds_vic_2.get_features(
-            train_config,
-            wb_attack_config,
-            models  = models_vic_2)
+            attacker_obj = wu.get_attack(wb_attack_config.attack)(
+                None, wb_attack_config)
+            attacker_obj.register_seed_data(seed_data_ds)
+            adv_test = wrap_into_loader(
+            [models_adv_1, models_adv_2],
+            batch_size=wb_attack_config.batch_size,
+            shuffle=False,
+            wrap_with_loader=False
+            )
+            vic_test =  wrap_into_loader(
+            [models_vic_1, models_vic_2],
+            batch_size=wb_attack_config.batch_size,
+            shuffle=False,
+            wrap_with_loader=False
+            )
+            # Make affinity features for train (adv) models
+            features_adv = attacker_obj.make_affinity_features(
+                adv_test[0], seed_data_loader, labels=adv_test[1])
+            # Make affinity features for victim models
+            features_vic = attacker_obj.make_affinity_features(
+                vic_test[0], seed_data_loader)
+
             
             wb_test_loader = wrap_into_loader(
             [features_vic_1, features_vic_2],
@@ -192,8 +210,7 @@ if __name__ == "__main__":
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch)
             # Create attacker object
-            attacker_obj = wu.get_attack(wb_attack_config.attack)(
-                dims, wb_attack_config)
+           
 
             # Load model
             attacker_obj.load_model(os.path.join(
