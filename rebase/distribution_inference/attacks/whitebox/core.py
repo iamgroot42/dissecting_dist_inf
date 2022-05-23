@@ -51,7 +51,8 @@ class Attack:
 
     def load_model(self, path):
         self._prepare_model()
-        self.model.load_state_dict(ch.load(path))
+        checkpoint = ch.load(path)
+        self.model.load_state_dict(checkpoint['model'])
         self.trained_model = True
 
 

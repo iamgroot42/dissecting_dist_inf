@@ -127,7 +127,10 @@ class AffinityAttack(Attack):
                     max_mean = max(max_mean, mean_values[-1].max())
                 combined_values = [(max_mean - x) + y for x,
                                    y in zip(mean_values, std_values)]
-                final_values = map(lambda x: x.sort()[1], combined_values)
+                # Flip selection logic, if requested
+                descending = self.config.affinity_config.flip_selection_logic
+                final_values = map(lambda x: x.sort(
+                    descending=descending)[1], combined_values)
             else:
                 # Collect STD values across all models (per layer)
                 std_values = []
@@ -347,7 +350,8 @@ class AffinityAttack(Attack):
             "retained_pairs": self.retained_pairs,
             "num_dim": self.num_dim,
             "num_logit_features": self.num_logit_features,
-            "num_layers": self.num_layers
+            "num_layers": self.num_layers,
+            "config": self.config
         }, model_save_path)
 
     def load_model(self, load_path: str):

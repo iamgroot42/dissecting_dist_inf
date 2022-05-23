@@ -113,7 +113,9 @@ def wrap_into_x_y(features_list: List,
     return X, Y
 
 
-def identify_relevant_points(features, total_points: int, num_points: int):
+def identify_relevant_points(features, total_points: int,
+                             num_points: int,
+                             flip_selection_logic: bool = False):
     """
         Use heuristic to order points by their 'usefulness'
         for the meta-classifier, and return the top num_points
@@ -155,7 +157,11 @@ def identify_relevant_points(features, total_points: int, num_points: int):
     for i in range(num_layers):
         point_scores[i] = std_vals[i] + (max_mean - mean_vals[i])
     # Retain 'n_points' per layer
-    point_scores = ch.argsort(point_scores, 1)[:, :num_points]
+    point_scores = ch.argsort(point_scores, 1)
+    if flip_selection_logic:
+        point_scores = point_scores[:, -num_points:]
+    else:
+        point_scores = point_scores[:, :num_points]
     # Make a count array to keep track of top pairs per layer
     count_array = np.zeros((total_points,))
     for i in range(num_layers):
