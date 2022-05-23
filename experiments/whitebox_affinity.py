@@ -171,7 +171,8 @@ if __name__ == "__main__":
                     wanted_ids = identify_relevant_points(
                         all_features,
                         len(seed_data_all_ds),
-                        wb_attack_config.affinity_config.num_samples_use)
+                        wb_attack_config.affinity_config.num_samples_use,
+                        flip_selection_logic=wb_attack_config.affinity_config.flip_selection_logic)
                     # Create loaders corresponding to these datapoints
                     seed_data_ds, seed_data_loader = make_ds_and_loader(
                         seed_data_all, wb_attack_config, wanted_ids)

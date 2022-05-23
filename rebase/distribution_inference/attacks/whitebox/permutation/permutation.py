@@ -72,7 +72,10 @@ class PINAttack(Attack):
         model_save_path = os.path.join(
             save_path,
             f"{attack_specific_info_string}.ch")
-        ch.save(self.model.state_dict(), model_save_path)
+        ch.save({
+            "model": self.model.state_dict(),
+            "config": self.config,
+        }, model_save_path)
 
     def _eval_attack(self, test_loader,
                      epochwise_version: bool = False,
