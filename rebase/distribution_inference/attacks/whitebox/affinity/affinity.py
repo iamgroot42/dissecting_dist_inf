@@ -327,7 +327,8 @@ class AffinityAttack(Attack):
 
     def save_model(self,
                    data_config: DatasetConfig,
-                   attack_specific_info_string: str):
+                   attack_specific_info_string: str,
+                   victim_local: bool = False):
         """
             Save model to disk.
         """
@@ -345,6 +346,9 @@ class AffinityAttack(Attack):
             data_config.prop)
         if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
+
+        if victim_local:
+            save_path = os.path.join(save_path, "victim_local")
 
         # Make sure folder exists
         ensure_dir_exists(save_path)

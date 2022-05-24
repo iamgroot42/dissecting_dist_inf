@@ -35,8 +35,8 @@ class Attack:
         raise NotImplementedError("Must be implemented in subclass")
 
     def eval_attack(self, test_loader,
-                     epochwise_version: bool = False,
-                     get_preds: bool = False):
+                    epochwise_version: bool = False,
+                    get_preds: bool = False):
         """
             Evaluate attack on given test data
         """

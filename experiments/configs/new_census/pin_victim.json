@@ -1,0 +1,40 @@
+{
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 150,
+        "batch_size": 1000,
+        "train_sample": 450,
+        "val_sample": 50,
+        "save": true,
+        "permutation_config": {
+            "focus": "fc"
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "tries": 3,
+    "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
+    ],
+    "victim_local_attack": true,
+    "num_victim_models": 500
+}

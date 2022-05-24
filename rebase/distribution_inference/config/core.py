@@ -308,6 +308,8 @@ class AttackConfig(Serializable):
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
     num_total_adv_models: Optional[int] = 1000
     """Total number of adversarial models to load"""
+    victim_local_attack: Optional[bool] = False
+    """Perform attack as if victim is using its own data/models"""
 
 
 @dataclass
@@ -324,6 +326,8 @@ class UnlearningConfig(Serializable):
     """LR for optimizer"""
     stop_tol: float
     """Delta in prediction differences that should be achieved to terminate"""
+    other_val: float
+    """Property value for other distribution"""
     num_models: Optional[int] = 1
     """Number of victim models to implement defense for"""
     on_cpu: Optional[bool] = False
