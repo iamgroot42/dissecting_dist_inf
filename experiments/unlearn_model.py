@@ -1,5 +1,7 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
+import numpy as np
+from tqdm import tqdm
 
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.whitebox.utils import get_attack, get_weight_layers
@@ -54,6 +56,18 @@ if __name__ == "__main__":
         dims, wb_attack_config)
     attacker_obj.load_model(args.attacker_path)
 
+    models_vic_updated = []
+    preds_old, preds_new = [], []
     defense = Unlearning(defense_config)
-    vic_model_new = defense.defend(
-        attacker_obj, models_vic[0], create_features)
+    for model_vic in tqdm(models_vic):
+        vic_model_new, (pred_old, pred_new) = defense.defend(
+            attacker_obj, model_vic, create_features)
+        models_vic_updated.append(models_vic)
+        preds_old.append(pred_old)
+        preds_new.append(pred_new)
+    preds_new = np.array(preds_new)
+    preds_old = np.array(preds_old)
+    print("Accuracy changed from %.2f to %.2f" %
+          (np.mean(1 - preds_old), np.mean(1 - preds_new)))
+    print("Success rate for defense changing predictions: %.2f" %
+          (np.mean(preds_new != preds_old)))

@@ -336,5 +336,5 @@ class UnlearningConfig(Serializable):
     """Number of classes"""
     flip_tol: float = 1e-3
     """Tolerance for checking with equality"""
-    min_lr: float = 1e-4
+    min_lr: float = 1e-5
     """Minimum learning rate"""

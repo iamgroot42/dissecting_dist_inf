@@ -1,6 +1,5 @@
 
 import torch as ch
-import copy
 import numpy as np
 from tqdm import tqdm
 
@@ -23,9 +22,9 @@ class Unlearning:
             return ch.softmax(pred)
         pred_ = ch.sigmoid(pred)
         pred_neg_ = 1 - pred_
-        return ch.stack([pred_, pred_neg_], dim=1)
+        return ch.stack([pred_neg_, pred_], dim=1)
 
-    def defend(self, attacker_obj, victim_model, process_fn):
+    def defend(self, attacker_obj, victim_model, process_fn, verbose: bool = False):
         """
             Uses given meta-model, along with given victim model
             to unlearn 'property' features from data
@@ -33,15 +32,13 @@ class Unlearning:
         # Make sure meta-classifier is on GPU
         attacker_obj.to_gpu()
 
-        # Set victim model to train model (we need gradients)
-        # victim_model.train()
-
         lr_ = self.lr
         victim_model_ = victim_model.cuda()
-        # victim_model_ = copy.deepcopy(victim_model).cuda()
-        # Dataloaders were the same ones used to train victim_model
-        # which is the same set of models here used to train
-        # attacker_model
+
+        # Take note of initial predicted class
+        victim_features = process_fn(victim_model_)
+        y_initial = self._wrap_pred(attacker_obj.get_pred(victim_features))
+        y_initial = y_initial.detach().cpu().numpy()
 
         # Code below is annoted with line numbers corresponding to
         # Algorithm 1 in paper
@@ -62,7 +59,10 @@ class Unlearning:
                     param.data.mul_(mask)
             return x
 
-        iterator = tqdm(range(self.max_iters))
+        iterator = range(self.max_iters)
+        if verbose:
+            iterator = tqdm(iterator)
+
         prev_utility = np.inf
         for _ in iterator:
             victim_features = process_fn(victim_model_)
@@ -78,7 +78,6 @@ class Unlearning:
                 victim_features = process_fn(victim_model_)
                 y_i = self._wrap_pred(
                     attacker_obj.get_pred(victim_features))  # Line 8
-                # print(ch.max(y_i).item())
 
             # Get gradients that would make all predictions approach 1/k
             loss = ch.mean((y_i - 1 / self.k) ** 2)
@@ -94,7 +93,7 @@ class Unlearning:
                 attacker_obj.get_pred(victim_features))  # Line 12
 
             updated_utility = _get_adv_utility(y_i_updated)
-            if lr_ > self.min_lr and updated_utility >= prev_utility:  # Line 13
+            if updated_utility > prev_utility:  # Line 13
                 # Undo weight param changes
                 for param, grad in zip(victim_model_.parameters(), grads):
                     param.data.add_(lr_ * grad)
@@ -102,11 +101,20 @@ class Unlearning:
                 # Since model not changed, utility remains the same
                 updated_utility = prev_utility
 
+            if lr_ < self.min_lr:
+                break
+
             # Keep track of previous utility
             prev_utility = updated_utility
 
-            iterator.set_description(
-                "Loss: %4f | Current Utility: %.3f | Prev Utility: %.3f | Lr (log): %.4f" %
-                    (loss, updated_utility, prev_utility, np.log(lr_)))
+            if verbose:
+                iterator.set_description(
+                    "Loss: %4f | Utility: %.3f | Lr (log): %.4f" %
+                        (loss, updated_utility.item(), np.log(lr_)))
 
-        return victim_model_
+        # Take note of final predicted class
+        victim_features = process_fn(victim_model_)
+        y_final = self._wrap_pred(attacker_obj.get_pred(victim_features))
+        y_final = y_final.detach().cpu().numpy()
+
+        return victim_model_, (np.argmax(y_initial), np.argmax(y_final))
