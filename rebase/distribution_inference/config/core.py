@@ -343,10 +343,12 @@ class DefenseConfig(Serializable):
     """Train config used to train victim/adv models"""
     wb_config: WhiteBoxAttackConfig
     """Configuration used for adversary"""
-    other_val: float
-    """Property value for other distribution"""
+    values: List
+    """List of values (on property specified)"""
     num_models: int
     """Number of victim models to implement defense for"""
+    victim_local_attack: bool
+    """Load meta-classifiers corresponding to victim_local setting"""
     on_cpu: Optional[bool] = False
     """Keep models read on CPU?"""
     save_defended_models: Optional[bool] = False
