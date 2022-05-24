@@ -100,58 +100,65 @@ class AffinityAttack(Attack):
         # Retain only a fraction of all pairs
         # First-time (on train data)
         if self.frac_retain_pairs < 1 and self.retained_pairs is None:
-            if self.config.affinity_config.better_retain_pair:
-                # Collect STD values across two sets of models
-                # Order points according to maximum difference 'across models'
-                if labels is None:
-                    raise ValueError(
-                        "Labels needed to split statistical values")
-                if len(ch.unique(labels)) != 2:
-                    raise NotImplementedError(
-                        "'better_retain_pair' functionality supported only for binary classification")
-                mean_values, std_values = [], []
-                max_mean = 0
-                for i in range(num_layers):
-                    stacked = ch.stack([x[i] for x in all_features])
-                    # Split into models from both sets
-                    stacked_0 = stacked[labels == 0]
-                    stacked_1 = stacked[labels == 1]
-                    # Get std values from within each set of models (we want to minimize this)
-                    std_values.append(stacked_0.std(0) + stacked_1.std(0))
-                    # Get difference in mean activation values (we want to maximize this)
-                    mean_values.append(
-                        ch.abs(stacked_0.mean(0) - stacked_1.mean(0)))
-                    # Keep track of maximum across layers. We will convert values x to max - x
-                    # So that they can be summed with std and then they are
-                    # Together minimized
-                    max_mean = max(max_mean, mean_values[-1].max())
-                combined_values = [(max_mean - x) + y for x,
-                                   y in zip(mean_values, std_values)]
-                # Flip selection logic, if requested
-                descending = self.config.affinity_config.flip_selection_logic
-                final_values = map(lambda x: x.sort(
-                    descending=descending)[1], combined_values)
+            if self.config.affinity_config.random_edge_selection:
+                # Random selection
+                self.retained_pairs = np.random.permutation(
+                    len(seed_data[0][0]))
             else:
-                # Collect STD values across all models (per layer)
-                std_values = []
-                for i in range(num_layers):
-                    std_values.append(
-                        ch.std(ch.stack([x[i] for x in seed_data]), 0))
-                # Sort std values in descending order (per layer) and store indices
-                final_values = map(lambda x: x.sort(
-                    descending=True)[1], std_values)
+                # Heuristic-based selection
+                if self.config.affinity_config.better_retain_pair:
+                    # Collect STD values across two sets of models
+                    # Order points according to maximum difference 'across models'
+                    if labels is None:
+                        raise ValueError(
+                            "Labels needed to split statistical values")
+                    if len(ch.unique(labels)) != 2:
+                        raise NotImplementedError(
+                            "'better_retain_pair' functionality supported only for binary classification")
+                    mean_values, std_values = [], []
+                    max_mean = 0
+                    for i in range(num_layers):
+                        stacked = ch.stack([x[i] for x in all_features])
+                        # Split into models from both sets
+                        stacked_0 = stacked[labels == 0]
+                        stacked_1 = stacked[labels == 1]
+                        # Get std values from within each set of models (we want to minimize this)
+                        std_values.append(stacked_0.std(0) + stacked_1.std(0))
+                        # Get difference in mean activation values (we want to maximize this)
+                        mean_values.append(
+                            ch.abs(stacked_0.mean(0) - stacked_1.mean(0)))
+                        # Keep track of maximum across layers. We will convert values x to max - x
+                        # So that they can be summed with std and then they are
+                        # Together minimized
+                        max_mean = max(max_mean, mean_values[-1].max())
+                    combined_values = [(max_mean - x) + y for x,
+                                       y in zip(mean_values, std_values)]
+                    # Flip selection logic, if requested
+                    descending = self.config.affinity_config.flip_selection_logic
+                    final_values = map(lambda x: x.sort(
+                        descending=descending)[1], combined_values)
+                else:
+                    # Default heuristic
+                    # Collect STD values across all models (per layer)
+                    std_values = []
+                    for i in range(num_layers):
+                        std_values.append(
+                            ch.std(ch.stack([x[i] for x in seed_data]), 0))
+                    # Sort std values in descending order (per layer) and store indices
+                    final_values = map(lambda x: x.sort(
+                        descending=True)[1], std_values)
 
-            # Pick top frac_retain_pairs values indices per layer
-            n_features_retain = int(self.frac_retain_pairs*num_features)
-            self.retained_pairs = list(
-                map(lambda x: x[:n_features_retain].cpu().numpy(), final_values))
-            # Make a count array to keep track of top pairs per layer
-            count_array = np.zeros((num_features,))
-            for i in range(num_layers):
-                count_array[self.retained_pairs[i]] += 1
-            # Ouf of these, pick the top self.frac_retain_pairs
-            self.retained_pairs = np.sort(np.argsort(
-                count_array)[::-1][:n_features_retain])
+                # Pick top frac_retain_pairs values indices per layer
+                n_features_retain = int(self.frac_retain_pairs*num_features)
+                self.retained_pairs = list(
+                    map(lambda x: x[:n_features_retain].cpu().numpy(), final_values))
+                # Make a count array to keep track of top pairs per layer
+                count_array = np.zeros((num_features,))
+                for i in range(num_layers):
+                    count_array[self.retained_pairs[i]] += 1
+                # Ouf of these, pick the top self.frac_retain_pairs
+                self.retained_pairs = np.sort(np.argsort(
+                    count_array)[::-1][:n_features_retain])
 
             # Consider only self.retained_pairs indices
             # For future cases, _make_affinity_feature() will handle

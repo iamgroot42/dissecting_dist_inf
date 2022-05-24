@@ -4,6 +4,7 @@ This package implements various useful functionalities needed in the distributii
 Folder structure:
 
 - `attacks`: Implementations for attacks
+- `defenses`: Defenses that victim models can deploy (active and passive)
 - `config`: Dataclasses for various configurations used in the package.
 - `datasets`: Wrappers for various datasets.
 - `logging`: Code-logging functionality, used for saving results of experiments.

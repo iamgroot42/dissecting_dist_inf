@@ -184,6 +184,8 @@ class AffinityAttackConfig(Serializable):
     """Number of activations in final mini-model (per layer)"""
     only_latent: bool = False
     """Ignore logits (output) layer"""
+    random_edge_selection: bool = False
+    """Use random selection of pairs (not trivial heuristic)"""
     frac_retain_pairs: float = 1.0
     """What fraction of pairs to use when training classifier"""
     better_retain_pair: bool = False
@@ -306,3 +308,33 @@ class AttackConfig(Serializable):
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
     num_total_adv_models: Optional[int] = 1000
     """Total number of adversarial models to load"""
+
+
+@dataclass
+class UnlearningConfig(Serializable):
+    """
+        Configuration values for Property Unlerning.
+        https://arxiv.org/pdf/2205.08821.pdf
+    """
+    train_config: TrainConfig
+    """Train config used to train victim/adv models"""
+    wb_config: WhiteBoxAttackConfig
+    """Configuration used for adversary"""
+    learning_rate: float
+    """LR for optimizer"""
+    stop_tol: float
+    """Delta in prediction differences that should be achieved to terminate"""
+    num_models: Optional[int] = 1
+    """Number of victim models to implement defense for"""
+    on_cpu: Optional[bool] = False
+    """Keep models read on CPU?"""
+    flip_weight_ratio: float = 0.002
+    """Ratio of weights to randomly flip when perfect predictions appear"""
+    max_iters: int = 500
+    """Maximum number of iterations to run"""
+    k: int = 2
+    """Number of classes"""
+    flip_tol: float = 1e-3
+    """Tolerance for checking with equality"""
+    min_lr: float = 1e-4
+    """Minimum learning rate"""

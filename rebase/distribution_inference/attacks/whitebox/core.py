@@ -55,6 +55,18 @@ class Attack:
         self.model.load_state_dict(checkpoint['model'])
         self.trained_model = True
 
+    def get_pred(self, x):
+        """
+            Get prediction for given input
+        """
+        pred = self.model(x)
+        if self.config.binary or self.config.regression_config:
+            return pred[:, 0]
+        return pred
+
+    def to_gpu(self):
+        self.model.cuda()
+
 
 class BasicDataset(Dataset):
     def __init__(self, X, Y=None):
