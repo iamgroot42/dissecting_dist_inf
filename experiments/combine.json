@@ -50,5 +50,6 @@
         0.4
         
     ],
-    "wb_path": "/p/adversarialml/as9rw/amc_models_for_yifu/sex"
+    "wb_path": "/p/adversarialml/as9rw/amc_models_for_yifu/sex",
+    "save_bb":true
 }
