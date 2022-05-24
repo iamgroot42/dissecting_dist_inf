@@ -318,20 +318,10 @@ class UnlearningConfig(Serializable):
         Configuration values for Property Unlerning.
         https://arxiv.org/pdf/2205.08821.pdf
     """
-    train_config: TrainConfig
-    """Train config used to train victim/adv models"""
-    wb_config: WhiteBoxAttackConfig
-    """Configuration used for adversary"""
     learning_rate: float
     """LR for optimizer"""
     stop_tol: float
     """Delta in prediction differences that should be achieved to terminate"""
-    other_val: float
-    """Property value for other distribution"""
-    num_models: Optional[int] = 1
-    """Number of victim models to implement defense for"""
-    on_cpu: Optional[bool] = False
-    """Keep models read on CPU?"""
     flip_weight_ratio: float = 0.002
     """Ratio of weights to randomly flip when perfect predictions appear"""
     max_iters: int = 500
@@ -342,3 +332,23 @@ class UnlearningConfig(Serializable):
     """Tolerance for checking with equality"""
     min_lr: float = 1e-5
     """Minimum learning rate"""
+
+
+@dataclass
+class DefenseConfig(Serializable):
+    """
+        Configuration file for defense
+    """
+    train_config: TrainConfig
+    """Train config used to train victim/adv models"""
+    wb_config: WhiteBoxAttackConfig
+    """Configuration used for adversary"""
+    other_val: float
+    """Property value for other distribution"""
+    num_models: int
+    """Number of victim models to implement defense for"""
+    on_cpu: Optional[bool] = False
+    """Keep models read on CPU?"""
+    save_defended_models: Optional[bool] = False
+    """Save defended models?"""
+    unlearning_config: Optional[UnlearningConfig] = None

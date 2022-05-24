@@ -6,8 +6,10 @@ from tqdm import tqdm
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.whitebox.utils import get_attack, get_weight_layers
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
-from distribution_inference.config import UnlearningConfig
+from distribution_inference.config import DefenseConfig
+from distribution_inference.utils import flash_utils
 from distribution_inference.defenses.passive.unlearning import Unlearning
+from distribution_inference.logging.core import DefenseResult
 
 
 if __name__ == "__main__":
@@ -18,13 +20,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--attacker_path", help="path to meta-classifier",
         type=Path, required=True)
+    parser.add_argument(
+        "--en", help="experiment name",
+        type=str, required=True)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
-    defense_config: UnlearningConfig = UnlearningConfig.load(
+    defense_config: DefenseConfig = DefenseConfig.load(
         args.load_config, drop_extra_fields=False)
     train_config = defense_config.train_config
     data_config = defense_config.train_config.data_config
     wb_attack_config = defense_config.wb_config
+
+    # Print out arguments
+    flash_utils(defense_config)
+
+    # Define logger
+    logger = DefenseResult(args.en, defense_config)
 
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -57,15 +68,18 @@ if __name__ == "__main__":
             dims, wb_attack_config)
         attacker_obj.load_model(args.attacker_path)
 
-        models_vic_updated = []
         preds_old, preds_new = [], []
-        defense = Unlearning(defense_config)
-        for model_vic in tqdm(models_vic):
-            _, (pred_old, pred_new) = defense.defend(
+        defense = Unlearning(defense_config.unlearning_config)
+        for model_vic in tqdm(models_vic, desc="Unlearning Property"):
+            model_vic_new, (pred_old, pred_new) = defense.defend(
                 attacker_obj, model_vic, create_features)
-            models_vic_updated.append(models_vic)
+            # Keep track of before/after predictions
             preds_old.append(pred_old)
             preds_new.append(pred_new)
+            # Save new model, if requested
+            if defense_config.save_defended_models:
+                # Save new defended model
+                pass
 
         preds_new = np.array(preds_new)
         preds_old = np.array(preds_old)
@@ -82,15 +96,16 @@ if __name__ == "__main__":
     preds_old_2, preds_new_2 = unlearn_models(ds_vic_2)
 
     # Construct ground truth
-    gt = np.concatenate(
-        (np.zeros_like(preds_old_1), np.ones_like(preds_old_2)))
+    ground_truth = np.concatenate(
+        (np.zeros(preds_old_1.shape[0]), np.ones(preds_old_2.shape[0])))
     preds_before = np.concatenate(
         (preds_old_1, preds_old_2))
     preds_after = np.concatenate(
         (preds_new_1, preds_new_2))
 
-    # Compute defense success rate before v/s after
-    print("Attack accuracy rate before: %.3f" % (np.mean(preds_before == gt)))
-    print("Attack accuracy rate after: %.3f" % (np.mean(preds_after == gt)))
-    print("Success rate for defense changing predictions: %.3f" %
-          (np.mean(preds_after != preds_before)))
+    # Log raw predictions (for use later)
+    logger.add_results(wb_attack_config.attack, defense_config.other_val,
+                       preds_before, preds_after,
+                       ground_truth)
+    # Save logger results
+    logger.save()

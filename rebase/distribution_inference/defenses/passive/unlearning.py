@@ -117,4 +117,7 @@ class Unlearning:
         y_final = self._wrap_pred(attacker_obj.get_pred(victim_features))
         y_final = y_final.detach().cpu().numpy()
 
-        return victim_model_, (np.argmax(y_initial), np.argmax(y_final))
+        # Shift new model to CPU
+        victim_model_.cpu()
+
+        return victim_model_, (y_initial[0], y_final[0])
