@@ -105,3 +105,5 @@ class IntermediateResult(Result):
 
     def add_model(self,prop,model,trial:int):
         self._add_results("model",prop,model,trial)
+    def save(self):
+        super().save(jsob=False)
