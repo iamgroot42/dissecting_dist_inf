@@ -61,7 +61,10 @@ def get_preds(loader, models: List[nn.Module],
     inputs = []
     # Accumulate all data for given loader
     for data in loader:
-        features, labels, _ = data
+        if len(data)==2:
+            features,labels = data
+        else:
+            features, labels, _ = data
         ground_truth.append(labels.cpu().numpy())
         if preload:
             inputs.append(features.cuda())

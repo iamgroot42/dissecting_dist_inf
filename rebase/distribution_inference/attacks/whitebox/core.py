@@ -61,6 +61,7 @@ class BasicDataset(Dataset):
         self.X = X
         self.Y = Y
         if self.Y is not None:
+            
             assert len(self.X) == len(self.Y)
 
     def __len__(self):

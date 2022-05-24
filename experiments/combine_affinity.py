@@ -123,7 +123,9 @@ if __name__ == "__main__":
             seed_data_ds, seed_data_loader,adv_l,raw_data = get_seed_data_loader(
                         [ds_adv_1, ds_adv_2],
                         wb_attack_config,
-                        num_samples_use=wb_attack_config.affinity_config.num_samples_use)
+                        num_samples_use=wb_attack_config.affinity_config.num_samples_use,
+                        also_get_raw_data=True)
+            
             preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr_seed(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
@@ -174,6 +176,9 @@ if __name__ == "__main__":
             attacker_obj = wu.get_attack(wb_attack_config.attack)(
                 None, wb_attack_config)
             attacker_obj.register_seed_data(seed_data_ds)
+            # Load model
+            attacker_obj.load_model(os.path.join(
+                attack_model_path_dir, attack_model_path))
             adv_test = wrap_into_loader(
             [models_adv_1, models_adv_2],
             batch_size=wb_attack_config.batch_size,
@@ -194,50 +199,29 @@ if __name__ == "__main__":
                 vic_test[0], seed_data_loader)
 
             
-            wb_test_loader = wrap_into_loader(
-            [features_vic_1, features_vic_2],
-            batch_size=wb_attack_config.batch_size,
-            shuffle=False,
-            wrap_with_loader = False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
-            _, features_adv_1 = ds_adv_1.get_features(
-            train_config,
-            wb_attack_config,
-            models = models_adv_1)
-            _, features_adv_2 = ds_adv_2.get_features(
-            train_config,
-            wb_attack_config,
-            models = models_adv_2)
-            wb_train_loader = wrap_into_loader(
-            [features_adv_1, features_adv_2],
-             wrap_with_loader = False,
-            batch_size=wb_attack_config.batch_size,
-            shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
-            # Create attacker object
-           
+            
 
-            # Load model
-            attacker_obj.load_model(os.path.join(
-                attack_model_path_dir, attack_model_path))
             wb_preds_adv = attacker_obj.eval_attack(
-                test_loader=wb_train_loader,
+                test_loader=(features_adv,adv_test[1]),
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 get_preds = True)
+
             wb_preds_vic = attacker_obj.eval_attack(
-                test_loader=wb_test_loader,
+                test_loader=(features_vic,vic_test[1]),
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 get_preds = True)
             #decision tree
-            preds_adv = np.concatenate((wb_preds_adv, bb_preds_adv), axis=1)
-            preds_vic = np.concatenate((wb_preds_vic, bb_preds_vic), axis=1)
+            preds_adv = np.vstack((wb_preds_adv, bb_preds_adv))
+            preds_vic = np.vstack((wb_preds_vic, bb_preds_vic))
+            preds_adv = np.transpose(preds_adv)
+            preds_vic = np.transpose(preds_vic)
             clf = DecisionTreeClassifier(max_depth=2)
             clf.fit(preds_adv, labels_adv)
             #log results
             DataLogger.add_model_name(prop_value,(adv1_names,adv2_names),t)
             DataLogger.add_model(prop_value,clf,t)
             DataLogger.add_bb(prop_value,bbm_preds_adv,bb_preds_adv,labels_adv,t)
-            DataLogger.add_points(prop_value,raw_data)
+            DataLogger.add_points(prop_value,raw_data,t)
             logger.add_results("Combine", prop_value,
                                 clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack

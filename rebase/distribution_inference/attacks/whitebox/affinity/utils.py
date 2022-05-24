@@ -70,16 +70,20 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
     print(warning_string(f"Seed data has {len(basic_ds)} samples."))
     # Get loader using given dataset
     if also_get_raw_data:
-        _, l1 = make_ds_and_loader(all_data[0], attack_config)
-        _, l2 = make_ds_and_loader(all_data[1], attack_config)
+        
+        _,l1 = make_ds_and_loader((all_data[0],ch.from_numpy(np.zeros(len(all_data[0])))), attack_config,Y=True)
+        _,l2 = make_ds_and_loader((all_data[1],ch.from_numpy(np.ones(len(all_data[1])))), attack_config,Y=True)
         return basic_ds, loader, (l1,l2),all_data
     return basic_ds, loader
 
 
-def make_ds_and_loader(data, attack_config, specific_ids=None):
+def make_ds_and_loader(data, attack_config, specific_ids=None,Y:bool=False):
     if specific_ids is not None:
         data = data[specific_ids]
-    ds = BasicDataset(data)
+    if Y:
+        ds = BasicDataset(X=data[0],Y=data[1])
+    else:
+        ds = BasicDataset(data)
     loader = get_loader_for_seed_data(ds, attack_config)
     return ds, loader
 

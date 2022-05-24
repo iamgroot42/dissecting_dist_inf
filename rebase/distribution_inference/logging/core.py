@@ -95,15 +95,13 @@ class IntermediateResult(Result):
         self.check_rec(self.dic, [item, prop])
         self.dic[item][prop][trial] = value
     
-    def add_model_name(self,prop,names:List,trial:int):
+    def add_model_name(self,prop,names:List[str],trial:int):
         self._add_results("model_names",prop,names,trial)
-    
-    def add_points(self,prop,points:List,trial:int):
-        self._add_results("adv points",prop,points,trial)
-    def add_bb(self,prop,model_preds,preds,labels,trial:int):
+
+    def add_points(self,prop,points,trial:int):
+        self._add_results("points",prop,points,trial)
+    def add_bb(self,prop,models_preds:List,preds:List,labels:List,trial:int):
         self._add_results("blackbox",prop,(models_preds,preds,labels),trial)
 
     def add_model(self,prop,model,trial:int):
         self._add_results("model",prop,model,trial)
-    def save(self):
-        super.save(jsob=False)
