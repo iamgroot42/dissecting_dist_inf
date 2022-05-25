@@ -9,11 +9,12 @@ from distribution_inference.attacks.blackbox.per_point import PerPointThresholdA
 from distribution_inference.attacks.blackbox.standard import LossAndThresholdAttack
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution
 from distribution_inference.datasets.base import CustomDatasetWrapper
-
+from distribution_inference.attacks.blackbox.epoch_loss import Epoch_LossAttack
 
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
     "loss_and_threshold": LossAndThresholdAttack,
+    "single_update_loss": Epoch_LossAttack
 }
 
 

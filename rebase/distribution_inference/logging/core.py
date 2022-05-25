@@ -24,11 +24,11 @@ class Result:
         self.path.mkdir(parents=True, exist_ok=True)
         if jsob:
             save_p = self.path.joinpath(f"{self.name}.json")
-            with save_p.open('wb') as f:
+            with save_p.open('w') as f:
                 json.dump(self.dic, f)
         else:
             save_p = self.path.joinpath(f"{self.name}.p")
-            with save_p.open('w') as f:
+            with save_p.open('wb') as f:
                 pickle.dump(self.dic,f)
 
     def not_empty_dic(self, dic: dict, key):

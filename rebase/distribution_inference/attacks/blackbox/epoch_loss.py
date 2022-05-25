@@ -2,23 +2,23 @@ import numpy as np
 from typing import Tuple
 from typing import List, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, threshold_test_per_dist, PredictionsOnDistributions
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistributions
 
-class Epoch_LossAttack(Attck):
+class Epoch_LossAttack(Attack):
     def attack(self,
                preds_vic1: PredictionsOnDistributions,
                preds_vic2: PredictionsOnDistributions,
                ground_truth,
                calc_acc: Callable):
-        acc_1 = _acc_per_dis(preds_vic1.preds_on_distr_1,
+        acc_1 = self._acc_per_dis(preds_vic1.preds_on_distr_1,
                             preds_vic2.preds_on_distr_1,
                             ground_truth,
                             calc_acc)
-        acc_2 = _acc_per_dis(preds_vic1.preds_on_distr_2,
+        acc_2 = self._acc_per_dis(preds_vic1.preds_on_distr_2,
                             preds_vic2.preds_on_distr_2,
                             ground_truth,
                             calc_acc)
-        return _loss_test(acc_1,acc_2)
+        return self._loss_test(acc_1,acc_2)
     
     def _acc_per_dis(self,
                 preds_vicd1: PredictionsOnOneDistributions,
