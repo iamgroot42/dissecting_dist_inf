@@ -39,7 +39,7 @@ class Epoch_LossAttack(Attack):
         #acc_1 is a tupple of list of accs on first distribution, tuple is epochwise, the list consists of models trained on first and second distr
         #assume the used distribution would have the largest increase in acc
         #dif1 is the differences of model trained on first distribution
-        dif1 = np.array([acc_2[1][0]-acc_2[0][0]],acc_1[1][0]-acc_1[0][0])#reverse order to use index as indicator variable
+        dif1 = np.array([acc_2[1][0]-acc_2[0][0],acc_1[1][0]-acc_1[0][0]])#reverse order to use index as indicator variable
         preds1 = np.argmax(dif1,axis=0)
         dif2 = np.array([acc_1[1][1]-acc_1[0][1],acc_2[1][1]-acc_2[0][1]])
         preds2 = np.argmax(dif2,axis=0)
