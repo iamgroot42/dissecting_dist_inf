@@ -103,6 +103,7 @@ class CustomDatasetWrapper:
         self.drop_senstive_cols = data_config.drop_senstive_cols
         self.scale = data_config.scale
         self.squeeze = data_config.squeeze
+        self.processed_variant = data_config.processed_variant
 
         # Either set ds_train and ds_val here
         # Or set them inside get_loaders
@@ -139,7 +140,27 @@ class CustomDatasetWrapper:
 
         return train_loader, test_loader
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
+    def prepare_processed_data(self, loader):
+        raise NotImplementedError("No concept of processed features for this dataset")
+
+    def get_processed_val_loader(self, batch_size: int,
+                                 shuffle: bool = False,
+                                 val_factor: float = 1,
+                                 num_workers: int = 0,
+                                 prefetch_factor: int = 2):
+        test_loader = DataLoader(
+            self.ds_val_processed,
+            batch_size=batch_size * val_factor,
+            shuffle=shuffle,
+            num_workers=num_workers,
+            worker_init_fn=utils.worker_init_fn,
+            #pin_memory=True,
+            prefetch_factor=prefetch_factor
+        )
+
+        return test_loader
+
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool=False) -> str:
         """
             Return path to directory where models will be saved,
             for a given configuration.
@@ -165,7 +186,9 @@ class CustomDatasetWrapper:
                 return True
         return False
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+    def load_model(self, path: str,
+                   on_cpu: bool = False,
+                   full_model: bool = False) -> nn.Module:
         """Load model from a given path"""
         raise NotImplementedError("Function to load model not implemented")
 
@@ -175,9 +198,10 @@ class CustomDatasetWrapper:
     def _get_model_paths(self,
                          train_config: TrainConfig,
                          n_models: int = None,
-                         shuffle: bool = True) -> List:
+                         shuffle: bool = True,
+                         full_model: bool = False) -> List:
         # Get path to load models
-        folder_path = self.get_save_dir(train_config)
+        folder_path = self.get_save_dir(train_config, full_model)
         model_paths = os.listdir(folder_path)
         if shuffle:
             model_paths = np.random.permutation(model_paths)
@@ -190,7 +214,8 @@ class CustomDatasetWrapper:
                    n_models: int = None,
                    on_cpu: bool = False,
                    shuffle: bool = True,
-                   epochwise_version: bool = False):
+                   epochwise_version: bool = False,
+                   full_model: bool = False):
         """
             Load models. Either return list of requested models, or a 
             list of list of models, where each nested list is the model's
@@ -198,7 +223,10 @@ class CustomDatasetWrapper:
         """
         # Get path to load models
         model_paths, folder_path, total_models = self._get_model_paths(
-            train_config, n_models, shuffle)
+            train_config,
+            n_models=n_models,
+            shuffle=shuffle,
+            full_model=full_model)
         i = 0
         models = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
@@ -225,7 +253,8 @@ class CustomDatasetWrapper:
                             for mpath_inside in files_inside:
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),
-                                    on_cpu=on_cpu)
+                                    on_cpu=on_cpu,
+                                    full_model=full_model)
                                 models_inside.append(model)
                             models.append(models_inside)
                             i += 1
@@ -236,7 +265,8 @@ class CustomDatasetWrapper:
                     continue
                 else:
                     model = self.load_model(os.path.join(
-                        folder_path, mpath), on_cpu=on_cpu)
+                        folder_path, mpath), on_cpu=on_cpu,
+                        full_model=full_model)
                     models.append(model)
                     i += 1
 
@@ -264,14 +294,18 @@ class CustomDatasetWrapper:
                            n_models: int = None,
                            on_cpu: bool = False,
                            shuffle: bool = True,
-                           epochwise_version: bool = False):
+                           epochwise_version: bool = False,
+                           full_model: bool = False):
         """
             Extract features for a given model.
             Make sure only the parts that are needed inside the model are extracted
         """
         # Get path to load models
         model_paths, folder_path, total_models = self._get_model_paths(
-            train_config, n_models, shuffle)
+            train_config,
+            n_models=n_models,
+            shuffle=shuffle,
+            full_model=full_model)
         i = 0
         feature_vectors = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
@@ -298,7 +332,8 @@ class CustomDatasetWrapper:
                             for mpath_inside in files_inside:
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),
-                                    on_cpu=on_cpu)
+                                    on_cpu=on_cpu,
+                                    full_model=full_model)
                                 # Extract model features
                                 # Get model params, shift to GPU
                                 dims, feature_vector = get_weight_layers(
@@ -314,7 +349,8 @@ class CustomDatasetWrapper:
                 else:
                     # Load model
                     model = self.load_model(os.path.join(
-                        folder_path, mpath), on_cpu=on_cpu)
+                        folder_path, mpath), on_cpu=on_cpu,
+                        full_model=full_model)
 
                     # Extract model features
                     # Get model params, shift to GPU

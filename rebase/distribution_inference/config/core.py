@@ -67,6 +67,8 @@ class DatasetConfig(Serializable):
     """Number of samples for train & test to use (override existing values)"""
     squeeze: Optional[bool] = False
     """Whether to squeeze label data (because of extra dimension)"""
+    processed_variant: Optional[bool] = True
+    """Use processed version of data (relevant for BoneAge)?"""
 
 
 @dataclass
@@ -310,6 +312,8 @@ class AttackConfig(Serializable):
     """Total number of adversarial models to load"""
     victim_local_attack: Optional[bool] = False
     """Perform attack as if victim is using its own data/models"""
+    victim_full_model: bool = False
+    """Use full (larger) model for victim?"""
 
 
 @dataclass
@@ -353,3 +357,18 @@ class DefenseConfig(Serializable):
     """Keep models read on CPU?"""
     unlearning_config: Optional[UnlearningConfig] = None
     """Configuration for unlearning"""
+
+
+@dataclass
+class CombineAttackConfig(AttackConfig):
+    """
+        Configuration for decision tree attack combining whitebox and blackbox
+    """
+    wb_path: Optional[str] = None
+    """path for metaclassifier"""
+    save_bb: Optional[bool] = False
+    """save bb results independently"""
+    save_data: Optional[bool] = True
+    """save model, data point, and predictions"""
+    restore_data: Optional[str] = None
+    """path to restore all the data"""

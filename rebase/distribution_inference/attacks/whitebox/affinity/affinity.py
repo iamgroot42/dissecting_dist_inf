@@ -237,7 +237,7 @@ class AffinityAttack(Attack):
         num_logit_features = 0
         if self.use_logit and not self.config.multi_class:
             logits = model_features[-1]
-            probs = ch.sigmoid(logits).squeeze_(1)
+            probs = ch.sigmoid(logits).squeeze(1)
             layerwise_features.append(probs.cpu())
             num_logit_features = probs.shape[0]
 

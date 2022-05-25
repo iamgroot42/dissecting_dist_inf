@@ -7,6 +7,7 @@ from tqdm import tqdm
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.whitebox.utils import get_attack, get_weight_layers
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
+from distribution_inference.attacks.whitebox.affinity.utils import get_loader_for_seed_data
 from distribution_inference.config import DefenseConfig
 from distribution_inference.training.utils import save_model
 from distribution_inference.utils import flash_utils, ensure_dir_exists
@@ -59,11 +60,19 @@ if __name__ == "__main__":
     ds_vic = ds_wrapper_class(data_config_vic_1, skip_data=True)
 
     # Create function to create features for given model
-    def create_features(x):
+    # For PIN
+    def create_features_pin(x):
         _, x_feats = get_weight_layers(
             x, wb_attack_config, detach=False,
             track_grad=True)
         return [x.cuda() for x in x_feats]
+
+    if wb_attack_config.attack == "affinity":
+        pass
+    elif wb_attack_config.attack == "permutation_invariant":
+        create_features_fn = create_features_pin
+    else:
+        raise ValueError(f"Attack {wb_attack_config.attack} not supported")
 
     def unlearn_models(ds, attacker_model_path, save_prefix=None):
         # Load victim's model features for given DS
@@ -74,12 +83,27 @@ if __name__ == "__main__":
             shuffle=False)
 
         # Get 'dims'
-        dims, _ = get_weight_layers(models_vic[0], wb_attack_config)
+        if wb_attack_config.attack == "affinity":
+            dims = None
+        else:
+            dims, _ = get_weight_layers(models_vic[0], wb_attack_config)
 
         # Create and load meta-classifier
         attacker_obj = get_attack(wb_attack_config.attack)(
             dims, wb_attack_config)
         attacker_obj.load_model(attacker_model_path)
+
+        # Create seed-data loader, if AMC attack
+        if wb_attack_config.attack == "affinity":
+            seed_data_loader = get_loader_for_seed_data(
+                attacker_obj.seed_data_ds, wb_attack_config)
+
+            # Create function to create features for given model
+            # For AMC
+            def create_features_fn(x):
+                affinity_feature, _, _, _ = attacker_obj._make_affinity_feature(
+                    x, seed_data_loader, detach=False)
+                return [x.unsqueeze(0).cuda() for x in affinity_feature]
 
         preds_old, preds_new = [], []
         defense = Unlearning(defense_config.unlearning_config)
@@ -87,7 +111,8 @@ if __name__ == "__main__":
                         desc="Unlearning Property", total=len(models_vic))
         for i, model_vic in iterator:
             model_vic_new, (pred_old, pred_new) = defense.defend(
-                attacker_obj, model_vic, create_features)
+                attacker_obj, model_vic, create_features_fn,
+                verbose=True)
             # Keep track of before/after predictions
             preds_old.append(pred_old)
             preds_new.append(pred_new)

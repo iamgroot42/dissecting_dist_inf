@@ -24,13 +24,17 @@ class DatasetInformation(base.DatasetInformation):
                          property_focus={"sex": 'female', "race": 'white'},
                          epoch_wise=epoch_wise)
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
+        if full_model:
+            raise NotImplementedError("Only one model arch for this dataset")
         model = MLPTwoLayer(n_inp=105)
         if not cpu:
             model = model.cuda()
         return model
 
-    def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
+    def get_model_for_dp(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
+        if full_model:
+            raise NotImplementedError("Only one model arch for this dataset")
         model = MLPTwoLayer(n_inp=105)
         if not cpu:
             model = model.cuda()
@@ -264,9 +268,11 @@ class CensusWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+    def load_model(self, path: str, on_cpu: bool = False, full_model: bool=False) -> nn.Module:
+        if full_model:
+            raise NotImplementedError("Only one model arch for this dataset")
         info_object = self.info_object
-        model = info_object.get_model(cpu=on_cpu)
+        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
         return load_model(model, path)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:

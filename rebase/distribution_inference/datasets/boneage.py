@@ -16,6 +16,35 @@ import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
 
 
+def get_transforms(augment):
+    """
+        Return train and test transforms
+    """
+    input_size = 224
+    test_transform_list = [
+        transforms.Resize((input_size, input_size)),
+    ]
+    train_transform_list = test_transform_list[:]
+
+    post_transform_list = [transforms.ToTensor(),
+                            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                std=[0.229, 0.224, 0.225])]
+    # Add image augmentations if requested
+    if augment:
+        train_transform_list += [
+            transforms.RandomHorizontalFlip(0.5),
+            transforms.RandomAffine(
+                shear=0.01, translate=(0.15, 0.15), degrees=5)
+        ]
+
+    train_transform = transforms.Compose(
+        train_transform_list + post_transform_list)
+    test_transform = transforms.Compose(
+        test_transform_list + post_transform_list)
+
+    return train_transform, test_transform
+
+
 class DatasetInformation(base.DatasetInformation):
     def __init__(self, epoch: bool = False):
         ratios = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
@@ -89,15 +118,25 @@ class DatasetInformation(base.DatasetInformation):
         model.classifier = nn.Identity()
         return model
 
-    def _collect_features(self, loader, model):
+    def _collect_features(self, loader, model,
+                          collect_all_info: bool = False):
         all_features = []
+        all_labels, all_props = [], []
         for data in loader:
-            x, y, _ = data
+            x, y, p = data
             x = x.cuda()
             features = model(x).cpu()
             all_features.append(features)
+            if collect_all_info:
+                all_labels.append(y)
+                all_props.append(p)
 
-        return ch.cat(all_features, 0)
+        all_features = ch.cat(all_features, 0)
+        if collect_all_info:
+            all_labels = ch.cat(all_labels, 0)
+            all_props = ch.cat(all_props, 0)
+            return all_features, all_labels, all_props
+        return all_features
 
     def _get_df(self, split: str):
         df_train = pd.read_csv(os.path.join(
@@ -214,27 +253,9 @@ class _RawBoneWrapper:
     def __init__(self, df_train, df_val, augment=False):
         self.df_train = df_train
         self.df_val = df_val
-        self.input_size = 224
-        test_transform_list = [
-            transforms.Resize((self.input_size, self.input_size)),
-        ]
-        train_transform_list = test_transform_list[:]
 
-        post_transform_list = [transforms.ToTensor(),
-                               transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                                    std=[0.229, 0.224, 0.225])]
-        # Add image augmentations if requested
-        if augment:
-            train_transform_list += [
-                transforms.RandomHorizontalFlip(0.5),
-                transforms.RandomAffine(
-                    shear=0.01, translate=(0.15, 0.15), degrees=5)
-            ]
-
-        train_transform = transforms.Compose(
-            train_transform_list + post_transform_list)
-        test_transform = transforms.Compose(
-            test_transform_list + post_transform_list)
+        # Get transforms
+        train_transform, test_transform = get_transforms(augment)
 
         self.ds_train = BoneDataset(self.df_train, augment=train_transform)
         self.ds_val = BoneDataset(self.df_val, augment=test_transform)
@@ -268,10 +289,22 @@ class BoneWrapper(base.CustomDatasetWrapper):
     def _filter(self, x):
         return x[self.prop] == 1
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+    def load_model(self, path: str,
+                   on_cpu: bool = False,
+                   full_model: bool = False) -> nn.Module:
         info_object = DatasetInformation()
-        model = info_object.get_model(cpu=on_cpu)
+        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
         return load_model(model, path)
+
+    def prepare_processed_data(self, loader):
+        # Load model
+        model = self.info_object._get_pre_processor()
+        model = model.cuda()
+        # Collect all processed information
+        features, task_labels, prop_labels = self.info_object._collect_features(
+            loader, model, collect_all_info=True)
+        self.ds_val_processed = ch.utils.data.TensorDataset(features,
+            task_labels, prop_labels)
 
     def load_data(self):
         # Define DI object
@@ -294,11 +327,22 @@ class BoneWrapper(base.CustomDatasetWrapper):
             class_col=self.classify,
             n_tries=300)
         # Create datasets using these DF objects
-        features = self._get_features()
-        ds_train = BoneDataset(
-            self.df_train, features["train"], processed=True)
-        ds_val = BoneDataset(
-            self.df_val, features["val"], processed=True)
+        if self.processed_variant:
+            features = self._get_features()
+            ds_train = BoneDataset(
+                self.df_train, features["train"], processed=True)
+            ds_val = BoneDataset(
+                self.df_val, features["val"], processed=True)
+        else:
+            # Get transforms
+            train_transform, test_transform = get_transforms(self.augment)
+
+            ds_train = BoneDataset(
+                self.df_train, train_transform,
+                processed=False)
+            ds_val = BoneDataset(
+                self.df_val, test_transform,
+                processed=False)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size,
@@ -312,11 +356,11 @@ class BoneWrapper(base.CustomDatasetWrapper):
                                    num_workers=num_workers,
                                    prefetch_factor=prefetch_factor)
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool=False) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
         subfolder_prefix = os.path.join(self.split, self.prop, str(self.ratio))
-        if train_config.extra_info and train_config.extra_info.get("full_model"):
+        if (train_config.extra_info and train_config.extra_info.get("full_model")) or full_model:
             subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
         save_path = os.path.join(base_models_dir, subfolder_prefix)
