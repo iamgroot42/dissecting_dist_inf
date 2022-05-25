@@ -26,8 +26,8 @@ class Epoch_LossAttack(Attack):
                ground_truth,
                calc_acc: Callable):
         #pi means ith epoch
-        p1 = (preds_vicd1.preds_property_1, preds_vicd1.preds_property_2)
-        p2 = (preds_vicd2.preds_property_1, preds_vicd2.preds_property_2)
+        p1 = [preds_vicd1.preds_property_1, preds_vicd1.preds_property_2]
+        p2 = [preds_vicd2.preds_property_1, preds_vicd2.preds_property_2]
         for i in range(2):
             p1[i] = np.transpose(p1[i])
             p2[i] = np.transpose(p2[i])
