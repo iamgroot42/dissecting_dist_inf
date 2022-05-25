@@ -351,6 +351,5 @@ class DefenseConfig(Serializable):
     """Load meta-classifiers corresponding to victim_local setting"""
     on_cpu: Optional[bool] = False
     """Keep models read on CPU?"""
-    save_defended_models: Optional[bool] = False
-    """Save defended models?"""
     unlearning_config: Optional[UnlearningConfig] = None
+    """Configuration for unlearning"""

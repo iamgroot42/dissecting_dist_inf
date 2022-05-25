@@ -1,4 +1,11 @@
 {
+    "unlearning_config": {
+        "learning_rate": 1e0,
+        "stop_tol": 1e-4,
+        "flip_weight_ratio": 0.002,
+        "flip_tol": 1e-2,
+        "max_iters": 100
+    },
     "train_config": {
         "data_config": {
             "name": "new_census",
@@ -15,14 +22,23 @@
         "attack": "permutation_invariant",
         "epochs": 200,
         "batch_size": 1000,
-        "save": true,
         "permutation_config": {
             "focus": "fc"
         }
     },
-    "num_models": 3,
-    "on_cpu": false,
-    "learning_rate": 1e0,
-    "stop_tol": 1e-4,
-    "flip_weight_ratio": 0.005
+    "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
+    ],
+    "num_models": 500,
+    "victim_local_attack": true,
+    "on_cpu": false
 }

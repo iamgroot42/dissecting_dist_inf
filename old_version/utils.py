@@ -390,7 +390,8 @@ def get_weight_layers(m, normalize=False, transpose=True,
     i, j = 0, 0
 
     # Sort and store desired layers, if specified
-    custom_layers = sorted(custom_layers) if custom_layers is not None else None
+    custom_layers = sorted(
+        custom_layers) if custom_layers is not None else None
 
     track = 0
     for name, param in m.named_parameters():
@@ -535,7 +536,8 @@ class PermInvConvModel(nn.Module):
         # layer representations together
         if not self.only_latent:
             self.rho = nn.Linear(
-                inside_dims[-1] * len(self.dim_channels) + dim_for_scale_invariance,
+                inside_dims[-1] * len(self.dim_channels) +
+                dim_for_scale_invariance,
                 n_classes)
 
     def forward(self, params):
@@ -547,7 +549,8 @@ class PermInvConvModel(nn.Module):
             # For ease of computation, we will store in log scale
             scale_invariance_multiplier = ch.ones((params[0].shape[0]))
             # Shift to appropriate device
-            scale_invariance_multiplier = scale_invariance_multiplier.to(params[0].device)
+            scale_invariance_multiplier = scale_invariance_multiplier.to(
+                params[0].device)
 
         for param, layer in zip(params, self.layers):
             # shape: (n_samples, n_pixels_in_kernel, channels_out, channels_in)
@@ -603,7 +606,8 @@ class PermInvConvModel(nn.Module):
 
         # Add invariance multiplier
         if self.scale_invariance:
-            scale_invariance_multiplier = ch.unsqueeze(scale_invariance_multiplier, 1)
+            scale_invariance_multiplier = ch.unsqueeze(
+                scale_invariance_multiplier, 1)
             reps = ch.cat((reps, scale_invariance_multiplier), 1)
 
         if self.only_latent:
@@ -1511,9 +1515,11 @@ def get_threshold_pred(X, Y, threshold, rule,
                        get_pred: bool = False,
                        confidence: bool = False):
     if X.shape[1] != Y.shape[0]:
-        raise ValueError('Dimension mismatch between X and Y: %d and %d should match' % (X.shape[1], Y.shape[0]))
+        raise ValueError('Dimension mismatch between X and Y: %d and %d should match' % (
+            X.shape[1], Y.shape[0]))
     if X.shape[0] != threshold.shape[0]:
-        raise ValueError('Dimension mismatch between X and threshold: %d and %d should match' % (X.shape[0], threshold.shape[0]))
+        raise ValueError('Dimension mismatch between X and threshold: %d and %d should match' % (
+            X.shape[0], threshold.shape[0]))
     res = []
     for i in range(X.shape[1]):
         prob = np.average((X[:, i] <= threshold) == rule)
@@ -1524,7 +1530,7 @@ def get_threshold_pred(X, Y, threshold, rule,
     res = np.array(res)
     if confidence:
         acc = np.mean((res >= 0.5) == Y)
-    else:    
+    else:
         acc = np.mean(res == Y)
     if get_pred:
         return res, acc
@@ -1668,7 +1674,8 @@ class ActivationMetaClassifier(nn.Module):
         self.dropout = dropout
         self.layers = []
 
-        assert len(dims) == len(reduction_dims), "dims and reduction_dims must be same length"
+        assert len(dims) == len(
+            reduction_dims), "dims and reduction_dims must be same length"
 
         # If binary, need only one output
         if n_classes == 2:
@@ -1787,8 +1794,8 @@ def coordinate_descent(models_train, models_val,
 
     # Define meta-classifier model
     metamodel = ActivationMetaClassifier(
-                    n_samples, dims,
-                    reduction_dims=reduction_dims)
+        n_samples, dims,
+        reduction_dims=reduction_dims)
     metamodel = metamodel.cuda()
 
     best_clf, best_tacc = None, 0
@@ -1815,14 +1822,14 @@ def coordinate_descent(models_train, models_val,
         # Make sure meta-classifier is in train mode
         metamodel.train()
         clf, tacc = train_meta_model(
-                    metamodel,
-                    (X_tr, Y_tr), (X_te, Y_te),
-                    epochs=meta_train_args['epochs'],
-                    binary=True, lr=1e-3,
-                    regression=False,
-                    batch_size=meta_train_args['batch_size'],
-                    val_data=val_data, combined=True,
-                    eval_every=10, gpu=True)
+            metamodel,
+            (X_tr, Y_tr), (X_te, Y_te),
+            epochs=meta_train_args['epochs'],
+            binary=True, lr=1e-3,
+            regression=False,
+            batch_size=meta_train_args['batch_size'],
+            val_data=val_data, combined=True,
+            eval_every=10, gpu=True)
         all_accs.append(tacc)
 
         # Keep track of best model and latest model
@@ -1904,7 +1911,7 @@ def make_affinity_feature(model, data, use_logit=False, detach=True, verbose=Tru
         # Old (before 2/4)
         # Skip logits if asked not to use (default)
         # if not use_logit and i == (len(model_features) - 1):
-            # break
+        # break
         scores = []
         # Pair-wise iteration of all data
         for i in range(len(data)-1):
@@ -2001,6 +2008,7 @@ class WeightAndActMeta(nn.Module):
         Combined meta-classifier that uses model weights as well as activation
         trends for property prediction.
     """
+
     def __init__(self, dims: List[int], num_dims: int, num_layers: int):
         super(WeightAndActMeta, self).__init__()
         self.dims = dims
@@ -2052,29 +2060,34 @@ def order_points(p1s, p2s):
     inds = np.argsort(abs_dif)
     return inds
 
-def threshold_and_loss_test(cal_acc,preds_adv: List, preds_victim: List, y_gt: List, ratios: List = [1.], granularity: float = 0.005):
 
-    adv_accs_1, victim_accs_1, acc_1 = threshold_test_per_dist(cal_acc,preds_adv[0], preds_victim[0], y_gt[0], ratios, granularity)
+def threshold_and_loss_test(cal_acc, preds_adv: List, preds_victim: List, y_gt: List, ratios: List = [1.], granularity: float = 0.005):
+
+    adv_accs_1, victim_accs_1, acc_1 = threshold_test_per_dist(
+        cal_acc, preds_adv[0], preds_victim[0], y_gt[0], ratios, granularity)
     # Get data for second distribution
-    adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(cal_acc,preds_adv[1], preds_victim[1], y_gt[1], ratios, granularity)
+    adv_accs_2, victim_accs_2, acc_2 = threshold_test_per_dist(
+        cal_acc, preds_adv[1], preds_victim[1], y_gt[1], ratios, granularity)
 
     # Get best adv accuracies for both distributions and compare
     which_dist = 0
     if np.max(adv_accs_1) > np.max(adv_accs_2):
         adv_accs_use, victim_accs_use = adv_accs_1, victim_accs_1
     else:
-        adv_accs_use, victim_accs_use =  adv_accs_2, victim_accs_2
+        adv_accs_use, victim_accs_use = adv_accs_2, victim_accs_2
         which_dist = 1
     ind = np.argmax(adv_accs_use)
     victim_acc_use = victim_accs_use[ind]
     # loss test
-    basic=[]
+    basic = []
     for r in range(len(ratios)):
         preds_1 = (acc_1[0][r, :] > acc_2[0][r, :])
         preds_2 = (acc_1[1][r, :] <= acc_2[1][r, :])
         basic.append(100*(np.mean(preds_1) + np.mean(preds_2)) / 2)
     return (victim_acc_use, basic[ind]), (which_dist, ind)
-def threshold_test_per_dist(cal_acc,preds_adv: List, preds_victim: List, y_gt: np.ndarray, ratios: List = [1.], granularity: float = 0.005):
+
+
+def threshold_test_per_dist(cal_acc, preds_adv: List, preds_victim: List, y_gt: np.ndarray, ratios: List = [1.], granularity: float = 0.005):
     p1, p2 = preds_adv
     # Predictions by victim's models
     pv1, pv2 = preds_victim
@@ -2088,30 +2101,31 @@ def threshold_test_per_dist(cal_acc,preds_adv: List, preds_victim: List, y_gt: n
     pv1 = np.transpose(pv1)[order][::-1]
     pv2 = np.transpose(pv2)[order][::-1]
     yg = y_gt[order][::-1]
-    adv_accs, allaccs_1,allaccs_2 ,f_accs=[],[],[],[]
+    adv_accs, allaccs_1, allaccs_2, f_accs = [], [], [], []
     for ratio in ratios:
         # Get first <ratio> percentile of points
         leng = int(ratio * p1.shape[0])
-        p1_use, p2_use, yg_use  = p1[:leng], p2[:leng], yg[:leng]
+        p1_use, p2_use, yg_use = p1[:leng], p2[:leng], yg[:leng]
         pv1_use, pv2_use = pv1[:leng], pv2[:leng]
-        accs_1 = 100*cal_acc(p1_use,yg_use)
-        accs_2 = 100*cal_acc(p2_use,yg_use)
+        accs_1 = 100*cal_acc(p1_use, yg_use)
+        accs_2 = 100*cal_acc(p2_use, yg_use)
         tracc, threshold, rule = find_threshold_acc(
-                accs_1, accs_2,granularity=granularity)
+            accs_1, accs_2, granularity=granularity)
         adv_accs.append(100*tracc)
-        accs_victim_1 = 100*cal_acc(pv1_use,yg_use)
-        accs_victim_2 = 100*cal_acc(pv2_use,yg_use)  
+        accs_victim_1 = 100*cal_acc(pv1_use, yg_use)
+        accs_victim_2 = 100*cal_acc(pv2_use, yg_use)
         allaccs_1.append(accs_victim_1)
-        allaccs_2.append(accs_victim_2)  
+        allaccs_2.append(accs_victim_2)
         combined = np.concatenate((accs_victim_1, accs_victim_2))
         classes = np.concatenate(
-                (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
+            (np.zeros_like(accs_victim_1), np.ones_like(accs_victim_2)))
         specific_acc = get_threshold_acc(
-                combined, classes, threshold, rule)
+            combined, classes, threshold, rule)
         f_accs.append(100*specific_acc)
     allaccs_1 = np.array(allaccs_1)
     allaccs_2 = np.array(allaccs_2)
-    return np.array(adv_accs),np.array(f_accs),(allaccs_1,allaccs_2)
+    return np.array(adv_accs), np.array(f_accs), (allaccs_1, allaccs_2)
+
 
 def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
     """
@@ -2144,7 +2158,7 @@ def perpoint_threshold_test_per_dist(preds_adv: List, preds_victim: List,
     (p1, p2) = preds_adv
     # Predictions by victim's models
     (pv1, pv2) = preds_victim
-    
+
     # Optimal order of point
     order = order_points(p1, p2)
 

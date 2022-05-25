@@ -216,6 +216,7 @@ if __name__ == "__main__":
         each_advq.append(adv_thresholdsq)
         each_threq.append(thresholdsq)
         avgb.append(basic)
+
     avgb = np.array(avgb)
     each_adv = np.array(each_adv)
     each_thre = np.array(each_thre)

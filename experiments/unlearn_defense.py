@@ -8,7 +8,8 @@ from distribution_inference.datasets.utils import get_dataset_wrapper, get_datas
 from distribution_inference.attacks.whitebox.utils import get_attack, get_weight_layers
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
 from distribution_inference.config import DefenseConfig
-from distribution_inference.utils import flash_utils
+from distribution_inference.training.utils import save_model
+from distribution_inference.utils import flash_utils, ensure_dir_exists
 from distribution_inference.defenses.passive.unlearning import Unlearning
 from distribution_inference.logging.core import DefenseResult
 
@@ -24,6 +25,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--en", help="experiment name",
         type=str, required=True)
+    parser.add_argument(
+        "--savepath", help="if not blank, save victim models to this path",
+        default="", type=str)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
     defense_config: DefenseConfig = DefenseConfig.load(
@@ -61,7 +65,7 @@ if __name__ == "__main__":
             track_grad=True)
         return [x.cuda() for x in x_feats]
 
-    def unlearn_models(ds, attacker_model_path):
+    def unlearn_models(ds, attacker_model_path, save_prefix=None):
         # Load victim's model features for given DS
         models_vic = ds.get_models(
             train_config,
@@ -79,16 +83,18 @@ if __name__ == "__main__":
 
         preds_old, preds_new = [], []
         defense = Unlearning(defense_config.unlearning_config)
-        for model_vic in tqdm(models_vic, desc="Unlearning Property"):
+        iterator = tqdm(enumerate(models_vic),
+                        desc="Unlearning Property", total=len(models_vic))
+        for i, model_vic in iterator:
             model_vic_new, (pred_old, pred_new) = defense.defend(
                 attacker_obj, model_vic, create_features)
             # Keep track of before/after predictions
             preds_old.append(pred_old)
             preds_new.append(pred_new)
             # Save new model, if requested
-            if defense_config.save_defended_models:
-                # Save new defended model
-                pass
+            if save_prefix is not None:
+                file_name = f"modified_{i+1}.ch"
+                save_model(model_vic_new, os.path.join(save_prefix, file_name))
 
         preds_new = np.array(preds_new)
         preds_old = np.array(preds_old)
@@ -102,22 +108,31 @@ if __name__ == "__main__":
             data_config, prop_value=prop_value)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
 
-        # Look at all saved meta-classifier
+        # Look at all saved meta-classifiers
         attack_model_path_dir = os.path.join(args.path, str(prop_value))
         if defense_config.victim_local_attack:
             attack_model_path_dir = os.path.join(
                 attack_model_path_dir, "victim_local")
-        for attack_model_path in os.listdir(attack_model_path_dir):
-
+        for i, attack_model_path in enumerate(os.listdir(attack_model_path_dir)):
             # Load model
             attacker_model_path = os.path.join(
                 attack_model_path_dir, attack_model_path)
 
             # Get old and new preds
+            prefix = None
+            if args.savepath:
+                prefix = os.path.join(
+                    args.savepath,
+                    "unlearn",
+                    data_config.prop,
+                    str(data_config.value),
+                    str(prop_value),
+                    str(i + 1))
+                ensure_dir_exists(prefix)
             preds_old_1, preds_new_1 = unlearn_models(
-                ds_vic, attacker_model_path)
+                ds_vic, attacker_model_path, save_prefix=prefix)
             preds_old_2, preds_new_2 = unlearn_models(
-                ds_vic_2, attacker_model_path)
+                ds_vic_2, attacker_model_path, save_prefix=prefix)
 
             # Construct ground truth
             ground_truth = np.concatenate(
@@ -129,13 +144,15 @@ if __name__ == "__main__":
             preds_after = np.concatenate(
                 (preds_new_1, preds_new_2))
 
+            # Compute useful statistics
+            before_acc = np.mean(np.argmax(preds_before, 1) == ground_truth)
+            after_acc = np.mean(np.argmax(preds_after, 1) == ground_truth)
+
             # Log raw predictions (for use later)
             logger.add_results(wb_attack_config.attack, prop_value,
-                               preds_before, preds_after,
-                               ground_truth)
+                               before_acc, after_acc)
 
     # TODO: Assess drop in task performance for models
-    # TODO: Save new victim models for evaluation with other attacks
 
     # Save logger results
     logger.save()

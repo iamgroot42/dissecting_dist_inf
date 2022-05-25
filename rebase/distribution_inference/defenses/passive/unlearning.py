@@ -24,7 +24,8 @@ class Unlearning:
         pred_neg_ = 1 - pred_
         return ch.stack([pred_neg_, pred_], dim=1)
 
-    def defend(self, attacker_obj, victim_model, process_fn, verbose: bool = False):
+    def defend(self, attacker_obj, victim_model,
+               process_fn, verbose: bool = False):
         """
             Uses given meta-model, along with given victim model
             to unlearn 'property' features from data

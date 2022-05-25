@@ -93,15 +93,8 @@ class DefenseResult(Result):
         self.convert_to_dict(self.dic)
 
     def add_results(self, defense: str, prop,
-                    before_raw_preds: np.ndarray,
-                    after_raw_preds: np.ndarray,
-                    ground_truth: np.ndarray):
-        # Compute useful statistics
-        preds_before = np.argmax(before_raw_preds, 1)
-        preds_after = np.argmax(after_raw_preds, 1)
-        before_acc = np.mean(preds_before == ground_truth)
-        after_acc = np.mean(preds_after == ground_truth)
-
+                    before_acc: float,
+                    after_acc: float,):
         self.check_rec(self.dic, ['result', defense, prop])
         # Log before-defense acc
         self.conditional_append(self.dic['result'][defense][prop],
@@ -109,9 +102,3 @@ class DefenseResult(Result):
         # Log after-defense acc
         self.conditional_append(self.dic['result'][defense][prop],
                                 'after_acc', after_acc)
-
-        # Also store raw preds
-        self.conditional_append(self.dic['result'][defense][prop],
-                                'before_raw_preds', before_raw_preds.tolist())
-        self.conditional_append(self.dic['result'][defense][prop],
-                                'after_raw_preds', after_raw_preds.tolist())
