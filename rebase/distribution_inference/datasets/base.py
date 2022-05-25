@@ -43,7 +43,7 @@ class DatasetInformation:
         self.base_models_dir = os.path.join(
             Constants.base_models_directory, models_path)
         self.epoch_wise = epoch_wise
-        if (epoch_wise):
+        if epoch_wise:
             self.base_models_dir = os.path.join(
                 self.base_models_dir, "epoch_wise")
         self.name = name

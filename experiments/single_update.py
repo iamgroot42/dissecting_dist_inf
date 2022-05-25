@@ -61,7 +61,7 @@ if __name__ == "__main__":
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
         shuffle=False,
-        epochwise_version=attack_config.train_config.save_every_epoch)
+        epochwise_version=True)
     models_vic_e1_1 = models_vic_1[bb_attack_config.Start_epoch-1]
     models_vic_e2_1 = models_vic_1[bb_attack_config.End_epoch-1]
     # For each value (of property) asked to experiment with
@@ -71,14 +71,14 @@ if __name__ == "__main__":
         
         # Create new DS object for both and victim (for other ratio)
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
-        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
+        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True,epoch=True)
         # Load victim models for other value
         models_vic_2 = ds_vic_2.get_models(
             train_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+            epochwise_version=True)
         models_vic_e1_2 = models_vic_2[bb_attack_config.Start_epoch-1]
         models_vic_e2_2 = models_vic_2[bb_attack_config.End_epoch-1]
         for t in range(attack_config.tries):
