@@ -114,7 +114,7 @@ if __name__ == "__main__":
                 preds_on_distr_1=preds_e2_1,
                 preds_on_distr_2=preds_e2_2
             )
-            assert np.array_equal(ground_truth_1,ground_truth_2)
+            
             # TODO: Need a better (and more modular way) to handle
             # the redundant code above.
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
                 # Launch attack
                 result = attacker_obj.attack(
                     preds_e1, preds_e2,
-                    ground_truth=ground_truth_1,
+                    ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies)
 
                 logger.add_results(attack_type, prop_value,

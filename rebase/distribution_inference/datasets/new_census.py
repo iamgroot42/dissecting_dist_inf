@@ -278,7 +278,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
 
         if dp_config is None:
             base_path = os.path.join(base_models_dir, "normal")
-            print(base_path)
+           
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)

@@ -12,11 +12,11 @@ class Epoch_LossAttack(Attack):
                calc_acc: Callable):
         acc_1 = self._acc_per_dis(preds_vic1.preds_on_distr_1,
                             preds_vic2.preds_on_distr_1,
-                            ground_truth,
+                            ground_truth[0],
                             calc_acc)
         acc_2 = self._acc_per_dis(preds_vic1.preds_on_distr_2,
                             preds_vic2.preds_on_distr_2,
-                            ground_truth,
+                            ground_truth[1],
                             calc_acc)
         return self._loss_test(acc_1,acc_2)
     
