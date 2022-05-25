@@ -14,7 +14,6 @@
         "save_every_epoch": true
     },
     "num_victim_models": 50,
-    "adv_diff_misc_config": false,
     "tries": 5,
     "black_box": {
         "granularity" : 0.05,

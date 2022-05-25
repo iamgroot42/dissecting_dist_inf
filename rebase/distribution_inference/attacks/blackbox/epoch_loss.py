@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from typing import List, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistributions
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
 
 class Epoch_LossAttack(Attack):
     def attack(self,
@@ -21,8 +21,8 @@ class Epoch_LossAttack(Attack):
         return self._loss_test(acc_1,acc_2)
     
     def _acc_per_dis(self,
-                preds_vicd1: PredictionsOnOneDistributions,
-               preds_vicd2: PredictionsOnOneDistributions,
+                preds_vicd1: PredictionsOnOneDistribution,
+               preds_vicd2: PredictionsOnOneDistribution,
                ground_truth,
                calc_acc: Callable):
         #pi means ith epoch

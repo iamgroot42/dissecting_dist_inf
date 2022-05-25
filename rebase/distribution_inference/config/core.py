@@ -163,11 +163,9 @@ class BlackBoxAttackConfig(Serializable):
     """Save predictions?"""
     tune_final_threshold: Optional[bool] = False
     """Tune final classification threshold, instead of a blind 0.5?"""
-
-@dataclass
-class SingleUpdateLoss(BlackBoxAttackConfig):
     Start_epoch: Optional[int] = 1
     End_epoch: Optional[int] = 20
+    
     
 @dataclass
 class PermutationAttackConfig(Serializable):

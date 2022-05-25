@@ -9,7 +9,7 @@ from distribution_inference.datasets.utils import get_dataset_wrapper, get_datas
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
-from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig,SingleUpdateLoss
+from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
 
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
     # Extract configuration information from config file
-    bb_attack_config: SingleUpdateLoss = attack_config.black_box
+    bb_attack_config: BlackBoxAttackConfig = attack_config.black_box
     train_config: TrainConfig = attack_config.train_config
     data_config: DatasetConfig = train_config.data_config
     if train_config.misc_config is not None:
@@ -48,12 +48,12 @@ if __name__ == "__main__":
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
-    ds_info = get_dataset_information(data_config.name)()
+    ds_info = get_dataset_information(data_config.name)(epoch_wise=True)
 
     # Create new DS object for both and victim
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
+    ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True,epoch=True)
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     # Load victim models for first value
     models_vic_1 = ds_vic_1.get_models(
