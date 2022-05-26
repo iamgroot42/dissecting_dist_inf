@@ -384,9 +384,11 @@ class BoneWrapper(base.CustomDatasetWrapper):
         features = {}
         features["train"] = ch.load(os.path.join(
             self.info_object.base_data_dir,
-            "%s/features_train.pt" % self.split))
+            "%s/features_train.pt" % self.split),
+            map_location="cpu")
         features["val"] = ch.load(os.path.join(
             self.info_object.base_data_dir,
-            "%s/features_val.pt" % self.split))
+            "%s/features_val.pt" % self.split),
+            map_location="cpu")
 
         return features

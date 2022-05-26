@@ -93,14 +93,15 @@ def get_preds(loader, models: List[nn.Module],
                 # Iterate through data-loader
                 for data in loader:
                     data_points, labels, _ = data
-                    data_points = data_points.cuda()
                     # Get prediction
-                    prediction = model(data_points).detach()
+                    prediction = model(data_points.cuda()).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]
                     predictions_on_model.append(prediction)
-        predictions_on_model = ch.cat(predictions_on_model)
-        predictions.append(predictions_on_model.cpu().numpy())
+        predictions_on_model = ch.cat(predictions_on_model).cpu().numpy()
+        predictions.append(predictions_on_model)
+        # Shift model back to CPU
+        model = model.cpu()
         del model
         gc.collect()
         ch.cuda.empty_cache()

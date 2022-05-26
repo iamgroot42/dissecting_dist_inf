@@ -420,7 +420,7 @@ class AffinityAttack(Attack):
             criterion = nn.MSELoss()
         else:
             criterion = nn.BCEWithLogitsLoss()
-        test_loss, test_acc, preds = validate_epoch(
+        returned_results = validate_epoch(
             test_loader_,
             self.model,
             criterion=criterion,
@@ -428,6 +428,10 @@ class AffinityAttack(Attack):
             expect_extra=False,
             regression=(self.config.regression_config is not None),
             get_preds=get_preds)
+        if get_preds:
+            test_loss, test_acc, preds = returned_results
+        else:
+            test_loss, test_acc = returned_results
 
         # Process returned results
         if get_preds:

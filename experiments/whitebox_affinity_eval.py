@@ -9,6 +9,7 @@ import os
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
 from distribution_inference.attacks.whitebox.utils import get_attack, wrap_into_loader
+from distribution_inference.attacks.whitebox.affinity.utils import get_loader_for_seed_data
 from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils, warning_string
 from distribution_inference.logging.core import AttackResult
@@ -81,13 +82,12 @@ if __name__ == "__main__":
     def single_evaluation(models_1_path=None, models_2_paths=None):
 
         # Load victim and adversary's model features for first value
-        dims, features_vic_1 = ds_vic_1.get_model_features(
+        models_vic_1 = ds_vic_1.get_models(
             train_config,
-            wb_attack_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch,
+            full_model=attack_config.victim_full_model,
             custom_models_path=models_1_path)
 
         # For each value (of property) asked to experiment with
@@ -101,21 +101,20 @@ if __name__ == "__main__":
             ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
 
             # Load victim and adversary's model features for other value
-            _, features_vic_2 = ds_vic_2.get_model_features(
+            models_vic_2 = ds_vic_2.get_models(
                 train_config,
-                wb_attack_config,
                 n_models=attack_config.num_victim_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
-                epochwise_version=attack_config.train_config.save_every_epoch,
+                full_model=attack_config.victim_full_model,
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
 
             # Generate test set
-            test_loader = wrap_into_loader(
-                [features_vic_1, features_vic_2],
+            test_data = wrap_into_loader(
+                [models_vic_1, models_vic_2],
                 batch_size=wb_attack_config.batch_size,
                 shuffle=False,
-                epochwise_version=attack_config.train_config.save_every_epoch
+                wrap_with_loader=False
             )
 
             # Look at all models
@@ -128,16 +127,22 @@ if __name__ == "__main__":
 
                 # Create attacker object
                 attacker_obj = get_attack(wb_attack_config.attack)(
-                    dims, wb_attack_config)
+                    None, wb_attack_config)
 
                 # Load model
                 attacker_obj.load_model(os.path.join(
                     attack_model_path_dir, attack_model_path))
 
+                # Make seed-data loader for this attack
+                seed_data_loader = get_loader_for_seed_data(
+                    attacker_obj.seed_data_ds, wb_attack_config)
+                # Create affinity features
+                features_test = attacker_obj.make_affinity_features(
+                    test_data[0], seed_data_loader)
+
                 # Execute attack
                 chosen_accuracy = attacker_obj.eval_attack(
-                    test_loader=test_loader,
-                    epochwise_version=attack_config.train_config.save_every_epoch)
+                    test_loader=(features_test, test_data[1]))
 
                 if not attack_config.train_config.save_every_epoch:
                     print("Test accuracy: %.3f" % chosen_accuracy)
@@ -145,7 +150,8 @@ if __name__ == "__main__":
                                    prop_value, chosen_accuracy, None)
 
     if args.victim_path:
-        joinpath = lambda x, y: os.path.join(args.victim_path, str(x), str(y))
+        def joinpath(x, y): return os.path.join(
+            args.victim_path, str(x), str(y))
         for i in range(1, 3+1):
             models_1_path = joinpath(data_config.value, i)
             model_2_paths = [joinpath(v, i) for v in attack_config.values]
