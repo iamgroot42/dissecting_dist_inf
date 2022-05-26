@@ -238,7 +238,8 @@ if __name__ == "__main__":
             if wb_attack_config.save:
                 attacker_obj.save_model(
                     data_config_vic_2,
-                    attack_specific_info_string=str(chosen_accuracy))
+                    attack_specific_info_string=str(chosen_accuracy),
+                    victim_local=attack_config.victim_local_attack)
 
     # Save logger results
     logger.save()

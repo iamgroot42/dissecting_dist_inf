@@ -65,11 +65,12 @@ def get_preds(loader, models: List[nn.Module],
         ground_truth.append(labels.cpu().numpy())
         if preload:
             inputs.append(features.cuda())
+    ground_truth = np.concatenate(ground_truth, axis=0)
 
     # Get predictions for each model
     iterator = models
     if verbose:
-        iterator = tqdm(iterator)
+        iterator = tqdm(iterator, desc="Generating Predictions")
     for model in iterator:
         # Shift model to GPU
         model = model.cuda()
@@ -97,20 +98,19 @@ def get_preds(loader, models: List[nn.Module],
                     prediction = model(data_points).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]
-                    predictions_on_model.append(prediction.cpu())
+                    predictions_on_model.append(prediction)
         predictions_on_model = ch.cat(predictions_on_model)
-        predictions.append(predictions_on_model)
+        predictions.append(predictions_on_model.cpu().numpy())
         del model
         gc.collect()
         ch.cuda.empty_cache()
-    predictions = ch.stack(predictions, 0)
-    ground_truth = np.concatenate(ground_truth, axis=0)
+    predictions = np.stack(predictions, 0)
     if preload:
         del inputs
     gc.collect()
     ch.cuda.empty_cache()
 
-    return predictions.numpy(), ground_truth
+    return predictions, ground_truth
 
 
 def _get_preds_for_vic_and_adv(
@@ -129,6 +129,11 @@ def _get_preds_for_vic_and_adv(
         loader_adv = loader
         loader_vic = loader
 
+    # Get predictions for adversary models and data
+    preds_adv, ground_truth_repeat = get_preds(
+        loader_adv, models_adv, preload=preload,
+        multi_class=multi_class)
+
     # Get predictions for victim models and data
     if epochwise_version:
         # Track predictions for each epoch
@@ -145,10 +150,6 @@ def _get_preds_for_vic_and_adv(
         preds_vic, ground_truth = get_preds(
             loader_vic, models_vic, preload=preload,
             multi_class=multi_class)
-    # Get predictions for adversary models and data
-    preds_adv, ground_truth_repeat = get_preds(
-        loader_adv, models_adv, preload=preload,
-        multi_class=multi_class)
     assert np.all(ground_truth == ground_truth_repeat), "Val loader is shuffling data!"
     return preds_vic, preds_adv, ground_truth
 

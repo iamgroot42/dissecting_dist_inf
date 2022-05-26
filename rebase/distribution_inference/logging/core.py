@@ -74,7 +74,7 @@ class AttackResult(Result):
                                 'adv_acc', adv_acc)
         # Log victim acc
         self.conditional_append(self.dic['result'][attack][prop],
-                                'vacc', vacc)
+                                'victim_acc', vacc)
 
 
 class DefenseResult(Result):

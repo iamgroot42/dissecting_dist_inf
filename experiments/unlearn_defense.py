@@ -59,21 +59,6 @@ if __name__ == "__main__":
         data_config)
     ds_vic = ds_wrapper_class(data_config_vic_1, skip_data=True)
 
-    # Create function to create features for given model
-    # For PIN
-    def create_features_pin(x):
-        _, x_feats = get_weight_layers(
-            x, wb_attack_config, detach=False,
-            track_grad=True)
-        return [x.cuda() for x in x_feats]
-
-    if wb_attack_config.attack == "affinity":
-        pass
-    elif wb_attack_config.attack == "permutation_invariant":
-        create_features_fn = create_features_pin
-    else:
-        raise ValueError(f"Attack {wb_attack_config.attack} not supported")
-
     def unlearn_models(ds, attacker_model_path, save_prefix=None):
         # Load victim's model features for given DS
         models_vic = ds.get_models(
@@ -105,6 +90,18 @@ if __name__ == "__main__":
                     x, seed_data_loader, detach=False)
                 return [x.unsqueeze(0).cuda() for x in affinity_feature]
 
+        elif wb_attack_config.attack == "permutation_invariant":
+            # Create function to create features for given model
+            # For PIN
+            def create_features_fn(x):
+                _, x_feats = get_weight_layers(
+                    x, wb_attack_config, detach=False,
+                    track_grad=True)
+                return [x.cuda() for x in x_feats]
+
+        else:
+            raise ValueError(f"Attack {wb_attack_config.attack} not supported")
+
         preds_old, preds_new = [], []
         defense = Unlearning(defense_config.unlearning_config)
         iterator = tqdm(enumerate(models_vic),
@@ -112,7 +109,7 @@ if __name__ == "__main__":
         for i, model_vic in iterator:
             model_vic_new, (pred_old, pred_new) = defense.defend(
                 attacker_obj, model_vic, create_features_fn,
-                verbose=True)
+                verbose=False)
             # Keep track of before/after predictions
             preds_old.append(pred_old)
             preds_new.append(pred_new)
@@ -138,6 +135,7 @@ if __name__ == "__main__":
         if defense_config.victim_local_attack:
             attack_model_path_dir = os.path.join(
                 attack_model_path_dir, "victim_local")
+
         for i, attack_model_path in enumerate(os.listdir(attack_model_path_dir)):
             # Load model
             attacker_model_path = os.path.join(
@@ -150,14 +148,21 @@ if __name__ == "__main__":
                     args.savepath,
                     "unlearn",
                     data_config.prop,
-                    str(data_config.value),
-                    str(prop_value),
-                    str(i + 1))
-                ensure_dir_exists(prefix)
+                    str(data_config.value))
+                prefix_1 = os.path.join(prefix,
+                    str(data_config.value), str(i + 1))
+                prefix_2 = os.path.join(prefix,
+                    str(prop_value), str(i + 1))
+                ensure_dir_exists(prefix_1)
+                ensure_dir_exists(prefix_2)
+
+            # 'Unlearn' and save new models
             preds_old_1, preds_new_1 = unlearn_models(
-                ds_vic, attacker_model_path, save_prefix=prefix)
+                ds_vic, attacker_model_path,
+                save_prefix=prefix_1)
             preds_old_2, preds_new_2 = unlearn_models(
-                ds_vic_2, attacker_model_path, save_prefix=prefix)
+                ds_vic_2, attacker_model_path,
+                save_prefix=prefix_2)
 
             # Construct ground truth
             ground_truth = np.concatenate(

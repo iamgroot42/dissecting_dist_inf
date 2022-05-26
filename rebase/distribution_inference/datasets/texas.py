@@ -381,7 +381,7 @@ class TexasWrapper(base.CustomDatasetWrapper):
         info_object = DatasetInformation(
             num_dropped_features=self.num_features_drop)
         model = info_object.get_model(cpu=on_cpu)
-        return load_model(model, path)
+        return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation(

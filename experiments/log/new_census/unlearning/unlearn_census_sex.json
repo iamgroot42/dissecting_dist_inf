@@ -1,0 +1,213 @@
+{
+    "name": "unlearn_census_sex",
+    "start time": "2022-05-25 10:25:34.862240",
+    "defense_config": {
+        "train_config": {
+            "data_config": {
+                "name": "new_census",
+                "prop": "sex",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": null,
+                "cwise_samples": null,
+                "squeeze": true
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false
+        },
+        "wb_config": {
+            "attack": "permutation_invariant",
+            "epochs": 200,
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 750,
+            "val_sample": 50,
+            "save": false,
+            "load": null,
+            "regression_config": null,
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "multi_class": false,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": {
+                "focus": "fc",
+                "scale_invariance": false
+            },
+            "affinity_config": null
+        },
+        "values": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+        ],
+        "num_models": 500,
+        "victim_local_attack": true,
+        "on_cpu": false,
+        "unlearning_config": {
+            "learning_rate": 1.0,
+            "stop_tol": 0.0001,
+            "flip_weight_ratio": 0.002,
+            "max_iters": 100,
+            "k": 2,
+            "flip_tol": 0.01,
+            "min_lr": 1e-05
+        }
+    },
+    "result": {
+        "permutation_invariant": {
+            "0.0": {
+                "before_acc": [
+                    0.997,
+                    0.999,
+                    0.999
+                ],
+                "after_acc": [
+                    0.479,
+                    0.533,
+                    0.445
+                ]
+            },
+            "0.1": {
+                "before_acc": [
+                    0.99,
+                    0.991,
+                    0.981
+                ],
+                "after_acc": [
+                    0.454,
+                    0.435,
+                    0.457
+                ]
+            },
+            "0.2": {
+                "before_acc": [
+                    0.955,
+                    0.969,
+                    0.979
+                ],
+                "after_acc": [
+                    0.41,
+                    0.388,
+                    0.401
+                ]
+            },
+            "0.3": {
+                "before_acc": [
+                    0.918,
+                    0.903,
+                    0.877
+                ],
+                "after_acc": [
+                    0.384,
+                    0.342,
+                    0.311
+                ]
+            },
+            "0.4": {
+                "before_acc": [
+                    0.719,
+                    0.722,
+                    0.717
+                ],
+                "after_acc": [
+                    0.44,
+                    0.502,
+                    0.494
+                ]
+            },
+            "0.6": {
+                "before_acc": [
+                    0.712,
+                    0.597,
+                    0.69
+                ],
+                "after_acc": [
+                    0.499,
+                    0.574,
+                    0.482
+                ]
+            },
+            "0.7": {
+                "before_acc": [
+                    0.92,
+                    0.9,
+                    0.835
+                ],
+                "after_acc": [
+                    0.35,
+                    0.329,
+                    0.325
+                ]
+            },
+            "0.8": {
+                "before_acc": [
+                    0.978,
+                    0.901,
+                    0.933
+                ],
+                "after_acc": [
+                    0.379,
+                    0.328,
+                    0.341
+                ]
+            },
+            "0.9": {
+                "before_acc": [
+                    0.991,
+                    0.995,
+                    0.995
+                ],
+                "after_acc": [
+                    0.452,
+                    0.432,
+                    0.465
+                ]
+            },
+            "1.0": {
+                "before_acc": [
+                    0.996,
+                    1.0,
+                    0.999
+                ],
+                "after_acc": [
+                    0.507,
+                    0.509,
+                    0.505
+                ]
+            }
+        }
+    },
+    "save time": "2022-05-25 21:31:15.197483"
+}

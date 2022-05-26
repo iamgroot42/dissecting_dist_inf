@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import torch as ch
 import torch.nn as nn
+import gc
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
@@ -63,7 +64,9 @@ class DatasetInformation(base.DatasetInformation):
             model = DenseNet(1024)
         else:
             model = BoneModel(1024)
-        if not cpu:
+        if cpu:
+            model = model.cpu()
+        else:
             model = model.cuda()
         return model
 
@@ -133,8 +136,8 @@ class DatasetInformation(base.DatasetInformation):
 
         all_features = ch.cat(all_features, 0)
         if collect_all_info:
-            all_labels = ch.cat(all_labels, 0)
-            all_props = ch.cat(all_props, 0)
+            all_labels = ch.cat(all_labels, 0).cpu()
+            all_props = ch.cat(all_props, 0).cpu()
             return all_features, all_labels, all_props
         return all_features
 
@@ -294,7 +297,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
                    full_model: bool = False) -> nn.Module:
         info_object = DatasetInformation()
         model = info_object.get_model(cpu=on_cpu, full_model=full_model)
-        return load_model(model, path)
+        return load_model(model, path, on_cpu=on_cpu)
 
     def prepare_processed_data(self, loader):
         # Load model
@@ -305,6 +308,10 @@ class BoneWrapper(base.CustomDatasetWrapper):
             loader, model, collect_all_info=True)
         self.ds_val_processed = ch.utils.data.TensorDataset(features,
             task_labels, prop_labels)
+        # Clear cache
+        del model
+        gc.collect()
+        ch.cuda.empty_cache()
 
     def load_data(self):
         # Define DI object
@@ -316,6 +323,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
             n_train, n_test = self.sample_sizes[self.prop][self.split]
         else:
             n_train, n_test = self.cwise_samples, self.cwise_samples
+
         self.df_train = utils.heuristic(
             df_train, self._filter, self.ratio,
             n_train, class_imbalance=1.0,
@@ -326,6 +334,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
             n_test, class_imbalance=1.0,
             class_col=self.classify,
             n_tries=300)
+
         # Create datasets using these DF objects
         if self.processed_variant:
             features = self._get_features()

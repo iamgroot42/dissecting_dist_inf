@@ -273,9 +273,9 @@ class CensusWrapper(base.CustomDatasetWrapper):
             raise NotImplementedError("Only one model arch for this dataset")
         info_object = self.info_object
         model = info_object.get_model(cpu=on_cpu, full_model=full_model)
-        return load_model(model, path)
+        return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool=False) -> str:
         info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         dp_config = None

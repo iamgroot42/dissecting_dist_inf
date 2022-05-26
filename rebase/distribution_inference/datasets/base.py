@@ -199,9 +199,13 @@ class CustomDatasetWrapper:
                          train_config: TrainConfig,
                          n_models: int = None,
                          shuffle: bool = True,
-                         full_model: bool = False) -> List:
+                         full_model: bool = False,
+                         custom_models_path: str = None) -> List:
         # Get path to load models
-        folder_path = self.get_save_dir(train_config, full_model)
+        if custom_models_path:
+            folder_path = custom_models_path
+        else:
+            folder_path = self.get_save_dir(train_config, full_model)
         model_paths = os.listdir(folder_path)
         if shuffle:
             model_paths = np.random.permutation(model_paths)
@@ -215,7 +219,8 @@ class CustomDatasetWrapper:
                    on_cpu: bool = False,
                    shuffle: bool = True,
                    epochwise_version: bool = False,
-                   full_model: bool = False):
+                   full_model: bool = False,
+                   custom_models_path: str = None):
         """
             Load models. Either return list of requested models, or a 
             list of list of models, where each nested list is the model's
@@ -226,7 +231,8 @@ class CustomDatasetWrapper:
             train_config,
             n_models=n_models,
             shuffle=shuffle,
-            full_model=full_model)
+            full_model=full_model,
+            custom_models_path=custom_models_path)
         i = 0
         models = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
@@ -236,7 +242,7 @@ class CustomDatasetWrapper:
                     break
 
                 # Skip models with model_num below train_config.offset
-                if not (mpath.startswith("adv_train_") or mpath == "full" or mpath == "drop") and int(mpath.split("_")[0]) <= train_config.offset:
+                if not (mpath.startswith("adv_train_") or mpath == "full" or mpath == "drop") and (not custom_models_path) and int(mpath.split("_")[0]) <= train_config.offset:
                     continue
 
                 # Skip any directories we may stumble upon
@@ -295,7 +301,8 @@ class CustomDatasetWrapper:
                            on_cpu: bool = False,
                            shuffle: bool = True,
                            epochwise_version: bool = False,
-                           full_model: bool = False):
+                           full_model: bool = False,
+                           custom_models_path: str = None):
         """
             Extract features for a given model.
             Make sure only the parts that are needed inside the model are extracted
@@ -305,7 +312,8 @@ class CustomDatasetWrapper:
             train_config,
             n_models=n_models,
             shuffle=shuffle,
-            full_model=full_model)
+            full_model=full_model,
+            custom_models_path=custom_models_path)
         i = 0
         feature_vectors = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
@@ -315,7 +323,7 @@ class CustomDatasetWrapper:
                     break
 
                 # Skip models with model_num below train_config.offset
-                if not (mpath.startswith("adv_train_") or mpath == "full" or mpath == "drop") and int(mpath.split("_")[0]) <= train_config.offset:
+                if not (mpath.startswith("adv_train_") or mpath == "full" or mpath == "drop") and (not custom_models_path) and int(mpath.split("_")[0]) <= train_config.offset:
                     continue
 
                 # Skip any directories we may stumble upon
