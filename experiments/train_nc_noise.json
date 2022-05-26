@@ -1,0 +1,17 @@
+{
+    "data_config": {
+        "name": "new_census",
+        "prop": "sex",
+        "split": "victim",
+        "squeeze": true,
+        "value": 0.2
+    },
+    "offset": 0,
+    "epochs": 20,
+    "learning_rate": 1e-3,
+    "batch_size": 200,
+    "weight_decay": 1e-4,
+    "num_models": 1000,
+    "get_best": true,
+    "label_noise": 0.05
+}
