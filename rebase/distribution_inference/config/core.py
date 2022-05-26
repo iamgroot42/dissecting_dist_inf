@@ -134,6 +134,8 @@ class TrainConfig(Serializable):
     """Training for regression (MSE)?"""
     multi_class: Optional[bool] = False
     """Training for multi-class classification?"""
+    label_noise: Optional[float] = 0
+    """Randomly flip a proportion of labels"""
 
 
 @dataclass

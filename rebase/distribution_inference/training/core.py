@@ -15,6 +15,7 @@ from distribution_inference.utils import warning_string
 def train(model, loaders, train_config: TrainConfig,
           input_is_list: bool = False,
           extra_options: dict = None):
+    assert not (train_config.multi_class and train_config.label_noise)
     if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config, input_is_list, extra_options)
@@ -29,7 +30,8 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
                 expect_extra: bool = True,
                 input_is_list: bool = False,
                 regression: bool = False,
-                multi_class: bool = False):
+                multi_class: bool = False,
+                label_noise:float = 0):
     model.train()
     train_loss = AverageMeter()
     if not regression:
@@ -51,7 +53,10 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             data = data.cuda()
         labels = labels.cuda()
         N = labels.size(0)
-
+        if label_noise:
+            for i in range(len(labels)):
+                if np.random.random()<label_noise:
+                    labels[i] = not labels[i]
         if adv_config is None:
             # Clear accumulated gradients
             optimizer.zero_grad()
@@ -262,7 +267,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
                                   expect_extra=train_config.expect_extra,
                                   input_is_list=input_is_list,
                                   regression=train_config.regression,
-                                  multi_class=train_config.multi_class)
+                                  multi_class=train_config.multi_class,
+                                  label_noise = train_config.label_noise)
 
         # Get metrics on val data, if available
         if val_loader is not None:

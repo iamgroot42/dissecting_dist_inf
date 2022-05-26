@@ -282,7 +282,9 @@ class CensusWrapper(base.CustomDatasetWrapper):
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)
-
+        if train_config.label_noise:
+            base_path = os.path.join(
+                base_models_dir, "label_noise:{}".format(train_config.label_noise))
         save_path = os.path.join(base_path, self.prop, self.split)
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
