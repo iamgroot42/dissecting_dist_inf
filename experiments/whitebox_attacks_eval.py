@@ -145,7 +145,8 @@ if __name__ == "__main__":
                                    prop_value, chosen_accuracy, None)
 
     if args.victim_path:
-        joinpath = lambda x, y: os.path.join(args.victim_path, str(x), str(y))
+        def joinpath(x, y): return os.path.join(
+            args.victim_path, str(x), str(y))
         for i in range(1, 3+1):
             models_1_path = joinpath(data_config.value, i)
             model_2_paths = [joinpath(v, i) for v in attack_config.values]
