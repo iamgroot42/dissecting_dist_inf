@@ -1,3 +1,3 @@
 *.ch
-./*/Combine/*
-./*/Intermediate_result/*
+./*/Combine/*.json
+./*/Intermediate_result/*.p
