@@ -92,8 +92,8 @@ if __name__ == "__main__":
                 preds_on_distr_1=e1,
                 preds_on_distr_2=e2
             ) for e1,e2 in zip(preds_epoch_1,preds_epoch_2)]
-            for i in range(bb_attack_config.Start_epoch-1,bb_attack_config.End_epoch-5):
-                preds_e1, preds_e2 = preds_e[i],preds_e[i+5]
+            for i in range(bb_attack_config.Start_epoch-1,bb_attack_config.End_epoch-10):
+                preds_e1, preds_e2 = preds_e[i],preds_e[i+10]
                 
 
             # For each requested attack, only one in this script

@@ -108,7 +108,7 @@ class _CensusIncome:
         return (X.astype(float), np.expand_dims(Y, 1), cols)
 
     def get_data(self, split, prop_ratio, filter_prop,
-                 custom_limit=None, scale: float = 1.0):
+                 custom_limit=None, scale: float = 1.0,label_noise:float=0):
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
@@ -123,7 +123,10 @@ class _CensusIncome:
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
                 TRAIN_DF), self.get_x_y(TEST_DF)
-
+            if label_noise:
+                #shape of y: (length,1)
+                idx = np.random.choice(len(y_tr),int (label_noise*len(y_tr)),replace=False)
+                y_tr[idx][0] = not y_tr[idx][0]
             return (x_tr, y_tr), (x_te, y_te), cols
 
         if split == "all":
@@ -242,18 +245,19 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False):
-        super().__init__(data_config, skip_data)
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False,label_noise:float=0):
+        super().__init__(data_config, skip_data,label_noise)
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)
-
+        
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
                                 filter_prop=self.prop,
                                 custom_limit=custom_limit,
-                                scale=self.scale)
+                                scale=self.scale,
+                                label_noise = self.label_noise)
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
@@ -267,7 +271,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         info_object = self.info_object
         model = info_object.get_model(cpu=on_cpu)
-        return load_model(model, path)
+        return load_model(model, path,on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = self.info_object
@@ -282,7 +286,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)
-        if train_config.label_noise:
+        if self.label_noise:
             base_path = os.path.join(
                 base_models_dir, "label_noise:{}".format(train_config.label_noise))
         save_path = os.path.join(base_path, self.prop, self.split)

@@ -41,9 +41,10 @@ def save_model(model, path):
     ch.save(model.state_dict(), path)
 
 
-def load_model(model, path):
+def load_model(model, path,on_cpu:bool=False):
+    map_location = "cpu" if on_cpu else None
     try:
-        model.load_state_dict(ch.load(path))
+        model.load_state_dict(ch.load(path,map_location=map_location))
     except:
         raise Exception("Could not load model from {}".format(path))
     return model

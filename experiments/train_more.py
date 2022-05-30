@@ -59,7 +59,10 @@ if __name__ == "__main__":
         data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
-    ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch)
+    if train_config.label_noise:
+        ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch,label_noise=train_config.label_noise)
+    else:
+        ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch)
 
     # Train models
     for i in range(1, train_config.num_models + 1):

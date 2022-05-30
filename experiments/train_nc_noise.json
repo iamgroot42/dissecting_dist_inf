@@ -12,6 +12,5 @@
     "batch_size": 200,
     "weight_decay": 1e-4,
     "num_models": 1000,
-    "get_best": true,
-    "label_noise": 0.05
+    "label_noise": 0.10
 }
