@@ -1,0 +1,59 @@
+import numpy as np
+from typing import Tuple
+from typing import List, Callable
+
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution,find_threshold_acc,get_threshold_acc
+from distribution_inference.attacks.blackbox.utils import _acc_per_dis
+class Epoch_ThresholdAttack(Attack):
+    def attack(self,
+               preds_vic1: PredictionsOnDistributions,
+               preds_vic2: PredictionsOnDistributions,
+               preds_adv1: PredictionsOnDistributions,
+               preds_adv2: PredictionsOnDistributions,
+               ground_truth,
+               calc_acc: Callable,
+               get_preds:bool=False):
+        assert calc_acc is not None, "Must provide function to compute accuracy"
+        assert ground_truth is not None, "Must provide ground truth to compute accuracy"
+        assert not (self.config.multi2 and self.config.multi), "No implementation for both multi model"
+        #accs on ith distribution from two epochs and two models
+        vacc_1 =_acc_per_dis(preds_vic1.preds_on_distr_1,
+                            preds_vic2.preds_on_distr_1,
+                            ground_truth[0],
+                            calc_acc)
+        vacc_2 = _acc_per_dis(preds_vic1.preds_on_distr_2,
+                            preds_vic2.preds_on_distr_2,
+                            ground_truth[1],
+                            calc_acc)
+        advacc_1  = _acc_per_dis(preds_adv1.preds_on_distr_1,
+                            preds_adv2.preds_on_distr_1,
+                            ground_truth[0],
+                            calc_acc)
+        advacc_2  = _acc_per_dis(preds_adv1.preds_on_distr_2,
+                            preds_adv2.preds_on_distr_2,
+                            ground_truth[0],
+                            calc_acc)
+        a1,v1 = self._thresh_per_dis(vacc_1,advacc_1)
+        a2,v2 = self._thresh_per_dis(vacc_2,advacc_2)
+        chosen_distribution = 0
+        if a1>a2:
+            a_use,v_use = a1,v1
+        else:
+            a_use,v_use = a2,v2
+            chosen_distribution=1
+        return (v_use,a_use,chosen_distribution)
+
+
+    def _thresh_per_dis(self,vacc,advacc):
+        vdif1 = vacc[1][0]-vacc[0][0]
+        vdif2 = vacc[1][1]-vacc[0][1]
+        adif1 = advacc[1][0]-advacc[0][0]
+        adif2 = advacc[1][1]-advacc[0][1]
+        tracc, threshold, rule = find_threshold_acc(
+            adif1, adif2, granularity=self.config.granularity)
+        combined = np.concatenate((vdif1, vdif2))
+        classes = np.concatenate(
+                    (np.zeros_like(vdif1), np.ones_like(vdif2)))
+        specific_acc = get_threshold_acc(
+                    combined, classes, threshold, rule)
+        return 100*tracc,100*specific_acc

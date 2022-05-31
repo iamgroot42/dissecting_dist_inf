@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List, Tuple
+from typing import List, Tuple,Callable
 import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
@@ -126,7 +126,19 @@ def _get_preds_accross_epoch(models,
         preds.append(p)
         
     return (np.array(preds),np.array(gt))
-
+def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
+               preds_d2: PredictionsOnOneDistribution,
+               ground_truth,
+               calc_acc: Callable):
+        #pi means ith epoch
+    p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
+    p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
+    for i in range(2):
+        p1[i] = np.transpose(p1[i])
+        p2[i] = np.transpose(p2[i])
+    acc1 = [100*calc_acc(p,ground_truth) for p in p1]
+    acc2 = [100*calc_acc(p,ground_truth) for p in p2]
+    return (np.array(acc1),np.array(acc2))
 def get_preds_epoch_on_dis(
         models,
         ds_obj: CustomDatasetWrapper,
