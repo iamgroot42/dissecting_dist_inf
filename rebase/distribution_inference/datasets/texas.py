@@ -32,7 +32,7 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch,
                          num_dropped_features=num_dropped_features)
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
         num_eff_features = self.num_features - self.num_dropped_features
         model = MLPFourLayer(n_inp=num_eff_features,
                              num_classes=self.num_classes)

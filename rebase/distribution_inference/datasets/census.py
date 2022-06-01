@@ -71,7 +71,7 @@ class DatasetInformation(base.DatasetInformation):
                          property_focus={"sex": 'Female', "race": 'White'},
                          epoch_wise=epoch)
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
         clf = PortedMLPClassifier()
         if not cpu:
             clf = clf.cuda()

@@ -43,6 +43,19 @@ class DPTrainingConfig(Serializable):
 
 
 @dataclass
+class ShuffleDefenseConfig(Serializable):
+    """
+        Config to randomly sample during training
+        to maintain a desired ratio.
+        For now, implemented at batch-level.
+    """
+    desired_value: float
+    """Desired ratio to be achieved when shuffling"""
+    sample_ratio: float = 0.75
+    """Desired fraction of original data left over after ratio is achieved"""
+
+
+@dataclass
 class DatasetConfig(Serializable):
     """
         Dataset-specific configuration values.
@@ -73,10 +86,15 @@ class DatasetConfig(Serializable):
 
 @dataclass
 class MiscTrainConfig(Serializable):
+    """
+        Miscellaneous training configurations.
+    """
     adv_config: Optional[AdvTrainingConfig] = None
     """Configuration to be used for adversarial training"""
     dp_config: Optional[DPTrainingConfig] = None
     """Configuration to be used for DP training"""
+    shuffle_defense_config: Optional[ShuffleDefenseConfig] = None
+    """Configuration to be usef for shuffle-based defense"""
 
 
 @dataclass
@@ -135,6 +153,8 @@ class TrainConfig(Serializable):
     """Training for regression (MSE)?"""
     multi_class: Optional[bool] = False
     """Training for multi-class classification?"""
+    full_model: Optional[bool] = False
+    """Use full-model for training?"""
 
 
 @dataclass
@@ -164,6 +184,10 @@ class BlackBoxAttackConfig(Serializable):
     """Save predictions?"""
     tune_final_threshold: Optional[bool] = False
     """Tune final classification threshold, instead of a blind 0.5?"""
+    relative_threshold: Optional[bool] = False
+    """Thresholds are relative to mean accuracy/logits"""
+    loss_variant: Optional[bool] = False
+    """Where applicable (PPTT), ues loss values instead of logits"""
 
 
 @dataclass

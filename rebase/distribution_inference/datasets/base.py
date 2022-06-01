@@ -52,7 +52,7 @@ class DatasetInformation:
         self.property_focus = property_focus
         self.num_dropped_features = num_dropped_features
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
         raise NotImplementedError(
             f"Implement method to model for {self.name} dataset")
 

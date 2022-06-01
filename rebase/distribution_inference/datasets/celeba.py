@@ -39,7 +39,8 @@ class DatasetInformation(base.DatasetInformation):
 
     def get_model(self, parallel: bool = False, fake_relu: bool = False,
                   latent_focus=None, is_large: bool = False,
-                  cpu: bool = False) -> nn.Module:
+                  cpu: bool = False,
+                  full_model: bool = False) -> nn.Module:
         if is_large:
             model = models_core.InceptionModel(
                 fake_relu=fake_relu,

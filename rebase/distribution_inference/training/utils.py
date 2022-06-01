@@ -1,4 +1,3 @@
-import os
 import torch as ch
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
