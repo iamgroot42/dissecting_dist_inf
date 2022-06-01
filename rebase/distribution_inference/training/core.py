@@ -246,6 +246,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         iterator = tqdm(iterator)
 
     adv_config = None
+    shuffle_defense = None
     if train_config.misc_config is not None:
         adv_config = train_config.misc_config.adv_config
         shuffle_defense_config = train_config.misc_config.shuffle_defense_config
@@ -253,9 +254,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             raise ValueError(
                 "Need access to property labels for shuffle defense. Set expect_extra to True")
 
-        shuffle_defense = None
         if shuffle_defense_config is not None:
-            shuffle_defense = ShuffleDefense(shuffle_defense_config)            
+            shuffle_defense = ShuffleDefense(shuffle_defense_config)
 
         # Special case for CelebA
         # Given the way scaling is done, eps (passed as argument) should be

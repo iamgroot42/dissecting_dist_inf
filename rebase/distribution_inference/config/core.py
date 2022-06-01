@@ -188,6 +188,8 @@ class BlackBoxAttackConfig(Serializable):
     """Thresholds are relative to mean accuracy/logits"""
     loss_variant: Optional[bool] = False
     """Where applicable (PPTT), ues loss values instead of logits"""
+    random_order: Optional[bool] = False
+    """Order points randomly instead of optimal ordering"""
 
 
 @dataclass
