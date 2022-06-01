@@ -3,7 +3,7 @@ from typing import Tuple
 from typing import List, Callable
 
 from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
-from distribution_inference.attacks.blackbox.utils import _acc_per_dis
+from distribution_inference.attacks.blackbox.core import _acc_per_dis
 class Epoch_LossAttack(Attack):
     def attack(self,
                preds_vic1: PredictionsOnDistributions,

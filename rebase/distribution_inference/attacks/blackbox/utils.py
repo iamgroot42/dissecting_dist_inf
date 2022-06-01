@@ -10,11 +10,15 @@ from distribution_inference.attacks.blackbox.standard import LossAndThresholdAtt
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution
 from distribution_inference.datasets.base import CustomDatasetWrapper
 from distribution_inference.attacks.blackbox.epoch_loss import Epoch_LossAttack
-
+from distribution_inference.attacks.blackbox.epoch_threshold import Epoch_ThresholdAttack
+from distribution_inference.attacks.blackbox.epoch_perpoint import Epoch_Perpoint
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
     "loss_and_threshold": LossAndThresholdAttack,
-    "single_update_loss": Epoch_LossAttack
+    "single_update_loss": Epoch_LossAttack,
+    "single_update_threshold":Epoch_ThresholdAttack,
+    "single_update_perpoint":Epoch_Perpoint
+
 }
 
 
@@ -126,26 +130,12 @@ def _get_preds_accross_epoch(models,
         preds.append(p)
         
     return (np.array(preds),np.array(gt))
-def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
-               preds_d2: PredictionsOnOneDistribution,
-               ground_truth,
-               calc_acc: Callable):
-        #pi means ith epoch
-    p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
-    p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
-    for i in range(2):
-        p1[i] = np.transpose(p1[i])
-        p2[i] = np.transpose(p2[i])
-    acc1 = [100*calc_acc(p,ground_truth) for p in p1]
-    acc2 = [100*calc_acc(p,ground_truth) for p in p2]
-    return (np.array(acc1),np.array(acc2))
+
 def get_preds_epoch_on_dis(
         models,
-        ds_obj: CustomDatasetWrapper,
-        batch_size: int,
+        loader,
         preload: bool = False,
         multi_class: bool = False):
-    _,loader = ds_obj.get_loaders(batch_size=batch_size)
     preds1,gt = _get_preds_accross_epoch(models[0],loader,preload,multi_class)
     preds2,_ = _get_preds_accross_epoch(models[1],loader,preload,multi_class)
     preds_wrapped = [PredictionsOnOneDistribution(

@@ -20,7 +20,7 @@
         "num_adv_models": 50,
         "batch_size": 30000,
         "attack_type": [
-            "single_update_loss"
+            "single_update_perpoint"
         ],
         "ratios": [
             0.05,

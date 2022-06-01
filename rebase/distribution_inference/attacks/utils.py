@@ -8,7 +8,9 @@ ATTACK_MAPPING = {
     "affinity": "Activation-Correlation Meta-Classifier",
     "threshold_perpoint": "Point-Wise Threshold Test",
     "loss_and_threshold": ("Loss Test", "Threshold Test"),
-    "single_update_loss": "Loss test across epoch"
+    "single_update_loss": "Loss test across epoch",
+    "single_update_threshold":"Threshold test across epoch",
+    "single_update_perpoint":"Perpoint test across epoch"
 }
 
 

@@ -82,11 +82,13 @@ if __name__ == "__main__":
         for t in range(attack_config.tries):
             print("Ratio: {}, Trial: {}".format(prop_value,t))
             preds_accross_epoch=[]
+            _, loader1 = ds_adv_1.get_loaders(batch_size=bb_attack_config.batch_size)
+            _, loader2 = ds_adv_2.get_loaders(batch_size=bb_attack_config.batch_size)
             preds_epoch_1, ground_truth_1 = get_preds_epoch_on_dis([models_vic_1,models_vic_2],
-            ds_obj=ds_adv_1,batch_size=bb_attack_config.batch_size,preload=bb_attack_config.preload,
+            loader=loader1,preload=bb_attack_config.preload,
                 multi_class=bb_attack_config.multi_class)
             preds_epoch_2, ground_truth_2 = get_preds_epoch_on_dis([models_vic_1,models_vic_2],
-            ds_obj=ds_adv_2,batch_size=bb_attack_config.batch_size,preload=bb_attack_config.preload,
+            loader=loader2,preload=bb_attack_config.preload,
                 multi_class=bb_attack_config.multi_class)
             preds_e = [PredictionsOnDistributions(
                 preds_on_distr_1=e1,
