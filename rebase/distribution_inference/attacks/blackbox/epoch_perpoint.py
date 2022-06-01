@@ -134,7 +134,7 @@ def perpoint_threshold_test_per_dist(
         pv2 = preds_victim.preds_property_2.copy()
 
     # Optimal order of point
-    assert order 
+    assert order is not None
 
     # Order points according to computed utility
     transpose_order = (1, 0, 2) if config.multi_class else (1, 0)
