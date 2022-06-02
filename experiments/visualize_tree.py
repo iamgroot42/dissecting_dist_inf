@@ -12,7 +12,7 @@ def visualize_dt_contour(clf):
         just how much importance it gives to each of the two features.
     """
     granularity = 0.01
-    xx, yy = np.meshgrid(np.arange(0, 1 + granularity, granularity), np.arange(0, 1 + granularity, granularity))
+    xx, yy = np.meshgrid(np.arange(-2, 2 + granularity, granularity), np.arange(0, 1 + granularity, granularity))
     Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
     Z = Z.reshape(xx.shape)
     plt.contourf(xx, yy, Z)
@@ -23,6 +23,9 @@ def visualize_dt_contour(clf):
 
 if __name__ == "__main__":
     # Load decision-tree classifier
-    clf = pkl.load(open('log/nc_aff.p', 'rb'))
+    clf = pkl.load(
+        open('/p/adversarialml/as9rw/Intermediate_result/nc_PIN.p', 'rb'))
+    models = clf['model']
+    clf = models[0.4][1]
     # Visualize decision tree
     visualize_dt_contour(clf)

@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from distribution_inference.config.core import TrainConfig
 import numpy as np
 from typing import List
 from copy import deepcopy
@@ -102,3 +103,21 @@ class DefenseResult(Result):
         # Log after-defense acc
         self.conditional_append(self.dic['result'][defense][prop],
                                 'after_acc', after_acc)
+
+
+# def PerformanceResult(Result):
+#     def __init__(self,
+#                  experiment_name: str,
+#                  train_config: TrainConfig):
+#         # Infer path from data_config inside attack_config
+#         dataset_name = train_config.data_config.name
+#         save_path = get_save_path()
+#         path = Path(os.path.join(save_path, dataset_name))
+#         super().__init__(path, experiment_name)
+
+#         self.dic["train_config"] = deepcopy(train_config)
+#         self.convert_to_dict(self.dic)
+
+#     def add_result(self, prop, loss: float, acc: float=None):
+#         self.check_rec(self.dic, ['log', prop])
+#         # Log loss

@@ -2,8 +2,8 @@
     "train_config": {
         "data_config": {
             "name": "boneage",
-            "prop": "age",
-            "classify": "gender",
+            "prop": "gender",
+            "classify": "age",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
@@ -19,7 +19,6 @@
         "num_adv_models": 50,
         "batch_size": 30000,
         "attack_type": [
-            "loss_and_threshold",
             "threshold_perpoint"
         ],
         "ratios": [
@@ -31,7 +30,8 @@
             0.5,
             1.0
         ],
-        "preload": true
+        "preload": true,
+        "tune_final_threshold": true
     },
     "values": [
         0.2,

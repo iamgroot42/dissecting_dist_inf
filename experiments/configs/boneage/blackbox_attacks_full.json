@@ -31,7 +31,8 @@
             0.5,
             1.0
         ],
-        "preload": false
+        "preload": false,
+        "loss_variant": true
     },
     "values": [
         0.2,

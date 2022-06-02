@@ -14,7 +14,7 @@
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
-            "drop_senstive_cols": true
+            "drop_senstive_cols": false
         },
         "epochs": 0,
         "learning_rate": 0,

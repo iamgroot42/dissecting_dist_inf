@@ -5,27 +5,8 @@
             "prop": "Young",
             "classify": "Male",
             "split": "adv",
-            "value": 0.5
-        },
-        "misc_config": {
-            "adv_config": {
-                "epsilon": 16,
-                "iters": 7,
-                "clip_min": -1,
-                "clip_max": 1,
-                "random_restarts": 1,
-                "scale_by_255": true
-            }
-        },
-        "adv_misc_config": {
-            "adv_config": {
-                "epsilon": 16,
-                "iters": 7,
-                "clip_min": -1,
-                "clip_max": 1,
-                "random_restarts": 1,
-                "scale_by_255": true
-            }
+            "value": 0.5,
+            "cwise_samples": 1e6
         },
         "epochs": 0,
         "learning_rate": 0,
@@ -46,7 +27,7 @@
     ],
     "on_cpu": true,
     "black_box": {
-        "granularity": 0.05,
+        "granularity": 0.005,
         "num_adv_models": 50,
         "batch_size": 512,
         "attack_type": [
