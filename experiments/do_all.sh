@@ -6,8 +6,7 @@
 #j=0
 for i in $1
 do
-python train_more.py --load_config "./train_models_epochwise.json" --ratio $i 
+python train_more.py --load_config "./train_nc_noise.json" --ratio $i 
 #j=$((($j+1)%3))
 done
-wait
 echo "finished"

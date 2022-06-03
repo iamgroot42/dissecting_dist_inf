@@ -10,7 +10,8 @@ ATTACK_MAPPING = {
     "loss_and_threshold": ("Loss Test", "Threshold Test"),
     "single_update_loss": "Loss test across epoch",
     "single_update_threshold":"Threshold test across epoch",
-    "single_update_perpoint":"Perpoint test across epoch"
+    "single_update_perpoint":"Perpoint test across epoch",
+    "epoch_meta": "Decision Tree on raw predictions across epoch"
 }
 
 

@@ -12,12 +12,15 @@ from distribution_inference.datasets.base import CustomDatasetWrapper
 from distribution_inference.attacks.blackbox.epoch_loss import Epoch_LossAttack
 from distribution_inference.attacks.blackbox.epoch_threshold import Epoch_ThresholdAttack
 from distribution_inference.attacks.blackbox.epoch_perpoint import Epoch_Perpoint
+from distribution_inference.attacks.blackbox.epoch_meta import Epoch_Tree
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
     "loss_and_threshold": LossAndThresholdAttack,
     "single_update_loss": Epoch_LossAttack,
     "single_update_threshold":Epoch_ThresholdAttack,
-    "single_update_perpoint":Epoch_Perpoint
+    "single_update_perpoint":Epoch_Perpoint,
+
+    "epoch_meta":Epoch_Tree
 
 }
 

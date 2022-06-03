@@ -61,7 +61,7 @@ if __name__ == "__main__":
     data_config_adv_1, data_config_victim_1 = get_dfs_for_victim_and_adv(
         data_config)
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
-    ds_vic_1 = ds_wrapper_class(data_config_victim_1, skip_data=True)
+    ds_vic_1 = ds_wrapper_class(data_config_victim_1, skip_data=True,label_noise=train_config.label_noise)
 
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
         # Create new DS object for both and victim (for other ratio)
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
-        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
+        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True,label_noise=train_config.label_noise)
 
         # Load victim's model features for other value
         models_vic_2 = ds_vic_2.get_models(
