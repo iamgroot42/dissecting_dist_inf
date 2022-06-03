@@ -84,7 +84,7 @@ if __name__ == "__main__":
         shuffle=False,
         epochwise_version=True,
                 get_names=True)
-    
+  
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -99,6 +99,7 @@ if __name__ == "__main__":
             n_models=50,
             epochwise_version=True,
                 get_names=True)
+    
         attack_model_path_dir = os.path.join(attack_config.wb_path, str(prop_value))
         attack_model_paths = []
         for a in os.listdir(attack_model_path_dir):
@@ -112,12 +113,14 @@ if __name__ == "__main__":
                 epochwise_version=True,
                 on_cpu=attack_config.on_cpu,
                 get_names=True)
+            
             models_adv_2, adv2_names = ds_adv_2.get_models(
                 train_adv_config,
                 n_models=50,
                 epochwise_version=True,
                 on_cpu=attack_config.on_cpu,
                 get_names=True)
+            
             labels_adv = np.hstack((np.zeros(models_adv_1.shape[1]),np.ones(models_adv_2.shape[1])))
             labels_vic = np.hstack((np.zeros(models_vic_1.shape[1]),np.ones(models_vic_2.shape[1])))
             # Get victim and adv predictions on loaders for first ratio
@@ -142,6 +145,7 @@ if __name__ == "__main__":
             shuffle=False,
             wrap_with_loader=False
             ) for ma1, ma2 in zip(models_adv_1,models_adv_2)]
+            
             vic_test =  [wrap_into_loader(
             [mv1, mv2],
             batch_size=wb_attack_config.batch_size,
@@ -150,7 +154,7 @@ if __name__ == "__main__":
             ) for mv1, mv2 in zip(models_vic_1,models_vic_2)]
             # Make affinity features for train (adv) models
             features_adv = [attacker_obj.make_affinity_features(
-                adv[0], seed_data_loader, labels=adv_test[1]) for adv in adv_test]
+                adv[0], seed_data_loader, labels=adv[1]) for adv in adv_test]
             # Make affinity features for victim models
             features_vic = [attacker_obj.make_affinity_features(
                 vic[0], seed_data_loader) for vic in vic_test]
