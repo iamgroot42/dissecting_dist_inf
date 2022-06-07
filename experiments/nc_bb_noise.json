@@ -14,9 +14,9 @@
         "batch_size": 200,
         "weight_decay": 1e-4,
         "num_models": 1000,
-        "label_noise": 0.1
+        "label_noise": 0.4
     },
-    "num_victim_models": 1000,
+    "num_victim_models": 500,
     "tries": 5,
     "black_box": {
         "granularity" : 0.05,
