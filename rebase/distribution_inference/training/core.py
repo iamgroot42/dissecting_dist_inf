@@ -16,6 +16,7 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 def train(model, loaders, train_config: TrainConfig,
           input_is_list: bool = False,
           extra_options: dict = None):
+    
     if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config, input_is_list, extra_options)
@@ -58,7 +59,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             data = data.cuda()
         labels = labels.cuda()
         N = labels.size(0)
-
+        
         if adv_config is None:
             # Clear accumulated gradients
             optimizer.zero_grad()

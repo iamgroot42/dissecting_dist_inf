@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 import numpy as np
 from simple_parsing.helpers import Serializable, field
+from yaml import serialize
 
 
 @dataclass
@@ -153,6 +154,8 @@ class TrainConfig(Serializable):
     """Training for regression (MSE)?"""
     multi_class: Optional[bool] = False
     """Training for multi-class classification?"""
+    label_noise: Optional[float] = 0
+    """Randomly flip a proportion of labels"""
     full_model: Optional[bool] = False
     """Use full-model for training?"""
 
@@ -184,6 +187,10 @@ class BlackBoxAttackConfig(Serializable):
     """Save predictions?"""
     tune_final_threshold: Optional[bool] = False
     """Tune final classification threshold, instead of a blind 0.5?"""
+    Start_epoch: Optional[int] = 1
+    End_epoch: Optional[int] = 20
+    
+    
     relative_threshold: Optional[bool] = False
     """Thresholds are relative to mean accuracy/logits"""
     loss_variant: Optional[bool] = False

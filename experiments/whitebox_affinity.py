@@ -61,7 +61,7 @@ if __name__ == "__main__":
     data_config_adv_1, data_config_victim_1 = get_dfs_for_victim_and_adv(
         data_config)
     ds_vic_1 = ds_wrapper_class(
-        data_config_victim_1, skip_data=not attack_config.victim_local_attack)
+        data_config_victim_1, skip_data=not attack_config.victim_local_attack,label_noise=train_config.label_noise)
     if not attack_config.victim_local_attack:
         ds_adv_1 = ds_wrapper_class(data_config_adv_1)
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
         # Create new DS object for both and victim (for other ratio)
         ds_vic_2 = ds_wrapper_class(
-            data_config_vic_2, skip_data=not attack_config.victim_local_attack)
+            data_config_vic_2, skip_data=not attack_config.victim_local_attack,label_noise=train_config.label_noise)
         if not attack_config.victim_local_attack:
             ds_adv_2 = ds_wrapper_class(data_config_adv_2)
 

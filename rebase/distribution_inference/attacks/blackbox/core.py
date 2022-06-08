@@ -72,7 +72,21 @@ def multi_model_sampling(arr, multi):
         raise ValueError("Dimension mismatch")
     return res
 
-
+def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
+               preds_d2: PredictionsOnOneDistribution,
+               ground_truth,
+               calc_acc: Callable,
+               t = False):
+        #pi means ith epoch
+    p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
+    p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
+    if not t:
+        for i in range(2):
+            p1[i] = np.transpose(p1[i])
+            p2[i] = np.transpose(p2[i])
+    acc1 = [100*calc_acc(p,ground_truth) for p in p1]
+    acc2 = [100*calc_acc(p,ground_truth) for p in p2]
+    return (np.array(acc1),np.array(acc2))
 def threshold_test_per_dist(calc_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
@@ -429,7 +443,10 @@ def order_points(p1s, p2s):
     inds = np.argsort(abs_diff)
     return inds
 
-
+def epoch_order_p(p11,p12,p21,p22):
+        #pij: ith epoch, jth distribution
+        #TODO: find a better order rather than only using the last epoch
+        return order_points(p21,p22)[::-1]
 def find_max_acc_threshold(preds, labels, granularity=0.01):
     """
         Find the threshold that maximizes accuracy.

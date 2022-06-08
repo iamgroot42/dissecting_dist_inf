@@ -8,7 +8,7 @@ import torch as ch
 import torch.nn as nn
 
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPFourLayer
+from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model

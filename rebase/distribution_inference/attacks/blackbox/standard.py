@@ -66,7 +66,7 @@ class LossAndThresholdAttack(Attack):
             basic_chosen = [x[chosen_ratio_index] for x in basic]
         else:
             if self.config.multi2:
-                basic = self._loss_multi(acc_1, acc_2, self.config.multi2)
+                basic = self._loss_multi(acc_1, acc_2)
             else:
                 basic = self._loss_test(acc_1, acc_2)
             basic_chosen = basic[chosen_ratio_index]
@@ -84,7 +84,7 @@ class LossAndThresholdAttack(Attack):
 
     def _loss_multi(self, acc_1, acc_2):
         basic = []
-        l = acc_1[0].shape[1] // self.config.multi2
+        l=acc_1[0].shape[1]
         for r in range(len(self.config.ratios)):
             preds_1 = []
             preds_2 = []

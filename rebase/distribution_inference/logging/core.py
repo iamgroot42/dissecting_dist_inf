@@ -7,7 +7,7 @@ from copy import deepcopy
 from datetime import datetime
 import os
 from simple_parsing.helpers import Serializable
-
+import pickle
 from distribution_inference.config import AttackConfig, DefenseConfig
 from distribution_inference.utils import get_save_path
 
@@ -19,13 +19,19 @@ class Result:
         self.start = datetime.now()
         self.dic = {'name': name, 'start time': str(self.start)}
 
-    def save(self):
+    def save(self, jsob:bool=True):
         self.save_t = datetime.now()
         self.dic['save time'] = str(self.save_t)
-        save_p = self.path.joinpath(f"{self.name}.json")
+        
         self.path.mkdir(parents=True, exist_ok=True)
-        with save_p.open('w') as f:
-            json.dump(self.dic, f, indent=4)
+        if jsob:
+            save_p = self.path.joinpath(f"{self.name}.json")
+            with save_p.open('w') as f:
+                json.dump(self.dic, f)
+        else:
+            save_p = self.path.joinpath(f"{self.name}.p")
+            with save_p.open('wb') as f:
+                pickle.dump(self.dic,f)
 
     def not_empty_dic(self, dic: dict, key):
         if key not in dic:
@@ -56,11 +62,15 @@ class Result:
 class AttackResult(Result):
     def __init__(self,
                  experiment_name: str,
-                 attack_config: AttackConfig):
+                 attack_config: AttackConfig,
+                 aname:str=None):
         # Infer path from data_config inside attack_config
         dataset_name = attack_config.train_config.data_config.name
         # Figure out if BB attack or WB attack
-        attack_name = "blackbox" if attack_config.white_box is None else "whitebox"
+        if aname:
+            attack_name = aname
+        else:
+            attack_name = "blackbox" if attack_config.white_box is None else "whitebox"
         save_path = get_save_path()
         path = Path(os.path.join(save_path, dataset_name, attack_name))
         super().__init__(path, experiment_name)
@@ -76,6 +86,34 @@ class AttackResult(Result):
         # Log victim acc
         self.conditional_append(self.dic['result'][attack][prop],
                                 'victim_acc', vacc)
+        
+class IntermediateResult(Result):
+    def __init__(self,
+                 name: str,
+                 attack_config: AttackConfig):
+        dataset_name = attack_config.train_config.data_config.name
+        save_path = get_save_path()
+        path = Path(os.path.join(save_path, dataset_name, "Intermediate_result"))
+        super().__init__(path, name)
+        self.dic["attack_config"] = deepcopy(attack_config)
+
+    def _add_results(self, item:str,prop,value,trial:int):
+        self.check_rec(self.dic, [item, prop])
+        self.dic[item][prop][trial] = value
+    
+    def add_model_name(self,prop,names:List[str],trial:int):
+        self._add_results("model_names",prop,names,trial)
+
+    def add_points(self,prop,points,trial:int):
+        self._add_results("points",prop,points,trial)
+    def add_bb(self,prop,models_preds:List,preds:List,labels:List,trial:int):
+        self._add_results("blackbox",prop,(models_preds,preds,labels),trial)
+
+    def add_model(self,prop,model,trial:int):
+        self._add_results("model",prop,model,trial)
+    def save(self):
+        super().save(jsob=False)
+        
 
 
 class DefenseResult(Result):
