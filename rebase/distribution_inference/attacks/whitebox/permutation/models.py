@@ -309,7 +309,7 @@ class FullPermInvModel(nn.Module):
         self.rho = nn.Linear(
             inside_dims[-1] * self.total_layers, n_classes)
 
-    def forward(self, params: List[ch.Tensor]) -> ch.Tensor:
+    def forward(self, params: List[ch.Tensor], get_latent: bool = False) -> ch.Tensor:
         reps = []
         for_prev = None
         i = 0
@@ -367,5 +367,7 @@ class FullPermInvModel(nn.Module):
             reps.append(processed)
 
         reps = ch.cat(reps, 1)
+        if get_latent:
+            return reps
         logits = self.rho(reps)
         return logits

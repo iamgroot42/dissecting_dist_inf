@@ -73,7 +73,7 @@ class AffinityMetaClassifier(nn.Module):
                 bidirectional=False)
             self.final_layer = nn.Linear(self.num_final, 1)
 
-    def forward(self, x) -> ch.Tensor:
+    def forward(self, x, get_latent: bool = False) -> ch.Tensor:
         # Get intermediate activations for each layer
         # Aggregate them to get a single feature vector
         all_acts = []
@@ -97,6 +97,8 @@ class AffinityMetaClassifier(nn.Module):
             # Reshape to be compatible with self.final_layer
             all_acts = all_acts[-1, :]
             all_acts = all_acts.contiguous()
+        if get_latent:
+            return all_acts
         return self.final_layer(all_acts)
 
 

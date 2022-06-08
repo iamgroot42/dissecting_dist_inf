@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     def single_evaluation(models_1_path=None, models_2_paths=None):
 
-        # Load victim and adversary's model features for first value
+        # Load victim's model for first value
         models_vic_1 = ds_vic_1.get_models(
             train_config,
             n_models=attack_config.num_victim_models,
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             # Create new DS object for both and victim (for other ratio)
             ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
 
-            # Load victim and adversary's model features for other value
+            # Load victim's model for other value
             models_vic_2 = ds_vic_2.get_models(
                 train_config,
                 n_models=attack_config.num_victim_models,

@@ -222,6 +222,7 @@ class MLPFourLayer(BaseModel):
             return x.detach()
         return x
 
+
 class MLPFiveLayer(BaseModel):
     def __init__(self, n_inp: int, num_classes: int = 1):
         super().__init__(is_conv=False)
@@ -261,6 +262,7 @@ class MLPFiveLayer(BaseModel):
         if detach_before_return:
             return x.detach()
         return x
+
 
 class BoneModel(BaseModel):
     def __init__(self,
