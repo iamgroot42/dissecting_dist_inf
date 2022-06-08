@@ -4,7 +4,7 @@ from typing import List, Tuple, Callable, Union
 
 from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, epoch_order_p, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling,get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
-
+DUMPING = 10
 
 class Epoch_Perpoint(Attack):
     def attack(self,
@@ -14,11 +14,13 @@ class Epoch_Perpoint(Attack):
                preds_adv2: PredictionsOnDistributions,
                ground_truth,
                calc_acc: Callable,
-               get_preds:bool=False):
+               get_preds:bool=False,
+               ratio:bool=False):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
         """
+        self.ratio=ratio
         # For the multi-class case, we do not want to work with direct logit values
         # Scale them to get post-softmax probabilities
         # TODO: Actually do that
@@ -26,9 +28,19 @@ class Epoch_Perpoint(Attack):
         # Get data for first distribution
         o1 = epoch_order_p(preds_adv1.preds_on_distr_1.preds_property_1,preds_adv1.preds_on_distr_1.preds_property_2,preds_adv2.preds_on_distr_1.preds_property_1,preds_adv2.preds_on_distr_1.preds_property_2)
         o2 = epoch_order_p(preds_adv1.preds_on_distr_2.preds_property_1,preds_adv1.preds_on_distr_2.preds_property_2,preds_adv2.preds_on_distr_2.preds_property_1,preds_adv2.preds_on_distr_2.preds_property_2)
+        if self.ratio:
+            p1=PredictionsOnOneDistribution((preds_adv2.preds_on_distr_1.preds_property_1+DUMPING)/(preds_adv1.preds_on_distr_1.preds_property_1+DUMPING),(preds_adv2.preds_on_distr_1.preds_property_2+DUMPING)/(preds_adv1.preds_on_distr_1.preds_property_2+DUMPING))
+            pv1=PredictionsOnOneDistribution((preds_vic2.preds_on_distr_1.preds_property_1+DUMPING)/(preds_vic1.preds_on_distr_1.preds_property_1+DUMPING),(preds_vic2.preds_on_distr_1.preds_property_2+DUMPING)/(preds_vic1.preds_on_distr_1.preds_property_2+DUMPING))
+            p2=PredictionsOnOneDistribution((preds_adv2.preds_on_distr_2.preds_property_1+DUMPING)/(preds_adv1.preds_on_distr_2.preds_property_1+DUMPING),(preds_adv2.preds_on_distr_2.preds_property_2+DUMPING)/(preds_adv1.preds_on_distr_2.preds_property_2+DUMPING))
+            pv2=PredictionsOnOneDistribution((preds_vic2.preds_on_distr_2.preds_property_1+DUMPING)/(preds_vic1.preds_on_distr_2.preds_property_1+DUMPING),(preds_vic2.preds_on_distr_2.preds_property_2+DUMPING)/(preds_vic1.preds_on_distr_2.preds_property_2+DUMPING))
+        else:
+            p1=PredictionsOnOneDistribution(preds_adv2.preds_on_distr_1.preds_property_1-preds_adv1.preds_on_distr_1.preds_property_1,preds_adv2.preds_on_distr_1.preds_property_2-preds_adv1.preds_on_distr_1.preds_property_2)
+            pv1=PredictionsOnOneDistribution(preds_vic2.preds_on_distr_1.preds_property_1-preds_vic1.preds_on_distr_1.preds_property_1,preds_vic2.preds_on_distr_1.preds_property_2-preds_vic1.preds_on_distr_1.preds_property_2)
+            p2=PredictionsOnOneDistribution(preds_adv2.preds_on_distr_2.preds_property_1-preds_adv1.preds_on_distr_2.preds_property_1,preds_adv2.preds_on_distr_2.preds_property_2-preds_adv1.preds_on_distr_2.preds_property_2)
+            pv2=PredictionsOnOneDistribution(preds_vic2.preds_on_distr_2.preds_property_1-preds_vic1.preds_on_distr_2.preds_property_1,preds_vic2.preds_on_distr_2.preds_property_2-preds_vic1.preds_on_distr_2.preds_property_2)
         adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, final_thresholds_1,classes_use = perpoint_threshold_test_per_dist(
-            PredictionsOnOneDistribution(preds_adv2.preds_on_distr_1.preds_property_1-preds_adv1.preds_on_distr_1.preds_property_1,preds_adv2.preds_on_distr_1.preds_property_2-preds_adv1.preds_on_distr_1.preds_property_2),
-            PredictionsOnOneDistribution(preds_vic2.preds_on_distr_1.preds_property_1-preds_vic1.preds_on_distr_1.preds_property_1,preds_vic2.preds_on_distr_1.preds_property_2-preds_vic1.preds_on_distr_1.preds_property_2),
+            p1,
+            pv1,
             self.config,
             order = o1,
             ground_truth=ground_truth[0])

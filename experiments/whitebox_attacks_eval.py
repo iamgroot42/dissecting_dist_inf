@@ -23,8 +23,11 @@ if __name__ == "__main__":
         "--en", help="experiment name",
         type=str, required=True)
     parser.add_argument(
-        "--path", help="path to trained models directory",
+        "--meta_path", help="path to trained meta-models directory",
         type=str, required=True)
+    parser.add_argument(
+        "--victim_path", help="path to victim'smodels directory",
+        type=str, default=None)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
     attack_config: AttackConfig = AttackConfig.load(
@@ -52,11 +55,11 @@ if __name__ == "__main__":
 
     # Make sure a model is present for each value to be tested
     values_to_test = [str(x) for x in attack_config.values]
-    folders = os.listdir(args.path)
+    folders = os.listdir(args.meta_path)
     for value in values_to_test:
         if value not in folders:
             raise ValueError(
-                f"No model found for value {value} in {args.path}")
+                f"No model found for value {value} in {args.meta_path}")
 
     # Print out arguments
     flash_utils(attack_config)
@@ -75,63 +78,81 @@ if __name__ == "__main__":
         data_config)
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
 
-    # Load victim and adversary's model features for first value
-    dims, features_vic_1 = ds_vic_1.get_model_features(
-        train_config,
-        wb_attack_config,
-        n_models=attack_config.num_victim_models,
-        on_cpu=attack_config.on_cpu,
-        shuffle=False,
-        epochwise_version=attack_config.train_config.save_every_epoch)
+    def single_evaluation(models_1_path=None, models_2_paths=None):
 
-    # For each value (of property) asked to experiment with
-    for prop_value in attack_config.values:
-        # Creata a copy of the data config, with the property value
-        # changed to the current value
-        _, data_config_vic_2 = get_dfs_for_victim_and_adv(
-            data_config, prop_value=prop_value)
-
-        # Create new DS object for both and victim (for other ratio)
-        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
-
-        # Load victim and adversary's model features for other value
-        _, features_vic_2 = ds_vic_2.get_model_features(
+        # Load victim and adversary's model features for first value
+        dims, features_vic_1 = ds_vic_1.get_model_features(
             train_config,
             wb_attack_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch)
+            epochwise_version=attack_config.train_config.save_every_epoch,
+            custom_models_path=models_1_path)
 
-        # Generate test set
-        test_loader = wrap_into_loader(
-            [features_vic_1, features_vic_2],
-            batch_size=wb_attack_config.batch_size,
-            shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch
-        )
+        # For each value (of property) asked to experiment with
+        for i, prop_value in enumerate(attack_config.values):
+            # Creata a copy of the data config, with the property value
+            # changed to the current value
+            _, data_config_vic_2 = get_dfs_for_victim_and_adv(
+                data_config, prop_value=prop_value)
 
-        # Look at all models
-        attack_model_path_dir = os.path.join(args.path, str(prop_value))
-        for attack_model_path in os.listdir(attack_model_path_dir):
+            # Create new DS object for both and victim (for other ratio)
+            ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
 
-            # Create attacker object
-            attacker_obj = get_attack(wb_attack_config.attack)(
-                dims, wb_attack_config)
+            # Load victim and adversary's model features for other value
+            _, features_vic_2 = ds_vic_2.get_model_features(
+                train_config,
+                wb_attack_config,
+                n_models=attack_config.num_victim_models,
+                on_cpu=attack_config.on_cpu,
+                shuffle=False,
+                epochwise_version=attack_config.train_config.save_every_epoch,
+                custom_models_path=models_2_paths[i] if models_2_paths else None)
 
-            # Load model
-            attacker_obj.load_model(os.path.join(
-                attack_model_path_dir, attack_model_path))
+            # Generate test set
+            test_loader = wrap_into_loader(
+                [features_vic_1, features_vic_2],
+                batch_size=wb_attack_config.batch_size,
+                shuffle=False,
+                epochwise_version=attack_config.train_config.save_every_epoch
+            )
 
-            # Execute attack
-            chosen_accuracy = attacker_obj.eval_attack(
-                test_loader=test_loader,
-                epochwise_version=attack_config.train_config.save_every_epoch)
+            # Look at all models
+            attack_model_path_dir = os.path.join(
+                args.meta_path, str(prop_value))
+            for attack_model_path in os.listdir(attack_model_path_dir):
+                # Skip if directory
+                if os.path.isdir(os.path.join(attack_model_path_dir, attack_model_path)):
+                    continue
 
-            if not attack_config.train_config.save_every_epoch:
-                print("Test accuracy: %.3f" % chosen_accuracy)
-            logger.add_results(wb_attack_config.attack,
-                               prop_value, chosen_accuracy, None)
+                # Create attacker object
+                attacker_obj = get_attack(wb_attack_config.attack)(
+                    dims, wb_attack_config)
+
+                # Load model
+                attacker_obj.load_model(os.path.join(
+                    attack_model_path_dir, attack_model_path))
+
+                # Execute attack
+                chosen_accuracy = attacker_obj.eval_attack(
+                    test_loader=test_loader,
+                    epochwise_version=attack_config.train_config.save_every_epoch)
+
+                if not attack_config.train_config.save_every_epoch:
+                    print("Test accuracy: %.3f" % chosen_accuracy)
+                logger.add_results(wb_attack_config.attack,
+                                   prop_value, chosen_accuracy, None)
+
+    if args.victim_path:
+        def joinpath(x, y): return os.path.join(
+            args.victim_path, str(x), str(y))
+        for i in range(1, 3+1):
+            models_1_path = joinpath(data_config.value, i)
+            model_2_paths = [joinpath(v, i) for v in attack_config.values]
+            single_evaluation(models_1_path, model_2_paths)
+    else:
+        single_evaluation()
 
     # Save logger results
     logger.save()

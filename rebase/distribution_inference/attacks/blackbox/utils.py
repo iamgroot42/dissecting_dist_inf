@@ -76,11 +76,12 @@ def get_preds(loader, models: List[nn.Module],
         ground_truth.append(labels.cpu().numpy())
         if preload:
             inputs.append(features.cuda())
+    ground_truth = np.concatenate(ground_truth, axis=0)
 
     # Get predictions for each model
     iterator = models
     if verbose:
-        iterator = tqdm(iterator)
+        iterator = tqdm(iterator, desc="Generating Predictions")
     for model in iterator:
         # Shift model to GPU
         model = model.cuda()
@@ -103,25 +104,25 @@ def get_preds(loader, models: List[nn.Module],
                 # Iterate through data-loader
                 for data in loader:
                     data_points, labels, _ = data
-                    data_points = data_points.cuda()
                     # Get prediction
-                    prediction = model(data_points).detach()
+                    prediction = model(data_points.cuda()).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]
-                    predictions_on_model.append(prediction.cpu())
-        predictions_on_model = ch.cat(predictions_on_model)
+                    predictions_on_model.append(prediction)
+        predictions_on_model = ch.cat(predictions_on_model).cpu().numpy()
         predictions.append(predictions_on_model)
+        # Shift model back to CPU
+        model = model.cpu()
         del model
         gc.collect()
         ch.cuda.empty_cache()
-    predictions = ch.stack(predictions, 0)
-    ground_truth = np.concatenate(ground_truth, axis=0)
+    predictions = np.stack(predictions, 0)
     if preload:
         del inputs
     gc.collect()
     ch.cuda.empty_cache()
 
-    return predictions.numpy(), ground_truth
+    return predictions, ground_truth
 
 def _get_preds_accross_epoch(models,
                             loader,
@@ -154,13 +155,27 @@ def _get_preds_for_vic_and_adv(
         epochwise_version: bool = False,
         preload: bool = False,
         multi_class: bool = False):
+
+    if type(loader) == tuple:
+        #  Same data is processed differently for vic/adcv
+        loader_vic, loader_adv = loader
+    else:
+        # Same loader
+        loader_adv = loader
+        loader_vic = loader
+
+    # Get predictions for adversary models and data
+    preds_adv, ground_truth_repeat = get_preds(
+        loader_adv, models_adv, preload=preload,
+        multi_class=multi_class)
+
     # Get predictions for victim models and data
     if epochwise_version:
         # Track predictions for each epoch
         preds_vic = [[] for _ in range(len(models_vic[0]))]
         for models_inside_vic in tqdm(models_vic):
             preds_vic_inside, ground_truth = get_preds(
-                loader, models_inside_vic, preload=preload,
+                loader_vic, models_inside_vic, preload=preload,
                 verbose=False, multi_class=multi_class)
             # In epoch-wise mode, we need prediction results
             # across epochs, not models
@@ -168,12 +183,8 @@ def _get_preds_for_vic_and_adv(
                 preds_vic[i].append(p)
     else:
         preds_vic, ground_truth = get_preds(
-            loader, models_vic, preload=preload,
+            loader_vic, models_vic, preload=preload,
             multi_class=multi_class)
-    # Get predictions for adversary models and data
-    preds_adv, ground_truth_repeat = get_preds(
-        loader, models_adv, preload=preload,
-        multi_class=multi_class)
     assert np.all(ground_truth == ground_truth_repeat), "Val loader is shuffling data!"
     return preds_vic, preds_adv, ground_truth
 def get_vic_adv_preds_on_distr_seed(
@@ -211,21 +222,31 @@ def get_vic_adv_preds_on_distr(
         batch_size: int,
         epochwise_version: bool = False,
         preload: bool = False,
-        multi_class: bool = False):
-    # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
-    _, loader = ds_obj.get_loaders(batch_size=batch_size)
+        multi_class: bool = False,
+        make_processed_version: bool = False):
+    _, loader_vic = ds_obj.get_loaders(batch_size=batch_size)
+    if make_processed_version:
+        # Make version of DS for victim that processes data
+        # before passing on
+        ds_obj.prepare_processed_data(loader_vic)
+        loader_adv = ds_obj.get_processed_val_loader(batch_size=batch_size)
+    else:
+        # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
+        loader_adv = loader_vic
 
     # TODO: Use preload logic here to speed things even more
 
     # Get predictions for first set of models
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
-        models_vic[0], models_adv[0], loader,
+        models_vic[0], models_adv[0],
+        (loader_vic, loader_adv),
         epochwise_version=epochwise_version,
         preload=preload,
         multi_class=multi_class)
     # Get predictions for second set of models
     preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
-        models_vic[1], models_adv[1], loader,
+        models_vic[1], models_adv[1],
+        (loader_vic, loader_adv),
         epochwise_version=epochwise_version,
         preload=preload,
         multi_class=multi_class)

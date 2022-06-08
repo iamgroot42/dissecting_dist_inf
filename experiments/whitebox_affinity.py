@@ -60,8 +60,10 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_victim_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_adv_1 = ds_wrapper_class(data_config_adv_1)
-    ds_vic_1 = ds_wrapper_class(data_config_victim_1, skip_data=True,label_noise=train_config.label_noise)
+    ds_vic_1 = ds_wrapper_class(
+        data_config_victim_1, skip_data=not attack_config.victim_local_attack,label_noise=train_config.label_noise)
+    if not attack_config.victim_local_attack:
+        ds_adv_1 = ds_wrapper_class(data_config_adv_1)
 
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
@@ -71,7 +73,8 @@ if __name__ == "__main__":
         train_config,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
-        shuffle=False)
+        shuffle=False,
+        full_model=attack_config.victim_full_model)
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -81,48 +84,71 @@ if __name__ == "__main__":
             data_config, prop_value=prop_value)
 
         # Create new DS object for both and victim (for other ratio)
-        ds_adv_2 = ds_wrapper_class(data_config_adv_2)
-        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True,label_noise=train_config.label_noise)
+        ds_vic_2 = ds_wrapper_class(
+            data_config_vic_2, skip_data=not attack_config.victim_local_attack,label_noise=train_config.label_noise)
+        if not attack_config.victim_local_attack:
+            ds_adv_2 = ds_wrapper_class(data_config_adv_2)
 
         # Load victim's model features for other value
         models_vic_2 = ds_vic_2.get_models(
             train_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
-            shuffle=False)
-
-        # Generate test set
-        test_data = wrap_into_loader(
-            [models_vic_1, models_vic_2],
-            batch_size=wb_attack_config.batch_size,
             shuffle=False,
-            wrap_with_loader=False
-        )
+            full_model=attack_config.victim_full_model)
 
-        # Load all adv models
-        models_adv_1 = ds_adv_1.get_models(
-            train_config_adv,
-            n_models=attack_config.num_total_adv_models,
-            on_cpu=attack_config.on_cpu,
-            shuffle=False)
-
-        models_adv_2 = ds_adv_2.get_models(
-            train_config_adv,
-            n_models=attack_config.num_total_adv_models,
-            on_cpu=attack_config.on_cpu,
-            shuffle=False)
-
-        for _ in range(attack_config.tries):
-            # Split into train, val models
-            train_data, val_data = get_train_val_from_pool(
-                [models_adv_1, models_adv_2],
-                wb_config=wb_attack_config,
+        # Generate test set unless victim-only mode
+        # In that case, 'val' data is test data
+        if not attack_config.victim_local_attack:
+            test_data = wrap_into_loader(
+                [models_vic_1, models_vic_2],
+                batch_size=wb_attack_config.batch_size,
+                shuffle=False,
                 wrap_with_loader=False
             )
+
+        # Load adv models for both ratios
+        # Unless victim-only mode
+        if not attack_config.victim_local_attack:
+            models_adv_1 = ds_adv_1.get_models(
+                train_config_adv,
+                n_models=attack_config.num_total_adv_models,
+                on_cpu=attack_config.on_cpu,
+                shuffle=False)
+
+            models_adv_2 = ds_adv_2.get_models(
+                train_config_adv,
+                n_models=attack_config.num_total_adv_models,
+                on_cpu=attack_config.on_cpu,
+                shuffle=False)
+
+        for _ in range(attack_config.tries):
+
+            # Prepare train, val data
+            if attack_config.victim_local_attack:
+                # Split victim models into train-val
+                train_data, val_data = get_train_val_from_pool(
+                    [models_vic_1, models_vic_2],
+                    wb_config=wb_attack_config,
+                    wrap_with_loader=False
+                )
+                test_data = val_data
+            else:
+                # Normal train-val split from adv models
+                train_data, val_data = get_train_val_from_pool(
+                    [models_adv_1, models_adv_2],
+                    wb_config=wb_attack_config,
+                    wrap_with_loader=False
+                )
 
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
                 None, wb_attack_config)
+
+            # Decide which models and DS to use
+            models_1_use = models_vic_1 if attack_config.victim_local_attack else models_adv_1
+            models_2_use = models_vic_2 if attack_config.victim_local_attack else models_adv_2
+            ds_use = [ds_vic_1, ds_vic_2] if attack_config.victim_local_attack else [ds_adv_1, ds_adv_2]
 
             # Get seed-data
             if wb_attack_config.affinity_config.perpoint_based_selection > 0:
@@ -131,42 +157,40 @@ if __name__ == "__main__":
 
                 print(warning_string("Using Per-Point criteria for seed-data selection"))
                 # Take a random sample of adv models
-                models_adv_1_sample = np.random.choice(
-                    models_adv_1,
+                models_1_sample = np.random.choice(
+                    models_1_use,
                     wb_attack_config.affinity_config.perpoint_based_selection,
                     replace=False)
-                models_adv_2_sample = np.random.choice(
-                    models_adv_2,
+                models_2_sample = np.random.choice(
+                    models_2_use,
                     wb_attack_config.affinity_config.perpoint_based_selection,
                     replace=False)
                 # Get seed-data
                 seed_data_ds, seed_data_loader = get_seed_data_loader(
-                    [ds_adv_1, ds_adv_2],
-                    wb_attack_config,
+                    ds_use, wb_attack_config,
                     num_samples_use=wb_attack_config.affinity_config.num_samples_use,
-                    adv_models=[models_adv_1_sample, models_adv_2_sample])
+                    adv_models=[models_1_sample, models_2_sample])
             else:
                 # Identify optimal data to use (for features) using heuristic
                 if wb_attack_config.affinity_config.optimal_data_identity:
                     # Collect all data
                     seed_data_all_ds, seed_data_all_loader, seed_data_all = get_seed_data_loader(
-                        [ds_adv_1, ds_adv_2],
-                        wb_attack_config,
+                        ds_use, wb_attack_config,
                         also_get_raw_data=True)
                     # Take random samples from both models
-                    models_adv_1_sample = np.random.choice(
-                        models_adv_1,
+                    models_1_sample = np.random.choice(
+                        models_1_use,
                         wb_attack_config.affinity_config.model_sample_for_optimal_data_identity,
                         replace=False)
-                    models_adv_2_sample = np.random.choice(
-                        models_adv_2,
+                    models_2_sample = np.random.choice(
+                        models_2_use,
                         wb_attack_config.affinity_config.model_sample_for_optimal_data_identity,
                         replace=False)
-                    models_adv_sample = np.concatenate(
-                        (models_adv_1_sample, models_adv_2_sample), axis=0, dtype=object)
+                    models_sample = np.concatenate(
+                        (models_1_sample, models_2_sample), axis=0, dtype=object)
                     # Use those to determine 'optimal' data
                     all_features = attacker_obj.make_affinity_features(
-                        models_adv_sample, seed_data_all_loader,
+                        models_sample, seed_data_all_loader,
                         return_raw_features=True)
                     wanted_ids = identify_relevant_points(
                         all_features,
@@ -178,8 +202,7 @@ if __name__ == "__main__":
                         seed_data_all, wb_attack_config, wanted_ids)
                 else:
                     seed_data_ds, seed_data_loader = get_seed_data_loader(
-                        [ds_adv_1, ds_adv_2],
-                        wb_attack_config,
+                        ds_use, wb_attack_config,
                         num_samples_use=wb_attack_config.affinity_config.num_samples_use)
 
             # Save seed-data in attack object, since this is needed
@@ -194,8 +217,12 @@ if __name__ == "__main__":
                 test_data[0], seed_data_loader)
             # Make affinity features for val (adv) models, if requested
             if val_data is not None:
-                features_val = attacker_obj.make_affinity_features(
-                    val_data[0], seed_data_loader)
+                if attack_config.victim_local_attack:
+                    # Val is same as test
+                    features_val = features_test
+                else:
+                    features_val = attacker_obj.make_affinity_features(
+                        val_data[0], seed_data_loader)
 
             # Execute attack
             chosen_accuracy = attacker_obj.execute_attack(
@@ -211,7 +238,8 @@ if __name__ == "__main__":
             if wb_attack_config.save:
                 attacker_obj.save_model(
                     data_config_vic_2,
-                    attack_specific_info_string=str(chosen_accuracy))
+                    attack_specific_info_string=str(chosen_accuracy),
+                    victim_local=attack_config.victim_local_attack)
 
     # Save logger results
     logger.save()

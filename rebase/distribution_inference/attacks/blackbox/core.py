@@ -430,7 +430,6 @@ def order_points(p1s, p2s):
         Estimate utility of individual points, done by taking
         absolute difference in their predictions.
     """
-    # TODO: This ranking should ideally on probabilities, not logits
     if p1s.shape != p2s.shape:
         raise ValueError(
             f"Both predictions should be same shape, got {p1s.shape} and {p2s.shape}")

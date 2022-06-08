@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
         # Get model
         if dp_config is None:
-            model = ds_info.get_model()
+            model = ds_info.get_model(full_model=train_config.full_model)
         else:
             model = ds_info.get_model_for_dp()
 

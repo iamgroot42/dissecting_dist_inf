@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if args.split:
         data_config.split = args.split
         train_config.data_config.split = args.split
-    if (args.ratio!=None):
+    if (args.ratio != None):
         data_config.value = args.ratio
         train_config.data_config.value = args.ratio
     if misc_config is not None:

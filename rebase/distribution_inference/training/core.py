@@ -7,9 +7,10 @@ from copy import deepcopy
 import os
 
 from distribution_inference.training.utils import AverageMeter, generate_adversarial_input, save_model
-from distribution_inference.config import TrainConfig, AdvTrainingConfig
+from distribution_inference.config import TrainConfig, AdvTrainingConfig, ShuffleDefenseConfig
 from distribution_inference.training.dp import train as train_with_dp
 from distribution_inference.utils import warning_string
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 
 def train(model, loaders, train_config: TrainConfig,
@@ -30,7 +31,8 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
                 expect_extra: bool = True,
                 input_is_list: bool = False,
                 regression: bool = False,
-                multi_class: bool = False):
+                multi_class: bool = False,
+                shuffle_defense: ShuffleDefenseConfig = None):
     model.train()
     train_loss = AverageMeter()
     if not regression:
@@ -41,9 +43,14 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
     for tuple in iterator:
         # Extract data
         if expect_extra:
-            data, labels, _ = tuple
+            data, labels, prop_labels = tuple
         else:
             data, labels = tuple
+
+        # Shuffle and sub-sample data, if needed
+        if shuffle_defense:
+            data, labels, prop_labels = shuffle_defense.process(
+                data, labels, prop_labels)
 
         # Support for using same code for AMC
         if input_is_list:
@@ -240,8 +247,16 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         iterator = tqdm(iterator)
 
     adv_config = None
+    shuffle_defense = None
     if train_config.misc_config is not None:
         adv_config = train_config.misc_config.adv_config
+        shuffle_defense_config = train_config.misc_config.shuffle_defense_config
+        if shuffle_defense_config and not train_config.expect_extra:
+            raise ValueError(
+                "Need access to property labels for shuffle defense. Set expect_extra to True")
+
+        if shuffle_defense_config is not None:
+            shuffle_defense = ShuffleDefense(shuffle_defense_config)
 
         # Special case for CelebA
         # Given the way scaling is done, eps (passed as argument) should be
@@ -263,7 +278,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
                                   expect_extra=train_config.expect_extra,
                                   input_is_list=input_is_list,
                                   regression=train_config.regression,
-                                  multi_class=train_config.multi_class)
+                                  multi_class=train_config.multi_class,
+                                  shuffle_defense=shuffle_defense)
 
         # Get metrics on val data, if available
         if val_loader is not None:

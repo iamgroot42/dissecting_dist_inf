@@ -35,8 +35,8 @@ class Attack:
         raise NotImplementedError("Must be implemented in subclass")
 
     def eval_attack(self, test_loader,
-                     epochwise_version: bool = False,
-                     get_preds: bool = False):
+                    epochwise_version: bool = False,
+                    get_preds: bool = False):
         """
             Evaluate attack on given test data
         """
@@ -54,6 +54,18 @@ class Attack:
         checkpoint = ch.load(path)
         self.model.load_state_dict(checkpoint['model'])
         self.trained_model = True
+
+    def get_pred(self, x):
+        """
+            Get prediction for given input
+        """
+        pred = self.model(x)
+        if self.config.binary or self.config.regression_config:
+            return pred[:, 0]
+        return pred
+
+    def to_gpu(self):
+        self.model.cuda()
 
 
 class BasicDataset(Dataset):

@@ -1,0 +1,174 @@
+{
+    "name": "bb_thresh_tune",
+    "start time": "2022-05-18 16:52:59.510129",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "boneage",
+                "prop": "gender",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": "age",
+                "cwise_samples": 1000000,
+                "squeeze": true
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false
+        },
+        "values": [
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8
+        ],
+        "black_box": {
+            "attack_type": [
+                "threshold_perpoint"
+            ],
+            "ratios": [
+                0.05,
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+                1.0
+            ],
+            "batch_size": 30000,
+            "num_adv_models": 50,
+            "granularity": 0.005,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
+            "multi_class": false,
+            "save": false,
+            "tune_final_threshold": true
+        },
+        "white_box": null,
+        "tries": 5,
+        "num_victim_models": 500,
+        "on_cpu": false,
+        "adv_misc_config": null,
+        "num_total_adv_models": 1000
+    },
+    "result": {
+        "threshold_perpoint": {
+            "0.2": {
+                "adv_acc": [
+                    99.0,
+                    96.0,
+                    96.0,
+                    100.0,
+                    98.0
+                ],
+                "victim_acc": [
+                    83.8,
+                    91.3,
+                    91.60000000000001,
+                    92.5,
+                    90.60000000000001
+                ]
+            },
+            "0.3": {
+                "adv_acc": [
+                    93.0,
+                    86.0,
+                    100.0,
+                    94.0,
+                    91.0
+                ],
+                "victim_acc": [
+                    88.6,
+                    76.8,
+                    93.30000000000001,
+                    82.19999999999999,
+                    79.0
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    80.0,
+                    99.0,
+                    85.0,
+                    98.0,
+                    97.0
+                ],
+                "victim_acc": [
+                    61.1,
+                    70.5,
+                    61.1,
+                    74.3,
+                    71.6
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    80.0,
+                    98.0,
+                    98.0,
+                    98.0,
+                    81.0
+                ],
+                "victim_acc": [
+                    63.0,
+                    69.8,
+                    71.5,
+                    74.5,
+                    60.5
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    96.0,
+                    90.0,
+                    85.0,
+                    90.0,
+                    93.0
+                ],
+                "victim_acc": [
+                    81.39999999999999,
+                    77.7,
+                    73.7,
+                    73.2,
+                    74.4
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    100.0,
+                    98.0,
+                    100.0,
+                    98.0,
+                    100.0
+                ],
+                "victim_acc": [
+                    96.7,
+                    90.7,
+                    95.7,
+                    89.0,
+                    86.1
+                ]
+            }
+        }
+    },
+    "save time": "2022-05-18 19:17:07.835367"
+}

@@ -14,7 +14,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self,epoch_wise:bool=False):
+    def __init__(self, epoch_wise: bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="New Census",
                          data_path="census_new/census_2019_1year",
@@ -24,13 +24,17 @@ class DatasetInformation(base.DatasetInformation):
                          property_focus={"sex": 'female', "race": 'white'},
                          epoch_wise=epoch_wise)
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
+        if full_model:
+            raise NotImplementedError("Only one model arch for this dataset")
         model = MLPTwoLayer(n_inp=105)
         if not cpu:
             model = model.cuda()
         return model
 
-    def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
+    def get_model_for_dp(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
+        if full_model:
+            raise NotImplementedError("Only one model arch for this dataset")
         model = MLPTwoLayer(n_inp=105)
         if not cpu:
             model = model.cuda()
@@ -110,16 +114,20 @@ class _CensusIncome:
     def get_data(self, split, prop_ratio, filter_prop,
                  custom_limit=None, scale: float = 1.0,label_noise:float=0):
 
+        lambda_fn = self._get_prop_label_lambda(filter_prop)
+
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
             TRAIN_DF = self.get_filter(TRAIN_DF, filter_prop,
                                        split, prop_ratio, is_test=0,
                                        custom_limit=custom_limit,
                                        scale=scale)
+            train_prop_labels = 1 * (lambda_fn(TRAIN_DF).to_numpy())
             TEST_DF = self.get_filter(TEST_DF, filter_prop,
                                       split, prop_ratio, is_test=1,
                                       custom_limit=custom_limit,
                                       scale=scale)
+            test_prop_labels = 1 * (lambda_fn(TEST_DF).to_numpy())
 
             (x_tr, y_tr, cols), (x_te, y_te, cols) = self.get_x_y(
                 TRAIN_DF), self.get_x_y(TEST_DF)
@@ -131,8 +139,9 @@ class _CensusIncome:
                 #print(y_tr[idx])
                 y_tr[idx,0] = 1- y_tr[idx,0]
                 #print(y_tr[idx])
-            return (x_tr, y_tr), (x_te, y_te), cols
+            return (x_tr, y_tr,train_prop_labels), (x_te, y_te,test_prop_labels), cols
 
+           
         if split == "all":
             return prepare_one_set(self.train_df, self.test_df)
         if split == "victim":
@@ -192,15 +201,22 @@ class _CensusIncome:
         self.train_df_victim, self.train_df_adv = s_split(self.train_df)
         self.test_df_victim, self.test_df_adv = s_split(self.test_df)
 
+    def _get_prop_label_lambda(self, filter_prop):
+        if filter_prop == "sex":
+            def lambda_fn(x): return x['sex'] == 1
+        elif filter_prop == "race":
+            def lambda_fn(x): return x['race'] == 0
+        else:
+            raise NotImplementedError(f"Property {filter_prop} not supported")
+        return lambda_fn
+
     # Fet appropriate filter with sub-sampling according to ratio and property
     def get_filter(self, df, filter_prop, split, ratio, is_test,
                    custom_limit=None, scale: float = 1.0):
         if filter_prop == "none":
             return df
-        elif filter_prop == "sex":
-            def lambda_fn(x): return x['sex'] == 1
-        elif filter_prop == "race":
-            def lambda_fn(x): return x['race'] == 0
+        else:
+            lambda_fn = self._get_prop_label_lambda(filter_prop)
 
         # For 1-year Census data
         prop_wise_subsample_sizes = {
@@ -228,23 +244,23 @@ class _CensusIncome:
 
 
 class CensusSet(base.CustomDataset):
-    def __init__(self, data, targets, squeeze=False):
+    def __init__(self, data, targets, prop_labels, squeeze=False):
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
+        self.prop_labels = ch.from_numpy(prop_labels).float()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
 
     def __getitem__(self, index):
         x = self.data[index]
         y = self.targets[index]
+        prop_label = self.prop_labels[index]
 
         if self.squeeze:
             y = y.squeeze()
+            prop_label = prop_label.squeeze()
 
-        # Set property label to -1
-        # Not really used, but ensures compatibility with methods
-        # from utils
-        return x, y, -1
+        return x, y, prop_label
 
 
 # Wrapper for easier access to dataset
@@ -272,21 +288,29 @@ class CensusWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+    def load_model(self, path: str, on_cpu: bool = False, full_model: bool = False) -> nn.Module:
+        if full_model:
+            raise NotImplementedError("Only one model arch for this dataset")
         info_object = self.info_object
-        model = info_object.get_model(cpu=on_cpu)
-        return load_model(model, path,on_cpu=on_cpu)
+        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
+        return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool = False) -> str:
         info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         dp_config = None
+        shuffle_defense_config = None
         if train_config.misc_config is not None:
             dp_config = train_config.misc_config.dp_config
+            shuffle_defense_config = train_config.misc_config.shuffle_defense_config
 
         if dp_config is None:
-            base_path = os.path.join(base_models_dir, "normal")
-           
+            if shuffle_defense_config is None:
+                base_path = os.path.join(base_models_dir, "normal")
+            else:
+                base_path = os.path.join(base_models_dir, "shuffle_defense",
+                                         "%.2f" % shuffle_defense_config.desired_value,
+                                         "%.2f" % shuffle_defense_config.sample_ratio)
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)

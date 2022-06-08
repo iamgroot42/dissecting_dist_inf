@@ -49,7 +49,8 @@ class PINAttack(Attack):
 
     def save_model(self,
                    data_config: DatasetConfig,
-                   attack_specific_info_string: str):
+                   attack_specific_info_string: str,
+                   victim_local: bool = False):
         if not self.trained_model:
             warnings.warn(warning_string(
                 "\nAttack being saved without training."))
@@ -65,6 +66,9 @@ class PINAttack(Attack):
             self.config.permutation_config.focus)
         if self.config.regression_config is None:
             save_path = os.path.join(save_path, str(data_config.value))
+
+        if victim_local:
+            save_path = os.path.join(save_path, "victim_local")
 
         # Make sure folder exists
         ensure_dir_exists(save_path)

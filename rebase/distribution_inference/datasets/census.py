@@ -71,7 +71,7 @@ class DatasetInformation(base.DatasetInformation):
                          property_focus={"sex": 'Female', "race": 'White'},
                          epoch_wise=epoch)
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
         clf = PortedMLPClassifier()
         if not cpu:
             clf = clf.cuda()
@@ -249,7 +249,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
     def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
         info_object = DatasetInformation()
         model = info_object.get_model(cpu=on_cpu)
-        return load_model(model, path)
+        return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation()

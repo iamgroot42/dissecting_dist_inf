@@ -4,7 +4,7 @@
         "prop": "sex",
         "split": "victim",
         "squeeze": true,
-        "value": 0.2
+        "value": 0.5
     },
     "offset": 0,
     "epochs": 20,
@@ -12,5 +12,5 @@
     "batch_size": 200,
     "weight_decay": 1e-4,
     "num_models": 500,
-    "label_noise": 0.4
+    "label_noise": 0.2
 }

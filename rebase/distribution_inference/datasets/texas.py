@@ -32,7 +32,7 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch,
                          num_dropped_features=num_dropped_features)
 
-    def get_model(self, cpu: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
         num_eff_features = self.num_features - self.num_dropped_features
         model = MLPFourLayer(n_inp=num_eff_features,
                              num_classes=self.num_classes)
@@ -65,7 +65,8 @@ class DatasetInformation(base.DatasetInformation):
     def generate_victim_adversary_splits(self,
                                          adv_ratio=0.25,
                                          test_ratio: float = 0.25,
-                                         num_tries: int = 300):
+                                         num_tries: int = 300,
+                                         split_on_hospitals: bool = True):
         """
             Generate and store data offline for victim and adversary
             using the given dataset. Use this method only once for the
@@ -120,13 +121,14 @@ class DatasetInformation(base.DatasetInformation):
         x[:, columns.index("race")] = 1 * (x[:, columns.index("race")] != 0.75)
 
         # TODO: Account for labels in split creation as well
-        # Function to convery labels to one-hot
+        # Function to convert labels to one-hot
         def to_onehot(z):
             onehot = np.zeros((z.size, y.max()+1))
             onehot[np.arange(z.size), z] = 1
             return onehot
 
         # Function to split data, on the basis of hospital IDs
+        # (or random, if specified)
         # Useful for victim/adv splits as well as train/val splits
         def create_split(data_, ratio, labels_):
             # We ideally want a split of the hospitals such that the
@@ -140,14 +142,23 @@ class DatasetInformation(base.DatasetInformation):
             # Keep trying different random splits
             iterator = tqdm(range(num_tries))
             for _ in iterator:
-                # Create random splits on thcic-ids
-                vic_ids, adv_ids = train_test_split(
-                    list(range(len(thcic_ids))), test_size=ratio)
-                # Look at the "L2" distance in the ratios of relevance for specified columns
-                relevant_indices_vic = np.any(
-                    [data[:, 0] == thcic_ids[id_] for id_ in vic_ids], 0)
-                relevant_indices_adv = np.any(
-                    [data[:, 0] == thcic_ids[id_] for id_ in adv_ids], 0)
+
+                if split_on_hospitals:
+                    # Create random splits on thcic-ids
+                    vic_ids, adv_ids = train_test_split(
+                        list(range(len(thcic_ids))), test_size=ratio)
+                    # Look at the "L2" distance in the ratios
+                    # of relevance for specified columns
+                    relevant_indices_vic = np.any(
+                        [data[:, 0] == thcic_ids[id_] for id_ in vic_ids], 0)
+                    relevant_indices_adv = np.any(
+                        [data[:, 0] == thcic_ids[id_] for id_ in adv_ids], 0)
+                else:
+                    # Split data randomly, without any hospital IDs
+                    relevant_indices_vic, relevant_indices_adv = train_test_split(
+                        list(range(data.shape[0])),
+                        test_size=ratio)
+
                 vic_sim = np.mean(
                     data[relevant_indices_vic][:, relevant_indices], 0)
                 adv_sim = np.mean(
@@ -370,7 +381,7 @@ class TexasWrapper(base.CustomDatasetWrapper):
         info_object = DatasetInformation(
             num_dropped_features=self.num_features_drop)
         model = info_object.get_model(cpu=on_cpu)
-        return load_model(model, path)
+        return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig) -> str:
         info_object = DatasetInformation(

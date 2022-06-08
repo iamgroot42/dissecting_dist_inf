@@ -61,14 +61,15 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_victim_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_adv_1 = ds_wrapper_class(data_config_adv_1, skip_data=True)
     ds_vic_1 = ds_wrapper_class(data_config_victim_1, skip_data=True)
+    if not attack_config.victim_local_attack:
+        ds_adv_1 = ds_wrapper_class(data_config_adv_1, skip_data=True)
 
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
     # Load victim and adversary's model features for first value
-    _, features_vic_1 = ds_vic_1.get_model_features(
+    dims, features_vic_1 = ds_vic_1.get_model_features(
         train_config,
         wb_attack_config,
         n_models=attack_config.num_victim_models,
@@ -83,8 +84,9 @@ if __name__ == "__main__":
             data_config, prop_value=prop_value)
 
         # Create new DS object for both and victim (for other ratio)
-        ds_adv_2 = ds_wrapper_class(data_config_adv_2, skip_data=True)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
+        if not attack_config.victim_local_attack:
+            ds_adv_2 = ds_wrapper_class(data_config_adv_2, skip_data=True)
 
         # Load victim and adversary's model features for other value
         _, features_vic_2 = ds_vic_2.get_model_features(
@@ -94,26 +96,30 @@ if __name__ == "__main__":
             on_cpu=attack_config.on_cpu,
             shuffle=False)
 
-        # Generate test set
-        test_loader = wrap_into_loader(
-            [features_vic_1, features_vic_2],
-            batch_size=wb_attack_config.batch_size,
-            shuffle=False,
-        )
+        # Generate test set unless victim-only mode
+        # In that case, 'val' data is test data
+        if not attack_config.victim_local_attack:
+            test_loader = wrap_into_loader(
+                [features_vic_1, features_vic_2],
+                batch_size=wb_attack_config.batch_size,
+                shuffle=False,
+            )
 
         # Load adv models for both ratios
-        dims, features_adv_1 = ds_adv_1.get_model_features(
-            train_config_adv,
-            wb_attack_config,
-            n_models=attack_config.num_total_adv_models,
-            on_cpu=attack_config.on_cpu,
-            shuffle=True)
-        _, features_adv_2 = ds_adv_2.get_model_features(
-            train_config_adv,
-            wb_attack_config,
-            n_models=attack_config.num_total_adv_models,
-            on_cpu=attack_config.on_cpu,
-            shuffle=True)
+        # Unless victim-only mode
+        if not attack_config.victim_local_attack:
+            _, features_adv_1 = ds_adv_1.get_model_features(
+                train_config_adv,
+                wb_attack_config,
+                n_models=attack_config.num_total_adv_models,
+                on_cpu=attack_config.on_cpu,
+                shuffle=True)
+            _, features_adv_2 = ds_adv_2.get_model_features(
+                train_config_adv,
+                wb_attack_config,
+                n_models=attack_config.num_total_adv_models,
+                on_cpu=attack_config.on_cpu,
+                shuffle=True)
 
         # Run attack trials
         for trial in range(attack_config.tries):
@@ -122,10 +128,19 @@ if __name__ == "__main__":
                 dims, wb_attack_config)
 
             # Prepare train, val data
-            train_loader, val_loader = get_train_val_from_pool(
-                [features_adv_1, features_adv_2],
-                wb_config=wb_attack_config,
-            )
+            if attack_config.victim_local_attack:
+                # Split victim models into train-val
+                train_loader, val_loader = get_train_val_from_pool(
+                    [features_vic_1, features_vic_2],
+                    wb_config=wb_attack_config,
+                )
+                test_loader = val_loader
+            else:
+                # Normal train-val split from adv models
+                train_loader, val_loader = get_train_val_from_pool(
+                    [features_adv_1, features_adv_2],
+                    wb_config=wb_attack_config,
+                )
 
             # Execute attack
             chosen_accuracy = attacker_obj.execute_attack(
@@ -142,7 +157,8 @@ if __name__ == "__main__":
                 save_string = ("%d_" % trial) + str(chosen_accuracy)
                 attacker_obj.save_model(
                     data_config_vic_2,
-                    attack_specific_info_string=save_string)
+                    attack_specific_info_string=save_string,
+                    victim_local=attack_config.victim_local_attack)
 
     # Save logger results
     logger.save()

@@ -18,13 +18,13 @@
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
-            "drop_senstive_cols": true
+            "drop_senstive_cols": false
         },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 5,
+    "tries": 3,
     "values": [
         0.0,
         0.1,

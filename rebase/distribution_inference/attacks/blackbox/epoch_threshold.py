@@ -4,6 +4,7 @@ from typing import List, Callable
 
 from distribution_inference.attacks.blackbox.core import Attack,epoch_order_p, PredictionsOnDistributions,PredictionsOnOneDistribution,find_threshold_acc,get_threshold_acc, order_points
 from distribution_inference.attacks.blackbox.core import _acc_per_dis
+DUMPING = 10
 class Epoch_ThresholdAttack(Attack):
     def attack(self,
                preds_vic1: PredictionsOnDistributions,
@@ -12,10 +13,12 @@ class Epoch_ThresholdAttack(Attack):
                preds_adv2: PredictionsOnDistributions,
                ground_truth,
                calc_acc: Callable,
-               get_preds:bool=False):
+               get_preds:bool=False,
+               ratio:bool=False):
         assert calc_acc is not None, "Must provide function to compute accuracy"
         assert ground_truth is not None, "Must provide ground truth to compute accuracy"
         assert not (self.config.multi2 and self.config.multi), "No implementation for both multi model"
+        self.ratio = ratio
         adv_accs_1, victim_accs_1 = self._thresh_per_dis(
             (preds_vic1.preds_on_distr_1,preds_vic2.preds_on_distr_1),
             (preds_adv1.preds_on_distr_1,preds_adv2.preds_on_distr_1),
@@ -73,10 +76,16 @@ class Epoch_ThresholdAttack(Attack):
                             y[:leng],
                             calc_acc,
                             t=True)
-            vdif1 = vacc[1][0]-vacc[0][0]
-            vdif2 = vacc[1][1]-vacc[0][1]
-            adif1 = advacc[1][0]-advacc[0][0]
-            adif2 = advacc[1][1]-advacc[0][1]
+            if self.ratio:
+                vdif1 = (vacc[1][0]+DUMPING)/(vacc[0][0]+DUMPING)
+                vdif2 = (vacc[1][1]+DUMPING)/(vacc[0][1]+DUMPING)
+                adif1 = (advacc[1][0]+DUMPING)/(advacc[0][0]+DUMPING)
+                adif2 = (advacc[1][1]+DUMPING)/(advacc[0][1]+DUMPING)
+            else:
+                vdif1 = vacc[1][0]-vacc[0][0]
+                vdif2 = vacc[1][1]-vacc[0][1]
+                adif1 = advacc[1][0]-advacc[0][0]
+                adif2 = advacc[1][1]-advacc[0][1]
             tracc, threshold, rule = find_threshold_acc(
             adif1, adif2, granularity=self.config.granularity)
             combined = np.concatenate((vdif1, vdif2))

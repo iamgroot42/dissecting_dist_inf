@@ -206,7 +206,9 @@ def _get_weight_layers(model: BaseModel,
                        include_all: bool = False,
                        is_conv: bool = False,
                        transpose_features: bool = True,
-                       prune_mask=[]):
+                       prune_mask=[],
+                       detach: bool = True,
+                       track_grad: bool = False,):
     dims, dim_kernels, weights, biases = [], [], [], []
     i, j = 0, 0
 
@@ -219,9 +221,15 @@ def _get_weight_layers(model: BaseModel,
 
     track = 0
     for name, param in model.named_parameters():
+        # WEIGHT
         if "weight" in name:
-
-            param_data = param.data.detach().cpu()
+            if track_grad:
+                param_data = param
+            else:
+                param_data = param.data
+            if detach:
+                param_data = param_data.detach()
+            param_data = param_data.cpu()
 
             # Apply pruning masks if provided
             if len(prune_mask) > 0:
@@ -237,8 +245,16 @@ def _get_weight_layers(model: BaseModel,
                 dim_kernels.append(weights[-1].shape[0] * weights[-1].shape[1])
             else:
                 dims.append(weights[-1].shape[0])
+        # BIAS
         if "bias" in name:
-            biases.append(ch.unsqueeze(param.data.detach().cpu(), 0))
+            if track_grad:
+                param_data = param
+            else:
+                param_data = param.data
+            if detach:
+                param_data = param_data.detach()
+            param_data = param_data.cpu()
+            biases.append(ch.unsqueeze(param_data, 0))
 
         # Assume each layer has weight & bias
         i += 1
@@ -300,7 +316,9 @@ def _get_weight_layers(model: BaseModel,
 # Function to extract model parameters
 def get_weight_layers(model: BaseModel,
                       attack_config: WhiteBoxAttackConfig,
-                      prune_mask=[]):
+                      prune_mask=[],
+                      detach: bool = True,
+                      track_grad: bool = False):
     # TODO: Could speed this up by loading only relevant parts of the model
     # depending on what the meta-classifier will be using
     if model.is_conv:
@@ -315,14 +333,18 @@ def get_weight_layers(model: BaseModel,
             custom_layers=attack_config.custom_layers_conv,
             transpose_features=model.transpose_features,
             prune_mask=prune_mask,
-            include_all=True)
+            include_all=True,
+            detach=detach,
+            track_grad=track_grad)
         dims_fc, fvec_fc = _get_weight_layers(
             model.classifier,
             first_n=attack_config.first_n_fc,
             start_n=attack_config.start_n_fc,
             custom_layers=attack_config.custom_layers_fc,
             transpose_features=model.transpose_features,
-            prune_mask=prune_mask,)
+            prune_mask=prune_mask,
+            detach=detach,
+            track_grad=track_grad)
         # If PIN requested only FC layers, return only FC layers
         if attack_config.permutation_config:
             if attack_config.permutation_config.focus == "fc":
@@ -339,7 +361,9 @@ def get_weight_layers(model: BaseModel,
             start_n=attack_config.start_n_fc,
             custom_layers=attack_config.custom_layers_fc,
             transpose_features=model.transpose_features,
-            prune_mask=prune_mask,)
+            prune_mask=prune_mask,
+            detach=detach,
+            track_grad=track_grad)
         feature_vector = fvec_fc
         dimensions = dims_fc
 

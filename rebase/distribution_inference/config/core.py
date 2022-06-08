@@ -44,6 +44,19 @@ class DPTrainingConfig(Serializable):
 
 
 @dataclass
+class ShuffleDefenseConfig(Serializable):
+    """
+        Config to randomly sample during training
+        to maintain a desired ratio.
+        For now, implemented at batch-level.
+    """
+    desired_value: float
+    """Desired ratio to be achieved when shuffling"""
+    sample_ratio: float = 0.75
+    """Desired fraction of original data left over after ratio is achieved"""
+
+
+@dataclass
 class DatasetConfig(Serializable):
     """
         Dataset-specific configuration values.
@@ -68,14 +81,21 @@ class DatasetConfig(Serializable):
     """Number of samples for train & test to use (override existing values)"""
     squeeze: Optional[bool] = False
     """Whether to squeeze label data (because of extra dimension)"""
+    processed_variant: Optional[bool] = True
+    """Use processed version of data (relevant for BoneAge)?"""
 
 
 @dataclass
 class MiscTrainConfig(Serializable):
+    """
+        Miscellaneous training configurations.
+    """
     adv_config: Optional[AdvTrainingConfig] = None
     """Configuration to be used for adversarial training"""
     dp_config: Optional[DPTrainingConfig] = None
     """Configuration to be used for DP training"""
+    shuffle_defense_config: Optional[ShuffleDefenseConfig] = None
+    """Configuration to be usef for shuffle-based defense"""
 
 
 @dataclass
@@ -136,6 +156,8 @@ class TrainConfig(Serializable):
     """Training for multi-class classification?"""
     label_noise: Optional[float] = 0
     """Randomly flip a proportion of labels"""
+    full_model: Optional[bool] = False
+    """Use full-model for training?"""
 
 
 @dataclass
@@ -169,6 +191,14 @@ class BlackBoxAttackConfig(Serializable):
     End_epoch: Optional[int] = 20
     
     
+    relative_threshold: Optional[bool] = False
+    """Thresholds are relative to mean accuracy/logits"""
+    loss_variant: Optional[bool] = False
+    """Where applicable (PPTT), ues loss values instead of logits"""
+    random_order: Optional[bool] = False
+    """Order points randomly instead of optimal ordering"""
+
+
 @dataclass
 class PermutationAttackConfig(Serializable):
     """
@@ -189,6 +219,8 @@ class AffinityAttackConfig(Serializable):
     """Number of activations in final mini-model (per layer)"""
     only_latent: bool = False
     """Ignore logits (output) layer"""
+    random_edge_selection: bool = False
+    """Use random selection of pairs (not trivial heuristic)"""
     frac_retain_pairs: float = 1.0
     """What fraction of pairs to use when training classifier"""
     better_retain_pair: bool = False
@@ -311,6 +343,54 @@ class AttackConfig(Serializable):
     """If given, specifies extra training params (adv, DP, etc) for adv models"""
     num_total_adv_models: Optional[int] = 1000
     """Total number of adversarial models to load"""
+    victim_local_attack: Optional[bool] = False
+    """Perform attack as if victim is using its own data/models"""
+    victim_full_model: bool = False
+    """Use full (larger) model for victim?"""
+
+
+@dataclass
+class UnlearningConfig(Serializable):
+    """
+        Configuration values for Property Unlerning.
+        https://arxiv.org/pdf/2205.08821.pdf
+    """
+    learning_rate: float
+    """LR for optimizer"""
+    stop_tol: float
+    """Delta in prediction differences that should be achieved to terminate"""
+    flip_weight_ratio: float = 0.002
+    """Ratio of weights to randomly flip when perfect predictions appear"""
+    max_iters: int = 500
+    """Maximum number of iterations to run"""
+    k: int = 2
+    """Number of classes"""
+    flip_tol: float = 1e-3
+    """Tolerance for checking with equality"""
+    min_lr: float = 1e-5
+    """Minimum learning rate"""
+
+
+@dataclass
+class DefenseConfig(Serializable):
+    """
+        Configuration file for defense
+    """
+    train_config: TrainConfig
+    """Train config used to train victim/adv models"""
+    wb_config: WhiteBoxAttackConfig
+    """Configuration used for adversary"""
+    values: List
+    """List of values (on property specified)"""
+    num_models: int
+    """Number of victim models to implement defense for"""
+    victim_local_attack: bool
+    """Load meta-classifiers corresponding to victim_local setting"""
+    on_cpu: Optional[bool] = False
+    """Keep models read on CPU?"""
+    unlearning_config: Optional[UnlearningConfig] = None
+    """Configuration for unlearning"""
+
 
 @dataclass
 class CombineAttackConfig(AttackConfig):
