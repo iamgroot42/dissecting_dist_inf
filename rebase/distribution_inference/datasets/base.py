@@ -89,7 +89,7 @@ class CustomDataset(Dataset):
 
 
 class CustomDatasetWrapper:
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,label_noise:bool=0):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: bool = 0):
         """
             self.ds_train and self.ds_val should be set to
             datasets to be used to train and evaluate.
@@ -111,6 +111,7 @@ class CustomDatasetWrapper:
         self.skip_data = skip_data
         self.num_features_drop = 0
         self.label_noise = label_noise
+
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
@@ -141,7 +142,8 @@ class CustomDatasetWrapper:
         return train_loader, test_loader
 
     def prepare_processed_data(self, loader):
-        raise NotImplementedError("No concept of processed features for this dataset")
+        raise NotImplementedError(
+            "No concept of processed features for this dataset")
 
     def get_processed_val_loader(self, batch_size: int,
                                  shuffle: bool = False,
@@ -160,7 +162,7 @@ class CustomDatasetWrapper:
 
         return test_loader
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool=False) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool = False) -> str:
         """
             Return path to directory where models will be saved,
             for a given configuration.
@@ -219,7 +221,7 @@ class CustomDatasetWrapper:
                    on_cpu: bool = False,
                    shuffle: bool = True,
                    epochwise_version: bool = False,
-                   get_names:bool=False,
+                   get_names: bool = False,
                    full_model: bool = False,
                    custom_models_path: str = None):
         """
@@ -266,7 +268,7 @@ class CustomDatasetWrapper:
                                 models_inside.append(model)
                             models.append(models_inside)
                             i += 1
-                            mp.append(os.path.join(mpath,mpath_inside))
+                            mp.append(os.path.join(mpath, mpath_inside))
                     else:
                         # Not a folder- we want to look only at epoch_wise information
                         continue
@@ -296,7 +298,7 @@ class CustomDatasetWrapper:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))
         if get_names:
-            return np.array(models, dtype='object'),mp
+            return np.array(models, dtype='object'), mp
         else:
             return np.array(models, dtype='object')
 
@@ -392,27 +394,25 @@ class CustomDatasetWrapper:
 
         feature_vectors = np.array(feature_vectors, dtype='object')
         return dims, feature_vectors
-    def get_features(self,
-                           train_config: TrainConfig,
-                           attack_config: WhiteBoxAttackConfig,
-                           models
-                           ):
+
+    def get_features(self, train_config: TrainConfig,
+                     attack_config: WhiteBoxAttackConfig,
+                     models):
         """
             Extract features for an array of models.
             Make sure only the parts that are needed inside the model are extracted
             Not compatible with epochwise yet
         """
-        
+
         feature_vectors = []
         for m in models:
             dims, feature_vector = get_weight_layers(
-                        m, attack_config)
+                m, attack_config)
             feature_vectors.append(feature_vector)
 
         if len(feature_vectors) == 0:
             raise ValueError(
                 f"No models found")
-
 
         if len(feature_vectors) != len(models):
             warnings.warn(warning_string(
@@ -420,4 +420,3 @@ class CustomDatasetWrapper:
 
         feature_vectors = np.array(feature_vectors, dtype='object')
         return dims, feature_vectors
-
