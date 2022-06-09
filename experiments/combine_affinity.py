@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     # Define logger
     logger = AttackResult(args.en, attack_config, aname="Combine")
-    DataLogger = IntermediateResult(args.en, attack_config)
+    data_logger = IntermediateResult(args.en, attack_config)
     if attack_config.save_bb:
         bb_logger = AttackResult(
             args.en+"_bb", attack_config, aname="blackbox")
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                 preds_on_distr_2=preds_vic_on_2
             )
 
-           #actually only perpoint
+            #actually only perpoint
             for attack_type in bb_attack_config.attack_type:
                 # Create attacker object
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
@@ -218,13 +218,21 @@ if __name__ == "__main__":
             clf = DecisionTreeClassifier(max_depth=2)
             clf.fit(preds_adv, labels_adv)
             #log results
-            DataLogger.add_model_name(prop_value, (adv1_names, adv2_names), t)
-            DataLogger.add_model(prop_value, clf, t)
-            DataLogger.add_bb(prop_value, bbm_preds_adv,
+            data_logger.add_model_name(prop_value, (adv1_names, adv2_names), t)
+            data_logger.add_model(prop_value, clf, t)
+            # Add results for Adv
+            data_logger.add_bb(prop_value, bbm_preds_adv,
                               bb_preds_adv, labels_adv, t)
-            DataLogger.add_points(prop_value, raw_data, t)
+            data_logger.add_wb(prop_value, wb_preds_adv, labels_adv, t)
+            # Add results for Vic
+            data_logger.add_bb(prop_value, bbm_preds_vic,
+                              bb_preds_vic, labels_vic, t, is_victim=True)
+            data_logger.add_wb(prop_value, wb_preds_vic,
+                              labels_vic, t, is_victim=True)
+            # Add raw datapoints
+            data_logger.add_points(prop_value, raw_data, t)
             logger.add_results("Combine", prop_value,
                                clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack
     logger.save()
-    DataLogger.save()
+    data_logger.save()
