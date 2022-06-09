@@ -81,7 +81,7 @@ if __name__ == "__main__":
             epochwise_version=True)
         models_vic_2 = (models_vic_2[bb_attack_config.Start_epoch-1],models_vic_2[bb_attack_config.End_epoch-1])
         for t in range(attack_config.tries):
-            print("Ratio: {}, Trial: {}".format(prop_value,t))
+            
            
             # Get victim predictions on loaders for first ratio
 
@@ -128,6 +128,7 @@ if __name__ == "__main__":
 
             # For each requested attack, only one in this script
             for attack_type in bb_attack_config.attack_type:
+                print("Ratio: {}, Attack: {}, Trial: {}".format(prop_value,attack_type,t))
                 # Create attacker object
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
                 
@@ -138,7 +139,8 @@ if __name__ == "__main__":
                     preds_a[0],
                     preds_a[1],
                     ground_truth=(ground_truth_1, ground_truth_2),
-                    calc_acc=calculate_accuracies)
+                    calc_acc=calculate_accuracies,
+                    ratio=True)
 
                 logger.add_results(attack_type, prop_value,
                                    vacc=result[0][0],adv_acc=result[1][0])
@@ -148,4 +150,4 @@ if __name__ == "__main__":
                     save_dic = attacker_obj.wrap_preds_to_save(result)
 
     # Summarize results over runs, for each ratio and attack
-    #logger.save()
+    logger.save()

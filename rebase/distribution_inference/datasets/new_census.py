@@ -221,7 +221,7 @@ class _CensusIncome:
         # For 1-year Census data
         prop_wise_subsample_sizes = {
             "adv": {
-                "sex": (20000, 12000),
+                "sex": (20000, 12000),#12000
                 "race": (14000, 9000),
             },
             "victim": {

@@ -46,8 +46,8 @@ class Epoch_Perpoint(Attack):
             ground_truth=ground_truth[0])
         # Get data for second distribution
         adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2, final_thresholds_2, classes_use = perpoint_threshold_test_per_dist(
-            PredictionsOnOneDistribution(preds_adv2.preds_on_distr_2.preds_property_1-preds_adv1.preds_on_distr_2.preds_property_1,preds_adv2.preds_on_distr_2.preds_property_2-preds_adv1.preds_on_distr_2.preds_property_2),
-            PredictionsOnOneDistribution(preds_vic2.preds_on_distr_2.preds_property_1-preds_vic1.preds_on_distr_2.preds_property_1,preds_vic2.preds_on_distr_2.preds_property_2-preds_vic1.preds_on_distr_2.preds_property_2),
+            p2,
+            pv2,
             self.config,
             order = o2,
             ground_truth=ground_truth[1])
@@ -145,6 +145,17 @@ def perpoint_threshold_test_per_dist(
         pv1 = preds_victim.preds_property_1.copy()
         pv2 = preds_victim.preds_property_2.copy()
 
+    if config.loss_variant:
+        # Use loss values instead of raw logits (or prediction probabilities)
+        assert ground_truth is not None, "Need ground-truth for loss_variant setting"
+        print("yes")
+        p1 = np_compute_losses(p1, ground_truth, multi_class=False)
+        p2 = np_compute_losses(p2, ground_truth, multi_class=False)
+        if victim_preds_present:
+            pv1 = np_compute_losses(pv1, ground_truth, multi_class=False)
+            pv2 = np_compute_losses(pv2, ground_truth, multi_class=False)
+
+    
     # Optimal order of point
     assert order is not None
 
@@ -237,14 +248,27 @@ def perpoint_threshold_test_per_dist(
     return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv,classes_victim)
 
 
-def np_compute_losses(preds, labels):
+def np_compute_losses(preds: np.ndarray,
+                      labels: np.ndarray,
+                      multi_class: bool = False):
     """
         Convert to PyTorch tensors, compute crossentropyloss
         Convert back to numpy arrays, return.
     """
-    preds_ch = ch.from_numpy(preds.copy()).transpose(0, 1)
-    labels_ch = ch.from_numpy(labels.copy()).long()
-    loss = ch.nn.CrossEntropyLoss(reduction='none')
+    # Convert to PyTorch tensors
+    preds_ch = ch.from_numpy(preds.copy())
+    labels_ch = ch.from_numpy(labels.copy())
+
+    if multi_class:
+        loss = ch.nn.CrossEntropyLoss(reduction='none')
+        labels_ch = labels_ch.long()
+        preds_ch = preds_ch.transpose(0, 1)
+    else:
+        loss = ch.nn.BCEWithLogitsLoss(reduction='none')
+        labels_ch = labels_ch.float()
+
     loss_vals = [loss(pred_ch, labels_ch).numpy() for pred_ch in preds_ch]
     loss_vals = np.array(loss_vals)
-    return loss_vals.T
+    if multi_class:
+        loss_vals = loss_vals.T
+    return loss_vals
