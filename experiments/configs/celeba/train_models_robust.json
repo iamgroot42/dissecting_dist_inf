@@ -4,7 +4,8 @@
         "prop": "Young",
         "classify": "Male",
         "split": "adv",
-        "value": 0.0
+        "value": 0.0,
+        "processed_variant": false
     },
     "misc_config": {
         "adv_config": {
@@ -22,5 +23,6 @@
     "weight_decay": 1e-4,
     "num_models": 1000,
     "get_best": true,
-    "verbose": false
+    "verbose": false,
+    "full_model": true
 }

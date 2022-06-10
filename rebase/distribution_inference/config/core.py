@@ -347,6 +347,8 @@ class AttackConfig(Serializable):
     """Perform attack as if victim is using its own data/models"""
     victim_full_model: bool = False
     """Use full (larger) model for victim?"""
+    adv_full_model: bool = False
+    """Use full (larger) model for adv?"""
 
 
 @dataclass

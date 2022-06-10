@@ -19,7 +19,8 @@
             "prop": "Male",
             "classify": "Smiling",
             "split": "adv",
-            "value": 0.0
+            "value": 0.0,
+            "processed_variant": false
         },
         "misc_config": {
             "adv_config": {

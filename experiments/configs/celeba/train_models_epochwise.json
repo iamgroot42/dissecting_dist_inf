@@ -4,7 +4,8 @@
         "prop": "Young",
         "classify": "Male",
         "split": "victim",
-        "value": 0.4
+        "value": 0.4,
+        "processed_variant": false
     },
     "epochs": 20,
     "offset": 3,
@@ -14,5 +15,6 @@
     "num_models": 1,
     "save_every_epoch": true,
     "get_best": true,
-    "verbose": false
+    "verbose": false,
+    "full_model": true
 }

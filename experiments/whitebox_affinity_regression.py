@@ -78,12 +78,14 @@ if __name__ == "__main__":
                 train_config_adv,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=True)
+                shuffle=True,
+                full_model=attack_config.adv_full_model)
             models_vic = ds_vic_specific.get_models(
                 train_config,
                 n_models=attack_config.num_victim_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=False)
+                shuffle=False,
+                full_model=attack_config.victim_full_model)
             models_adv_all.append(models_adv)
             models_vic_all.append(models_vic)
 
@@ -106,7 +108,8 @@ if __name__ == "__main__":
                     train_config,
                     n_models=attack_config.num_victim_models,
                     on_cpu=attack_config.on_cpu,
-                    shuffle=False)
+                    shuffle=False,
+                    full_model=attack_config.victim_full_model)
                 models_vic_all.append(models_vic)
 
         # Generate all the seed data

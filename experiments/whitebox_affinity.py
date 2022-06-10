@@ -114,13 +114,15 @@ if __name__ == "__main__":
                 train_config_adv,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=False)
+                shuffle=False,
+                full_model=attack_config.adv_full_model)
 
             models_adv_2 = ds_adv_2.get_models(
                 train_config_adv,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=False)
+                shuffle=False,
+                full_model=attack_config.adv_full_model)
 
         for _ in range(attack_config.tries):
 

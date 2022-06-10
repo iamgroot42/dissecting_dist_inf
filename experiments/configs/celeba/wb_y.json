@@ -13,7 +13,8 @@
             "prop": "Young",
             "classify": "Male",
             "split": "adv",
-            "value": 0.5
+            "value": 0.5,
+            "processed_variant": false
         },
         "epochs": 0,
         "learning_rate": 0,
