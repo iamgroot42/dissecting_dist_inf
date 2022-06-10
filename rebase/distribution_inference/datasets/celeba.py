@@ -53,7 +53,7 @@ class DatasetInformation(base.DatasetInformation):
                     fake_relu=fake_relu,
                     latent_focus=latent_focus)
             else:
-                model = models_core.MLPTwoLayer(n_inp=512)
+                model = models_core.MLPTwoLayer(n_inp=512, dims=[64,16])
         if not cpu:
             model = model.cuda()
         if parallel:
