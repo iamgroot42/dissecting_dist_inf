@@ -162,7 +162,7 @@ class CustomDatasetWrapper:
 
         return test_loader
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool = False) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
         """
             Return path to directory where models will be saved,
             for a given configuration.
@@ -175,7 +175,7 @@ class CustomDatasetWrapper:
             Function to get prefix + name for saving
             the model.
         """
-        prefix = self.get_save_dir(train_config)
+        prefix = self.get_save_dir(train_config, full_model=train_config.full_model)
         if name is None:
             return prefix
         return os.path.join(prefix, name)
@@ -207,7 +207,8 @@ class CustomDatasetWrapper:
         if custom_models_path:
             folder_path = custom_models_path
         else:
-            folder_path = self.get_save_dir(train_config, full_model)
+            folder_path = self.get_save_dir(
+                train_config, full_model=full_model)
         model_paths = os.listdir(folder_path)
         if shuffle:
             model_paths = np.random.permutation(model_paths)

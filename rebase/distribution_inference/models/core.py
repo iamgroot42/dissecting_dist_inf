@@ -224,18 +224,18 @@ class MLPFourLayer(BaseModel):
 
 
 class MLPFiveLayer(BaseModel):
-    def __init__(self, n_inp: int, num_classes: int = 1):
+    def __init__(self, n_inp: int, num_classes: int = 1, dims: List[int] = [1024, 512, 128, 64]):
         super().__init__(is_conv=False)
         self.layers = nn.Sequential(
-            nn.Linear(n_inp, 1024),
+            nn.Linear(n_inp, dims[0]),
             nn.ReLU(),
-            nn.Linear(1024, 512),
+            nn.Linear(dims[0], dims[1]),
             nn.ReLU(),
-            nn.Linear(512, 128),
+            nn.Linear(dims[1], dims[2]),
             nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(dims[2], dims[3]),
             nn.ReLU(),
-            nn.Linear(64, num_classes),
+            nn.Linear(dims[3], num_classes),
         )
         self.valid_for_all_fc = [1, 3, 5,7,9]
 

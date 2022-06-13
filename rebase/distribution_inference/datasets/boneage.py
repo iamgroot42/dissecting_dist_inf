@@ -365,11 +365,12 @@ class BoneWrapper(base.CustomDatasetWrapper):
                                    num_workers=num_workers,
                                    prefetch_factor=prefetch_factor)
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool=False) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
         subfolder_prefix = os.path.join(self.split, self.prop, str(self.ratio))
-        if (train_config.extra_info and train_config.extra_info.get("full_model")) or full_model:
+
+        if full_model:
             subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
         save_path = os.path.join(base_models_dir, subfolder_prefix)

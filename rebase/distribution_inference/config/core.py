@@ -407,3 +407,5 @@ class CombineAttackConfig(AttackConfig):
     """save model, data point, and predictions"""
     restore_data: Optional[str] = None
     """path to restore all the data"""
+    use_wb_latents: Optional[bool] = False
+    """Use feature outputs from WB models (instead of logits)?"""

@@ -176,6 +176,7 @@ if __name__ == "__main__":
                 bb_preds_adv = result[1][1]
                 bb_preds_vic = result[0][1]
                #done with bb, now wb
+
             attacker_obj = wu.get_attack(wb_attack_config.attack)(
                 None, wb_attack_config)
             attacker_obj.register_seed_data(seed_data_ds)
@@ -204,17 +205,21 @@ if __name__ == "__main__":
             wb_preds_adv = attacker_obj.eval_attack(
                 test_loader=(features_adv, adv_test[1]),
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                get_preds=True)
+                get_preds=True,
+                get_latents=attack_config.use_wb_latents)
 
             wb_preds_vic = attacker_obj.eval_attack(
                 test_loader=(features_vic, vic_test[1]),
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                get_preds=True)
+                get_preds=True,
+                get_latents=attack_config.use_wb_latents)
+
             #decision tree
             preds_adv = np.vstack((wb_preds_adv, bb_preds_adv))
             preds_vic = np.vstack((wb_preds_vic, bb_preds_vic))
             preds_adv = np.transpose(preds_adv)
             preds_vic = np.transpose(preds_vic)
+
             clf = DecisionTreeClassifier(max_depth=2)
             clf.fit(preds_adv, labels_adv)
             #log results
@@ -222,13 +227,13 @@ if __name__ == "__main__":
             data_logger.add_model(prop_value, clf, t)
             # Add results for Adv
             data_logger.add_bb(prop_value, bbm_preds_adv,
-                              bb_preds_adv, labels_adv, t)
+                               bb_preds_adv, labels_adv, t)
             data_logger.add_wb(prop_value, wb_preds_adv, labels_adv, t)
             # Add results for Vic
             data_logger.add_bb(prop_value, bbm_preds_vic,
-                              bb_preds_vic, labels_vic, t, is_victim=True)
+                               bb_preds_vic, labels_vic, t, is_victim=True)
             data_logger.add_wb(prop_value, wb_preds_vic,
-                              labels_vic, t, is_victim=True)
+                               labels_vic, t, is_victim=True)
             # Add raw datapoints
             data_logger.add_points(prop_value, raw_data, t)
             logger.add_results("Combine", prop_value,

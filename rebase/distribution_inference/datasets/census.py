@@ -251,7 +251,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
         model = info_object.get_model(cpu=on_cpu)
         return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
 

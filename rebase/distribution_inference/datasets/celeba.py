@@ -62,7 +62,7 @@ class DatasetInformation(base.DatasetInformation):
     
     def _get_pre_processor(self):
         # Load model
-        model = InceptionResnetV1(pretrained='vggface2').eval()
+        model = InceptionResnetV1(pretrained='casia-webface').eval()
         return model
 
     @ch.no_grad()
@@ -411,13 +411,13 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                                    num_workers=num_workers,
                                    prefetch_factor=prefetch_factor)
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool=True) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
         base_models_dir = self.info_object.base_models_dir
         subfolder_prefix = os.path.join(
             self.split, self.prop, str(self.ratio)
         )
 
-        if (train_config.extra_info and train_config.extra_info.get("full_model")) or full_model:
+        if full_model:
             subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
         if train_config.misc_config and train_config.misc_config.adv_config:

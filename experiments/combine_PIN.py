@@ -13,11 +13,12 @@ from distribution_inference.attacks.whitebox.utils import wrap_into_loader
 import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
 
+
 #a bit messy in this file. Might need to move something out to functions in rebase
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
-        "--en", help="experiment name",
+        "--en", help="Experiment Name",
         type=str, required=True)
     parser.add_argument(
         "--load_config", help="Specify config file",

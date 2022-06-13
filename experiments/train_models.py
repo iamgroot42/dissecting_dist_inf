@@ -91,4 +91,4 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            #save_model(model, save_path)
+            save_model(model, save_path)

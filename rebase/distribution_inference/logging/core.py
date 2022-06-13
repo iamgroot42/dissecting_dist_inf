@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 from distribution_inference.config.core import TrainConfig
-import numpy as np
 from typing import List
 from copy import deepcopy
 from datetime import datetime
@@ -19,12 +18,12 @@ class Result:
         self.start = datetime.now()
         self.dic = {'name': name, 'start time': str(self.start)}
 
-    def save(self, json: bool = True):
+    def save(self, json_: bool = True):
         self.save_t = datetime.now()
         self.dic['save time'] = str(self.save_t)
 
         self.path.mkdir(parents=True, exist_ok=True)
-        if json:
+        if json_:
             save_p = self.path.joinpath(f"{self.name}.json")
             with save_p.open('w') as f:
                 json.dump(self.dic, f)
@@ -130,7 +129,7 @@ class IntermediateResult(Result):
         self._add_results("model", prop, model, trial)
 
     def save(self):
-        super().save(json=False)
+        super().save(json_=False)
 
 
 class DefenseResult(Result):
