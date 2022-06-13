@@ -1,11 +1,13 @@
 import os
 import pandas as pd
-from torchvision import transforms
+from torchvision import transforms, datasets
 from PIL import Image
+import torch as ch
 import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
+from facenet_pytorch import InceptionResnetV1
 
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
@@ -15,7 +17,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self,epoch:bool = False):
+    def __init__(self, epoch:bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Celeb-A",
                          data_path="celeba",
@@ -46,14 +48,73 @@ class DatasetInformation(base.DatasetInformation):
                 fake_relu=fake_relu,
                 latent_focus=latent_focus)
         else:
-            model = models_core.MyAlexNet(
-                fake_relu=fake_relu,
-                latent_focus=latent_focus)
+            if full_model:
+                model = models_core.MyAlexNet(
+                    fake_relu=fake_relu,
+                    latent_focus=latent_focus)
+            else:
+                model = models_core.MLPTwoLayer(n_inp=512)
         if not cpu:
             model = model.cuda()
         if parallel:
             model = nn.DataParallel(model)
         return model
+    
+    def _get_pre_processor(self):
+        # Load model
+        model = InceptionResnetV1(pretrained='vggface2').eval()
+        return model
+
+    @ch.no_grad()
+    def _extract_pretrained_features(self):
+        # Load model
+        model = self._get_pre_processor()
+        model = model.cuda()
+        model = nn.DataParallel(model)
+        basepath = os.path.join(self.base_data_dir, "img_align_celeba")
+        
+        class MyDataset(ch.utils.data.Dataset):
+            def __init__(self, filenames, transform):
+                self.filenames = filenames
+                self.transform = transform
+
+            def __len__(self):
+                return len(self.filenames)
+            
+            def __getitem__(self, idx):
+                X = Image.open(os.path.join(basepath, self.filenames[idx])).convert('RGB')
+                X = self.transform(X)
+                return X
+
+        # Create custom Dataset
+        transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5), (0.5))
+            ])
+        filenames = os.listdir(basepath)
+        custom_ds = MyDataset(filenames, transform=transform)
+
+        # Create loader oout of custom_ds
+        batch_size = 2048
+        data_loader = ch.utils.data.DataLoader(
+            dataset=custom_ds,
+            shuffle=False,
+            batch_size=batch_size)
+
+        i = 0
+        feature_mapping = {}
+        for x in tqdm(data_loader, desc="Extracting features"):
+            x = x.cuda()
+            features = model(x)
+            features = features.cpu().detach()
+            for j in range(features.shape[0]):
+                feature_mapping[filenames[i + j]] = features[j]
+            i += features.shape[0]
+        assert i == len(filenames), "Something went wrong"
+
+        # Save features
+        ft_path = os.path.join(self.base_data_dir, "features.pt")
+        ch.save(feature_mapping, ft_path)
 
     def _victim_adv_identity_split(self, identities, attrs,
                                    n_tries: int = 1000, adv_ratio=0.25):
@@ -175,9 +236,12 @@ class DatasetInformation(base.DatasetInformation):
 class CelebACustomBinary(base.CustomDataset):
     def __init__(self, classify, filelist_path, attr_dict,
                  prop, ratio, cwise_sample,
-                 shuffle=False, transform=None):
+                 shuffle: bool = False,
+                 transform = None,
+                 features = None):
         self.attr_dict = attr_dict
         self.transform = transform
+        self.features = features
         self.info_object = DatasetInformation()
         self.classify_index = self.info_object.supported_properties.index(
             classify)
@@ -231,12 +295,18 @@ class CelebACustomBinary(base.CustomDataset):
 
     def __getitem__(self, idx):
         filename = self.filenames[idx]
-        x = Image.open(os.path.join(
-            self.info_object.base_data_dir, "img_align_celeba", filename))
-        y = np.array(list(self.attr_dict[filename].values()))
 
-        if self.transform:
-            x = self.transform(x)
+        if self.features:
+            # Use extracted feature
+            x = self.features[filename]
+        else:
+            # Open image
+            x = Image.open(os.path.join(
+                self.info_object.base_data_dir, "img_align_celeba", filename))
+            if self.transform:
+                x = self.transform(x)
+
+        y = np.array(list(self.attr_dict[filename].values()))
 
         return x, y[self.classify_index], y
 
@@ -311,15 +381,21 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         if self.cwise_samples is not None:
             cwise_sample = (self.cwise_samples, self.cwise_samples)
 
+        features = None
+        if self.processed_variant:
+            features = ch.load(os.path.join(self.info_object.base_data_dir, "features.pt"))
+
         # Create datasets
         ds_train = CelebACustomBinary(
             self.classify, filelist_train, attr_dict,
             self.prop, self.ratio, cwise_sample[0],
-            transform=self.train_transforms,)
+            transform=self.train_transforms,
+            features=features)
         ds_val = CelebACustomBinary(
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
-            transform=self.test_transforms)
+            transform=self.test_transforms,
+            features=features)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size: int,
@@ -335,11 +411,14 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                                    num_workers=num_workers,
                                    prefetch_factor=prefetch_factor)
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
+    def get_save_dir(self, train_config: TrainConfig, full_model: bool=True) -> str:
         base_models_dir = self.info_object.base_models_dir
         subfolder_prefix = os.path.join(
             self.split, self.prop, str(self.ratio)
         )
+
+        if (train_config.extra_info and train_config.extra_info.get("full_model")) or full_model:
+            subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
         if train_config.misc_config and train_config.misc_config.adv_config:
             # Extract epsilon to be used
@@ -364,9 +443,11 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         return save_path
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
+    def load_model(self, path: str,
+                   on_cpu: bool = False,
+                   full_model: bool = False) -> nn.Module:
         info_object = DatasetInformation()
-        model = info_object.get_model(cpu=on_cpu)
+        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
         return load_model(model, path, on_cpu=on_cpu)
 
 

@@ -74,7 +74,8 @@ if __name__ == "__main__":
         wb_attack_config,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
-        shuffle=False)
+        shuffle=False,
+        full_model=attack_config.victim_full_model)
 
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
@@ -94,7 +95,8 @@ if __name__ == "__main__":
             wb_attack_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
-            shuffle=False)
+            shuffle=False,
+            full_model=attack_config.victim_full_model)
 
         # Generate test set unless victim-only mode
         # In that case, 'val' data is test data
@@ -113,13 +115,15 @@ if __name__ == "__main__":
                 wb_attack_config,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=True)
+                shuffle=True,
+                full_model=attack_config.adv_full_model)
             _, features_adv_2 = ds_adv_2.get_model_features(
                 train_config_adv,
                 wb_attack_config,
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
-                shuffle=True)
+                shuffle=True,
+                full_model=attack_config.adv_full_model)
 
         # Run attack trials
         for trial in range(attack_config.tries):

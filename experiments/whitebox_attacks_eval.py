@@ -88,7 +88,8 @@ if __name__ == "__main__":
             on_cpu=attack_config.on_cpu,
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch,
-            custom_models_path=models_1_path)
+            custom_models_path=models_1_path,
+            full_model=attack_config.victim_full_model)
 
         # For each value (of property) asked to experiment with
         for i, prop_value in enumerate(attack_config.values):
@@ -108,7 +109,8 @@ if __name__ == "__main__":
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                custom_models_path=models_2_paths[i] if models_2_paths else None)
+                custom_models_path=models_2_paths[i] if models_2_paths else None,
+                full_model=attack_config.victim_full_model)
 
             # Generate test set
             test_loader = wrap_into_loader(

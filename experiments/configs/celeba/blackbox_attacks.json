@@ -6,7 +6,8 @@
             "classify": "Male",
             "split": "adv",
             "value": 0.5,
-            "cwise_samples": 1e6
+            "cwise_samples": 1e6,
+            "processed_variant": false
         },
         "epochs": 0,
         "learning_rate": 0,
