@@ -6,7 +6,7 @@
 #j=0
 for i in $1
 do
-python train_more.py --load_config "./train_nc_noise.json" --ratio $i 
+python train_more.py --load_config "./oversampling.json" --ratio $i 
 #j=$((($j+1)%3))
 done
 echo "finished"

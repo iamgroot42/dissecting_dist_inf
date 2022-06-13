@@ -1,9 +1,7 @@
 import torch as ch
-from tokenize import String
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from simple_parsing import ArgumentParser
 from pathlib import Path
-from dataclasses import replace
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
 from distribution_inference.training.utils import save_model
@@ -60,9 +58,10 @@ if __name__ == "__main__":
 
     # Create new DS object
     if train_config.label_noise:
-        ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch,label_noise=train_config.label_noise)
+        ds = ds_wrapper_class(
+            data_config, epoch=train_config.save_every_epoch, label_noise=train_config.label_noise)
     else:
-        ds = ds_wrapper_class(data_config,epoch = train_config.save_every_epoch)
+        ds = ds_wrapper_class(data_config, epoch=train_config.save_every_epoch)
 
     # Train models
     for i in range(1, train_config.num_models + 1):

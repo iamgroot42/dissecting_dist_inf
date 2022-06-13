@@ -36,13 +36,17 @@ class Attack:
 
     def eval_attack(self, test_loader,
                     epochwise_version: bool = False,
-                    get_preds: bool = False):
+                    get_preds: bool = False,
+                    get_latents: bool = False):
         """
             Evaluate attack on given test data
         """
         if not self.trained_model:
             warnings.warn(warning_string("\nModel not trained/loaded, being used for eval\n"))
-        return self._eval_attack(test_loader, epochwise_version, get_preds)
+        return self._eval_attack(test_loader,
+                                 epochwise_version=epochwise_version,
+                                 get_preds=get_preds,
+                                 get_latents=get_latents)
 
     def _eval_attack(self, test_loader,
                      epochwise_version: bool = False,

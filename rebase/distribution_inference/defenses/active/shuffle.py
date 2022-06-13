@@ -44,21 +44,24 @@ class ShuffleDefense:
         elif len(zero_label) > final_samples_zero:
             # Enough to sample for zero, but not one
             num_sample_one = len(one_label)
-            num_sample_zero = int((self.desired_value) / self.desired_value * num_sample_one)
+            num_sample_zero = int((self.desired_value) /
+                                  self.desired_value * num_sample_one)
         else:
             # If not enough for both, then oversampling
             oversampling = True
-            num_sample_one = len(one_label)
-            num_sample_zero = len(zero_label)
+            num_sample_one = final_samples_one
+            num_sample_zero = final_samples_zero
 
         if oversampling:
-            one_sample = np.random.choice(one_label,size=num_sample_one)
-            zero_sample = np.random.choice(zero_label,size=num_sample_zero)
-            sample_index = ch.cat([ch.from_numpy(one_sample),ch.from_numpy(zero_sample)])
+            one_sample = np.random.choice(one_label, size=num_sample_one)
+            zero_sample = np.random.choice(zero_label, size=num_sample_zero)
+            sample_index = ch.cat(
+                [ch.from_numpy(one_sample), ch.from_numpy(zero_sample)])
         else:
             one_sample = ch.randperm(len(one_label))[:num_sample_one]
             zero_sample = ch.randperm(len(zero_label))[:num_sample_zero]
-            sample_index = ch.cat([one_label[one_sample], zero_label[zero_sample]])
+            sample_index = ch.cat(
+                [one_label[one_sample], zero_label[zero_sample]])
 
         data_ = data[sample_index]
         task_labels_ = task_labels[sample_index]

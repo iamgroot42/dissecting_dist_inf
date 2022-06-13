@@ -2,54 +2,65 @@ import numpy as np
 import torch as ch
 from typing import List, Tuple, Callable, Union
 
-from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, epoch_order_p, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling,get_threshold_pred_multi
+from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, epoch_order_p, PredictionsOnOneDistribution, PredictionsOnDistributions, multi_model_sampling, get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
 DUMPING = 10
+
 
 class Epoch_Perpoint(Attack):
     def attack(self,
                preds_vic1: PredictionsOnDistributions,
-               preds_vic2: PredictionsOnDistributions,#epoch 2
+               preds_vic2: PredictionsOnDistributions,  # epoch 2
                preds_adv1: PredictionsOnDistributions,
                preds_adv2: PredictionsOnDistributions,
                ground_truth,
                calc_acc: Callable,
-               get_preds:bool=False,
-               ratio:bool=False):
+               get_preds: bool = False,
+               ratio: bool = False):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models
         """
-        self.ratio=ratio
+        self.ratio = ratio
         # For the multi-class case, we do not want to work with direct logit values
         # Scale them to get post-softmax probabilities
         # TODO: Actually do that
 
         # Get data for first distribution
-        o1 = epoch_order_p(preds_adv1.preds_on_distr_1.preds_property_1,preds_adv1.preds_on_distr_1.preds_property_2,preds_adv2.preds_on_distr_1.preds_property_1,preds_adv2.preds_on_distr_1.preds_property_2)
-        o2 = epoch_order_p(preds_adv1.preds_on_distr_2.preds_property_1,preds_adv1.preds_on_distr_2.preds_property_2,preds_adv2.preds_on_distr_2.preds_property_1,preds_adv2.preds_on_distr_2.preds_property_2)
+        o1 = epoch_order_p(preds_adv1.preds_on_distr_1.preds_property_1, preds_adv1.preds_on_distr_1.preds_property_2,
+                           preds_adv2.preds_on_distr_1.preds_property_1, preds_adv2.preds_on_distr_1.preds_property_2)
+        o2 = epoch_order_p(preds_adv1.preds_on_distr_2.preds_property_1, preds_adv1.preds_on_distr_2.preds_property_2,
+                           preds_adv2.preds_on_distr_2.preds_property_1, preds_adv2.preds_on_distr_2.preds_property_2)
         if self.ratio:
-            p1=PredictionsOnOneDistribution((preds_adv2.preds_on_distr_1.preds_property_1+DUMPING)/(preds_adv1.preds_on_distr_1.preds_property_1+DUMPING),(preds_adv2.preds_on_distr_1.preds_property_2+DUMPING)/(preds_adv1.preds_on_distr_1.preds_property_2+DUMPING))
-            pv1=PredictionsOnOneDistribution((preds_vic2.preds_on_distr_1.preds_property_1+DUMPING)/(preds_vic1.preds_on_distr_1.preds_property_1+DUMPING),(preds_vic2.preds_on_distr_1.preds_property_2+DUMPING)/(preds_vic1.preds_on_distr_1.preds_property_2+DUMPING))
-            p2=PredictionsOnOneDistribution((preds_adv2.preds_on_distr_2.preds_property_1+DUMPING)/(preds_adv1.preds_on_distr_2.preds_property_1+DUMPING),(preds_adv2.preds_on_distr_2.preds_property_2+DUMPING)/(preds_adv1.preds_on_distr_2.preds_property_2+DUMPING))
-            pv2=PredictionsOnOneDistribution((preds_vic2.preds_on_distr_2.preds_property_1+DUMPING)/(preds_vic1.preds_on_distr_2.preds_property_1+DUMPING),(preds_vic2.preds_on_distr_2.preds_property_2+DUMPING)/(preds_vic1.preds_on_distr_2.preds_property_2+DUMPING))
+            p1 = PredictionsOnOneDistribution((preds_adv2.preds_on_distr_1.preds_property_1+DUMPING)/(preds_adv1.preds_on_distr_1.preds_property_1+DUMPING),
+                                              (preds_adv2.preds_on_distr_1.preds_property_2+DUMPING)/(preds_adv1.preds_on_distr_1.preds_property_2+DUMPING))
+            pv1 = PredictionsOnOneDistribution((preds_vic2.preds_on_distr_1.preds_property_1+DUMPING)/(preds_vic1.preds_on_distr_1.preds_property_1+DUMPING),
+                                               (preds_vic2.preds_on_distr_1.preds_property_2+DUMPING)/(preds_vic1.preds_on_distr_1.preds_property_2+DUMPING))
+            p2 = PredictionsOnOneDistribution((preds_adv2.preds_on_distr_2.preds_property_1+DUMPING)/(preds_adv1.preds_on_distr_2.preds_property_1+DUMPING),
+                                              (preds_adv2.preds_on_distr_2.preds_property_2+DUMPING)/(preds_adv1.preds_on_distr_2.preds_property_2+DUMPING))
+            pv2 = PredictionsOnOneDistribution((preds_vic2.preds_on_distr_2.preds_property_1+DUMPING)/(preds_vic1.preds_on_distr_2.preds_property_1+DUMPING),
+                                               (preds_vic2.preds_on_distr_2.preds_property_2+DUMPING)/(preds_vic1.preds_on_distr_2.preds_property_2+DUMPING))
         else:
-            p1=PredictionsOnOneDistribution(preds_adv2.preds_on_distr_1.preds_property_1-preds_adv1.preds_on_distr_1.preds_property_1,preds_adv2.preds_on_distr_1.preds_property_2-preds_adv1.preds_on_distr_1.preds_property_2)
-            pv1=PredictionsOnOneDistribution(preds_vic2.preds_on_distr_1.preds_property_1-preds_vic1.preds_on_distr_1.preds_property_1,preds_vic2.preds_on_distr_1.preds_property_2-preds_vic1.preds_on_distr_1.preds_property_2)
-            p2=PredictionsOnOneDistribution(preds_adv2.preds_on_distr_2.preds_property_1-preds_adv1.preds_on_distr_2.preds_property_1,preds_adv2.preds_on_distr_2.preds_property_2-preds_adv1.preds_on_distr_2.preds_property_2)
-            pv2=PredictionsOnOneDistribution(preds_vic2.preds_on_distr_2.preds_property_1-preds_vic1.preds_on_distr_2.preds_property_1,preds_vic2.preds_on_distr_2.preds_property_2-preds_vic1.preds_on_distr_2.preds_property_2)
-        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, final_thresholds_1,classes_use = perpoint_threshold_test_per_dist(
+            p1 = PredictionsOnOneDistribution(preds_adv2.preds_on_distr_1.preds_property_1-preds_adv1.preds_on_distr_1.preds_property_1,
+                                              preds_adv2.preds_on_distr_1.preds_property_2-preds_adv1.preds_on_distr_1.preds_property_2)
+            pv1 = PredictionsOnOneDistribution(preds_vic2.preds_on_distr_1.preds_property_1-preds_vic1.preds_on_distr_1.preds_property_1,
+                                               preds_vic2.preds_on_distr_1.preds_property_2-preds_vic1.preds_on_distr_1.preds_property_2)
+            p2 = PredictionsOnOneDistribution(preds_adv2.preds_on_distr_2.preds_property_1-preds_adv1.preds_on_distr_2.preds_property_1,
+                                              preds_adv2.preds_on_distr_2.preds_property_2-preds_adv1.preds_on_distr_2.preds_property_2)
+            pv2 = PredictionsOnOneDistribution(preds_vic2.preds_on_distr_2.preds_property_1-preds_vic1.preds_on_distr_2.preds_property_1,
+                                               preds_vic2.preds_on_distr_2.preds_property_2-preds_vic1.preds_on_distr_2.preds_property_2)
+        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, final_thresholds_1, classes_use = perpoint_threshold_test_per_dist(
             p1,
             pv1,
             self.config,
-            order = o1,
+            order=o1,
             ground_truth=ground_truth[0])
         # Get data for second distribution
         adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2, final_thresholds_2, classes_use = perpoint_threshold_test_per_dist(
             p2,
             pv2,
             self.config,
-            order = o2,
+            order=o2,
             ground_truth=ground_truth[1])
 
         # Get best adv accuracies for both distributions and compare
@@ -58,25 +69,25 @@ class Epoch_Perpoint(Attack):
             adv_accs_use, adv_preds_use = adv_accs_1, adv_preds_1
             victim_accs_use, victim_preds_use = victim_accs_1, victim_preds_1
             final_thresholds_use = final_thresholds_1
-            
+
         else:
             adv_accs_use, adv_preds_use = adv_accs_2, adv_preds_2
             victim_accs_use, victim_preds_use = victim_accs_2, victim_preds_2
             final_thresholds_use = final_thresholds_2
             chosen_distribution = 1
-          
+
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         chosen_ratio_index = np.argmax(adv_accs_use)
-        
-        
+
         victim_acc_use = victim_accs_use[chosen_ratio_index]
         victim_pred_use = victim_preds_use[chosen_ratio_index]
         adv_acc_use = adv_accs_use[chosen_ratio_index]
         adv_pred_use = adv_preds_use[chosen_ratio_index]
         final_threshold_use = final_thresholds_use[chosen_ratio_index]
 
-        choice_information = (chosen_distribution, chosen_ratio_index, final_threshold_use)
-        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information,classes_use]
+        choice_information = (chosen_distribution,
+                              chosen_ratio_index, final_threshold_use)
+        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information, classes_use]
 
     def wrap_preds_to_save(self, result: List):
         victim_preds = result[0][1]
@@ -97,7 +108,8 @@ def _perpoint_threshold_on_ratio(
     if multi2:
         # TODO: Implement later
         if tune_final_threshold:
-            raise NotImplementedError("Tuning final threshold not implemented for multi2")
+            raise NotImplementedError(
+                "Tuning final threshold not implemented for multi2")
 
         preds, acc = get_threshold_pred_multi(
             preds_1, preds_2, threshold, rule, get_pred=True,
@@ -121,7 +133,7 @@ def perpoint_threshold_test_per_dist(
         config: BlackBoxAttackConfig,
         epochwise_version: bool = False,
         ground_truth: Tuple[List, List] = None,
-        order = None):
+        order=None):
     """
         Compute thresholds (based on probabilities) for each given datapoint,
         search for thresholds using given adv model's predictions.
@@ -132,8 +144,10 @@ def perpoint_threshold_test_per_dist(
         If preds_victim is None, computes metrics and datapoints
         only for the adversary.
     """
-    assert not (epochwise_version and config.multi), "No implementation for both epochwise and multi model"
-    assert not (config.multi2 and config.multi), "No implementation for both multi model"
+    assert not (
+        epochwise_version and config.multi), "No implementation for both epochwise and multi model"
+    assert not (
+        config.multi2 and config.multi), "No implementation for both multi model"
     assert not (
         epochwise_version and config.multi2), "No implementation for both epochwise and multi model"
     victim_preds_present = (preds_victim is not None)
@@ -245,7 +259,7 @@ def perpoint_threshold_test_per_dist(
         if victim_preds_present:
             victim_preds = np.transpose(victim_preds, (1, 0, 2))
         victim_accs = victim_accs.T
-    return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv,classes_victim)
+    return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv, classes_victim)
 
 
 def np_compute_losses(preds: np.ndarray,

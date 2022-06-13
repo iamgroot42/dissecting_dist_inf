@@ -378,7 +378,8 @@ class AffinityAttack(Attack):
 
     def _eval_attack(self, test_loader,
                      epochwise_version: bool = False,
-                     get_preds: bool = False):
+                     get_preds: bool = False,
+                     get_latents: bool = False):
         def collate_fn(data):
             features, labels = zip(*data)
             # Combine them per-layer
@@ -415,6 +416,9 @@ class AffinityAttack(Attack):
         # Create loaders
         test_loader_ = get_loader(test_loader, False)
 
+        if get_latents:
+            return self._collect_latents(test_loader_)
+
         # Evaluate model
         if (self.config.regression_config is not None):
             criterion = nn.MSELoss()
@@ -439,3 +443,12 @@ class AffinityAttack(Attack):
         if self.config.regression_config:
             return test_loss
         return test_acc * 100
+
+    def _collect_latents(self, loader):
+        latents = []
+        for x, y in loader:
+            data = [x_.cuda() for x_ in x]
+            with ch.no_grad():
+                latent = self.model(data, get_latent=True)
+                latents.append(latent.detach().cpu().numpy())
+        return np.concatenate(latents)

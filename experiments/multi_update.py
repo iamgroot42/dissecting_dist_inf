@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True,epoch=True)
+    ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True, epoch=True)
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     # Load victim models for first value
     models_vic_1 = ds_vic_1.get_models(
@@ -62,15 +62,16 @@ if __name__ == "__main__":
         on_cpu=attack_config.on_cpu,
         shuffle=False,
         epochwise_version=True)
-   
+
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
             data_config, prop_value=prop_value)
-        
+
         # Create new DS object for both and victim (for other ratio)
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
-        ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True,epoch=True)
+        ds_vic_2 = ds_wrapper_class(
+            data_config_vic_2, skip_data=True, epoch=True)
         # Load victim models for other value
         models_vic_2 = ds_vic_2.get_models(
             train_config,
@@ -78,46 +79,44 @@ if __name__ == "__main__":
             on_cpu=attack_config.on_cpu,
             shuffle=False,
             epochwise_version=True)
-        
+
         for t in range(attack_config.tries):
-            print("Ratio: {}, Trial: {}".format(prop_value,t))
-            preds_accross_epoch=[]
-            _, loader1 = ds_adv_1.get_loaders(batch_size=bb_attack_config.batch_size)
-            _, loader2 = ds_adv_2.get_loaders(batch_size=bb_attack_config.batch_size)
-            preds_epoch_1, ground_truth_1 = get_preds_epoch_on_dis([models_vic_1,models_vic_2],
-            loader=loader1,preload=bb_attack_config.preload,
-                multi_class=bb_attack_config.multi_class)
-            preds_epoch_2, ground_truth_2 = get_preds_epoch_on_dis([models_vic_1,models_vic_2],
-            loader=loader2,preload=bb_attack_config.preload,
-                multi_class=bb_attack_config.multi_class)
+            print("Ratio: {}, Trial: {}".format(prop_value, t))
+            preds_accross_epoch = []
+            _, loader1 = ds_adv_1.get_loaders(
+                batch_size=bb_attack_config.batch_size)
+            _, loader2 = ds_adv_2.get_loaders(
+                batch_size=bb_attack_config.batch_size)
+            preds_epoch_1, ground_truth_1 = get_preds_epoch_on_dis([models_vic_1, models_vic_2],
+                                                                   loader=loader1, preload=bb_attack_config.preload,
+                                                                   multi_class=bb_attack_config.multi_class)
+            preds_epoch_2, ground_truth_2 = get_preds_epoch_on_dis([models_vic_1, models_vic_2],
+                                                                   loader=loader2, preload=bb_attack_config.preload,
+                                                                   multi_class=bb_attack_config.multi_class)
             preds_e = [PredictionsOnDistributions(
                 preds_on_distr_1=e1,
                 preds_on_distr_2=e2
-            ) for e1,e2 in zip(preds_epoch_1,preds_epoch_2)]
-            for i in range(bb_attack_config.Start_epoch-1,bb_attack_config.End_epoch-10):
-                preds_e1, preds_e2 = preds_e[i],preds_e[i+10]
-                
+            ) for e1, e2 in zip(preds_epoch_1, preds_epoch_2)]
+            for i in range(bb_attack_config.Start_epoch-1, bb_attack_config.End_epoch-10):
+                preds_e1, preds_e2 = preds_e[i], preds_e[i+10]
 
             # For each requested attack, only one in this script
                 for attack_type in bb_attack_config.attack_type:
-                # Create attacker object
+                    # Create attacker object
                     attacker_obj = get_attack(attack_type)(bb_attack_config)
-                
+
                 # Launch attack
                     raw_preds = attacker_obj.attack(
-                    preds_e1, preds_e2,
-                    ground_truth=(ground_truth_1, ground_truth_2),
-                    calc_acc=calculate_accuracies,
-                    get_preds=True)
+                        preds_e1, preds_e2,
+                        ground_truth=(ground_truth_1, ground_truth_2),
+                        calc_acc=calculate_accuracies,
+                        get_preds=True)
                 preds_accross_epoch.append(raw_preds)
             preds_accross_epoch = np.array(preds_accross_epoch)
-            aggre_preds = np.mean(preds_accross_epoch,axis=0)>=0.5
+            aggre_preds = np.mean(preds_accross_epoch, axis=0) >= 0.5
             result = (100*(np.mean(aggre_preds[0])+np.mean(aggre_preds[1])))/2
             logger.add_results(attack_type, prop_value,
-                                   vacc=result)
-
-               
-           
+                               vacc=result)
 
     # Summarize results over runs, for each ratio and attack
     logger.save()

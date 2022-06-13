@@ -83,7 +83,8 @@ class PINAttack(Attack):
 
     def _eval_attack(self, test_loader,
                      epochwise_version: bool = False,
-                     get_preds: bool = False):
+                     get_preds: bool = False,
+                     get_latents: bool = False):
         """
             Evaluate attack on test data
         """
@@ -110,6 +111,7 @@ class PINAttack(Attack):
             test_results = self._test(self.model, loss_fn,
                                       loader=test_loader,
                                       get_preds=get_preds,
+                                      get_latents=get_latents,
                                       verbose=True)
             if get_preds:
                 return test_results[2]
@@ -271,6 +273,7 @@ class PINAttack(Attack):
               loader: ch.utils.data.DataLoader,
               element_wise: bool = False,
               get_preds: bool = False,
+              get_latents: bool = False,
               verbose: bool = False):
         # Set model to evaluation mode
         model.eval()
@@ -290,7 +293,7 @@ class PINAttack(Attack):
                 y_batch = y_batch.cuda(0)
                 param_batch = [a.cuda() for a in param_batch]
 
-            model_output = model(param_batch)
+            model_output = model(param_batch, get_latent=get_latents)
             # Handle binary and regression cases
             if self.config.binary or regression:
                 outputs.append(model_output[:, 0])
@@ -299,6 +302,12 @@ class PINAttack(Attack):
 
             # Concatenate outputs from model
             outputs = ch.cat(outputs, 0)
+
+            # If just latents needed, skip rest of processing
+            if get_latents:
+                all_outputs.append(outputs.detach().cpu().numpy())
+                continue
+
             if get_preds:
                 # Track model predictions as well, if requested
                 all_outputs.append(outputs.cpu().detach().numpy())
@@ -314,6 +323,10 @@ class PINAttack(Attack):
             # Track accuracy, if not regression case
             if not regression:
                 running_acc += self._acc_fn(outputs, y_batch).item()
+
+        if get_latents:
+            all_outputs = np.concatenate(all_outputs, axis=0)
+            return all_outputs
 
         if element_wise:
             loss = ch.cat(loss, 0)

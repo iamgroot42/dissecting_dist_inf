@@ -3,17 +3,18 @@ from pathlib import Path
 import os
 import numpy as np
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
-from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr,get_vic_adv_preds_on_distr_seed
+from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr_seed
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, WhiteBoxAttackConfig, BlackBoxAttackConfig, TrainConfig, CombineAttackConfig
-from distribution_inference.utils import flash_utils, ensure_dir_exists,warning_string
+from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult, IntermediateResult
-from distribution_inference.attacks.whitebox.utils import  wrap_into_loader
+from distribution_inference.attacks.whitebox.utils import wrap_into_loader
 import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
-from joblib import load, dump
-from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader, identify_relevant_points, make_ds_and_loader
+from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader
+
+
 #a bit messy in this file. Might need to move something out to functions in rebase
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -44,16 +45,16 @@ if __name__ == "__main__":
         if attack_config.adv_misc_config.adv_config:
             if attack_config.adv_misc_config.adv_config.scale_by_255:
                 attack_config.adv_misc_config.adv_config.epsilon /= 255
-    if len(bb_attack_config.attack_type)>1:
+    if len(bb_attack_config.attack_type) > 1:
         raise ValueError(
             "This script only works with one blackbox attack")
-    if bb_attack_config.attack_type[0]!="threshold_perpoint":
+    if bb_attack_config.attack_type[0] != "threshold_perpoint":
         raise ValueError(
             "This script only works with perpoint attack")
     if not wb_attack_config:
         raise ValueError(
             "This script need whitebox config")
-    if wb_attack_config.attack!="affinity":
+    if wb_attack_config.attack != "affinity":
         raise ValueError("This script only takes affinity attack")
     # Make sure regression config is not being used here
     if wb_attack_config.regression_config:
@@ -63,10 +64,11 @@ if __name__ == "__main__":
     flash_utils(attack_config)
 
     # Define logger
-    logger = AttackResult(args.en, attack_config,aname = "Combine")
-    DataLogger = IntermediateResult(args.en,attack_config)
+    logger = AttackResult(args.en, attack_config, aname="Combine")
+    data_logger = IntermediateResult(args.en, attack_config)
     if attack_config.save_bb:
-        bb_logger = AttackResult(args.en+"_bb", attack_config,aname = "blackbox")
+        bb_logger = AttackResult(
+            args.en+"_bb", attack_config, aname="blackbox")
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -80,14 +82,14 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
     # Load victim models for first value
-    models_vic_1,vic1_names = ds_vic_1.get_models(
+    models_vic_1, vic1_names = ds_vic_1.get_models(
         train_config,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
         shuffle=False,
         epochwise_version=attack_config.train_config.save_every_epoch,
-                get_names=True)
-    
+        get_names=True)
+
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -97,18 +99,19 @@ if __name__ == "__main__":
         ds_adv_2 = ds_wrapper_class(data_config_adv_2)
         ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True)
         # Load victim models for other value
-        models_vic_2 ,vic2_names= ds_vic_2.get_models(
+        models_vic_2, vic2_names = ds_vic_2.get_models(
             train_config,
             n_models=attack_config.num_victim_models,
-                get_names=True)
-        attack_model_path_dir = os.path.join(attack_config.wb_path, str(prop_value))
+            get_names=True)
+        attack_model_path_dir = os.path.join(
+            attack_config.wb_path, str(prop_value))
         attack_model_paths = []
         for a in os.listdir(attack_model_path_dir):
             attack_model_paths.append(a)
         #in case the number of trials doesn't match the # of metaclassifier
-        for (t,attack_model_path) in zip(range(attack_config.tries),attack_model_paths):
-            print("Ratio: {}, Trial: {}".format(prop_value,t))
-            models_adv_1,adv1_names = ds_adv_1.get_models(
+        for (t, attack_model_path) in zip(range(attack_config.tries), attack_model_paths):
+            print("Ratio: {}, Trial: {}".format(prop_value, t))
+            models_adv_1, adv1_names = ds_adv_1.get_models(
                 train_adv_config,
                 n_models=bb_attack_config.num_adv_models,
                 on_cpu=attack_config.on_cpu,
@@ -120,16 +123,16 @@ if __name__ == "__main__":
                 get_names=True)
             # Get victim and adv predictions on loaders for first ratio
             #only support default random selection of points
-            seed_data_ds, seed_data_loader,adv_l,raw_data = get_seed_data_loader(
-                        [ds_adv_1, ds_adv_2],
-                        wb_attack_config,
-                        num_samples_use=wb_attack_config.affinity_config.num_samples_use,
-                        also_get_raw_data=True)
-            
+            seed_data_ds, seed_data_loader, adv_l, raw_data = get_seed_data_loader(
+                [ds_adv_1, ds_adv_2],
+                wb_attack_config,
+                num_samples_use=wb_attack_config.affinity_config.num_samples_use,
+                also_get_raw_data=True)
+
             preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr_seed(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
-                loader = adv_l[0],
+                loader=adv_l[0],
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 preload=bb_attack_config.preload,
                 multi_class=bb_attack_config.multi_class
@@ -153,11 +156,11 @@ if __name__ == "__main__":
                 preds_on_distr_2=preds_vic_on_2
             )
 
-           #actually only perpoint
+            #actually only perpoint
             for attack_type in bb_attack_config.attack_type:
                 # Create attacker object
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
-                
+
                 # Launch attack
                 result = attacker_obj.attack(
                     bbm_preds_adv, bbm_preds_vic,
@@ -166,7 +169,7 @@ if __name__ == "__main__":
                     epochwise_version=attack_config.train_config.save_every_epoch)
                 if attack_config.save_bb:
                     bb_logger.add_results(attack_type, prop_value,
-                                   result[0][0], result[1][0])
+                                          result[0][0], result[1][0])
                 classes_use = result[3]
                 labels_adv = classes_use[0]
                 labels_vic = classes_use[1]
@@ -180,16 +183,16 @@ if __name__ == "__main__":
             attacker_obj.load_model(os.path.join(
                 attack_model_path_dir, attack_model_path))
             adv_test = wrap_into_loader(
-            [models_adv_1, models_adv_2],
-            batch_size=wb_attack_config.batch_size,
-            shuffle=False,
-            wrap_with_loader=False
+                [models_adv_1, models_adv_2],
+                batch_size=wb_attack_config.batch_size,
+                shuffle=False,
+                wrap_with_loader=False
             )
-            vic_test =  wrap_into_loader(
-            [models_vic_1, models_vic_2],
-            batch_size=wb_attack_config.batch_size,
-            shuffle=False,
-            wrap_with_loader=False
+            vic_test = wrap_into_loader(
+                [models_vic_1, models_vic_2],
+                batch_size=wb_attack_config.batch_size,
+                shuffle=False,
+                wrap_with_loader=False
             )
             # Make affinity features for train (adv) models
             features_adv = attacker_obj.make_affinity_features(
@@ -198,18 +201,15 @@ if __name__ == "__main__":
             features_vic = attacker_obj.make_affinity_features(
                 vic_test[0], seed_data_loader)
 
-            
-            
-
             wb_preds_adv = attacker_obj.eval_attack(
-                test_loader=(features_adv,adv_test[1]),
+                test_loader=(features_adv, adv_test[1]),
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                get_preds = True)
+                get_preds=True)
 
             wb_preds_vic = attacker_obj.eval_attack(
-                test_loader=(features_vic,vic_test[1]),
+                test_loader=(features_vic, vic_test[1]),
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                get_preds = True)
+                get_preds=True)
             #decision tree
             preds_adv = np.vstack((wb_preds_adv, bb_preds_adv))
             preds_vic = np.vstack((wb_preds_vic, bb_preds_vic))
@@ -218,12 +218,21 @@ if __name__ == "__main__":
             clf = DecisionTreeClassifier(max_depth=2)
             clf.fit(preds_adv, labels_adv)
             #log results
-            DataLogger.add_model_name(prop_value,(adv1_names,adv2_names),t)
-            DataLogger.add_model(prop_value,clf,t)
-            DataLogger.add_bb(prop_value,bbm_preds_adv,bb_preds_adv,labels_adv,t)
-            DataLogger.add_points(prop_value,raw_data,t)
+            data_logger.add_model_name(prop_value, (adv1_names, adv2_names), t)
+            data_logger.add_model(prop_value, clf, t)
+            # Add results for Adv
+            data_logger.add_bb(prop_value, bbm_preds_adv,
+                              bb_preds_adv, labels_adv, t)
+            data_logger.add_wb(prop_value, wb_preds_adv, labels_adv, t)
+            # Add results for Vic
+            data_logger.add_bb(prop_value, bbm_preds_vic,
+                              bb_preds_vic, labels_vic, t, is_victim=True)
+            data_logger.add_wb(prop_value, wb_preds_vic,
+                              labels_vic, t, is_victim=True)
+            # Add raw datapoints
+            data_logger.add_points(prop_value, raw_data, t)
             logger.add_results("Combine", prop_value,
-                                clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
+                               clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack
     logger.save()
-    DataLogger.save()
+    data_logger.save()

@@ -343,137 +343,6 @@ def get_cropped_faces(cropmodel, x):
     return ch.stack(x_cropped, 0), indices
 
 
-
-class FullPermInvModel(nn.Module):
-    def __init__(self, dims, middle_dim, dim_channels, dim_kernels,
-                 inside_dims=[64, 8], n_classes=2, dropout=0.5):
-        super(FullPermInvModel, self).__init__()
-        self.dim_channels = dim_channels
-        self.dim_kernels = dim_kernels
-        self.middle_dim = middle_dim
-        self.dims = dims
-        self.total_layers = len(dim_channels) + len(dims)
-
-        assert len(dim_channels) == len(
-            dim_kernels), "Kernel size information missing!"
-
-        self.dropout = dropout
-        self.layers = []
-        prev_layer = 0
-
-        # If binary, need only one output
-        if n_classes == 2:
-            n_classes = 1
-
-        # One network per kernel location
-        def make_mini(y, add_drop=False):
-            layers = []
-            if add_drop:
-                layers += [nn.Dropout(self.dropout)]
-            layers += [
-                nn.Linear(y, inside_dims[0]),
-                nn.ReLU()
-            ]
-            for i in range(1, len(inside_dims)):
-                layers.append(nn.Linear(inside_dims[i-1], inside_dims[i]))
-                layers.append(nn.ReLU())
-            layers.append(nn.Dropout(self.dropout))
-
-            return nn.Sequential(*layers)
-
-        # For each layer
-        for i in range(self.total_layers):
-            is_conv = i < len(self.dim_channels)
-
-            if is_conv:
-                dim = self.dim_channels[i]
-            else:
-                dim = self.dims[i - len(self.dim_channels)]
-
-            # +1 for bias
-            # prev_layer for previous layer
-            if i > 0:
-                prev_layer = inside_dims[-1] * dim
-
-            if is_conv:
-                # Concatenated along pixels in kernel
-                self.layers.append(
-                    make_mini(prev_layer + (1 + dim) * dim_kernels[i], add_drop=True))
-            else:
-                # FC layer
-                if i == len(self.dim_channels):
-                    prev_layer = inside_dims[-1] * middle_dim
-                self.layers.append(make_mini(prev_layer + 1 + dim))
-
-        self.layers = nn.ModuleList(self.layers)
-
-        # Final network to combine them all
-        # layer representations together
-        self.rho = nn.Linear(
-            inside_dims[-1] * self.total_layers, n_classes)
-
-    def forward(self, params: List[ch.Tensor]) -> ch.Tensor:
-        reps = []
-        for_prev = None
-        i = 0
-
-        for i, (param, layer) in enumerate(zip(params, self.layers)):
-            is_conv = i < len(self.dim_channels)
-
-            if is_conv:
-                # Convolutional layer
-
-                # shape: (n_samples, n_pixels_in_kernel, channels_out, channels_in)
-                prev_shape = param.shape
-
-                # shape: (n_samples, channels_out, n_pixels_in_kernel, channels_in)
-                param = param.transpose(1, 2)
-
-                # shape: (n_samples, channels_out, n_pixels_in_kernel * channels_in)
-                param = ch.flatten(param, 2)
-
-            # Concatenate previous layer representation, if available
-            if for_prev is None:
-                param_eff = param
-            else:
-                prev_rep = for_prev.repeat(1, param.shape[1], 1)
-                param_eff = ch.cat((param, prev_rep), -1)
-
-            if is_conv:
-                # Convolutional layer
-
-                # shape: (n_samples * channels_out, channels_in_eff)
-                param_eff = param_eff.view(
-                    param_eff.shape[0] * param_eff.shape[1], -1)
-
-                # print(param_eff.reshape(-1, param_eff.shape[-1]).shape)
-
-                # shape: (n_samples * channels_out, inside_dims[-1])
-                pp = layer(param_eff.reshape(-1, param_eff.shape[-1]))
-
-                # shape: (n_samples, channels_out, inside_dims[-1])
-                pp = pp.view(prev_shape[0], prev_shape[2], -1)
-
-            else:
-                # FC layer
-                prev_shape = param_eff.shape
-                pp = layer(param_eff.view(-1, param_eff.shape[-1]))
-                pp = pp.view(prev_shape[0], prev_shape[1], -1)
-
-            processed = ch.sum(pp, -2)
-
-            # Store previous layer's representation
-            for_prev = pp.view(pp.shape[0], -1)
-            for_prev = for_prev.unsqueeze(-2)
-
-            # Store representation for this layer
-            reps.append(processed)
-
-        reps = ch.cat(reps, 1)
-        logits = self.rho(reps)
-        return logits
-
-
 class CombinedPermInvModel(nn.Module):
     def __init__(self, dims, dim_channels, dim_kernels,
                  inside_dims=[64, 8], n_classes=2, dropout=0.5):
@@ -529,32 +398,6 @@ class CustomBertModel(nn.Module):
         logits = self.classifier(pooled_output)
         return logits
 
-
-def ensure_dir_exists(dir):
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-
-
-def get_outputs(model, X, no_grad=False):
-
-    with ch.set_grad_enabled(not no_grad):
-        outputs = model(X)
-
-    return outputs[:, 0]
-
-
-
-def get_z_value(metric_1, metric_2):
-    assert len(metric_1) == len(metric_2), "Unequal sample sets!"
-    n_samples = 2 * len(metric_1)
-    m1, v1 = np.mean(metric_1), np.var(metric_1)
-    m2, v2 = np.mean(metric_2), np.var(metric_2)
-
-    mean_new = np.abs(m1 - m2)
-    var_new = (v1 + v2) / n_samples
-
-    Z = mean_new / np.sqrt(var_new)
-    return Z
 
 
 def get_param_count(model):
@@ -781,15 +624,6 @@ def coordinate_descent(models_train, models_val,
     return (best_tacc, best_clf), (tacc, clf), all_accs
 
 
-def check_if_inside_cluster():
-    """
-        Check if current code is being run inside a cluster.
-    """
-    if environ.get('ISRIVANNA') == "1":
-        return True
-    return False
-
-
 def coordinate_descent_new(models_train, models_val,
                            num_features, num_layers,
                            get_features,
@@ -874,19 +708,3 @@ class WeightAndActMeta(nn.Module):
         # Combine them
         all_acts = ch.cat([act, weights], 1)
         return self.combination_layer(all_acts)
-
-
-def _perpoint_threshold_on_ratio(preds_1, preds_2, classes, threshold, rule):
-    """
-        Run perpoint threshold test (confidence)
-        for a given "quartile" ratio
-    """
-    # Combine predictions into one vector
-    combined = np.concatenate((preds_1, preds_2), axis=1)
-
-    # Compute accuracy for given predictions, thresholds, and rules
-    preds, acc = get_threshold_pred(
-        combined, classes, threshold, rule, get_pred=True,
-        confidence=True)
-
-    return 100 * acc, preds

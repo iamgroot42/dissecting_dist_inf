@@ -5,6 +5,8 @@ import numpy as np
 from typing import List, Callable
 from sklearn.tree import DecisionTreeClassifier
 from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
+
+
 class Epoch_Tree(Attack):
     def attack(self,
                preds_vics: List[PredictionsOnDistributions],
