@@ -1,4 +1,4 @@
-from distribution_inference.attacks.utils import get_attack_name
+from distribution_inference.attacks.utils import get_attack_name,ATTACK_MAPPING
 from distribution_inference.utils import warning_string
 from distribution_inference.logging.core import AttackResult
 import seaborn
@@ -130,7 +130,7 @@ class PlotHelper():
                                 self.columns[1]: threshold,
                                 self.columns[2]: title_prefix + attack_names[1]})
             # Per-point threshold attack, or white-box attack
-            elif attack_res in ["threshold_perpoint", "affinity", "permutation_invariant","single_update_loss","single_update_threshold","single_update_perpoint","epoch_meta"]:
+            elif attack_res in ATTACK_MAPPING.keys():
                 for ratio in logger['result'][attack_res]:
                     if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
                         continue
