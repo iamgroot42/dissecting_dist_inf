@@ -1,3 +1,4 @@
+from operator import gt
 import numpy as np
 import torch as ch
 from typing import List, Tuple, Callable, Union
@@ -6,7 +7,7 @@ from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnOn
 from distribution_inference.config import BlackBoxAttackConfig
 
 
-class PerPointChooseAttack(Attack):
+class PerPointChooseDifAttack(Attack):
 
     def attack(self,
                preds_adv: PredictionsOnDistributions,
@@ -22,36 +23,18 @@ class PerPointChooseAttack(Attack):
         # Scale them to get post-softmax probabilities
         # TODO: Actually do that
 
-        # Get data for first distribution
-        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, rs_1 = perpoint_threshold_test_per_dist(
-            preds_adv.preds_on_distr_1,
-            preds_vic.preds_on_distr_1,
+        # Get data 
+        adv_accs_use, adv_preds_use, victim_accs_use, victim_preds_use, final_rs_use = perpoint_threshold_test(
+            preds_adv,
+            preds_vic,
             self.config,
             epochwise_version=epochwise_version,
-            ground_truth=ground_truth[0])
-        # Get data for second distribution
-        adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2, rs_2 = perpoint_threshold_test_per_dist(
-            preds_adv.preds_on_distr_2,
-            preds_vic.preds_on_distr_2,
-            self.config,
-            epochwise_version=epochwise_version,
-            ground_truth=ground_truth[1])
+            ground_truth=ground_truth)
+        
 
-        # Get best adv accuracies for both distributions and compare
-        chosen_distribution = 0
-        if np.max(adv_accs_1) > np.max(adv_accs_2):
-            adv_accs_use, adv_preds_use = adv_accs_1, adv_preds_1
-            victim_accs_use, victim_preds_use = victim_accs_1, victim_preds_1
-            final_rs_use = rs_1
-        else:
-            adv_accs_use, adv_preds_use = adv_accs_2, adv_preds_2
-            victim_accs_use, victim_preds_use = victim_accs_2, victim_preds_2
-            final_rs_use = rs_2
-            chosen_distribution = 1
-          
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         
-        choice_information = (chosen_distribution,  final_rs_use)
+        choice_information = (None,  final_rs_use)
         return [(victim_accs_use, victim_preds_use), (adv_accs_use, adv_preds_use), choice_information]
 
     def wrap_preds_to_save(self, result: List):
@@ -64,17 +47,13 @@ def pair_order(leng:int):
     """
     Get different pairs
     """
-    order_set = set()
-    while len(order_set)<leng:
-        order_set.add(frozenset(np.random.choice(leng,size=2,replace=False)))
-    order_set = [np.array(list(x)) for x in order_set]
-    return np.array(order_set)
+    return np.random.permutation(leng)
 
-def order_pairs(p,order):
+def order_pairs(p1,p2,order):
     """
     Simple wrapper to get a list of pairs
     """
-    return np.array([p[o] for o in order])
+    return np.array([[p1_,p2_] for p1_, p2_ in zip(p1[order],p2[order])])
 
 def find_rules(p1,p2,order):
     p1o = order_pairs(p1,order)
@@ -111,68 +90,61 @@ def acc_rule(p1,p2,order,rule):
 
 
 
-def perpoint_threshold_test_per_dist(
-        preds_adv: PredictionsOnOneDistribution,
-        preds_victim: PredictionsOnOneDistribution,
+def perpoint_threshold_test(
+        preds_adv: PredictionsOnDistributions,
+        preds_victim: PredictionsOnDistributions,
         config: BlackBoxAttackConfig,
         epochwise_version: bool = False,
         ground_truth: Tuple[List, List] = None):
     """
-        Compute the rule (based on probabilities) for each pair of datapoints by adv models.
-        Compute accuracy and predictions using given data and predictions
-        on victim model's predictions.
-        If preds_victim is None, computes metrics and datapoints
-        only for the adversary.
+       Compute the rules
     """
     assert not epochwise_version, "No implmentation for epochwise"
     assert not config.multi, "No implementation for multi model"
     assert not config.multi2, "No implementation for multi model"
     assert not config.multi_class, "No impplementation for multi class"
     victim_preds_present = (preds_victim is not None)
-
+    
     # Predictions by adversary's models
-    p1 = preds_adv.preds_property_1.copy()
-    p2 = preds_adv.preds_property_2.copy()
+    p1 = [preds_adv.preds_on_distr_1.preds_property_1.copy(),preds_adv.preds_on_distr_2.preds_property_1.copy()]
+    p2 = [preds_adv.preds_on_distr_1.preds_property_2.copy(),preds_adv.preds_on_distr_2.preds_property_2.copy()]
 
     if victim_preds_present:
         # Predictions by victim's models
-        pv1 = preds_victim.preds_property_1.copy()
-        pv2 = preds_victim.preds_property_2.copy()
+        pv1  = [preds_victim.preds_on_distr_1.preds_property_1.copy(),preds_victim.preds_on_distr_2.preds_property_1.copy()]
+        pv2 = [preds_victim.preds_on_distr_1.preds_property_2.copy(),preds_victim.preds_on_distr_2.preds_property_2.copy()]
 
     if config.loss_variant:
         # Use loss values instead of raw logits (or prediction probabilities)
         assert ground_truth is not None, "Need ground-truth for loss_variant setting"
-        p1 = np_compute_losses(p1, ground_truth, multi_class=False)
-        p2 = np_compute_losses(p2, ground_truth, multi_class=False)
+        p1 = [np_compute_losses(p1_, gt, multi_class=False) for p1_,gt in zip(p1,ground_truth)]
+        p2 = [np_compute_losses(p2_, gt, multi_class=False) for p2_,gt in zip(p2,ground_truth)]
         if victim_preds_present:
-            pv1 = np_compute_losses(pv1, ground_truth, multi_class=False)
-            pv2 = np_compute_losses(pv2, ground_truth, multi_class=False)
+            pv1 = [np_compute_losses(pv1_, gt, multi_class=False) for pv1_,gt in zip(pv1,ground_truth)]
+            pv2 = [np_compute_losses(pv2_, gt, multi_class=False) for pv2_ ,gt in zip(pv2,ground_truth)]
 
     
-    order = np.random.permutation(p1.shape[1])
-    # Order points according to computed utility
     transpose_order = (1, 0, 2) if config.multi_class else (1, 0)
-    p1 = np.transpose(p1, transpose_order)[order][::-1]
-    p2 = np.transpose(p2, transpose_order)[order][::-1]
+    p1 = [np.transpose(p1_, transpose_order) for p1_ in p1]
+    p2 = [np.transpose(p2_, transpose_order) for p2_ in p2]
 
     if victim_preds_present:
         
-        pv1 = np.transpose(pv1, transpose_order)[order][::-1]
-        pv2 = np.transpose(pv2, transpose_order)[order][::-1]
-        if config.multi:
-            pv1 = multi_model_sampling(pv1, config.multi)
-            pv2 = multi_model_sampling(pv2, config.multi)
-
+        pv1 = [np.transpose(pv1_, transpose_order) for pv1_ in pv1]
+        pv2 = [np.transpose(pv2_, transpose_order) for pv2_ in pv2]
+        
     if config.multi_class:
         # If multi-class, replace predictions with loss values
         assert ground_truth is not None, "Need ground-truth for multi-class setting"
-        y_gt = ground_truth[order][::-1]
-        p1, p2 = np_compute_losses(p1, y_gt), np_compute_losses(p2, y_gt)
+        
+        p1, p2 = [np_compute_losses(p1_, y_gt) for p1_,y_gt in zip(p1,ground_truth)], [np_compute_losses(p2_, y_gt) for p2_,y_gt in zip(p2,ground_truth)]
         if victim_preds_present:
-            pv1, pv2 = np_compute_losses(pv1, y_gt), np_compute_losses(pv2, y_gt)
+            pv1, pv2 = [np_compute_losses(pv1_, y_gt) for pv1_,y_gt in zip(pv1,ground_truth)], [np_compute_losses(pv2_, y_gt) for pv2_,y_gt in zip(pv2,ground_truth)]
 
     # Scale thresholds with mean/std across data, if variant selected
+    assert not config.relative_threshold, "No implmentation"
     if config.relative_threshold:
+        """
         reduce_indices = (1, 2) if config.multi_class else 1
         mean1, std1 = np.mean(p1, reduce_indices, keepdims=True), np.std(
             p1, reduce_indices, keepdims=True)
@@ -196,18 +168,18 @@ def perpoint_threshold_test_per_dist(
                     pv2_use, reduce_indices, keepdims=True)
             pv1_use = (pv1 - mean1) / std1
             pv2_use = (pv2 - mean2) / std2
-
+        """
     else:
 
         p1_use, p2_use = p1, p2
         if victim_preds_present:
             pv1_use = pv1
             pv2_use = pv2
-
-    ord = pair_order(p1.shape[0])
+    
+    ord = pair_order(min(p1[0].shape[0],p1[1].shape[0]))
     rs,ord,adv_acc,adv_preds = find_rules(p1_use,p2_use,ord)
     vic_preds,vic_acc = acc_rule(pv1_use,pv2_use,ord,rs)
-    return adv_acc, adv_preds, vic_acc, vic_preds, rs
+    return 100*adv_acc, adv_preds, 100*vic_acc, vic_preds, rs
 
 
 def np_compute_losses(preds: np.ndarray,

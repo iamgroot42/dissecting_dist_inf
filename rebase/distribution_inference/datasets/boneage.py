@@ -275,7 +275,7 @@ class _RawBoneWrapper:
 
 
 class BoneWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,label_noise=None):
         # Call parent constructor
         super().__init__(data_config, skip_data)
         self.sample_sizes = {

@@ -12,7 +12,9 @@ ATTACK_MAPPING = {
     "single_update_threshold":"Threshold test across epoch",
     "single_update_perpoint":"Perpoint test across epoch",
     "epoch_meta": "Decision Tree on raw predictions across epoch",
-    "perpoint_choose": "Perpoint test on pairs of points"
+    "perpoint_choose": "Perpoint test on pairs of points",
+    "perpoint_choose_dif":"Perpoint test on pairs of points from different distributions",
+    "KL":"Attack using KL divergences"
 }
 
 
