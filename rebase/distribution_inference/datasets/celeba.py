@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from torchvision import transforms, datasets
+import gc
 from PIL import Image
 import torch as ch
 import numpy as np
@@ -22,8 +23,8 @@ class DatasetInformation(base.DatasetInformation):
         super().__init__(name="Celeb-A",
                          data_path="celeba",
                          models_path="models_celeba/75_25",
-                         properties=["Male", "Young",],
-                         values={"Male": ratios, "Young": ratios},
+                         properties=["Male", "Young", 'Wavy_Hair'],
+                         values={"Male": ratios, "Young": ratios, 'Wavy_Hair': ratios},
                          epoch_wise=epoch)
         self.preserve_properties = ['Smiling', 'Young', 'Male', 'Attractive']
         self.supported_properties = [
@@ -312,13 +313,13 @@ class CelebACustomBinary(base.CustomDataset):
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
         super().__init__(data_config, skip_data)
         self.info_object = DatasetInformation()
 
         # Make sure specified label is valid
-        if self.classify not in self.info_object.preserve_properties:
-            raise ValueError("Specified label not available for images")
+        # if self.classify not in self.info_object.preserve_properties:
+        #     raise ValueError("Specified label not available for images")
 
         train_transforms = [
             transforms.ToTensor(),
@@ -338,6 +339,20 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             ]
             train_transforms = augment_transforms + train_transforms
         self.train_transforms = transforms.Compose(train_transforms)
+    
+    def prepare_processed_data(self, loader):
+        # Load model
+        model = self.info_object._get_pre_processor()
+        model = model.cuda()
+        # Collect all processed information
+        features, task_labels, prop_labels = self.info_object._collect_features(
+            loader, model, collect_all_info=True)
+        self.ds_val_processed = ch.utils.data.TensorDataset(features,
+                                                        task_labels, prop_labels)
+        # Clear cache
+        del model
+        gc.collect()
+        ch.cuda.empty_cache()
 
     def load_data(self):
         # Read attributes file to get attribute names
@@ -359,20 +374,28 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 "adv": {
                     "Male": (10000, 1000),
                     "Attractive": (10000, 1200),
-                    "Young": (6000, 600)
+                    "Young": (60000, 6000)
                 },
                 "victim": {
                     "Male": (15000, 3000),
                     "Attractive": (30000, 4000),
-                    "Young": (15000, 2000)
+                    "Young": (10000, 1500)
                 }
             },
             "Male": {
                 "adv": {
-                    "Young": (3000, 350),
+                    "Young": (3000, 350)
                 },
                 "victim": {
-                    "Young": (8000, 1400),
+                    "Young": (8000, 1400)
+                }
+            },
+            "Mouth_Slightly_Open": {
+                "adv": {
+                    "Wavy_Hair": (8000, 1000)
+                },
+                "victim": {
+                    "Wavy_Hair": (25000, 2500)
                 }
             }
         }

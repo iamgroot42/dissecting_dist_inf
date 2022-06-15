@@ -225,7 +225,7 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _CensusIncome()

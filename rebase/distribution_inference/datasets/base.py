@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import torch as ch
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 import torch.nn as nn
@@ -51,6 +52,26 @@ class DatasetInformation:
         self.values = values
         self.property_focus = property_focus
         self.num_dropped_features = num_dropped_features
+    
+    def _collect_features(self, loader, model,
+                          collect_all_info: bool = False):
+        all_features = []
+        all_labels, all_props = [], []
+        for data in loader:
+            x, y, p = data
+            x = x.cuda()
+            features = model(x).cpu()
+            all_features.append(features)
+            if collect_all_info:
+                all_labels.append(y)
+                all_props.append(p)
+
+        all_features = ch.cat(all_features, 0)
+        if collect_all_info:
+            all_labels = ch.cat(all_labels, 0).cpu()
+            all_props = ch.cat(all_props, 0).cpu()
+            return all_features, all_labels, all_props
+        return all_features
 
     def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
         raise NotImplementedError(

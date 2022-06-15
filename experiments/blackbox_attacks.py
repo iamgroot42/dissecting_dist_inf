@@ -55,7 +55,10 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True,label_noise=train_config.label_noise)
+    ds_vic_1 = ds_wrapper_class(
+        data_config_vic_1,
+        skip_data=True,
+        label_noise=train_config.label_noise)
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
 
@@ -76,7 +79,9 @@ if __name__ == "__main__":
                 data_config, prop_value=prop_value)
 
             # Create new DS object for both and victim (for other ratio)
-            ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True,label_noise=train_config.label_noise)
+            ds_vic_2 = ds_wrapper_class(
+                data_config_vic_2, skip_data=True,
+                label_noise=train_config.label_noise)
             ds_adv_2 = ds_wrapper_class(data_config_adv_2)
 
             # Load victim models for other value
@@ -90,7 +95,7 @@ if __name__ == "__main__":
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
 
             for t in range(attack_config.tries):
-                print("{}: trial {}".format(prop_value,t))
+                print("{}: trial {}".format(prop_value, t))
                 models_adv_1 = ds_adv_1.get_models(
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,

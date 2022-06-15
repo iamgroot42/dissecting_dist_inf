@@ -226,7 +226,8 @@ if __name__ == "__main__":
                               bb_preds_adv, labels_adv, t)
             DataLogger.add_points(prop_value, None, t)
             logger.add_results("Combine", prop_value,
-                               clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
+                               100 * clf.score(preds_vic, labels_vic),
+                               100 * clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack
     logger.save()
     DataLogger.save()
