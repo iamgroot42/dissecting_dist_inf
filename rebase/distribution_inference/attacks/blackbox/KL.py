@@ -38,7 +38,8 @@ class KLAttack(Attack):
         
         choice_information = (chosen_distribution, None)
         return [[(acc_use,preds_use)], (None,None), choice_information]
-
+def sigmoid(x):  
+    return np.exp(-np.logaddexp(0, -x))
 def KL_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                      preds_victim: PredictionsOnOneDistribution,
                      config: BlackBoxAttackConfig,
@@ -56,9 +57,9 @@ def KL_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     assert not config.multi_class, "No implementation for multi class"
     assert not epochwise_version, "No implememtation for epochwise"
     # Predictions made by the adversary's models
-    p1, p2 = preds_adv.preds_property_1, preds_adv.preds_property_2
+    p1, p2 = sigmoid(preds_adv.preds_property_1), sigmoid(preds_adv.preds_property_2)
     # Predictions made by the  victim's models
-    pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
+    pv1, pv2 = sigmoid(preds_victim.preds_property_1), sigmoid(preds_victim.preds_property_2)
     KL1 = (np.array([np.average([KL_func(p1_,pv1_) for p1_ in p1]) for pv1_ in pv1]),
     np.array([np.average([KL_func(p2_,pv1_) for p2_ in p2]) for pv1_ in pv1]))
     KL2 =  (np.array([np.average([KL_func(p1_,pv2_) for p1_ in p1]) for pv2_ in pv2]),
@@ -68,4 +69,5 @@ def KL_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     acc1 = np.average(res1>=0)
     acc2 = np.average(res2>=0)
     
+   
     return 100*(acc1+acc2)/2, np.hstack((res1,res2))

@@ -10,3 +10,4 @@ python train_more.py --load_config "./oversampling.json" --ratio $i
 #j=$((($j+1)%3))
 done
 echo "finished"
+python blackbox_attacks.py --load_config shuffle_bb.json --en race_bb_oversample

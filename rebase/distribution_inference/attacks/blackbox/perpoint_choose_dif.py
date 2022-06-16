@@ -49,11 +49,11 @@ def pair_order(leng:int):
     """
     return np.random.permutation(leng)
 
-def order_pairs(p1,p2,order):
+def order_pairs(p,order):
     """
     Simple wrapper to get a list of pairs
     """
-    return np.array([[p1_,p2_] for p1_, p2_ in zip(p1[order],p2[order])])
+    return np.array([[p1_,p2_] for p1_, p2_ in zip(p[0][order],p[1][order])])
 
 def find_rules(p1,p2,order):
     p1o = order_pairs(p1,order)
