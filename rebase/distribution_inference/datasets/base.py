@@ -53,14 +53,14 @@ class DatasetInformation:
         self.property_focus = property_focus
         self.num_dropped_features = num_dropped_features
     
+    @ch.no_grad()
     def _collect_features(self, loader, model,
                           collect_all_info: bool = False):
         all_features = []
         all_labels, all_props = [], []
         for data in loader:
             x, y, p = data
-            x = x.cuda()
-            features = model(x).cpu()
+            features = model(x.cuda()).detach().cpu()
             all_features.append(features)
             if collect_all_info:
                 all_labels.append(y)

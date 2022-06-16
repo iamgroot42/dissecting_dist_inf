@@ -1,0 +1,19 @@
+{
+    "data_config": {
+        "name": "celeba",
+        "prop": "Wavy_Hair",
+        "classify": "Mouth_Slightly_Open",
+        "split": "victim",
+        "value": 0.5,
+        "processed_variant": false
+    },
+    "epochs": 50,
+    "offset": 0,
+    "learning_rate": 4e-5,
+    "batch_size": 32,
+    "weight_decay": 1e-3,
+    "num_models": 1,
+    "get_best": true,
+    "verbose": true,
+    "full_model": true
+}
