@@ -18,7 +18,6 @@ class KLAttack(Attack):
             given accuracies of models.
         """
         assert calc_acc is not None, "Must provide function to compute accuracy"
-        assert ground_truth is not None, "Must provide ground truth to compute accuracy"
         assert not (self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"

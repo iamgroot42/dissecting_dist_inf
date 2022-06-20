@@ -258,7 +258,11 @@ class RegressionConfig(Serializable):
     """
     additional_values_to_test: Optional[List] = None
     """Values of property to use while testing in addition to ratios used to train"""
-
+@dataclass
+class ComparisonAttackConfig(Serializable):
+    Start_epoch:int
+    End_epoch: int
+    
 
 @dataclass
 class WhiteBoxAttackConfig(Serializable):
@@ -318,7 +322,7 @@ class WhiteBoxAttackConfig(Serializable):
     """Configuration for permutation-invariant attacks"""
     affinity_config: Optional[AffinityAttackConfig] = None
     """Configuration for affinity-based attacks"""
-
+    comparison_config: Optional[ComparisonAttackConfig] = None
 
 @dataclass
 class AttackConfig(Serializable):
@@ -351,6 +355,7 @@ class AttackConfig(Serializable):
     """Use full (larger) model for adv?"""
 
 
+    
 @dataclass
 class UnlearningConfig(Serializable):
     """

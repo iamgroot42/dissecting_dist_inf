@@ -15,7 +15,8 @@ ATTACK_MAPPING = {
     "perpoint_choose": "Perpoint test on pairs of points",
     "perpoint_choose_dif":"Perpoint test on pairs of points from different distributions",
     "KL":"Attack using KL divergences",
-    "Combine": "Combining results"
+    "Combine": "Combining results",
+    "comparison": "Comparison attack by training victim models"
 }
 
 
