@@ -19,9 +19,7 @@
         "num_adv_models": 50,
         "batch_size": 50,
         "attack_type": [
-            "threshold_perpoint",
-            "perpoint_choose",
-            "perpoint_choose_dif"
+            "KL"
         ],
         "ratios": [
             0.05,

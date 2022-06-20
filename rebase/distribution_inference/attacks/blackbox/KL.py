@@ -37,7 +37,7 @@ class KLAttack(Attack):
         # out of all given ratios
         
         choice_information = (chosen_distribution, None)
-        return [[(acc_use,preds_use)], (None,None), choice_information]
+        return [(acc_use,preds_use), (None,None), choice_information]
 def sigmoid(x):  
     return np.exp(-np.logaddexp(0, -x))
 def KL_test_per_dist(preds_adv: PredictionsOnOneDistribution,
@@ -68,6 +68,7 @@ def KL_test_per_dist(preds_adv: PredictionsOnOneDistribution,
     res2 = KL2[0] - KL2[1]
     acc1 = np.average(res1>=0)
     acc2 = np.average(res2>=0)
+    
     
    
     return 100*(acc1+acc2)/2, np.hstack((res1,res2))

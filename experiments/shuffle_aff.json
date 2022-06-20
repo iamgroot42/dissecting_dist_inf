@@ -17,7 +17,7 @@
             "prop": "race",
             "split": "victim",
             "squeeze": true,
-            "value": 0.1
+            "value": 0.5
         },
         "misc_config": {
             "shuffle_defense_config": {

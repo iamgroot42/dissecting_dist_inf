@@ -14,7 +14,8 @@ ATTACK_MAPPING = {
     "epoch_meta": "Decision Tree on raw predictions across epoch",
     "perpoint_choose": "Perpoint test on pairs of points",
     "perpoint_choose_dif":"Perpoint test on pairs of points from different distributions",
-    "KL":"Attack using KL divergences"
+    "KL":"Attack using KL divergences",
+    "Combine": "Combining results"
 }
 
 

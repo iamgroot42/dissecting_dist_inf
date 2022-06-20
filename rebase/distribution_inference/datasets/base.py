@@ -240,9 +240,14 @@ class CustomDatasetWrapper:
         models = []
         mp = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
+            if epochwise_version:
+                model_paths = list(model_paths)
+                model_paths.sort(key=lambda i: int(i))
+            #epochs in ascending order
             for mpath in model_paths:
                 # Break reading if requested number of models is reached
-                if i >= n_models:
+                
+                if i >= n_models and not epochwise_version:
                     break
 
                 # Skip models with model_num below train_config.offset
@@ -254,18 +259,22 @@ class CustomDatasetWrapper:
                     if os.path.isdir(os.path.join(folder_path, mpath)):
                         # Make sure not accidentally looking into model with adv-trained models
                         if not (mpath.startswith("adv_train_") or mpath == "full"):
+                            ei = 0
                             models_inside = []
-                            # Sort according to epoch number in the name : %d_ format
+                            # Sort according to model number in the name : %d_ format
                             files_inside = os.listdir(
                                 os.path.join(folder_path, mpath))
                             files_inside.sort(
                                 key=lambda x: int(x.split("_")[0]))
                             for mpath_inside in files_inside:
+                                if ei>= n_models:
+                                    break
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),
                                     on_cpu=on_cpu,
                                     full_model=full_model)
                                 models_inside.append(model)
+                                ei+=1
                             models.append(models_inside)
                             i += 1
                             mp.append(os.path.join(mpath, mpath_inside))
@@ -325,6 +334,9 @@ class CustomDatasetWrapper:
         i = 0
         feature_vectors = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
+            if epochwise_version:
+                model_paths = list(model_paths)
+                model_paths.sort(key=lambda i: int(i))
             for mpath in model_paths:
                 # Break reading if requested number of models is reached
                 if i >= n_models:
@@ -340,7 +352,7 @@ class CustomDatasetWrapper:
                         # Make sure not accidentally looking into model with adv-trained models
                         if not (mpath.startswith("adv_train_") or mpath == "full"):
                             features_inside = []
-                            # Sort according to epoch number in the name : %d_ format
+                            # Sort according to model number in the name : %d_ format
                             files_inside = os.listdir(
                                 os.path.join(folder_path, mpath))
                             files_inside.sort(

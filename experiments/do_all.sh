@@ -6,8 +6,8 @@
 #j=0
 for i in $1
 do
-python train_more.py --load_config "./oversampling.json" --ratio $i 
+python train_more.py --load_config "./undersample.json" --ratio $i 
 #j=$((($j+1)%3))
 done
 echo "finished"
-python blackbox_attacks.py --load_config shuffle_bb.json --en race_bb_oversample
+#python blackbox_attacks.py --load_config shuffle_bb.json --en race_bb_oversample

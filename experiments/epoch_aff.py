@@ -10,7 +10,7 @@ from distribution_inference.logging.core import AttackResult, IntermediateResult
 from distribution_inference.attacks.whitebox.utils import wrap_into_loader
 import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
-from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader
+from distribution_inference.attacks.whitebox.affinity.utils import get_loader_for_seed_data
 
 
 #a bit messy in this file. Might need to move something out to functions in rebase
@@ -127,20 +127,16 @@ if __name__ == "__main__":
                 (np.zeros(models_vic_1.shape[1]), np.ones(models_vic_2.shape[1])))
             # Get victim and adv predictions on loaders for first ratio
             #only support default random selection of points
-            seed_data_ds, seed_data_loader, adv_l, raw_data = get_seed_data_loader(
-                [ds_adv_1, ds_adv_2],
-                wb_attack_config,
-                num_samples_use=wb_attack_config.affinity_config.num_samples_use,
-                also_get_raw_data=True)
-
+            
             # Wrap predictions to be used by the attack
 
             attacker_obj = wu.get_attack(wb_attack_config.attack)(
                 None, wb_attack_config)
-            attacker_obj.register_seed_data(seed_data_ds)
+            
             # Load model
             attacker_obj.load_model(os.path.join(
                 attack_model_path_dir, attack_model_path))
+            seed_data_loader =get_loader_for_seed_data(attacker_obj.seed_data_ds, wb_attack_config)
             adv_test = [wrap_into_loader(
                 [ma1, ma2],
                 batch_size=wb_attack_config.batch_size,
@@ -178,9 +174,11 @@ if __name__ == "__main__":
             #log results
             DataLogger.add_model_name(prop_value, (adv1_names, adv2_names), t)
             DataLogger.add_model(prop_value, clf, t)
-            DataLogger.add_points(prop_value, raw_data, t)
+            DataLogger.add_points(prop_value, attacker_obj.seed_data_ds, t)
+            vacc = clf.score(preds_vic, labels_vic)
+            print(vacc)
             logger.add_results("Combine", prop_value,
-                               clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
+                               100*vacc, 100*clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack
     logger.save()
     DataLogger.save()

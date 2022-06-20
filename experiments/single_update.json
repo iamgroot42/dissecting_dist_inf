@@ -35,7 +35,7 @@
         ],
         "preload": true,
         "loss_variant": false,
-        "Start_epoch":10
+        "Start_epoch":2
     },
     "values": [0.0, 0.1, 0.2, 0.3, 0.4,0.6,0.7,0.8,0.9,1.0]
 }
