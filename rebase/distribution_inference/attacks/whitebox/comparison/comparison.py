@@ -60,14 +60,16 @@ class ComparisonAttack:
             models.append(model)
         return models
 
-    def _attack_per_dis(self,preds_victim:PredictionsOnOneDistribution,
-                preds_adv:PredictionsOnOneDistribution,
+    def _attack_per_dis(self,
+                preds_adv1:PredictionsOnOneDistribution,
+                preds_adv2:PredictionsOnOneDistribution,
+                preds_victim:PredictionsOnOneDistribution,
                 KL_func: Callable=entropy):
-        p1, p2 = sigmoid(preds_adv.preds_property_1), sigmoid(preds_adv.preds_property_2)
+        p1, p2 = (sigmoid(preds_adv1.preds_property_1),sigmoid(preds_adv1.preds_property_2)), (sigmoid(preds_adv2.preds_property_1),sigmoid(preds_adv2.preds_property_2))
         # Predictions made by the  victim's models
         pv1, pv2 = sigmoid(preds_victim.preds_property_1), sigmoid(preds_victim.preds_property_2)
-        KL1 = (np.array([KL_func(p1_,pv1_) for p1_,pv1_ in zip(p1,pv1)]),np.array([KL_func(p2_,pv1_) for p2_,pv1_ in zip(p2,pv1)]))
-        KL2 =  (np.array([KL_func(p1_,pv2_) for p1_,pv2_ in zip(p1,pv2)]),np.array([KL_func(p2_,pv2_) for p2_,pv2_ in zip(p2,pv2)]))
+        KL1 = (np.array([KL_func(p1_,pv1_) for p1_,pv1_ in zip(p1[0],pv1)]),np.array([KL_func(p2_,pv1_) for p2_,pv1_ in zip(p1[1],pv1)]))
+        KL2 =  (np.array([KL_func(p1_,pv2_) for p1_,pv2_ in zip(p2[0],pv2)]),np.array([KL_func(p2_,pv2_) for p2_,pv2_ in zip(p2[1],pv2)]))
         res1 = KL1[1] - KL1[0]
         res2 = KL2[0] - KL2[1]
         acc1 = np.average(res1>=0)
@@ -75,10 +77,11 @@ class ComparisonAttack:
         return 100*(acc1+acc2)/2, np.hstack((res1,res2))
 
     def attack(self,
-               preds_adv: PredictionsOnDistributions,
+               preds_adv1: PredictionsOnDistributions,
+               preds_adv2: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions):
-        acc_1,preds_1 = self._attack_per_dis(preds_adv.preds_on_distr_1,preds_vic.preds_on_distr_1)
-        acc_2,preds_2 = self._attack_per_dis(preds_adv.preds_on_distr_2,preds_vic.preds_on_distr_2)
+        acc_1,preds_1 = self._attack_per_dis(preds_adv1.preds_on_distr_1,preds_adv2.preds_on_distr_1,preds_vic.preds_on_distr_1)
+        acc_2,preds_2 = self._attack_per_dis(preds_adv1.preds_on_distr_2,preds_adv2.preds_on_distr_2,preds_vic.preds_on_distr_2)
         # Get best adv accuracies for both distributions, across all ratios
         chosen_distribution = 0
         if acc_1>acc_2:
