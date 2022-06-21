@@ -14,5 +14,6 @@
     "weight_decay": 1e-3,
     "num_models": 1,
     "get_best": true,
-    "verbose": false
+    "verbose": false,
+    "model_arch": "alexnet"
 }

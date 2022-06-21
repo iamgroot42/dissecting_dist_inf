@@ -21,21 +21,29 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models_new_census/60_40",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
+                         supported_models=["mlp2"],
                          property_focus={"sex": 'female', "race": 'white'},
+                         default_model="mlp2",
                          epoch_wise=epoch_wise)
 
-    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
-        if full_model:
-            raise NotImplementedError("Only one model arch for this dataset")
-        model = MLPTwoLayer(n_inp=105)
+    def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
+        if model_arch is None:
+            model_arch = self.default_model
+        if model_arch == "mlp2":
+            model = MLPTwoLayer(n_inp=105)
+        else:
+            raise NotImplementedError("Model architecture not supported")
+
         if not cpu:
             model = model.cuda()
         return model
 
-    def get_model_for_dp(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
-        if full_model:
-            raise NotImplementedError("Only one model arch for this dataset")
-        model = MLPTwoLayer(n_inp=105)
+    def get_model_for_dp(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
+        if model_arch == "mlp2":
+            model = MLPTwoLayer(n_inp=105)
+        else:
+            raise NotImplementedError("Model architecture not supported")
+
         if not cpu:
             model = model.cuda()
         return model
@@ -288,21 +296,27 @@ class CensusWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, on_cpu: bool = False, full_model: bool = False) -> nn.Module:
-        if full_model:
-            raise NotImplementedError("Only one model arch for this dataset")
+    def load_model(self, path: str, on_cpu: bool = False, model_arch: str = None) -> nn.Module:
         info_object = self.info_object
-        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
+        model = info_object.get_model(cpu=on_cpu, model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
-        info_object = self.info_object
-        base_models_dir = info_object.base_models_dir
+    def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
+        base_models_dir = self.info_object.base_models_dir
         dp_config = None
         shuffle_defense_config = None
         if train_config.misc_config is not None:
             dp_config = train_config.misc_config.dp_config
             shuffle_defense_config = train_config.misc_config.shuffle_defense_config
+
+        # Standard logic
+        if model_arch is None:
+            model_arch = self.info_object.default_model
+        if model_arch not in self.info_object.supported_models:
+            raise ValueError(f"Model architecture {model_arch} not supported")
+        if model_arch is None:
+            model_arch = self.info_object.default_model
+        base_models_dir = os.path.join(base_models_dir, model_arch)
 
         if dp_config is None:
             if shuffle_defense_config is None:
@@ -317,7 +331,9 @@ class CensusWrapper(base.CustomDatasetWrapper):
         if self.label_noise:
             base_path = os.path.join(
                 base_models_dir, "label_noise:{}".format(train_config.label_noise))
+
         save_path = os.path.join(base_path, self.prop, self.split)
+
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
 

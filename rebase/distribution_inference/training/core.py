@@ -208,6 +208,10 @@ def validate_epoch(val_loader, model, criterion,
 def train_without_dp(model, loaders, train_config: TrainConfig,
                      input_is_list: bool = False,
                      extra_options: dict = None):
+    # Wrap with dataparallel if requested
+    if train_config.parallel:
+        model = ch.nn.DataParallel(model)
+
     # Get data loaders
     if len(loaders) == 2:
         train_loader, test_loader = loaders
@@ -368,6 +372,10 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             multi_class=train_config.multi_class)
     else:
         test_loss, test_acc = vloss, vacc
+
+    # Now that training is over, remove dataparallel wrapper
+    if train_config.parallel:
+        model = model.module
 
     if train_config.get_best:
         return best_model, (test_loss, test_acc)

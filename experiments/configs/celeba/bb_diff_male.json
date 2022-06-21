@@ -46,6 +46,8 @@
         1.0
     ],
     "num_victim_models": 500,
-    "victim_full_model": true,
-    "on_cpu": true
+    "victim_model_arch": "alexnet",
+    "adv_model_arch": "mlp2",
+    "on_cpu": true,
+    "victim_processed_variant": true
 }

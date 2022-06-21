@@ -18,7 +18,8 @@ class LossAndThresholdAttack(Attack):
         """
         assert calc_acc is not None, "Must provide function to compute accuracy"
         assert ground_truth is not None, "Must provide ground truth to compute accuracy"
-        assert not (self.config.multi2 and self.config.multi), "No implementation for both multi model"
+        assert not (
+            self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
         # Get accuracies on first data distribution
@@ -84,7 +85,7 @@ class LossAndThresholdAttack(Attack):
 
     def _loss_multi(self, acc_1, acc_2):
         basic = []
-        l=acc_1[0].shape[1]
+        l = acc_1[0].shape[1]
         for r in range(len(self.config.ratios)):
             preds_1 = []
             preds_2 = []

@@ -68,14 +68,22 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models_census/50_50_new/normal",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios, },
+                         supported_models=["ported"],
                          property_focus={"sex": 'Female', "race": 'White'},
+                         default_model="ported",
                          epoch_wise=epoch)
 
-    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
-        clf = PortedMLPClassifier()
+    def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
+        if model_arch is None:
+            model_arch = self.default_model
+        if model_arch == "mlp2":
+            model = PortedMLPClassifier()
+        else:
+            raise NotImplementedError("Model architecture not supported")
+
         if not cpu:
-            clf = clf.cuda()
-        return clf
+            model = model.cuda()
+        return model
 
 
 class _CensusIncome:
@@ -251,9 +259,18 @@ class CensusWrapper(base.CustomDatasetWrapper):
         model = info_object.get_model(cpu=on_cpu)
         return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
+    def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
+
+        # Standard logic
+        if model_arch is None:
+            model_arch = self.info_object.default_model
+        if model_arch not in info_object.supported_models:
+            raise ValueError(f"Model architecture {model_arch} not supported")
+        if model_arch is None:
+            model_arch = info_object.default_model
+        base_models_dir = os.path.join(base_models_dir, model_arch)
 
         save_path = os.path.join(base_models_dir, self.prop, self.split)
         if self.ratio is not None:

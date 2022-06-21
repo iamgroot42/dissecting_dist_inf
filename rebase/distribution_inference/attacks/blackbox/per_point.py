@@ -2,7 +2,7 @@ import numpy as np
 import torch as ch
 from typing import List, Tuple, Callable, Union
 
-from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions,multi_model_sampling,get_threshold_pred_multi
+from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions, multi_model_sampling, get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
 
 
@@ -26,7 +26,7 @@ class PerPointThresholdAttack(Attack):
         # TODO: Actually do that
 
         # Get data for first distribution
-        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, final_thresholds_1,classes_use = perpoint_threshold_test_per_dist(
+        adv_accs_1, adv_preds_1, victim_accs_1, victim_preds_1, final_thresholds_1, classes_use = perpoint_threshold_test_per_dist(
             preds_adv.preds_on_distr_1,
             preds_vic.preds_on_distr_1,
             self.config,
@@ -46,13 +46,13 @@ class PerPointThresholdAttack(Attack):
             adv_accs_use, adv_preds_use = adv_accs_1, adv_preds_1
             victim_accs_use, victim_preds_use = victim_accs_1, victim_preds_1
             final_thresholds_use = final_thresholds_1
-            
+
         else:
             adv_accs_use, adv_preds_use = adv_accs_2, adv_preds_2
             victim_accs_use, victim_preds_use = victim_accs_2, victim_preds_2
             final_thresholds_use = final_thresholds_2
             chosen_distribution = 1
-          
+
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         chosen_ratio_index = np.argmax(adv_accs_use)
         if epochwise_version:
@@ -65,8 +65,9 @@ class PerPointThresholdAttack(Attack):
         adv_pred_use = adv_preds_use[chosen_ratio_index]
         final_threshold_use = final_thresholds_use[chosen_ratio_index]
 
-        choice_information = (chosen_distribution, chosen_ratio_index, final_threshold_use)
-        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information,classes_use]
+        choice_information = (chosen_distribution,
+                              chosen_ratio_index, final_threshold_use)
+        return [(victim_acc_use, victim_pred_use), (adv_acc_use, adv_pred_use), choice_information, classes_use]
 
     def wrap_preds_to_save(self, result: List):
         victim_preds = result[0][1]
@@ -87,7 +88,8 @@ def _perpoint_threshold_on_ratio(
     if multi2:
         # TODO: Implement later
         if tune_final_threshold:
-            raise NotImplementedError("Tuning final threshold not implemented for multi2")
+            raise NotImplementedError(
+                "Tuning final threshold not implemented for multi2")
 
         preds, acc = get_threshold_pred_multi(
             preds_1, preds_2, threshold, rule, get_pred=True,
@@ -121,8 +123,10 @@ def perpoint_threshold_test_per_dist(
         If preds_victim is None, computes metrics and datapoints
         only for the adversary.
     """
-    assert not (epochwise_version and config.multi), "No implementation for both epochwise and multi model"
-    assert not (config.multi2 and config.multi), "No implementation for both multi model"
+    assert not (
+        epochwise_version and config.multi), "No implementation for both epochwise and multi model"
+    assert not (
+        config.multi2 and config.multi), "No implementation for both multi model"
     assert not (
         epochwise_version and config.multi2), "No implementation for both epochwise and multi model"
     victim_preds_present = (preds_victim is not None)
@@ -174,7 +178,8 @@ def perpoint_threshold_test_per_dist(
         y_gt = ground_truth[order][::-1]
         p1, p2 = np_compute_losses(p1, y_gt), np_compute_losses(p2, y_gt)
         if victim_preds_present:
-            pv1, pv2 = np_compute_losses(pv1, y_gt), np_compute_losses(pv2, y_gt)
+            pv1, pv2 = np_compute_losses(
+                pv1, y_gt), np_compute_losses(pv2, y_gt)
 
     # Scale thresholds with mean/std across data, if variant selected
     if config.relative_threshold:
@@ -190,7 +195,8 @@ def perpoint_threshold_test_per_dist(
         p1_, p2_ = p1, p2
 
     # Get thresholds for all points
-    _, thres, rs = find_threshold_pred(p1_, p2_, granularity=config.granularity)
+    _, thres, rs = find_threshold_pred(
+        p1_, p2_, granularity=config.granularity)
 
     # Ground truth
     classes_adv = np.concatenate(
@@ -272,7 +278,7 @@ def perpoint_threshold_test_per_dist(
         if victim_preds_present:
             victim_preds = np.transpose(victim_preds, (1, 0, 2))
         victim_accs = victim_accs.T
-    return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv,classes_victim)
+    return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv, classes_victim)
 
 
 def np_compute_losses(preds: np.ndarray,

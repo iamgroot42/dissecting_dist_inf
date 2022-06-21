@@ -21,7 +21,6 @@ ATTACK_MAPPING = {
     "single_update_loss": Epoch_LossAttack,
     "single_update_threshold": Epoch_ThresholdAttack,
     "single_update_perpoint": Epoch_Perpoint,
-
     "epoch_meta": Epoch_Tree
 
 }

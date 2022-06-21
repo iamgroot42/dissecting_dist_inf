@@ -30,6 +30,8 @@ class DatasetInformation:
                  models_path: str,
                  properties: list,
                  values: dict,
+                 supported_models: List[str],
+                 default_model: str,
                  property_focus: dict = None,
                  epoch_wise: bool = False,
                  num_dropped_features: int = 0):
@@ -52,6 +54,8 @@ class DatasetInformation:
         self.values = values
         self.property_focus = property_focus
         self.num_dropped_features = num_dropped_features
+        self.supported_models = supported_models
+        self.default_model = default_model
     
     @ch.no_grad()
     def _collect_features(self, loader, model,
@@ -73,7 +77,7 @@ class DatasetInformation:
             return all_features, all_labels, all_props
         return all_features
 
-    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
+    def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
         raise NotImplementedError(
             f"Implement method to model for {self.name} dataset")
 
@@ -183,7 +187,7 @@ class CustomDatasetWrapper:
 
         return test_loader
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
+    def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
         """
             Return path to directory where models will be saved,
             for a given configuration.
@@ -196,7 +200,7 @@ class CustomDatasetWrapper:
             Function to get prefix + name for saving
             the model.
         """
-        prefix = self.get_save_dir(train_config, full_model=train_config.full_model)
+        prefix = self.get_save_dir(train_config, model_arch=train_config.model_arch)
         if name is None:
             return prefix
         return os.path.join(prefix, name)
@@ -211,7 +215,7 @@ class CustomDatasetWrapper:
 
     def load_model(self, path: str,
                    on_cpu: bool = False,
-                   full_model: bool = False) -> nn.Module:
+                   model_arch: str = None) -> nn.Module:
         """Load model from a given path"""
         raise NotImplementedError("Function to load model not implemented")
 
@@ -222,14 +226,14 @@ class CustomDatasetWrapper:
                          train_config: TrainConfig,
                          n_models: int = None,
                          shuffle: bool = True,
-                         full_model: bool = False,
+                         model_arch: str = None,
                          custom_models_path: str = None) -> List:
         # Get path to load models
         if custom_models_path:
             folder_path = custom_models_path
         else:
             folder_path = self.get_save_dir(
-                train_config, full_model=full_model)
+                train_config, model_arch=model_arch)
         model_paths = os.listdir(folder_path)
         if shuffle:
             model_paths = np.random.permutation(model_paths)
@@ -244,7 +248,7 @@ class CustomDatasetWrapper:
                    shuffle: bool = True,
                    epochwise_version: bool = False,
                    get_names: bool = False,
-                   full_model: bool = False,
+                   model_arch: str = None,
                    custom_models_path: str = None):
         """
             Load models. Either return list of requested models, or a 
@@ -256,7 +260,7 @@ class CustomDatasetWrapper:
             train_config,
             n_models=n_models,
             shuffle=shuffle,
-            full_model=full_model,
+            model_arch=model_arch,
             custom_models_path=custom_models_path)
         i = 0
         models = []
@@ -286,7 +290,7 @@ class CustomDatasetWrapper:
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),
                                     on_cpu=on_cpu,
-                                    full_model=full_model)
+                                    model_arch=model_arch)
                                 models_inside.append(model)
                             models.append(models_inside)
                             i += 1
@@ -299,7 +303,7 @@ class CustomDatasetWrapper:
                 else:
                     model = self.load_model(os.path.join(
                         folder_path, mpath), on_cpu=on_cpu,
-                        full_model=full_model)
+                        model_arch=model_arch)
                     models.append(model)
                     i += 1
                     mp.append(mpath)
@@ -331,7 +335,7 @@ class CustomDatasetWrapper:
                            on_cpu: bool = False,
                            shuffle: bool = True,
                            epochwise_version: bool = False,
-                           full_model: bool = False,
+                           model_arch: str = None,
                            custom_models_path: str = None):
         """
             Extract features for a given model.
@@ -342,7 +346,7 @@ class CustomDatasetWrapper:
             train_config,
             n_models=n_models,
             shuffle=shuffle,
-            full_model=full_model,
+            model_arch=model_arch,
             custom_models_path=custom_models_path)
         i = 0
         feature_vectors = []
@@ -371,7 +375,7 @@ class CustomDatasetWrapper:
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),
                                     on_cpu=on_cpu,
-                                    full_model=full_model)
+                                    model_arch=model_arch)
                                 # Extract model features
                                 # Get model params, shift to GPU
                                 dims, feature_vector = get_weight_layers(
@@ -388,7 +392,7 @@ class CustomDatasetWrapper:
                     # Load model
                     model = self.load_model(os.path.join(
                         folder_path, mpath), on_cpu=on_cpu,
-                        full_model=full_model)
+                        model_arch=model_arch)
 
                     # Extract model features
                     # Get model params, shift to GPU

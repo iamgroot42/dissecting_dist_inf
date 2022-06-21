@@ -43,6 +43,8 @@
         0.8
     ],
     "num_victim_models": 250,
-    "victim_full_model": true,
+    "victim_model_arch": "densenet",
+    "adv_model_arch": "bonemodel",
+    "victim_processed_variant": true,
     "on_cpu": true
 }

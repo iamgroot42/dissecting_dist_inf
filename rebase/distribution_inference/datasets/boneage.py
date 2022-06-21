@@ -54,16 +54,24 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models_boneage",
                          properties=["gender", "age"],
                          values={"gender": ratios, "age": ratios},
+                         supported_models=["densenet", "bonemodel"],
+                         default_model="bonemodel",
                          epoch_wise=epoch)
         self.supported_properties = ["gender", "age"]
 
     def get_model(self,
                   cpu: bool = False,
-                  full_model: bool = False) -> nn.Module:
-        if full_model:
+                  model_arch: str = None) -> nn.Module:
+        if model_arch is None:
+            model_arch = self.default_model
+
+        if model_arch == "densenet":
             model = DenseNet(1024)
-        else:
+        elif model_arch == "bonemodel":
             model = BoneModel(1024)
+        else:
+            raise NotImplementedError("Model architecture not supported")
+
         if cpu:
             model = model.cpu()
         else:
@@ -206,8 +214,11 @@ class DatasetInformation(base.DatasetInformation):
 
 
 class BoneDataset(base.CustomDataset):
-    def __init__(self, df, argument=None, processed=False,
-                 classify: str = "age", property: str = "gender"):
+    def __init__(self, df,
+                 argument = None,
+                 processed: bool = False,
+                 classify: str = "age",
+                 property: str = "gender"):
         if processed:
             self.features = argument
         else:
@@ -256,9 +267,9 @@ class _RawBoneWrapper:
 
 
 class BoneWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
         # Call parent constructor
-        super().__init__(data_config, skip_data)
+        super().__init__(data_config, skip_data, label_noise)
         self.sample_sizes = {
             "gender": {
                 "adv": (700, 200),
@@ -269,15 +280,16 @@ class BoneWrapper(base.CustomDatasetWrapper):
                 "victim": (1400, 400)
             }
         }
+        # Define DI object
+        self.info_object = DatasetInformation()
 
     def _filter(self, x):
         return x[self.prop] == 1
 
     def load_model(self, path: str,
                    on_cpu: bool = False,
-                   full_model: bool = False) -> nn.Module:
-        info_object = DatasetInformation()
-        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
+                   model_arch: str = None) -> nn.Module:
+        model = self.info_object.get_model(cpu=on_cpu, model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
     def prepare_processed_data(self, loader):
@@ -295,8 +307,6 @@ class BoneWrapper(base.CustomDatasetWrapper):
         ch.cuda.empty_cache()
 
     def load_data(self):
-        # Define DI object
-        self.info_object = DatasetInformation()
         # Get DF files for train, val
         df_train, df_val = self.info_object._get_df(self.split)
         # Filter to achieve desired ratios and sample-sizes
@@ -346,13 +356,19 @@ class BoneWrapper(base.CustomDatasetWrapper):
                                    num_workers=num_workers,
                                    prefetch_factor=prefetch_factor)
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool) -> str:
+    def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
         subfolder_prefix = os.path.join(self.split, self.prop, str(self.ratio))
 
-        if full_model:
-            subfolder_prefix = os.path.join(subfolder_prefix, "full")
+        # Standard logic
+        if model_arch is None:
+            model_arch = self.info_object.default_model
+        if model_arch not in info_object.supported_models:
+            raise ValueError(f"Model architecture {model_arch} not supported")
+        if model_arch is None:
+            model_arch = info_object.default_model
+        base_models_dir = os.path.join(base_models_dir, model_arch)
 
         save_path = os.path.join(base_models_dir, subfolder_prefix)
 

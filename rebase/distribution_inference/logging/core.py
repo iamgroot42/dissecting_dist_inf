@@ -26,7 +26,7 @@ class Result:
         if json_:
             save_p = self.path.joinpath(f"{self.name}.json")
             with save_p.open('w') as f:
-                json.dump(self.dic, f)
+                json.dump(self.dic, f, indent=4)
         else:
             save_p = self.path.joinpath(f"{self.name}.p")
             with save_p.open('wb') as f:
@@ -159,19 +159,25 @@ class DefenseResult(Result):
                                 'after_acc', after_acc)
 
 
-# def PerformanceResult(Result):
-#     def __init__(self,
-#                  experiment_name: str,
-#                  train_config: TrainConfig):
-#         # Infer path from data_config inside attack_config
-#         dataset_name = train_config.data_config.name
-#         save_path = get_save_path()
-#         path = Path(os.path.join(save_path, dataset_name))
-#         super().__init__(path, experiment_name)
+class TrainingResult(Result):
+    def __init__(self,
+                 experiment_name: str,
+                 train_config: TrainConfig):
+        # Infer path from data_config inside attack_config
+        dataset_name = train_config.data_config.name
+        save_path = get_save_path()
+        path = Path(os.path.join(save_path, dataset_name, "training"))
+        super().__init__(path, experiment_name)
 
-#         self.dic["train_config"] = deepcopy(train_config)
-#         self.convert_to_dict(self.dic)
+        self.dic["train_config"] = deepcopy(train_config)
+        self.convert_to_dict(self.dic)
 
-#     def add_result(self, prop, loss: float, acc: float=None):
-#         self.check_rec(self.dic, ['log', prop])
-#         # Log loss
+    def add_result(self, prop, loss: float, acc: float=None):
+        self.check_rec(self.dic, ['log', prop])
+        # Log loss of model
+        self.conditional_append(self.dic['log'][prop],
+                                'loss', loss)
+        # Log accuracy of mode
+        self.conditional_append(self.dic['log'][prop],
+                                'acc', acc)
+

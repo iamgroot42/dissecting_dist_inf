@@ -70,7 +70,7 @@ if __name__ == "__main__":
             on_cpu=attack_config.on_cpu,
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch,
-            full_model=attack_config.victim_full_model,
+            model_arch=attack_config.victim_model_arch,
             custom_models_path=models_1_path)
 
         # For each value (of property) asked to experiment with
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                full_model=attack_config.victim_full_model,
+                model_arch=attack_config.victim_model_arch,
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
 
             for t in range(attack_config.tries):
@@ -100,12 +100,12 @@ if __name__ == "__main__":
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
-                    full_model=attack_config.adv_full_model)
+                    model_arch=attack_config.adv_model_arch)
                 models_adv_2 = ds_adv_2.get_models(
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
-                    full_model=attack_config.adv_full_model)
+                    model_arch=attack_config.adv_model_arch)
 
                 # Get victim and adv predictions on loaders for first ratio
                 preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
@@ -116,7 +116,7 @@ if __name__ == "__main__":
                     epochwise_version=attack_config.train_config.save_every_epoch,
                     preload=bb_attack_config.preload,
                     multi_class=bb_attack_config.multi_class,
-                    make_processed_version=attack_config.victim_full_model
+                    make_processed_version=attack_config.victim_processed_variant
                 )
                 # Get victim and adv predictions on loaders for second ratio
                 preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
@@ -127,7 +127,7 @@ if __name__ == "__main__":
                     epochwise_version=attack_config.train_config.save_every_epoch,
                     preload=bb_attack_config.preload,
                     multi_class=bb_attack_config.multi_class,
-                    make_processed_version=attack_config.victim_full_model
+                    make_processed_version=attack_config.victim_processed_variant
                 )
                 # Wrap predictions to be used by the attack
                 preds_adv = PredictionsOnDistributions(

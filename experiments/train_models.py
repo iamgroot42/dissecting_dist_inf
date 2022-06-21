@@ -7,6 +7,7 @@ from distribution_inference.training.core import train
 from distribution_inference.training.utils import save_model
 from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
+from distribution_inference.logging.core import TrainingResult
 
 
 if __name__ == "__main__":
@@ -39,6 +40,10 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(train_config)
 
+    # Define logger
+    exp_name = "_".join([config.data_config.prop, str(config.data_config.value), str(config.offset)])
+    logger = TrainingResult(exp_name, train_config)
+
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -48,6 +53,11 @@ if __name__ == "__main__":
 
     # Create new DS object
     ds = ds_wrapper_class(data_config)
+
+    # train_ds, val_ds = ds.load_data()
+    # print(len(train_ds))
+    # print(len(val_ds))
+    # exit(0)
 
     # Train models
     for i in range(1, train_config.num_models + 1):
@@ -67,7 +77,7 @@ if __name__ == "__main__":
 
         # Get model
         if dp_config is None:
-            model = ds_info.get_model(full_model=train_config.full_model)
+            model = ds_info.get_model(model_arch=train_config.model_arch)
         else:
             model = ds_info.get_model_for_dp()
 
@@ -77,6 +87,9 @@ if __name__ == "__main__":
                                      extra_options={
             "curren_model_num": i + train_config.offset,
             "save_path_fn": ds.get_save_path})
+        
+        # Log results
+        logger.add_result(data_config.value, vloss, vacc)
 
         # If saving only the final model
         if not train_config.save_every_epoch:
@@ -91,4 +104,8 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
+            # exit(0)
             save_model(model, save_path)
+
+        # Save logger
+        logger.save()

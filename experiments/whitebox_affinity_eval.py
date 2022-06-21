@@ -87,9 +87,8 @@ if __name__ == "__main__":
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False,
-            full_model=attack_config.victim_full_model,
-            custom_models_path=models_1_path,
-            full_model=attack_config.victim_full_model,)
+            model_arch=attack_config.victim_model_arch,
+            custom_models_path=models_1_path,)
 
         # For each value (of property) asked to experiment with
         for i, prop_value in enumerate(attack_config.values):
@@ -107,9 +106,8 @@ if __name__ == "__main__":
                 n_models=attack_config.num_victim_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
-                full_model=attack_config.victim_full_model,
-                custom_models_path=models_2_paths[i] if models_2_paths else None,
-                full_model=attack_config.victim_full_model)
+                model_arch=attack_config.victim_model_arch,
+                custom_models_path=models_2_paths[i] if models_2_paths else None)
 
             # Generate test set
             test_data = wrap_into_loader(

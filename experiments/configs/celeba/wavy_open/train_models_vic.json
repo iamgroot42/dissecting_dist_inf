@@ -3,8 +3,8 @@
         "name": "celeba",
         "prop": "Wavy_Hair",
         "classify": "Mouth_Slightly_Open",
-        "split": "adv",
-        "value": 1.0,
+        "split": "victim",
+        "value": 0.5,
         "processed_variant": false
     },
     "epochs": 30,
@@ -12,8 +12,8 @@
     "learning_rate": 2e-5,
     "batch_size": 64,
     "weight_decay": 1e-3,
-    "num_models": 1,
+    "num_models": 500,
     "get_best": true,
-    "verbose": true,
+    "verbose": false,
     "full_model": true
 }
