@@ -6,7 +6,7 @@ import os
 from typing import Callable
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from simple_parsing import ArgumentParser
-
+from copy import deepcopy
 from dataclasses import replace
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
@@ -52,7 +52,7 @@ class ComparisonAttack:
             print("Training classifier %d / %d" % (i, num_models))
             train_loader, val_loader = ds.get_loaders(
             batch_size=train_config.batch_size)
-            model, (vloss, vacc) = train(vic_models[i-1], (train_loader, val_loader),
+            model, (vloss, vacc) = train(deepcopy(vic_models[i-1]), (train_loader, val_loader),
                                      train_config=train_config,
                                      extra_options={
                 "curren_model_num": i + train_config.offset,

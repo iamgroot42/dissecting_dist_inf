@@ -72,6 +72,10 @@ if __name__ == "__main__":
         epochwise_version=True)
     models_vic_1 = (models_vic_1[wb_attack_config.comparison_config.Start_epoch-1],models_vic_1[wb_attack_config.comparison_config.End_epoch-1])
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
+    ma=[]
+    for t in range(attack_config.tries):
+        models_a_1 = attacker_obj.train(models_vic_1[0],0.5)
+        ma.append(models_a_1)
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
             data_config, prop_value=prop_value)
@@ -90,25 +94,25 @@ if __name__ == "__main__":
         for t in range(attack_config.tries):
             _, loader1 = ds_adv_1.get_loaders(batch_size=BATCH_SIZE)
             _, loader2 = ds_adv_2.get_loaders(batch_size=BATCH_SIZE)
-            models_adv_1 = attacker_obj.train(models_vic_1[0],0.5)
-            models_adv_2 = attacker_obj.train(models_vic_2[0],prop_value)
+            models_adv_1 = (ma[t],attacker_obj.train(models_vic_1[0],prop_value))
+            models_adv_2 = (attacker_obj.train(models_vic_2[0],0.5),attacker_obj.train(models_vic_2[0],prop_value))
             preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
-                    models_vic=(models_vic_1, models_vic_2),
-                    models_adv=(models_adv_1, models_adv_2),
+                    models_vic=(models_vic_1[1], models_vic_2[1]),
+                    models_adv=(models_adv_1[0], models_adv_2[0]),
                     ds_obj=ds_adv_1,
                     batch_size=BATCH_SIZE,
-                    epochwise_version=attack_config.train_config.save_every_epoch,
+                    epochwise_version=False,
                     preload=True,
                     multi_class=False,
                     make_processed_version=attack_config.victim_full_model
                 )
                 # Get victim and adv predictions on loaders for second ratio
             preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
-                    models_vic=(models_vic_1, models_vic_2),
-                    models_adv=(models_adv_1, models_adv_2),
+                    models_vic=(models_vic_1[1], models_vic_2[1]),
+                    models_adv=(models_adv_1[1], models_adv_2[1]),
                     ds_obj=ds_adv_2,
                     batch_size=BATCH_SIZE,
-                    epochwise_version=attack_config.train_config.save_every_epoch,
+                    epochwise_version=False,
                     preload=True,
                     multi_class=False,
                     make_processed_version=attack_config.victim_full_model
@@ -124,7 +128,8 @@ if __name__ == "__main__":
                 )
             result = attacker_obj.attack(
                         preds_adv, preds_vic)
-
+            vacc= result[0][0]
+            print(vacc)
             logger.add_results("comparison", prop_value,
-                                       result[0][0], result[1][0])
+                                       vacc, result[1][0])
     logger.save()
