@@ -49,13 +49,13 @@ class KLAttack(Attack):
                             np.ones_like(preds_second)))
         acc = np.mean((preds >= 0.5) == gt)
 
-        # No concept of "choice"
+        # No concept of "choice" (are we in the Matrix :P)
         choice_information = (None, None)
         return [(acc, preds), (None, None), choice_information]
 
 
 def sigmoid(x):
-    return np.exp(-np.logaddexp(0, -x))
+    return 1 / (1 + np.exp(-x))
 
 
 def KL(x, y, multi_class: bool = False):
@@ -65,7 +65,7 @@ def KL(x, y, multi_class: bool = False):
         # Get preds for other class as well
         x_, y_ = 1 - x, 1 - y
         first_term = x * (np.log(x) - np.log(y))
-        second_term = y_ * (np.log(x_) - np.log(y_))
+        second_term = x_ * (np.log(x_) - np.log(y_))
     return np.mean(first_term + second_term, 1)
 
 
