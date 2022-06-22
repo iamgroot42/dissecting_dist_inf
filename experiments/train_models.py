@@ -41,7 +41,8 @@ if __name__ == "__main__":
     flash_utils(train_config)
 
     # Define logger
-    exp_name = "_".join([config.data_config.prop, str(config.data_config.value), str(config.offset)])
+    exp_name = "_".join([config.data_config.split, config.data_config.prop, str(
+        config.data_config.value), str(config.offset)])
     logger = TrainingResult(exp_name, train_config)
 
     # Get dataset wrapper
@@ -104,8 +105,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            # exit(0)
             save_model(model, save_path)
 
-        # Save logger
-        logger.save()
+    # Save logger
+    logger.save()

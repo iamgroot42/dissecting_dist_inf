@@ -4,16 +4,15 @@
         "prop": "Wavy_Hair",
         "classify": "Mouth_Slightly_Open",
         "split": "adv",
-        "value": 1.0,
+        "value": 0.0,
         "processed_variant": false
     },
-    "epochs": 25,
+    "epochs": 30,
     "offset": 0,
-    "learning_rate": 2e-5,
-    "batch_size": 64,
+    "learning_rate": 4e-5,
+    "batch_size": 128,
     "weight_decay": 1e-3,
-    "num_models": 1,
+    "num_models": 1000,
     "get_best": true,
-    "verbose": true,
-    "full_model": true
+    "verbose": false
 }
