@@ -148,7 +148,7 @@ class PlotHelper():
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                self.columns[1]: results,  # * 100,
+                                self.columns[1]: results*100 if results<=1 else results,  # * 100,
                                 self.columns[2]: title_prefix + attack_names})
             else:
                 warnings.warn(warning_string(

@@ -38,6 +38,8 @@ class DatasetInformation(base.DatasetInformation):
                              num_classes=self.num_classes)
         if not cpu:
             model = model.cuda()
+        else:
+            model.to("cpu")
         return model
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:

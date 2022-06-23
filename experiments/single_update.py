@@ -12,7 +12,8 @@ from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv,get_
 from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
-
+import torch as ch
+import gc
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -64,6 +65,8 @@ if __name__ == "__main__":
         epochwise_version=True)
     models_vic_1 = (models_vic_1[bb_attack_config.Start_epoch-1],models_vic_1[bb_attack_config.End_epoch-1])
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
+    ch.cuda.empty_cache()
+    gc.collect()
     # For each value (of property) asked to experiment with
     for prop_value in attack_config.values:
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -92,12 +95,13 @@ if __name__ == "__main__":
                 n_models=bb_attack_config.num_adv_models,
                 on_cpu=attack_config.on_cpu,
                 epochwise_version=True)
+            models_adv_1 = (models_adv_1[bb_attack_config.Start_epoch-1],models_adv_1[bb_attack_config.End_epoch-1])
             models_adv_2 = ds_adv_2.get_models(
                 train_adv_config,
                 n_models=bb_attack_config.num_adv_models,
                 on_cpu=attack_config.on_cpu,
                 epochwise_version=True)
-            models_adv_1 = (models_adv_1[bb_attack_config.Start_epoch-1],models_adv_1[bb_attack_config.End_epoch-1])
+            
             models_adv_2 = (models_adv_2[bb_attack_config.Start_epoch-1],models_adv_2[bb_attack_config.End_epoch-1])
             preds_vic1, ground_truth_1 = get_preds_epoch_on_dis([models_vic_1,models_vic_2],
             loader=loader1,preload=bb_attack_config.preload,

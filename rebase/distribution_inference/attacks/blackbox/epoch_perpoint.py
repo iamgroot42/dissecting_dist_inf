@@ -75,10 +75,11 @@ class Epoch_Perpoint(Attack):
             victim_accs_use, victim_preds_use = victim_accs_2, victim_preds_2
             final_thresholds_use = final_thresholds_2
             chosen_distribution = 1
-
+        
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         chosen_ratio_index = np.argmax(adv_accs_use)
-
+        if get_preds:
+            return victim_pred_use[chosen_ratio_index]
         victim_acc_use = victim_accs_use[chosen_ratio_index]
         victim_pred_use = victim_preds_use[chosen_ratio_index]
         adv_acc_use = adv_accs_use[chosen_ratio_index]

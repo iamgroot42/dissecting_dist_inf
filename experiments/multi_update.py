@@ -97,13 +97,12 @@ if __name__ == "__main__":
                 preds_on_distr_1=e1,
                 preds_on_distr_2=e2
             ) for e1, e2 in zip(preds_epoch_1, preds_epoch_2)]
-            for i in range(bb_attack_config.Start_epoch-1, bb_attack_config.End_epoch-10):
-                preds_e1, preds_e2 = preds_e[i], preds_e[i+10]
-
-            # For each requested attack, only one in this script
-                for attack_type in bb_attack_config.attack_type:
+            for attack_type in bb_attack_config.attack_type:
                     # Create attacker object
-                    attacker_obj = get_attack(attack_type)(bb_attack_config)
+                attacker_obj = get_attack(attack_type)(bb_attack_config)
+                for i in range(bb_attack_config.Start_epoch-1, bb_attack_config.End_epoch-5):
+                    preds_e1, preds_e2 = preds_e[i], preds_e[i+5]
+                
 
                 # Launch attack
                     raw_preds = attacker_obj.attack(
@@ -112,11 +111,11 @@ if __name__ == "__main__":
                         calc_acc=calculate_accuracies,
                         get_preds=True)
                 preds_accross_epoch.append(raw_preds)
-            preds_accross_epoch = np.array(preds_accross_epoch)
-            aggre_preds = np.mean(preds_accross_epoch, axis=0) >= 0.5
-            result = (100*(np.mean(aggre_preds[0])+np.mean(aggre_preds[1])))/2
-            logger.add_results(attack_type, prop_value,
+                preds_accross_epoch = np.array(preds_accross_epoch)
+                aggre_preds = np.mean(preds_accross_epoch, axis=0) >= 0.5
+                result = 100*np.mean(aggre_preds)
+                logger.add_results(attack_type, prop_value,
                                vacc=result)
-
+                print("{} acc: {}".format(attack_type,result))
     # Summarize results over runs, for each ratio and attack
     logger.save()

@@ -1,10 +1,11 @@
 from collections import OrderedDict
-from typing import List, Tuple,Callable
+from typing import List, Tuple, Callable
 import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
 import torch as ch
 import gc
+
 from distribution_inference.attacks.blackbox.per_point import PerPointThresholdAttack
 from distribution_inference.attacks.blackbox.standard import LossAndThresholdAttack
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution
@@ -16,17 +17,19 @@ from distribution_inference.attacks.blackbox.epoch_meta import Epoch_Tree
 from distribution_inference.attacks.blackbox.perpoint_choose import PerPointChooseAttack
 from distribution_inference.attacks.blackbox.perpoint_choose_dif import PerPointChooseDifAttack
 from distribution_inference.attacks.blackbox.KL import KLAttack
+
+
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
     "loss_and_threshold": LossAndThresholdAttack,
     "single_update_loss": Epoch_LossAttack,
-    "single_update_threshold":Epoch_ThresholdAttack,
-    "single_update_perpoint":Epoch_Perpoint,
+    "single_update_threshold": Epoch_ThresholdAttack,
+    "single_update_perpoint": Epoch_Perpoint,
 
-    "epoch_meta":Epoch_Tree,
+    "epoch_meta": Epoch_Tree,
     "perpoint_choose": PerPointChooseAttack,
-    "perpoint_choose_dif":PerPointChooseDifAttack,
-    "KL":KLAttack
+    "perpoint_choose_dif": PerPointChooseDifAttack,
+    "KL": KLAttack
 
 }
 
@@ -75,8 +78,8 @@ def get_preds(loader, models: List[nn.Module],
     inputs = []
     # Accumulate all data for given loader
     for data in loader:
-        if len(data)==2:
-            features,labels = data
+        if len(data) == 2:
+            features, labels = data
         else:
             features, labels, _ = data
         ground_truth.append(labels.cpu().numpy())
@@ -130,29 +133,34 @@ def get_preds(loader, models: List[nn.Module],
 
     return predictions, ground_truth
 
+
 def _get_preds_accross_epoch(models,
-                            loader,
-        preload: bool = False,
-        multi_class: bool = False):
+                             loader,
+                             preload: bool = False,
+                             multi_class: bool = False):
     preds = []
     for e in models:
-        p,gt = get_preds(loader,e,preload,multi_class=multi_class)
+        p, gt = get_preds(loader, e, preload, multi_class=multi_class)
         preds.append(p)
-        
-    return (np.array(preds),np.array(gt))
+
+    return (np.array(preds), np.array(gt))
+
 
 def get_preds_epoch_on_dis(
         models,
         loader,
         preload: bool = False,
         multi_class: bool = False):
-    preds1,gt = _get_preds_accross_epoch(models[0],loader,preload,multi_class)
-    preds2,_ = _get_preds_accross_epoch(models[1],loader,preload,multi_class)
+    preds1, gt = _get_preds_accross_epoch(
+        models[0], loader, preload, multi_class)
+    preds2, _ = _get_preds_accross_epoch(
+        models[1], loader, preload, multi_class)
     preds_wrapped = [PredictionsOnOneDistribution(
         preds_property_1=p1,
         preds_property_2=p2
-        ) for p1,p2 in zip(preds1,preds2)]
-    return (preds_wrapped,gt)
+    ) for p1, p2 in zip(preds1, preds2)]
+    return (preds_wrapped, gt)
+
 
 def _get_preds_for_vic_and_adv(
         models_vic: List[nn.Module],
@@ -191,15 +199,18 @@ def _get_preds_for_vic_and_adv(
         preds_vic, ground_truth = get_preds(
             loader_vic, models_vic, preload=preload,
             multi_class=multi_class)
-    assert np.all(ground_truth == ground_truth_repeat), "Val loader is shuffling data!"
+    assert np.all(ground_truth ==
+                  ground_truth_repeat), "Val loader is shuffling data!"
     return preds_vic, preds_adv, ground_truth
+
+
 def get_vic_adv_preds_on_distr_seed(
     models_vic: Tuple[List[nn.Module], List[nn.Module]],
     models_adv: Tuple[List[nn.Module], List[nn.Module]],
     loader,
         epochwise_version: bool = False,
         preload: bool = False,
-        multi_class: bool = False    ):
+        multi_class: bool = False):
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
         models_vic[0], models_adv[0], loader,
         epochwise_version=epochwise_version,
@@ -220,6 +231,7 @@ def get_vic_adv_preds_on_distr_seed(
         preds_property_2=preds_vic_2
     )
     return (adv_preds, vic_preds, ground_truth)
+
 
 def get_vic_adv_preds_on_distr(
         models_vic: Tuple[List[nn.Module], List[nn.Module]],

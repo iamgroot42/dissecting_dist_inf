@@ -1,3 +1,5 @@
+
+
 from typing import List, Tuple, Callable, Union
 import numpy as np
 from tqdm import tqdm
@@ -230,17 +232,26 @@ def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):
     return best_acc, best_threshold, best_rule
 
 
-def get_threshold_acc(X, Y, threshold, rule=None):
+def get_threshold_acc(X, Y, threshold, rule=None,get_preds:bool=False):
     """
         Get accuracy of predictions using given threshold,
         considering both possible (<= and >=) rules. Also
         return which of the two rules gives a better accuracy.
     """
-    # Rule-1: everything above threshold is 1 class
-    acc_1 = np.mean((X >= threshold) == Y)
-    # Rule-2: everything below threshold is 1 class
-    acc_2 = np.mean((X <= threshold) == Y)
 
+    p1 = (X >= threshold) == Y
+    p2 = (X <= threshold) == Y
+    # Rule-1: everything above threshold is 1 class
+    acc_1 = np.mean(p1)
+    # Rule-2: everything below threshold is 1 class
+    acc_2 = np.mean(p2)
+    if get_preds:
+        if rule == 1:
+            return acc_1,p1
+        elif rule == 2:
+            return acc_2,p2
+        else:
+            raise Exception("Need specified rule if get_preds")
     # If rule is specified, use that
     if rule == 1:
         return acc_1

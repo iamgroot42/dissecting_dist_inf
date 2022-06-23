@@ -44,6 +44,6 @@ class Epoch_LossAttack(Attack):
             dif2 = np.array([acc_2[1][1]-acc_2[0][1],acc_1[1][1]-acc_1[0][1]])
             preds2 = np.argmax(dif2,axis=0)
         if get_preds:
-            return [preds1,preds2]
+            return np.concatenate([preds1,preds2])
         else:
             return (((100*(np.mean(preds1)+np.mean(preds2)))/2,None),(None,None),None)
