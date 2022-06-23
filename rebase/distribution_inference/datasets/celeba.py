@@ -1,12 +1,12 @@
 import os
 import pandas as pd
-from torchvision import transforms, datasets
+from torchvision import transforms
+import gc
 from PIL import Image
 import torch as ch
 import numpy as np
 from tqdm import tqdm
 import torch.nn as nn
-from sklearn.model_selection import train_test_split
 from facenet_pytorch import InceptionResnetV1
 
 import distribution_inference.datasets.base as base
@@ -22,8 +22,12 @@ class DatasetInformation(base.DatasetInformation):
         super().__init__(name="Celeb-A",
                          data_path="celeba",
                          models_path="models_celeba/75_25",
-                         properties=["Male", "Young",],
-                         values={"Male": ratios, "Young": ratios},
+                         properties=["Male", "Young",
+                                     'Wavy_Hair', 'High_Cheekbones'],
+                         values={"Male": ratios, "Young": ratios,
+                                 'Wavy_Hair': ratios, 'High_Cheekbones': ratios},
+                         supported_models=["inception", "alexnet", "mlp2"],
+                         default_model="alexnet",
                          epoch_wise=epoch)
         self.preserve_properties = ['Smiling', 'Young', 'Male', 'Attractive']
         self.supported_properties = [
@@ -40,20 +44,24 @@ class DatasetInformation(base.DatasetInformation):
         ]
 
     def get_model(self, parallel: bool = False, fake_relu: bool = False,
-                  latent_focus=None, is_large: bool = False,
-                  cpu: bool = False,
-                  full_model: bool = False) -> nn.Module:
-        if is_large:
+                  latent_focus=None, cpu: bool = False,
+                  model_arch: str = None) -> nn.Module:
+        if model_arch is None:
+            model_arch = self.default_model
+
+        if model_arch == "inception":
             model = models_core.InceptionModel(
                 fake_relu=fake_relu,
                 latent_focus=latent_focus)
+        elif model_arch == "alexnet":
+            model = models_core.MyAlexNet(
+                fake_relu=fake_relu,
+                latent_focus=latent_focus)
+        elif model_arch == "mlp2":
+            model = models_core.MLPTwoLayer(n_inp=512, dims=[64, 16])
         else:
-            if full_model:
-                model = models_core.MyAlexNet(
-                    fake_relu=fake_relu,
-                    latent_focus=latent_focus)
-            else:
-                model = models_core.MLPTwoLayer(n_inp=512)
+            raise NotImplementedError("Model architecture not supported")
+
         if not cpu:
             model = model.cuda()
         if parallel:
@@ -62,7 +70,7 @@ class DatasetInformation(base.DatasetInformation):
     
     def _get_pre_processor(self):
         # Load model
-        model = InceptionResnetV1(pretrained='vggface2').eval()
+        model = InceptionResnetV1(pretrained='casia-webface').eval()
         return model
 
     @ch.no_grad()
@@ -312,13 +320,13 @@ class CelebACustomBinary(base.CustomDataset):
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
         super().__init__(data_config, skip_data)
         self.info_object = DatasetInformation()
 
         # Make sure specified label is valid
-        if self.classify not in self.info_object.preserve_properties:
-            raise ValueError("Specified label not available for images")
+        # if self.classify not in self.info_object.preserve_properties:
+        #     raise ValueError("Specified label not available for images")
 
         train_transforms = [
             transforms.ToTensor(),
@@ -338,6 +346,20 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             ]
             train_transforms = augment_transforms + train_transforms
         self.train_transforms = transforms.Compose(train_transforms)
+    
+    def prepare_processed_data(self, loader):
+        # Load model
+        model = self.info_object._get_pre_processor()
+        model = model.cuda()
+        # Collect all processed information
+        features, task_labels, prop_labels = self.info_object._collect_features(
+            loader, model, collect_all_info=True)
+        self.ds_val_processed = ch.utils.data.TensorDataset(features,
+                                                        task_labels, prop_labels)
+        # Clear cache
+        del model
+        gc.collect()
+        ch.cuda.empty_cache()
 
     def load_data(self):
         # Read attributes file to get attribute names
@@ -358,21 +380,29 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             "Smiling": {
                 "adv": {
                     "Male": (10000, 1000),
-                    "Attractive": (10000, 1200),
-                    "Young": (6000, 600)
+                    "Attractive": (10000, 1200)
                 },
                 "victim": {
                     "Male": (15000, 3000),
-                    "Attractive": (30000, 4000),
-                    "Young": (15000, 2000)
+                    "Attractive": (30000, 4000)
                 }
             },
             "Male": {
                 "adv": {
-                    "Young": (3000, 350),
+                    "Young": (3000, 350)
                 },
                 "victim": {
-                    "Young": (8000, 1400),
+                    "Young": (8000, 1400)
+                }
+            },
+            "Mouth_Slightly_Open": {
+                "adv": {
+                    "Wavy_Hair": (6500, 500),
+                    "High_Cheekbones": (8000, 800)
+                },
+                "victim": {
+                    "Wavy_Hair": (17000, 2500),
+                    "High_Cheekbones": (25000, 3000)
                 }
             }
         }
@@ -411,14 +441,11 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                                    num_workers=num_workers,
                                    prefetch_factor=prefetch_factor)
 
-    def get_save_dir(self, train_config: TrainConfig, full_model: bool=True) -> str:
+    def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
         base_models_dir = self.info_object.base_models_dir
         subfolder_prefix = os.path.join(
             self.split, self.prop, str(self.ratio)
         )
-
-        if (train_config.extra_info and train_config.extra_info.get("full_model")) or full_model:
-            subfolder_prefix = os.path.join(subfolder_prefix, "full")
 
         if train_config.misc_config and train_config.misc_config.adv_config:
             # Extract epsilon to be used
@@ -435,6 +462,15 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             subfolder_prefix = os.path.join(
                 subfolder_prefix, adv_folder_prefix)
 
+        # Standard logic
+        if model_arch is None:
+            model_arch = self.info_object.default_model
+        if model_arch not in self.info_object.supported_models:
+            raise ValueError(f"Model architecture {model_arch} not supported")
+        if model_arch is None:
+            model_arch = self.info_object.default_model
+        base_models_dir = os.path.join(base_models_dir, model_arch)
+
         save_path = os.path.join(base_models_dir, subfolder_prefix)
 
         # # Make sure this directory exists
@@ -445,9 +481,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
     def load_model(self, path: str,
                    on_cpu: bool = False,
-                   full_model: bool = False) -> nn.Module:
-        info_object = DatasetInformation()
-        model = info_object.get_model(cpu=on_cpu, full_model=full_model)
+                   model_arch: str = None) -> nn.Module:
+        model = self.info_object.get_model(cpu=on_cpu, model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
 

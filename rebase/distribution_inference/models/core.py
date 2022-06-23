@@ -9,9 +9,11 @@ from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 class BaseModel(nn.Module):
     def __init__(self,
                  is_conv: bool = False,
-                 transpose_features: bool = True):
+                 transpose_features: bool = True,
+                 is_sklearn_model: bool = False):
         self.is_conv = is_conv
         self.transpose_features = transpose_features
+        self.is_sklearn_model = is_sklearn_model
         super(BaseModel, self).__init__()
 
 
@@ -150,14 +152,14 @@ class MyAlexNet(BaseModel):
 
 
 class MLPTwoLayer(BaseModel):
-    def __init__(self, n_inp: int, num_classes: int = 1):
+    def __init__(self, n_inp: int, num_classes: int = 1, dims: List[int] = [64, 16]):
         super().__init__(is_conv=False)
         self.layers = nn.Sequential(
-            nn.Linear(n_inp, 64),
+            nn.Linear(n_inp, dims[0]),
             nn.ReLU(),
-            nn.Linear(64, 16),
+            nn.Linear(dims[0], dims[1]),
             nn.ReLU(),
-            nn.Linear(16, num_classes),
+            nn.Linear(dims[1], num_classes),
         )
         self.valid_for_all_fc = [1, 3, 4]
 
@@ -166,6 +168,55 @@ class MLPTwoLayer(BaseModel):
                 get_all: bool = False,
                 layers_to_target_conv: List[int] = None,
                 layers_to_target_fc: List[int] = None,):
+
+        # Override list of layers if given
+        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
+
+        all_latents = []
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            if get_all and i in valid_fc:
+                if detach_before_return:
+                    all_latents.append(x.detach())
+                else:
+                    all_latents.append(x)
+
+        if get_all:
+            return all_latents
+        if detach_before_return:
+            return x.detach()
+        return x
+
+
+class BoneModel(BaseModel):
+    def __init__(self,
+                 n_inp: int = 1024,
+                 fake_relu: bool = False,
+                 latent_focus: int = None):
+        super().__init__(is_conv=False)
+        # if latent_focus is not None:
+        #     if latent_focus not in [0, 1]:
+        #         raise ValueError("Invalid interal layer requested")
+
+        # if fake_relu:
+        #     act_fn = BasicWrapper
+        # else:
+        #     act_fn = nn.ReLU
+
+        self.layers = nn.Sequential(
+            nn.Linear(n_inp, 128),
+            FakeReluWrapper(inplace=True),
+            nn.Linear(128, 64),
+            FakeReluWrapper(inplace=True),
+            nn.Linear(64, 1)
+        )
+        self.valid_for_all_fc = [1, 3, 4]
+
+    def forward(self, x: ch.Tensor,
+                detach_before_return: bool = False,
+                get_all: bool = False,
+                layers_to_target_conv: List[int] = None,
+                layers_to_target_fc: List[int] = None,) -> ch.Tensor:
 
         # Override list of layers if given
         valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
@@ -224,18 +275,18 @@ class MLPFourLayer(BaseModel):
 
 
 class MLPFiveLayer(BaseModel):
-    def __init__(self, n_inp: int, num_classes: int = 1):
+    def __init__(self, n_inp: int, num_classes: int = 1, dims: List[int] = [1024, 512, 128, 64]):
         super().__init__(is_conv=False)
         self.layers = nn.Sequential(
-            nn.Linear(n_inp, 1024),
+            nn.Linear(n_inp, dims[0]),
             nn.ReLU(),
-            nn.Linear(1024, 512),
+            nn.Linear(dims[0], dims[1]),
             nn.ReLU(),
-            nn.Linear(512, 128),
+            nn.Linear(dims[1], dims[2]),
             nn.ReLU(),
-            nn.Linear(128, 64),
+            nn.Linear(dims[2], dims[3]),
             nn.ReLU(),
-            nn.Linear(64, num_classes),
+            nn.Linear(dims[3], num_classes),
         )
         self.valid_for_all_fc = [1, 3, 5,7,9]
 
@@ -244,55 +295,6 @@ class MLPFiveLayer(BaseModel):
                 get_all: bool = False,
                 layers_to_target_conv: List[int] = None,
                 layers_to_target_fc: List[int] = None,):
-
-        # Override list of layers if given
-        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
-
-        all_latents = []
-        for i, layer in enumerate(self.layers):
-            x = layer(x)
-            if get_all and i in valid_fc:
-                if detach_before_return:
-                    all_latents.append(x.detach())
-                else:
-                    all_latents.append(x)
-
-        if get_all:
-            return all_latents
-        if detach_before_return:
-            return x.detach()
-        return x
-
-
-class BoneModel(BaseModel):
-    def __init__(self,
-                 n_inp: int = 1024,
-                 fake_relu: bool = False,
-                 latent_focus: int = None):
-        super().__init__(is_conv=False)
-        # if latent_focus is not None:
-        #     if latent_focus not in [0, 1]:
-        #         raise ValueError("Invalid interal layer requested")
-
-        # if fake_relu:
-        #     act_fn = BasicWrapper
-        # else:
-        #     act_fn = nn.ReLU
-
-        self.layers = nn.Sequential(
-            nn.Linear(n_inp, 128),
-            FakeReluWrapper(inplace=True),
-            nn.Linear(128, 64),
-            FakeReluWrapper(inplace=True),
-            nn.Linear(64, 1)
-        )
-        self.valid_for_all_fc = [1, 3, 4]
-
-    def forward(self, x: ch.Tensor,
-                detach_before_return: bool = False,
-                get_all: bool = False,
-                layers_to_target_conv: List[int] = None,
-                layers_to_target_fc: List[int] = None,) -> ch.Tensor:
 
         # Override list of layers if given
         valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc

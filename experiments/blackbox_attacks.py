@@ -55,7 +55,10 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
         data_config)
-    ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True,label_noise=train_config.label_noise)
+    ds_vic_1 = ds_wrapper_class(
+        data_config_vic_1,
+        skip_data=True,
+        label_noise=train_config.label_noise)
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
 
@@ -67,7 +70,7 @@ if __name__ == "__main__":
             on_cpu=attack_config.on_cpu,
             shuffle=False,
             epochwise_version=attack_config.train_config.save_every_epoch,
-            full_model=attack_config.victim_full_model,
+            model_arch=attack_config.victim_model_arch,
             custom_models_path=models_1_path)
 
         # For each value (of property) asked to experiment with
@@ -76,7 +79,9 @@ if __name__ == "__main__":
                 data_config, prop_value=prop_value)
 
             # Create new DS object for both and victim (for other ratio)
-            ds_vic_2 = ds_wrapper_class(data_config_vic_2, skip_data=True,label_noise=train_config.label_noise)
+            ds_vic_2 = ds_wrapper_class(
+                data_config_vic_2, skip_data=True,
+                label_noise=train_config.label_noise)
             ds_adv_2 = ds_wrapper_class(data_config_adv_2)
 
             # Load victim models for other value
@@ -86,21 +91,21 @@ if __name__ == "__main__":
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
                 epochwise_version=attack_config.train_config.save_every_epoch,
-                full_model=attack_config.victim_full_model,
+                model_arch=attack_config.victim_model_arch,
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
 
             for t in range(attack_config.tries):
-                print("{}: trial {}".format(prop_value,t))
+                print("{}: trial {}".format(prop_value, t))
                 models_adv_1 = ds_adv_1.get_models(
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
-                    full_model=attack_config.adv_full_model)
+                    model_arch=attack_config.adv_model_arch)
                 models_adv_2 = ds_adv_2.get_models(
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
-                    full_model=attack_config.adv_full_model)
+                    model_arch=attack_config.adv_model_arch)
 
                 # Get victim and adv predictions on loaders for first ratio
                 preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
@@ -111,7 +116,7 @@ if __name__ == "__main__":
                     epochwise_version=attack_config.train_config.save_every_epoch,
                     preload=bb_attack_config.preload,
                     multi_class=bb_attack_config.multi_class,
-                    make_processed_version=attack_config.victim_full_model
+                    make_processed_version=attack_config.victim_processed_variant
                 )
                 # Get victim and adv predictions on loaders for second ratio
                 preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
@@ -122,7 +127,7 @@ if __name__ == "__main__":
                     epochwise_version=attack_config.train_config.save_every_epoch,
                     preload=bb_attack_config.preload,
                     multi_class=bb_attack_config.multi_class,
-                    make_processed_version=attack_config.victim_full_model
+                    make_processed_version=attack_config.victim_processed_variant
                 )
                 # Wrap predictions to be used by the attack
                 preds_adv = PredictionsOnDistributions(

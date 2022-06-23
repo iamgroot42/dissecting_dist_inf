@@ -78,14 +78,14 @@ if __name__ == "__main__":
                 n_models=attack_config.num_total_adv_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=True,
-                full_model=attack_config.adv_full_model)
+                model_arch=attack_config.adv_model_arch)
             _, features_vic_specific = ds_vic_specific.get_model_features(
                 train_config,
                 wb_attack_config,
                 n_models=attack_config.num_victim_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
-                full_model=attack_config.victim_full_model)
+                model_arch=attack_config.victim_model_arch)
 
             collected_features_train.append(features_adv_specific)
             collected_features_test.append(features_vic_specific)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                     n_models=attack_config.num_victim_models,
                     on_cpu=attack_config.on_cpu,
                     shuffle=False,
-                    full_model=attack_config.victim_full_model)
+                    model_arch=attack_config.victim_model_arch)
 
                 collected_features_test.append(features_vic_specific)
 

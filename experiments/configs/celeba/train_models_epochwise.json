@@ -16,5 +16,5 @@
     "save_every_epoch": true,
     "get_best": true,
     "verbose": false,
-    "full_model": true
+    "model_arch": "alexnet"
 }

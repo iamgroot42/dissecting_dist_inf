@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Optional, List
 import numpy as np
 from simple_parsing.helpers import Serializable, field
-from yaml import serialize
 
 
 @dataclass
@@ -82,7 +81,7 @@ class DatasetConfig(Serializable):
     squeeze: Optional[bool] = False
     """Whether to squeeze label data (because of extra dimension)"""
     processed_variant: Optional[bool] = True
-    """Use processed version of data (relevant for BoneAge)?"""
+    """Use processed version of data (relevant for BoneAge,CelebA)?"""
 
 
 @dataclass
@@ -156,8 +155,10 @@ class TrainConfig(Serializable):
     """Training for multi-class classification?"""
     label_noise: Optional[float] = 0
     """Randomly flip a proportion of labels"""
-    full_model: Optional[bool] = False
-    """Use full-model for training?"""
+    model_arch: Optional[str] = None
+    """Model architecture to use (defaults to dataset-specific)"""
+    parallel: Optional[bool] = False
+    """Use multiple GPUs for model training?"""
 
 
 @dataclass
@@ -349,10 +350,12 @@ class AttackConfig(Serializable):
     """Total number of adversarial models to load"""
     victim_local_attack: Optional[bool] = False
     """Perform attack as if victim is using its own data/models"""
-    victim_full_model: bool = False
-    """Use full (larger) model for victim?"""
-    adv_full_model: bool = False
-    """Use full (larger) model for adv?"""
+    victim_model_arch: str = None
+    """Architecture of victim model (defaults to dataset-specific model)"""
+    adv_model_arch: str = None
+    """Architecture for adversary model (defaults to dataset-specific model)"""
+    victim_processed_variant: Optional[bool] = False
+    """Use processed variant for victim data?"""
 
 
     
@@ -412,3 +415,5 @@ class CombineAttackConfig(AttackConfig):
     """save model, data point, and predictions"""
     restore_data: Optional[str] = None
     """path to restore all the data"""
+    use_wb_latents: Optional[bool] = False
+    """Use feature outputs from WB models (instead of logits)?"""

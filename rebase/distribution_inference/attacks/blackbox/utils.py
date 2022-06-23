@@ -242,6 +242,7 @@ def get_vic_adv_preds_on_distr(
         preload: bool = False,
         multi_class: bool = False,
         make_processed_version: bool = False):
+
     _, loader_vic = ds_obj.get_loaders(batch_size=batch_size)
     if make_processed_version:
         # Make version of DS for victim that processes data

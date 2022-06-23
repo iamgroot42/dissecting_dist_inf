@@ -1,8 +1,7 @@
 import numpy as np
-from typing import Tuple
-from typing import List, Callable
+from typing import Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions
 from distribution_inference.attacks.blackbox.core import _acc_per_dis
 from sklearn import multiclass
 DUMPING  = 10
@@ -29,7 +28,7 @@ class Epoch_LossAttack(Attack):
                             calc_acc,multi_class=multi_class)
         return self._loss_test(acc_1,acc_2,get_preds)
 
-    def _loss_test(self,acc_1,acc_2,get_preds:bool=False):
+    def _loss_test(self, acc_1, acc_2, get_preds: bool = False):
         #acc_1 is a tupple of list of accs on first distribution, tuple is epochwise, the list consists of models trained on first and second distr
         #assume the used distribution would have the largest increase in acc
         #dif1 is the differences of model trained on first distribution

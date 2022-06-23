@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 from distribution_inference.config.core import TrainConfig
-import numpy as np
 from typing import List
 from copy import deepcopy
 from datetime import datetime
@@ -19,15 +18,15 @@ class Result:
         self.start = datetime.now()
         self.dic = {'name': name, 'start time': str(self.start)}
 
-    def save(self, js: bool = True):
+    def save(self, json_: bool = True):
         self.save_t = datetime.now()
         self.dic['save time'] = str(self.save_t)
 
         self.path.mkdir(parents=True, exist_ok=True)
-        if js:
+        if json_:
             save_p = self.path.joinpath(f"{self.name}.json")
             with save_p.open('w') as f:
-                json.dump(self.dic, f)
+                json.dump(self.dic, f, indent=4)
         else:
             save_p = self.path.joinpath(f"{self.name}.p")
             with save_p.open('wb') as f:
@@ -130,7 +129,7 @@ class IntermediateResult(Result):
         self._add_results("model", prop, model, trial)
 
     def save(self):
-        super().save(js=False)
+        super().save(json_=False)
 
 
 class DefenseResult(Result):
@@ -160,19 +159,25 @@ class DefenseResult(Result):
                                 'after_acc', after_acc)
 
 
-# def PerformanceResult(Result):
-#     def __init__(self,
-#                  experiment_name: str,
-#                  train_config: TrainConfig):
-#         # Infer path from data_config inside attack_config
-#         dataset_name = train_config.data_config.name
-#         save_path = get_save_path()
-#         path = Path(os.path.join(save_path, dataset_name))
-#         super().__init__(path, experiment_name)
+class TrainingResult(Result):
+    def __init__(self,
+                 experiment_name: str,
+                 train_config: TrainConfig):
+        # Infer path from data_config inside attack_config
+        dataset_name = train_config.data_config.name
+        save_path = get_save_path()
+        path = Path(os.path.join(save_path, dataset_name, "training"))
+        super().__init__(path, experiment_name)
 
-#         self.dic["train_config"] = deepcopy(train_config)
-#         self.convert_to_dict(self.dic)
+        self.dic["train_config"] = deepcopy(train_config)
+        self.convert_to_dict(self.dic)
 
-#     def add_result(self, prop, loss: float, acc: float=None):
-#         self.check_rec(self.dic, ['log', prop])
-#         # Log loss
+    def add_result(self, prop, loss: float, acc: float=None):
+        self.check_rec(self.dic, ['log', prop])
+        # Log loss of model
+        self.conditional_append(self.dic['log'][prop],
+                                'loss', loss)
+        # Log accuracy of mode
+        self.conditional_append(self.dic['log'][prop],
+                                'acc', acc)
+

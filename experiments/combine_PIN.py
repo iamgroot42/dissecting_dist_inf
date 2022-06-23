@@ -13,11 +13,12 @@ from distribution_inference.attacks.whitebox.utils import wrap_into_loader
 import distribution_inference.attacks.whitebox.utils as wu
 from sklearn.tree import DecisionTreeClassifier
 
+
 #a bit messy in this file. Might need to move something out to functions in rebase
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
-        "--en", help="experiment name",
+        "--en", help="Experiment Name",
         type=str, required=True)
     parser.add_argument(
         "--load_config", help="Specify config file",
@@ -225,7 +226,8 @@ if __name__ == "__main__":
                               bb_preds_adv, labels_adv, t)
             DataLogger.add_points(prop_value, None, t)
             logger.add_results("Combine", prop_value,
-                               clf.score(preds_vic, labels_vic), clf.score(preds_adv, labels_adv))
+                               100 * clf.score(preds_vic, labels_vic),
+                               100 * clf.score(preds_adv, labels_adv))
     # Summarize results over runs, for each ratio and attack
     logger.save()
     DataLogger.save()

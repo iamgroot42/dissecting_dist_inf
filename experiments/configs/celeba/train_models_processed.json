@@ -4,14 +4,16 @@
         "prop": "Male",
         "classify": "Smiling",
         "split": "adv",
-        "value": 0.5,
+        "value": 0.0,
         "processed_variant": true
     },
-    "epochs": 40,
+    "offset": 0,
+    "epochs": 25,
     "learning_rate": 1e-3,
-    "batch_size": 256,
-    "weight_decay": 1e-2,
+    "batch_size": 64,
+    "weight_decay": 1e-3,
     "num_models": 1,
     "get_best": true,
-    "verbose": true
+    "verbose": false,
+    "model_arch": "alexnet"
 }

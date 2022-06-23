@@ -54,7 +54,7 @@ if __name__ == "__main__":
         n_models=train_config.num_models,
         on_cpu=True,
         shuffle=False,
-        full_model=train_config.full_model,
+        model_arch=train_config.model_arch,
         custom_models_path=args.victim_path)
 
     # Define criterion

@@ -24,7 +24,6 @@ class PredictionsOnDistributions:
         Wrapper to store predictions on two distributions,
         for models trained on two different training distributions.
     """
-
     def __init__(self,
                  preds_on_distr_1: PredictionsOnOneDistribution,
                  preds_on_distr_2: PredictionsOnOneDistribution):

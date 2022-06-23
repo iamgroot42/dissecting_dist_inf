@@ -25,6 +25,8 @@ class DatasetInformation(base.DatasetInformation):
                          properties=["sex", "race", "ethnicity"],
                          values={"sex": ratios, "race": ratios,
                                  "ethnicity": ratios},
+                         supported_models=["mlp4"],
+                         default_model="mlp4",
                          property_focus={
                              "sex": 'female',
                              "race": 'white',
@@ -32,10 +34,16 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch_wise,
                          num_dropped_features=num_dropped_features)
 
-    def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
-        num_eff_features = self.num_features - self.num_dropped_features
-        model = MLPFourLayer(n_inp=num_eff_features,
-                             num_classes=self.num_classes)
+    def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
+        if model_arch is None:
+            model_arch = self.default_model
+        if model_arch == "mlp4":
+            num_eff_features = self.num_features - self.num_dropped_features
+            model = MLPFourLayer(n_inp=num_eff_features,
+                                 num_classes=self.num_classes)
+        else:
+            raise NotImplementedError("Model architecture not supported")
+
         if not cpu:
             model = model.cuda()
         else:
@@ -356,7 +364,7 @@ class TexasSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class TexasWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False,label_noise: float = 0):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
@@ -386,13 +394,22 @@ class TexasWrapper(base.CustomDatasetWrapper):
         model = info_object.get_model(cpu=on_cpu)
         return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig,full_model:bool=False) -> str:
-        info_object = self.info_object
+    def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
+        info_object = DatasetInformation(
+            num_dropped_features=self.num_features_drop)
         base_models_dir = info_object.base_models_dir
         dp_config = None
-        assert not full_model
         if train_config.misc_config is not None:
             dp_config = train_config.misc_config.dp_config
+        
+        # Standard logic
+        if model_arch is None:
+            model_arch = info_object.default_model
+        if model_arch not in info_object.supported_models:
+            raise ValueError(f"Model architecture {model_arch} not supported")
+        if model_arch is None:
+            model_arch = info_object.default_model
+        base_models_dir = os.path.join(base_models_dir, model_arch)
 
         if dp_config is None:
             base_path = os.path.join(base_models_dir, "normal")

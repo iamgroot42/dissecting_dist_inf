@@ -1,23 +1,23 @@
 {
     "train_config": {
         "data_config": {
-            "name": "boneage",
-            "prop": "gender",
-            "classify": "age",
+            "name": "celeba",
+            "prop": "Male",
+            "classify": "Smiling",
             "split": "adv",
-            "squeeze": true,
             "value": 0.5,
             "processed_variant": false
         },
         "epochs": 0,
         "learning_rate": 0,
-        "batch_size": 0
+        "batch_size": 0,
+        "save_every_epoch": false
     },
-    "tries": 3,
+    "tries": 5,
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
-        "batch_size": 50,
+        "batch_size": 128,
         "attack_type": [
             "loss_and_threshold",
             "threshold_perpoint"
@@ -31,20 +31,23 @@
             0.5,
             1.0
         ],
-        "preload": false,
-        "loss_variant": true
+        "preload": true
     },
     "values": [
+        0.0,
+        0.1,
         0.2,
         0.3,
         0.4,
         0.6,
         0.7,
-        0.8
+        0.8,
+        0.9,
+        1.0
     ],
-    "num_victim_models": 250,
-    "victim_model_arch": "densenet",
-    "adv_model_arch": "bonemodel",
-    "victim_processed_variant": true,
-    "on_cpu": true
+    "num_victim_models": 500,
+    "victim_model_arch": "alexnet",
+    "adv_model_arch": "mlp2",
+    "on_cpu": true,
+    "victim_processed_variant": true
 }
