@@ -22,8 +22,10 @@ class DatasetInformation(base.DatasetInformation):
         super().__init__(name="Celeb-A",
                          data_path="celeba",
                          models_path="models_celeba/75_25",
-                         properties=["Male", "Young", 'Wavy_Hair'],
-                         values={"Male": ratios, "Young": ratios, 'Wavy_Hair': ratios},
+                         properties=["Male", "Young",
+                                     'Wavy_Hair', 'High_Cheekbones'],
+                         values={"Male": ratios, "Young": ratios,
+                                 'Wavy_Hair': ratios, 'High_Cheekbones': ratios},
                          supported_models=["inception", "alexnet", "mlp2"],
                          default_model="alexnet",
                          epoch_wise=epoch)
@@ -395,10 +397,12 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             },
             "Mouth_Slightly_Open": {
                 "adv": {
-                    "Wavy_Hair": (6500, 500)
+                    "Wavy_Hair": (6500, 500),
+                    "High_Cheekbones": (8000, 800)
                 },
                 "victim": {
-                    "Wavy_Hair": (17000, 2500)
+                    "Wavy_Hair": (17000, 2500),
+                    "High_Cheekbones": (25000, 3000)
                 }
             }
         }

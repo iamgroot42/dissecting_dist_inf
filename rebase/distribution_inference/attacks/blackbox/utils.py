@@ -13,6 +13,7 @@ from distribution_inference.attacks.blackbox.epoch_loss import Epoch_LossAttack
 from distribution_inference.attacks.blackbox.epoch_threshold import Epoch_ThresholdAttack
 from distribution_inference.attacks.blackbox.epoch_perpoint import Epoch_Perpoint
 from distribution_inference.attacks.blackbox.epoch_meta import Epoch_Tree
+from distribution_inference.attacks.blackbox.KL import KLAttack
 
 
 ATTACK_MAPPING = {
@@ -21,8 +22,8 @@ ATTACK_MAPPING = {
     "single_update_loss": Epoch_LossAttack,
     "single_update_threshold": Epoch_ThresholdAttack,
     "single_update_perpoint": Epoch_Perpoint,
-    "epoch_meta": Epoch_Tree
-
+    "epoch_meta": Epoch_Tree,
+    "KL": KLAttack
 }
 
 

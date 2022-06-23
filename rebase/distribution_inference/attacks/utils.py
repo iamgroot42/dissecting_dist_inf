@@ -12,7 +12,8 @@ ATTACK_MAPPING = {
     "single_update_threshold": "Threshold test across epoch",
     "single_update_perpoint": "Perpoint test across epoch",
     "epoch_meta": "Decision Tree on raw predictions across epoch",
-    "combine": "Combine WB and BB attacks"
+    "combine": "Combine WB and BB attacks",
+    "KL": "KL-Divergence Attack"
 }
 
 

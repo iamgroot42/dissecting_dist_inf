@@ -1,0 +1,18 @@
+{
+    "data_config": {
+        "name": "celeba",
+        "prop": "High_Cheekbones",
+        "classify": "Mouth_Slightly_Open",
+        "split": "victim",
+        "value": 0.5,
+        "processed_variant": false
+    },
+    "epochs": 30,
+    "offset": 0,
+    "learning_rate": 2e-5,
+    "batch_size": 64,
+    "weight_decay": 1e-3,
+    "num_models": 1,
+    "get_best": true,
+    "verbose": true
+}
