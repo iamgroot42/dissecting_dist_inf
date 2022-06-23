@@ -15,7 +15,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self, epoch: bool = False, num_dropped_features: int = 0):
+    def __init__(self, epoch_wise: bool = False, num_dropped_features: int = 0):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         self.num_features = 3611 + 3
         self.num_classes = 20
@@ -29,7 +29,7 @@ class DatasetInformation(base.DatasetInformation):
                              "sex": 'female',
                              "race": 'white',
                              "ethnicity": 'hispanic'},
-                         epoch_wise=epoch,
+                         epoch_wise=epoch_wise,
                          num_dropped_features=num_dropped_features)
 
     def get_model(self, cpu: bool = False, full_model: bool = False) -> nn.Module:
@@ -354,13 +354,14 @@ class TexasSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class TexasWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
         if data_config.drop_senstive_cols:
             self.num_features_drop += 3
-
+        self.info_object = DatasetInformation(
+            num_dropped_features=self.num_features_drop,epoch_wise=epoch)
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
@@ -377,17 +378,17 @@ class TexasWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
-        info_object = DatasetInformation(
-            num_dropped_features=self.num_features_drop)
+    def load_model(self, path: str, on_cpu: bool = False,full_model:bool=False) -> nn.Module:
+        assert not full_model
+        info_object = self.info_object
         model = info_object.get_model(cpu=on_cpu)
         return load_model(model, path, on_cpu=on_cpu)
 
-    def get_save_dir(self, train_config: TrainConfig) -> str:
-        info_object = DatasetInformation(
-            num_dropped_features=self.num_features_drop)
+    def get_save_dir(self, train_config: TrainConfig,full_model:bool=False) -> str:
+        info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         dp_config = None
+        assert not full_model
         if train_config.misc_config is not None:
             dp_config = train_config.misc_config.dp_config
 

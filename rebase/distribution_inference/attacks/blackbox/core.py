@@ -76,16 +76,18 @@ def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
                preds_d2: PredictionsOnOneDistribution,
                ground_truth,
                calc_acc: Callable,
-               t = False):
+               t = False,
+               multi_class:bool=False):
         #pi means ith epoch
     p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
     p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
+    transpose_order = (1, 0, 2) if multi_class else (1, 0)
     if not t:
         for i in range(2):
-            p1[i] = np.transpose(p1[i])
-            p2[i] = np.transpose(p2[i])
-    acc1 = [100*calc_acc(p,ground_truth) for p in p1]
-    acc2 = [100*calc_acc(p,ground_truth) for p in p2]
+            p1[i] = np.transpose(p1[i],multi_class)
+            p2[i] = np.transpose(p2[i],multi_class)
+    acc1 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p1]
+    acc2 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p2]
     return (np.array(acc1),np.array(acc2))
 def threshold_test_per_dist(calc_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,

@@ -4,6 +4,7 @@ from typing import List, Callable
 
 from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
 from distribution_inference.attacks.blackbox.core import _acc_per_dis
+from sklearn import multiclass
 DUMPING  = 10
 class Epoch_LossAttack(Attack):
     def attack(self,
@@ -16,14 +17,16 @@ class Epoch_LossAttack(Attack):
                get_preds:bool=False,
                ratio:bool=False):
         self.ratio = ratio
+        multi_class = self.config.multi_class
         acc_1 = _acc_per_dis(preds_vic1.preds_on_distr_1,
                             preds_vic2.preds_on_distr_1,
                             ground_truth[0],
-                            calc_acc)
+                            calc_acc,
+                            multi_class=multi_class)
         acc_2 = _acc_per_dis(preds_vic1.preds_on_distr_2,
                             preds_vic2.preds_on_distr_2,
                             ground_truth[1],
-                            calc_acc)
+                            calc_acc,multi_class=multi_class)
         return self._loss_test(acc_1,acc_2,get_preds)
 
     def _loss_test(self,acc_1,acc_2,get_preds:bool=False):

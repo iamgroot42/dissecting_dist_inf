@@ -6,7 +6,9 @@
 #j=0
 for i in $1
 do
-python train_more.py --load_config "./undersample.json" --ratio $i 
+python train_more.py --load_config "./texas_epoch.json" --ratio $i --split "victim" &
+python train_more.py --load_config "./texas_epoch.json" --ratio $i --split "adv" &
+wait
 #j=$((($j+1)%3))
 done
 echo "finished"

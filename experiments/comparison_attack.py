@@ -94,8 +94,8 @@ if __name__ == "__main__":
         for t in range(attack_config.tries):
             _, loader1 = ds_adv_1.get_loaders(batch_size=BATCH_SIZE)
             _, loader2 = ds_adv_2.get_loaders(batch_size=BATCH_SIZE)
-            models_adv_1 = (ma[t],attacker_obj.train(models_vic_1[0],prop_value))
-            models_adv_2 = (attacker_obj.train(models_vic_2[0],0.5),attacker_obj.train(models_vic_2[0],prop_value))
+            models_adv_1 = ([ma[t]],[attacker_obj.train(models_vic_1[0],prop_value)])
+            models_adv_2 = ([attacker_obj.train(models_vic_2[0],0.5)],[attacker_obj.train(models_vic_2[0],prop_value)])
             #preds_adv_ij: ith victim model, jth input distri
             preds_vic1, ground_truth_1 = get_preds_epoch_on_dis([[models_vic_1[1]],[models_vic_2[1]]],
             loader=loader1,preload=True,

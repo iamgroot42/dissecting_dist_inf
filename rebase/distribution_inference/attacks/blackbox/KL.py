@@ -5,7 +5,13 @@ from typing import List, Callable
 
 from distribution_inference.attacks.blackbox.core import Attack, threshold_test_per_dist, PredictionsOnDistributions,PredictionsOnOneDistribution,order_points
 from distribution_inference.config import BlackBoxAttackConfig
-
+def KL(a,b):
+    a_,b_=1-a,1-b
+    first = a*(np.log(a)-np.log(b))
+    second = a_*(np.log(a_)-np.log(b_))
+    return np.mean((first+second),1)
+def sigmoid(x):  
+    return np.exp(-np.logaddexp(0, -x))
 class KLAttack(Attack):
     def attack(self,
                preds_adv: PredictionsOnDistributions,
@@ -37,13 +43,12 @@ class KLAttack(Attack):
         
         choice_information = (chosen_distribution, None)
         return [(acc_use,preds_use), (None,None), choice_information]
-def sigmoid(x):  
-    return np.exp(-np.logaddexp(0, -x))
+
 def KL_test_per_dist(preds_adv: PredictionsOnOneDistribution,
                      preds_victim: PredictionsOnOneDistribution,
                      config: BlackBoxAttackConfig,
                      epochwise_version: bool = False,
-                     KL_func: Callable=entropy):
+                     KL_func: Callable=KL):
     """
         Perform threshold-test on predictions of adversarial and victim models,
         for each of the given ratios. Returns statistics on all ratios.
