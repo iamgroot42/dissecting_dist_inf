@@ -7,32 +7,26 @@
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
-            "processed_variant": true
+            "processed_variant": true,
+            "cwise_samples": null
         },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 3,
+    "tries": 5,
     "black_box": {
-        "granularity": 0.05,
+        "granularity": 0.005,
         "num_adv_models": 50,
         "batch_size": 50,
         "attack_type": [
-            "loss_and_threshold",
-            "threshold_perpoint"
+            "KL"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
         "preload": false,
-        "loss_variant": true
+        "tune_final_threshold": false
     },
     "values": [
         0.2,

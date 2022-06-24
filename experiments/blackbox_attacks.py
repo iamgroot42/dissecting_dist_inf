@@ -161,6 +161,9 @@ if __name__ == "__main__":
                     if bb_attack_config.save and attacker_obj.supports_saving_preds:
                         save_dic = attacker_obj.wrap_preds_to_save(result)
 
+                    # Keep saving results (more I/O, minimal loss of information in crash)
+                    logger.save()
+
     if args.victim_path:
         def joinpath(x, y): return os.path.join(
             args.victim_path, str(x), str(y))
@@ -170,6 +173,3 @@ if __name__ == "__main__":
             single_evaluation(models_1_path, model_2_paths)
     else:
         single_evaluation()
-
-    # Summarize results over runs, for each ratio and attack
-    logger.save()
