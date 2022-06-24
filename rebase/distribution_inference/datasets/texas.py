@@ -388,15 +388,13 @@ class TexasWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, on_cpu: bool = False,full_model:bool=False) -> nn.Module:
-        assert not full_model
+    def load_model(self, path: str, model_arch: str,on_cpu: bool = False) -> nn.Module:
         info_object = self.info_object
-        model = info_object.get_model(cpu=on_cpu)
+        model = info_object.get_model(cpu=on_cpu,model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
-        info_object = DatasetInformation(
-            num_dropped_features=self.num_features_drop)
+        info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         dp_config = None
         if train_config.misc_config is not None:

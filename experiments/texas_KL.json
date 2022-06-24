@@ -1,23 +1,35 @@
 {
     "train_config": {
         "data_config": {
-            "name": "boneage",
-            "prop": "gender",
-            "classify": "age",
+            "name": "texas",
+            "prop": "sex",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
-            "processed_variant": false
+            "drop_senstive_cols": false
         },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 3,
+    "tries": 5,
+    "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
+    ],
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
-        "batch_size": 50,
+        "multi_class": true,
+        "batch_size": 1000,
         "attack_type": [
             "KL"
         ],
@@ -30,20 +42,7 @@
             0.5,
             1.0
         ],
-        "preload": true,
-        "loss_variant": false
+        "preload": true
     },
-    "values": [
-        0.2,
-        0.3,
-        0.4,
-        0.6,
-        0.7,
-        0.8
-    ],
-    "num_victim_models": 250,
-    "victim_model_arch": "densenet",
-    "adv_model_arch": "bonemodel",
-    "victim_processed_variant": true,
-    "on_cpu": true
+    "num_victim_models": 500
 }

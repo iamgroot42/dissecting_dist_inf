@@ -78,10 +78,11 @@ class Epoch_Perpoint(Attack):
         
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         chosen_ratio_index = np.argmax(adv_accs_use)
-        if get_preds:
-            return victim_pred_use[chosen_ratio_index]
+        
         victim_acc_use = victim_accs_use[chosen_ratio_index]
         victim_pred_use = victim_preds_use[chosen_ratio_index]
+        if get_preds:
+            return victim_pred_use[chosen_ratio_index]
         adv_acc_use = adv_accs_use[chosen_ratio_index]
         adv_pred_use = adv_preds_use[chosen_ratio_index]
         final_threshold_use = final_thresholds_use[chosen_ratio_index]
@@ -176,8 +177,12 @@ def perpoint_threshold_test_per_dist(
 
     # Order points according to computed utility
     transpose_order = (1, 0, 2) if config.multi_class else (1, 0)
-    p1 = np.transpose(p1, transpose_order)[order]
-    p2 = np.transpose(p2, transpose_order)[order]
+    if epochwise_version:
+        p1 = [np.transpose(x, transpose_order)[order] for x in p1]
+        p2 = [np.transpose(x, transpose_order)[order] for x in p2]
+    else:
+        p1 = np.transpose(p1, transpose_order)[order]
+        p2 = np.transpose(p2, transpose_order)[order] 
     if victim_preds_present:
         if epochwise_version:
             pv1 = [np.transpose(x, transpose_order)[order] for x in pv1]
@@ -185,15 +190,17 @@ def perpoint_threshold_test_per_dist(
         else:
             pv1 = np.transpose(pv1, transpose_order)[order]
             pv2 = np.transpose(pv2, transpose_order)[order]
+            
         if config.multi:
             pv1 = multi_model_sampling(pv1, config.multi)
             pv2 = multi_model_sampling(pv2, config.multi)
+    
     if config.multi_class:
         # If multi-class, replace predictions with loss values
         assert ground_truth is not None, "Need ground-truth for multi-class setting"
         y_gt = ground_truth[order][::-1]
-        p1, p2 = np_compute_losses(p1, y_gt), np_compute_losses(p2, y_gt)
-        pv1, pv2 = np_compute_losses(pv1, y_gt), np_compute_losses(pv2, y_gt)
+        p1, p2 = np_compute_losses(p1, y_gt,multi_class=True), np_compute_losses(p2, y_gt,multi_class=True)
+        pv1, pv2 = np_compute_losses(pv1, y_gt,multi_class=True), np_compute_losses(pv2, y_gt,multi_class=True)
 
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=config.granularity)

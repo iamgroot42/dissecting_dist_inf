@@ -85,8 +85,8 @@ def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
     transpose_order = (1, 0, 2) if multi_class else (1, 0)
     if not t:
         for i in range(2):
-            p1[i] = np.transpose(p1[i],multi_class)
-            p2[i] = np.transpose(p2[i],multi_class)
+            p1[i] = np.transpose(p1[i],transpose_order)
+            p2[i] = np.transpose(p2[i],transpose_order)
     acc1 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p1]
     acc2 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p2]
     return (np.array(acc1),np.array(acc2))

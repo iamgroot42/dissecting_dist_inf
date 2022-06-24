@@ -145,7 +145,7 @@ if __name__ == "__main__":
                     ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies,
                     ratio=False)
-
+                print(result[0][0])
                 logger.add_results(attack_type, prop_value,
                                    vacc=result[0][0],adv_acc=result[1][0])
 

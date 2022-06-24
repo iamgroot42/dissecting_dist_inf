@@ -42,8 +42,9 @@
         "preload": true,
         "loss_variant": false,
         "Start_epoch":2,
-        "multi_class": true,
-        "on_cpu":true
+        "End_epoch":30,
+        "multi_class": true
     },
-    "values": [0.0, 0.1, 0.2, 0.3, 0.4,0.6,0.7,0.8,0.9,1.0]
+    "values": [0.0, 0.1, 0.2, 0.3, 0.4,0.6,0.7,0.8,0.9,1.0],
+    "on_cpu":true
 }
