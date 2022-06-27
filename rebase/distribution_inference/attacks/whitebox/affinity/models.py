@@ -15,6 +15,7 @@ class AffinityMetaClassifier(nn.Module):
                  num_logit: int = 0,
                  multi_class: bool = False):
         super().__init__()
+        self.is_sklearn_model = False
         self.num_dim = num_dim
         self.num_layers = num_layers
         self.num_final = config.num_final
