@@ -41,8 +41,8 @@ if __name__ == "__main__":
     flash_utils(train_config)
 
     # Define logger
-    exp_name = "_".join([config.data_config.split, config.data_config.prop, str(
-        config.data_config.value), str(config.offset)])
+    exp_name = "_".join([config.data_config.split, config.data_config.prop,
+                        config.model_arch, str(config.data_config.value), str(config.offset)])
     logger = TrainingResult(exp_name, train_config)
 
     # Get dataset wrapper

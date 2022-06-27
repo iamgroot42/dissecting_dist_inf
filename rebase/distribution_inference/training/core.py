@@ -212,24 +212,20 @@ def sklearn_train(model, loaders, train_config: TrainConfig,
     # Get data loaders
     if len(loaders) == 2:
         train_loader, test_loader = loaders
-        val_loader = None
         if train_config.get_best:
             print(warning_string("\nUsing test-data to pick best-performing model\n"))
     else:
-        train_loader, test_loader, val_loader = loaders
+        train_loader, test_loader, _ = loaders
     
-    def _collect_from_loader(self, loader):
+    def _collect_from_loader(loader):
         x, y = [], []
         for tuple in loader:
             x.append(tuple[0])
             y.append(tuple[1])
-        return np.array(x), np.array(y)
+        return np.concatenate(x), np.concatenate(y)
 
     train_data = _collect_from_loader(train_loader)
     test_data = _collect_from_loader(test_loader)
-    val_data = None
-    if val_loader is not None:
-        val_data = _collect_from_loader(val_loader)
     
     # Train model
     model.fit(*train_data)

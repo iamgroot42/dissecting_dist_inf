@@ -7,7 +7,7 @@ import os
 import torch as ch
 import torch.nn as nn
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPTwoLayer
+from distribution_inference.models.core import MLPTwoLayer, RandomForest, SVM
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -21,7 +21,7 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models_new_census/60_40",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
-                         supported_models=["mlp2"],
+                         supported_models=["mlp2", "random_forest", "svm"],
                          property_focus={"sex": 'female', "race": 'white'},
                          default_model="mlp2",
                          epoch_wise=epoch_wise)
@@ -31,10 +31,14 @@ class DatasetInformation(base.DatasetInformation):
             model_arch = self.default_model
         if model_arch == "mlp2":
             model = MLPTwoLayer(n_inp=105)
+        elif model_arch == "random_forest":
+            model = RandomForest(max_depth=None, n_jobs=4)
+        elif model_arch =="svm":
+            model = SVM(C=1.0)
         else:
             raise NotImplementedError("Model architecture not supported")
 
-        if not cpu:
+        if not model.is_sklearn_model and not cpu:
             model = model.cuda()
         return model
 

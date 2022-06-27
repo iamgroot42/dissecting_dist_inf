@@ -1,4 +1,5 @@
 import torch as ch
+import pickle
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
 from distribution_inference.config import AttackConfig
@@ -37,13 +38,21 @@ def extract_adv_params(
 
 
 def save_model(model, path):
-    ch.save(model.state_dict(), path)
+    if model.is_sklearn_model:
+        with open(path, 'wb') as f:
+            pickle.dump(model, f)
+    else:
+        ch.save(model.state_dict(), path)
 
 
 def load_model(model, path, on_cpu: bool = False):
     map_location = "cpu" if on_cpu else None
     try:
-        model.load_state_dict(ch.load(path, map_location=map_location))
+        if model.is_sklearn_model:
+            with open(path, 'rb') as f:
+                model = pickle.load(f)
+        else:
+            model.load_state_dict(ch.load(path, map_location=map_location))
     except:
         raise Exception("Could not load model from {}".format(path))
     return model

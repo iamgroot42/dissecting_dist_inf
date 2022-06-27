@@ -1,7 +1,12 @@
 import torch as ch
 import torch.nn as nn
-from typing import List
+import numpy as np
+from typing import List, Union
 from torchvision.models import densenet121
+from sklearn.metrics import log_loss
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
 
 from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 
@@ -15,6 +20,48 @@ class BaseModel(nn.Module):
         self.transpose_features = transpose_features
         self.is_sklearn_model = is_sklearn_model
         super(BaseModel, self).__init__()
+    
+    def forward(self, x: Union[np.ndarray, ch.Tensor]) -> Union[np.ndarray, ch.Tensor]:
+        converted = False
+        # Convert from tensor to numpy
+        if type(x) == ch.Tensor:
+            device = x.device
+            x = x.detach().cpu().numpy()
+            converted = True
+        # Get predictions
+        if self.is_sklearn_model:
+            preds = self.model.predict_proba(x)
+        else:
+            preds = self.model(x)
+        # Return predictions
+        if converted:
+            # Convert to tensor
+            preds = ch.from_numpy(preds).float()
+            preds = preds.to(device)
+        return preds
+
+    def fit(self, x, y):
+        self.model.fit(x, y)
+        return self.acc(x, y)
+
+    def score(self, x, y):
+        return log_loss(y, self.forward(x))
+
+    def acc(self, x, y):
+        return self.model.score(x, y)
+
+
+class RandomForest(BaseModel):
+    def __init__(self, max_depth: int = None, n_estimators: int = 100, n_jobs: int = None):
+        super().__init__(is_sklearn_model=True)
+        self.model = RandomForestClassifier(
+            max_depth=max_depth, n_estimators=n_estimators, n_jobs=n_jobs)
+
+
+class SVM(BaseModel):
+    def __init__(self, C: float = 1.0):
+        super().__init__(is_sklearn_model=True)
+        self.model = SVC(C=C)
 
 
 class InceptionModel(BaseModel):
