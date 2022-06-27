@@ -5,7 +5,7 @@ from typing import List, Tuple, Callable, Union
 from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions, multi_model_sampling, get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
 
-
+VOTING = False
 class PerPointThresholdAttack(Attack):
     def __init__(self, config: BlackBoxAttackConfig):
         super().__init__(config)
@@ -102,7 +102,7 @@ def _perpoint_threshold_on_ratio(
         # Compute accuracy for given predictions, thresholds, and rules
         preds, acc, final_thresh = get_threshold_pred(
             combined, classes, threshold, rule, get_pred=True,
-            tune_final_threshold=tune_final_threshold)
+            tune_final_threshold=tune_final_threshold,voting=VOTING)
 
     return 100 * acc, preds, final_thresh
 

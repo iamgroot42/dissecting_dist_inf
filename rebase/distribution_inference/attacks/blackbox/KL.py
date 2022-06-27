@@ -23,33 +23,39 @@ class KLAttack(Attack):
             self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
+        
+        frac = 0.8
+        voting = False
 
         # Get values using data from first distribution
-        vic_1_with_1, vic_2_with_1 = get_kl_preds(
+        preds_1_first, preds_1_second = get_kl_preds(
             preds_adv.preds_on_distr_1.preds_property_1,
             preds_adv.preds_on_distr_1.preds_property_2,
             preds_vic.preds_on_distr_1.preds_property_1,
-            preds_vic.preds_on_distr_1.preds_property_2,)
+            preds_vic.preds_on_distr_1.preds_property_2,
+            frac=frac,
+            voting=voting)
         # Get values using data from second distribution
-        vic_1_with_2, vic_2_with_2 = get_kl_preds(
+        preds_2_first, preds_2_second = get_kl_preds(
             preds_adv.preds_on_distr_2.preds_property_1,
             preds_adv.preds_on_distr_2.preds_property_2,
             preds_vic.preds_on_distr_2.preds_property_1,
-            preds_vic.preds_on_distr_2.preds_property_2,)
+            preds_vic.preds_on_distr_2.preds_property_2,
+            frac=frac,
+            voting=voting)
 
         # Combine data
-        KL_for_1_with_1 = np.concatenate((vic_1_with_1[0], vic_1_with_2[0]))
-        KL_for_1_with_2 = np.concatenate((vic_1_with_1[1], vic_1_with_2[1]))
-        KL_for_2_with_1 = np.concatenate((vic_2_with_1[0], vic_2_with_2[0]))
-        KL_for_2_with_2 = np.concatenate((vic_2_with_1[1], vic_2_with_2[1]))
-
-        # Get predictions corresponding to the KL values
-        preds_first = np.mean(KL_for_1_with_1 > KL_for_1_with_2, 1)
-        preds_second = np.mean(KL_for_2_with_1 > KL_for_2_with_2, 1)
+        preds_first = np.concatenate((preds_1_first, preds_2_first), 1)
+        preds_second = np.concatenate((preds_1_second, preds_2_second), 1)
         preds = np.concatenate((preds_first, preds_second))
-        gt = np.concatenate((np.zeros_like(preds_first),
-                            np.ones_like(preds_second)))
-        acc = np.mean((preds >= 0.5) == gt)
+
+        if not voting:
+            preds -= np.min(preds, 0)
+            preds /= np.max(preds, 0)
+
+        preds = np.mean(preds, 1)        
+        gt = np.concatenate((np.zeros(preds_first.shape[0]), np.ones(preds_second.shape[0])))
+        acc = 100 * np.mean((preds >= 0.5) == gt)
 
         # No concept of "choice" (are we in the Matrix :P)
         choice_information = (None, None)
@@ -129,48 +135,40 @@ def pairwise_compare(x, y, xx, yy):
     return preds
 
 
-def get_kl_preds(adv_1_preds, adv_2_preds, vic_1_preds, vic_2_preds):
-    # Apply sigmoid on all of them
-    p1, p2 = sigmoid(adv_1_preds), sigmoid(adv_2_preds)
-    pv1, pv2 = sigmoid(vic_1_preds), sigmoid(vic_2_preds)
+def pairwise_compare(x, y, xx, yy, voting: bool):
+    x_ = np.expand_dims(x, 2)
+    y_ = np.expand_dims(y, 2)
+    y_ = np.transpose(y_, (0, 2, 1))
+    if voting:
+        pairwise_comparisons = (x_ > y_)
+    else:
+        pairwise_comparisons = (x_ - y_)
+    preds = np.array([z[xx, yy] for z in pairwise_comparisons])
+    return preds
 
-    # Compare the KL divergence between the two distributions
-    # For both sets of victim models
-    KL_for_1_with_1 = np.array([KL(p1, x) for x in pv1])
-    KL_for_1_with_2 = np.array([KL(p2, x) for x in pv1])
-    KL_for_2_with_1 = np.array([KL(p1, x) for x in pv2])
-    KL_for_2_with_2 = np.array([KL(p2, x) for x in pv2])
 
-    # Compare KL values
-    return (KL_for_1_with_1, KL_for_1_with_2),  (KL_for_2_with_1, KL_for_2_with_2)
-
-"""
-def get_kl_preds(ka, kb, kc1, kc2, frac: float):
+def get_kl_preds(ka, kb, kc1, kc2, frac: float, voting: bool):
     # Apply sigmoid on all of them
     ka_, kb_ = sigmoid(ka), sigmoid(kb)
     kc1_, kc2_ = sigmoid(kc1), sigmoid(kc2)
-   
+
     # Consider all unique pairs of models
     xx, yy = np.triu_indices(ka.shape[0], k=1)
-    
     # Randomly pick pairs of models
-    
     random_pick = np.random.permutation(xx.shape[0])[:int(frac * xx.shape[0])]
-    
-   
     xx, yy = xx[random_pick], yy[random_pick]
-   
+
     # Compare the KL divergence between the two distributions
     # For both sets of victim models
     KL_vals_1_a = np.array([KL(ka_, x) for x in kc1_])
     KL_vals_1_b = np.array([KL(kb_, x) for x in kc1_])
     KL_vals_2_a = np.array([KL(ka_, x) for x in kc2_])
     KL_vals_2_b = np.array([KL(kb_, x) for x in kc2_])
-    
-    preds_first = pairwise_compare(KL_vals_1_a, KL_vals_1_b, xx, yy)
-  
-    preds_second = pairwise_compare(KL_vals_2_a, KL_vals_2_b, xx, yy)
+
+    preds_first = pairwise_compare(
+        KL_vals_1_a, KL_vals_1_b, xx, yy, voting=voting)
+    preds_second = pairwise_compare(
+        KL_vals_2_a, KL_vals_2_b, xx, yy, voting=voting)
 
     # Compare KL values
     return preds_first, preds_second
-"""

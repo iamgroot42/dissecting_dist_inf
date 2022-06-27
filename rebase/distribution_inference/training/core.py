@@ -16,7 +16,8 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 def train(model, loaders, train_config: TrainConfig,
           input_is_list: bool = False,
           extra_options: dict = None):
-    
+    if model.is_sklearn_model:
+        return sklearn_train(model, loaders, train_config, extra_options)
     if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config, input_is_list, extra_options)
@@ -203,6 +204,42 @@ def validate_epoch(val_loader, model, criterion,
     if get_preds:
         return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg), collected_preds
     return (val_loss.avg, adv_val_loss.avg), (val_acc.avg, adv_val_acc.avg)
+
+
+def sklearn_train(model, loaders, train_config: TrainConfig,
+                  input_is_list: bool = False,
+                  extra_options: dict = None):
+    # Get data loaders
+    if len(loaders) == 2:
+        train_loader, test_loader = loaders
+        val_loader = None
+        if train_config.get_best:
+            print(warning_string("\nUsing test-data to pick best-performing model\n"))
+    else:
+        train_loader, test_loader, val_loader = loaders
+    
+    def _collect_from_loader(self, loader):
+        x, y = [], []
+        for tuple in loader:
+            x.append(tuple[0])
+            y.append(tuple[1])
+        return np.array(x), np.array(y)
+
+    train_data = _collect_from_loader(train_loader)
+    test_data = _collect_from_loader(test_loader)
+    val_data = None
+    if val_loader is not None:
+        val_data = _collect_from_loader(val_loader)
+    
+    # Train model
+    model.fit(*train_data)
+    # Evaluate model
+    test_acc = model.acc(*test_data)
+    test_loss = model.score(*test_data)
+
+    if train_config.get_best:
+        return model, (test_loss, test_acc)
+    return test_loss, test_acc
 
 
 def train_without_dp(model, loaders, train_config: TrainConfig,

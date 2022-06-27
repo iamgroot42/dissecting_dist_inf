@@ -342,7 +342,8 @@ def find_threshold_pred(pred_1, pred_2,
 
 def get_threshold_pred(X, Y, threshold, rule,
                        get_pred: bool = False,
-                       tune_final_threshold: Union[bool, float] = False):
+                       tune_final_threshold: Union[bool, float] = False,
+                       voting:bool=True):
     """
         Get distinguishing accuracy between distributions, given predictions
         for models on datapoints, and thresholds with prediction rules.
@@ -367,7 +368,13 @@ def get_threshold_pred(X, Y, threshold, rule,
     # For each model
     for i in range(X.shape[1]):
         # Compute expected P[distribution=1] using given data, threshold, rules
-        prob = np.average((X[:, i] <= threshold) == rule)
+        if voting:
+            prob = np.average((X[:, i] <= threshold) == rule)
+        else:
+            raw_prob = (X[:, i] - threshold)*((-2*rule)+1)
+            raw_prob -= np.min(raw_prob)
+            raw_prob /= np.max(raw_prob)
+            prob = np.mean(raw_prob)
         # Store direct average P[distribution=1]
         res.append(prob)
     res = np.array(res)

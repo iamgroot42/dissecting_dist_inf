@@ -2,8 +2,9 @@ from simple_parsing import ArgumentParser
 from pathlib import Path
 import os
 import pickle
+import numpy as np
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
-from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
+from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr,get_preds_epoch_on_dis
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
@@ -36,17 +37,16 @@ if __name__ == "__main__":
             # Scale epsilon by 255 if requested
             if train_config.misc_config.adv_config.scale_by_255:
                 train_config.misc_config.adv_config.epsilon /= 255
-    assert not train_config.save_every_epoch,"Not implemented yet"# need extra handling
+    
     # Print out arguments
     flash_utils(attack_config)
-    # Define logger
-    logger = AttackResult(args.en, attack_config)
-
+    
+    EPOCH=train_config.save_every_epoch
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
-    ds_info = get_dataset_information(data_config.name)()
+    ds_info = get_dataset_information(data_config.name)(epoch_wise=EPOCH)
 
     # Create new DS object for both and victim
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
@@ -54,10 +54,10 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(
         data_config_vic_1,
         skip_data=True,
-        label_noise=train_config.label_noise)
-    ds_adv_1 = ds_wrapper_class(data_config_adv_1)
+        label_noise=train_config.label_noise,
+        epoch=EPOCH)
+    ds_adv_1 = ds_wrapper_class(data_config_adv_1,epoch=EPOCH)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
-    attack_config.save("./a.json",indent=4)
     def single_evaluation(models_1_path=None, models_2_paths=None):
         # Load victim models for first value
         models_vic_1 = ds_vic_1.get_models(
@@ -65,9 +65,9 @@ if __name__ == "__main__":
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False,
-            epochwise_version=attack_config.train_config.save_every_epoch,
             model_arch=attack_config.victim_model_arch,
-            custom_models_path=models_1_path)
+            custom_models_path=models_1_path,
+            epochwise_version=EPOCH)
         preds_a = {}
         preds_v = {}
         gt = {}
@@ -79,8 +79,9 @@ if __name__ == "__main__":
             # Create new DS object for both and victim (for other ratio)
             ds_vic_2 = ds_wrapper_class(
                 data_config_vic_2, skip_data=True,
-                label_noise=train_config.label_noise)
-            ds_adv_2 = ds_wrapper_class(data_config_adv_2)
+                label_noise=train_config.label_noise,
+                epoch=EPOCH)
+            ds_adv_2 = ds_wrapper_class(data_config_adv_2,epoch=EPOCH)
 
             # Load victim models for other value
             models_vic_2 = ds_vic_2.get_models(
@@ -88,8 +89,9 @@ if __name__ == "__main__":
                 n_models=attack_config.num_victim_models,
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
-                epochwise_version=attack_config.train_config.save_every_epoch,
                 model_arch=attack_config.victim_model_arch,
+                
+                epochwise_version=EPOCH,
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
             preds_a[prop_value] = {}
             preds_v[prop_value] = {}
@@ -100,13 +102,45 @@ if __name__ == "__main__":
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
-                    model_arch=attack_config.adv_model_arch)
+                    model_arch=attack_config.adv_model_arch,
+                    epochwise_version=EPOCH)
                 models_adv_2 = ds_adv_2.get_models(
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
-                    model_arch=attack_config.adv_model_arch)
-
+                    model_arch=attack_config.adv_model_arch,
+                    epochwise_version=EPOCH)
+                if EPOCH:
+                    _, loader1 = ds_adv_1.get_loaders(
+                    batch_size=bb_attack_config.batch_size)
+                    _, loader2 = ds_adv_2.get_loaders(
+                    batch_size=bb_attack_config.batch_size)
+                    preds_vepoch_1, ground_truth_1 = get_preds_epoch_on_dis([models_vic_1, models_vic_2],
+                                                                   loader=loader1, preload=bb_attack_config.preload,
+                                                                   multi_class=bb_attack_config.multi_class)
+                    preds_vepoch_2, ground_truth_2 = get_preds_epoch_on_dis([models_vic_1, models_vic_2],
+                                                                   loader=loader2, preload=bb_attack_config.preload,
+                                                                   multi_class=bb_attack_config.multi_class)
+                    preds_aepoch_1, g1 = get_preds_epoch_on_dis([models_adv_1, models_adv_2],
+                                                                   loader=loader1, preload=bb_attack_config.preload,
+                                                                   multi_class=bb_attack_config.multi_class)
+                    preds_aepoch_2, g2 = get_preds_epoch_on_dis([models_adv_1, models_adv_2],
+                                                                   loader=loader2, preload=bb_attack_config.preload,
+                                                                   multi_class=bb_attack_config.multi_class)
+                    assert np.array_equal(ground_truth_1,g1)
+                    assert np.array_equal(ground_truth_2,g2)
+                    preds_ve = [PredictionsOnDistributions(
+                    preds_on_distr_1=e1,
+                    preds_on_distr_2=e2
+                    ) for e1, e2 in zip(preds_vepoch_1, preds_vepoch_2)]
+                    preds_ae = [PredictionsOnDistributions(
+                    preds_on_distr_1=e1,
+                    preds_on_distr_2=e2
+                    ) for e1, e2 in zip(preds_aepoch_1, preds_aepoch_2)]
+                    preds_a[prop_value][t]= preds_ae
+                    preds_v[prop_value][t]= preds_ve
+                    gt[prop_value][t]= (ground_truth_1,ground_truth_2)
+                    continue
                 # Get victim and adv predictions on loaders for first ratio
                 preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
                     models_vic=(models_vic_1, models_vic_2),
