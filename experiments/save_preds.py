@@ -70,6 +70,7 @@ if __name__ == "__main__":
             custom_models_path=models_1_path)
         preds_a = {}
         preds_v = {}
+        gt = {}
         # For each value (of property) asked to experiment with
         for prop_value in attack_config.values:
             data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -92,6 +93,7 @@ if __name__ == "__main__":
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
             preds_a[prop_value] = {}
             preds_v[prop_value] = {}
+            gt[prop_value] = {}
             for t in range(attack_config.tries):
                 print("{}: trial {}".format(prop_value, t))
                 models_adv_1 = ds_adv_1.get_models(
@@ -138,7 +140,8 @@ if __name__ == "__main__":
                 )
                 preds_a[prop_value][t]= preds_adv
                 preds_v[prop_value][t]= preds_vic
-        return preds_a,preds_v
+                gt[prop_value][t]= (ground_truth_1,ground_truth_2)
+        return preds_a,preds_v,gt
     if args.victim_path:
         def joinpath(x, y): return os.path.join(
             args.victim_path, str(x), str(y))
@@ -148,11 +151,13 @@ if __name__ == "__main__":
             preds = single_evaluation(models_1_path, model_2_paths)
     else:
         preds = single_evaluation()
-    preds_path = os.path.join(ds_info.base_models_dir,preds,args.en)
+    preds_path = os.path.join(ds_info.base_models_dir,"preds",args.en)
     ensure_dir_exists(preds_path)
     attack_config.save(os.path.join(preds_path,"config.json"),indent=4)
     with open(os.path.join(preds_path,"preds_a.p"),"wb") as f:
         pickle.dump(preds[0], f)
     with open(os.path.join(preds_path,"preds_v.p"),"wb") as f:
         pickle.dump(preds[1], f)
+    with open(os.path.join(preds_path,"gt.p"),"wb") as f:
+        pickle.dump(preds[2], f)
         
