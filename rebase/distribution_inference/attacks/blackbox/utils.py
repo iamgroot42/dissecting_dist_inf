@@ -69,7 +69,8 @@ def calculate_accuracies(data, labels,
 def get_preds(loader, models: List[nn.Module],
               preload: bool = False,
               verbose: bool = True,
-              multi_class: bool = False):
+              multi_class: bool = False,
+              latent:int=None):
     """
         Get predictions for given models on given data
     """
@@ -105,7 +106,10 @@ def get_preds(loader, models: List[nn.Module],
             # Skip multiple CPU-CUDA copy ops
             if preload:
                 for data_batch in inputs:
-                    prediction = model(data_batch).detach()
+                    if latent!=None:
+                        prediction = model(data_batch,latent=latent).detach()
+                    else:
+                        prediction = model(data_batch).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]
                     predictions_on_model.append(prediction.cpu())
@@ -114,6 +118,10 @@ def get_preds(loader, models: List[nn.Module],
                 for data in loader:
                     data_points, labels, _ = data
                     # Get prediction
+                    if latent!=None:
+                        prediction = model(data_points.cuda(),latent=latent).detach()
+                    else:
+                        prediction = model(data_points.cuda()).detach()
                     prediction = model(data_points.cuda()).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]

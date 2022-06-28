@@ -5,7 +5,7 @@ from typing import List, Tuple, Callable, Union
 from distribution_inference.attacks.blackbox.core import Attack, find_threshold_pred, get_threshold_pred, order_points, PredictionsOnOneDistribution, PredictionsOnDistributions, multi_model_sampling, get_threshold_pred_multi
 from distribution_inference.config import BlackBoxAttackConfig
 
-VOTING = False
+VOTING = True
 class PerPointThresholdAttack(Attack):
     def __init__(self, config: BlackBoxAttackConfig):
         super().__init__(config)
