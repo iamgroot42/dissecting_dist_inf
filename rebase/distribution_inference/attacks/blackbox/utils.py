@@ -163,6 +163,11 @@ def _get_preds_for_vic_and_adv(
         preload: bool = False,
         multi_class: bool = False):
 
+    # Sklearn models do not support logits- take care of that
+    use_prob_adv = models_adv[0].is_sklearn_model
+    use_prob_vic = models_vic[0].is_sklearn_model
+    not_using_logits = use_prob_adv or use_prob_vic
+
     if type(loader) == tuple:
         #  Same data is processed differently for vic/adcv
         loader_vic, loader_adv = loader
@@ -170,11 +175,17 @@ def _get_preds_for_vic_and_adv(
         # Same loader
         loader_adv = loader
         loader_vic = loader
+    
+    def to_preds(x):
+        exp = np.exp(x)
+        return exp / (1 + exp)
 
     # Get predictions for adversary models and data
     preds_adv, ground_truth_repeat = get_preds(
         loader_adv, models_adv, preload=preload,
         multi_class=multi_class)
+    if not_using_logits and not use_prob_adv:
+        preds_adv = to_preds(preds_adv)
 
     # Get predictions for victim models and data
     if epochwise_version:
@@ -184,6 +195,9 @@ def _get_preds_for_vic_and_adv(
             preds_vic_inside, ground_truth = get_preds(
                 loader_vic, models_inside_vic, preload=preload,
                 verbose=False, multi_class=multi_class)
+            if not_using_logits and not use_prob_vic:
+                preds_vic_inside = to_preds(preds_vic_inside)
+
             # In epoch-wise mode, we need prediction results
             # across epochs, not models
             for i, p in enumerate(preds_vic_inside):
@@ -194,7 +208,7 @@ def _get_preds_for_vic_and_adv(
             multi_class=multi_class)
     assert np.all(ground_truth ==
                   ground_truth_repeat), "Val loader is shuffling data!"
-    return preds_vic, preds_adv, ground_truth
+    return preds_vic, preds_adv, ground_truth, not_using_logits
 
 
 def get_vic_adv_preds_on_distr(
@@ -207,11 +221,12 @@ def get_vic_adv_preds_on_distr(
         multi_class: bool = False,
         make_processed_version: bool = False):
 
-    _, loader_vic = ds_obj.get_loaders(batch_size=batch_size)
+    loader_for_shape, loader_vic = ds_obj.get_loaders(batch_size=batch_size)
+    adv_datum_shape = next(iter(loader_for_shape))[0].shape[1:]
     if make_processed_version:
         # Make version of DS for victim that processes data
         # before passing on
-        ds_obj.prepare_processed_data(loader_vic)
+        adv_datum_shape = ds_obj.prepare_processed_data(loader_vic)
         loader_adv = ds_obj.get_processed_val_loader(batch_size=batch_size)
     else:
         # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
@@ -220,14 +235,14 @@ def get_vic_adv_preds_on_distr(
     # TODO: Use preload logic here to speed things even more
 
     # Get predictions for first set of models
-    preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
+    preds_vic_1, preds_adv_1, ground_truth, not_using_logits = _get_preds_for_vic_and_adv(
         models_vic[0], models_adv[0],
         (loader_vic, loader_adv),
         epochwise_version=epochwise_version,
         preload=preload,
         multi_class=multi_class)
     # Get predictions for second set of models
-    preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
+    preds_vic_2, preds_adv_2, _, _ = _get_preds_for_vic_and_adv(
         models_vic[1], models_adv[1],
         (loader_vic, loader_adv),
         epochwise_version=epochwise_version,
@@ -241,7 +256,7 @@ def get_vic_adv_preds_on_distr(
         preds_property_1=preds_vic_1,
         preds_property_2=preds_vic_2
     )
-    return (adv_preds, vic_preds, ground_truth)
+    return adv_preds, vic_preds, ground_truth, not_using_logits
 
 
 def compute_metrics(dataset_true, dataset_pred,

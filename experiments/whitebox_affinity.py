@@ -243,5 +243,5 @@ if __name__ == "__main__":
                     attack_specific_info_string=str(chosen_accuracy),
                     victim_local=attack_config.victim_local_attack)
 
-    # Save logger results
-    logger.save()
+            # Keep saving results (more I/O, minimal loss of information in crash)
+            logger.save()

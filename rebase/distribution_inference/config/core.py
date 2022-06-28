@@ -188,9 +188,9 @@ class BlackBoxAttackConfig(Serializable):
     """Save predictions?"""
     tune_final_threshold: Optional[bool] = False
     """Tune final classification threshold, instead of a blind 0.5?"""
+
     Start_epoch: Optional[int] = 1
     End_epoch: Optional[int] = 20
-    
     
     relative_threshold: Optional[bool] = False
     """Thresholds are relative to mean accuracy/logits"""
@@ -198,6 +198,11 @@ class BlackBoxAttackConfig(Serializable):
     """Where applicable (PPTT), ues loss values instead of logits"""
     random_order: Optional[bool] = False
     """Order points randomly instead of optimal ordering"""
+
+    kl_frac: Optional[float] = 0.8
+    """Frac of pairs to use (if KL test)"""
+    kl_voting: Optional[bool] = False
+    """Use comparison instead of differences"""
 
 
 @dataclass

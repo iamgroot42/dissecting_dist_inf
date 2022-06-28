@@ -11,7 +11,9 @@ class Epoch_LossAttack(Attack):
                preds_vic2: PredictionsOnDistributions,
                ground_truth,
                calc_acc: Callable,
-               get_preds: bool = False):
+               get_preds: bool = False,
+               not_using_logits: bool = False):
+
         acc_1 = _acc_per_dis(preds_vic1.preds_on_distr_1,
                              preds_vic2.preds_on_distr_1,
                              ground_truth[0],

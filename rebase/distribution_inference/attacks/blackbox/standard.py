@@ -11,7 +11,8 @@ class LossAndThresholdAttack(Attack):
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
-               epochwise_version: bool = False):
+               epochwise_version: bool = False,
+               not_using_logits: bool = False):
         """
             Perform Threshold-Test and Loss-Test attacks using
             given accuracies of models.

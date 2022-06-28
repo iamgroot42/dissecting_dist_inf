@@ -39,7 +39,8 @@ class Attack:
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
-               epochwise_version: bool = False):
+               epochwise_version: bool = False,
+               not_using_logits: bool = False):
         """
             Preds contain predictions on either of the two distributions
             on the top level. Inside, they contain predictions from models

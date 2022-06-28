@@ -31,6 +31,9 @@ class BaseModel(nn.Module):
         # Get predictions
         if self.is_sklearn_model:
             preds = self.model.predict_proba(x)
+            # If binary, show same behavior as PyTorch models
+            if preds.shape[1] == 2:
+                preds = preds[:, [1]]
         else:
             preds = self.model(x)
         # Return predictions
@@ -52,10 +55,15 @@ class BaseModel(nn.Module):
 
 
 class RandomForest(BaseModel):
-    def __init__(self, max_depth: int = None, n_estimators: int = 100, n_jobs: int = None):
+    def __init__(self,
+                 max_depth: int = None,
+                 n_estimators: int = 100,
+                 n_jobs: int = None,
+                 min_samples_leaf: int = 1):
         super().__init__(is_sklearn_model=True)
         self.model = RandomForestClassifier(
-            max_depth=max_depth, n_estimators=n_estimators, n_jobs=n_jobs)
+            max_depth=max_depth, n_estimators=n_estimators,
+            n_jobs=n_jobs, min_samples_leaf=min_samples_leaf)
 
 
 class SVM(BaseModel):
@@ -262,15 +270,26 @@ class BoneModel(BaseModel):
     def forward(self, x: ch.Tensor,
                 detach_before_return: bool = False,
                 get_all: bool = False,
+                latent: int = None,
                 layers_to_target_conv: List[int] = None,
                 layers_to_target_fc: List[int] = None,) -> ch.Tensor:
 
         # Override list of layers if given
         valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
 
+        latent_mapping = {0: 1, 1:3} # layer wanted: actual layer in model
+
         all_latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)
+
+            # Get specific latent output
+            if latent is not None and i == latent_mapping[latent]:
+                if detach_before_return:
+                    return x.detach()
+                else:
+                    return x
+
             if get_all and i in valid_fc:
                 if detach_before_return:
                     all_latents.append(x.detach())
