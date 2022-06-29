@@ -160,7 +160,18 @@ class TrainConfig(Serializable):
     parallel: Optional[bool] = False
     """Use multiple GPUs for model training?"""
 
-
+@dataclass
+class GenerativeAttackConfig(Serializable):
+    steps: int
+    step_size: float
+    latent_focus: int
+    use_normal: bool
+    constrained:bool
+    model_ratio:float
+    start_natural:bool
+    n_samples:int
+    use_best:bool
+    clamp:Optional[bool] = False
 @dataclass
 class BlackBoxAttackConfig(Serializable):
     """
@@ -188,9 +199,9 @@ class BlackBoxAttackConfig(Serializable):
     """Save predictions?"""
     tune_final_threshold: Optional[bool] = False
     """Tune final classification threshold, instead of a blind 0.5?"""
+
     Start_epoch: Optional[int] = 1
     End_epoch: Optional[int] = 20
-    
     
     relative_threshold: Optional[bool] = False
     """Thresholds are relative to mean accuracy/logits"""
@@ -199,6 +210,11 @@ class BlackBoxAttackConfig(Serializable):
     random_order: Optional[bool] = False
     """Order points randomly instead of optimal ordering"""
 
+    kl_frac: Optional[float] = 0.8
+    """Frac of pairs to use (if KL test)"""
+    kl_voting: Optional[bool] = False
+    """Use comparison instead of differences"""
+    generative_attack:Optional[GenerativeAttackConfig]=None
 
 @dataclass
 class PermutationAttackConfig(Serializable):

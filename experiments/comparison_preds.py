@@ -20,6 +20,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load_config", help="Specify config file",
         type=Path, required=True)
+    parser.add_argument(
+        "--n", help="experiment name",
+        type=str, required=True)
     parser.add_argument('--gpu',
                         default='0,1,2,3', help="device number")
     parser.add_argument(
@@ -53,7 +56,7 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(data_config.name)(epoch_wise=True)
     assert wb_attack_config.attack=="comparison", "This script is only for comparison attack"
-    attacker_obj = ComparisonAttack(train_config,wb_attack_config,info=ds_info,save_m=True)
+    attacker_obj = ComparisonAttack(train_config,wb_attack_config,info=ds_info,save_m=True,name=args.n)
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
         data_config)
     
@@ -149,7 +152,8 @@ if __name__ == "__main__":
             preds_a2[prop_value][t]= preds_adv2
             preds_v[prop_value][t]= preds_vic
             gt[prop_value][t]= (ground_truth_1,ground_truth_2)
-    preds_path = os.path.join(ds_info.base_models_dir,"comparison","preds",args.en)
+    preds_path = os.path.join(ds_info.base_models_dir,"comparison","preds",args.en,args.n)
+    ensure_dir_exists(preds_path)
     attack_config.save(os.path.join(preds_path,"config.json"),indent=4)
     with open(os.path.join(preds_path,"preds_a1.p"),"wb") as f:
         pickle.dump(preds_a1, f)

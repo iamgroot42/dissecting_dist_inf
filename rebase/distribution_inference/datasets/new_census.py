@@ -32,7 +32,7 @@ class DatasetInformation(base.DatasetInformation):
         if model_arch == "mlp2":
             model = MLPTwoLayer(n_inp=105)
         elif model_arch == "random_forest":
-            model = RandomForest(max_depth=None, n_jobs=4)
+            model = RandomForest(min_samples_leaf=5, n_jobs=4, n_estimators=10)
         elif model_arch =="svm":
             model = SVM(C=1.0)
         else:

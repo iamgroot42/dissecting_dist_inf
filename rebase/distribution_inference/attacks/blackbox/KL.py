@@ -13,7 +13,8 @@ class KLAttack(Attack):
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
-               epochwise_version: bool = False):
+               epochwise_version: bool = False,
+               not_using_logits: bool = False):
         """
             Perform Threshold-Test and Loss-Test attacks using
             given accuracies of models.
@@ -23,9 +24,6 @@ class KLAttack(Attack):
             self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
-        
-        frac = 0.8
-        voting = False
 
         # Get values using data from first distribution
         preds_1_first, preds_1_second = get_kl_preds(
@@ -33,23 +31,25 @@ class KLAttack(Attack):
             preds_adv.preds_on_distr_1.preds_property_2,
             preds_vic.preds_on_distr_1.preds_property_1,
             preds_vic.preds_on_distr_1.preds_property_2,
-            frac=frac,
-            voting=voting)
+            frac=self.config.kl_frac,
+            voting=self.config.kl_voting,
+            not_using_logits=not_using_logits)
         # Get values using data from second distribution
         preds_2_first, preds_2_second = get_kl_preds(
             preds_adv.preds_on_distr_2.preds_property_1,
             preds_adv.preds_on_distr_2.preds_property_2,
             preds_vic.preds_on_distr_2.preds_property_1,
             preds_vic.preds_on_distr_2.preds_property_2,
-            frac=frac,
-            voting=voting)
+            frac=self.config.kl_frac,
+            voting=self.config.kl_voting,
+            not_using_logits=not_using_logits)
 
         # Combine data
         preds_first = np.concatenate((preds_1_first, preds_2_first), 1)
         preds_second = np.concatenate((preds_1_second, preds_2_second), 1)
         preds = np.concatenate((preds_first, preds_second))
 
-        if not voting:
+        if not self.config.kl_voting:
             preds -= np.min(preds, 0)
             preds /= np.max(preds, 0)
 
@@ -114,7 +114,8 @@ class KLAttack(Attack):
     
 
 def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
+    exp = np.exp(x)
+    return exp / (1 + exp)
 
 
 def KL(x, y, multi_class: bool = False):
@@ -147,10 +148,13 @@ def pairwise_compare(x, y, xx, yy, voting: bool):
     return preds
 
 
-def get_kl_preds(ka, kb, kc1, kc2, frac: float, voting: bool):
-    # Apply sigmoid on all of them
-    ka_, kb_ = sigmoid(ka), sigmoid(kb)
-    kc1_, kc2_ = sigmoid(kc1), sigmoid(kc2)
+def get_kl_preds(ka, kb, kc1, kc2, frac: float, voting: bool, not_using_logits: bool = False):
+    # Apply sigmoid to ones that are not already sigmoided
+    ka_, kb_ = ka, kb
+    kc1_, kc2_ = kc1, kc2
+    if not not_using_logits:
+        ka_, kb_ = sigmoid(ka), sigmoid(kb)
+        kc1_, kc2_ = sigmoid(kc1), sigmoid(kc2)
 
     # Consider all unique pairs of models
     xx, yy = np.triu_indices(ka.shape[0], k=1)

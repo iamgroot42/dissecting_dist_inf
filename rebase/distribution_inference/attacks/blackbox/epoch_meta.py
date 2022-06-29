@@ -7,7 +7,8 @@ from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDi
 class Epoch_Tree(Attack):
     def attack(self,
                preds_vics: List[PredictionsOnDistributions],
-               preds_advs: List[PredictionsOnDistributions]):
+               preds_advs: List[PredictionsOnDistributions],
+               not_using_logits: bool = False):
 
         assert not (
             self.config.multi2 and self.config.multi), "No implementation for both multi model"

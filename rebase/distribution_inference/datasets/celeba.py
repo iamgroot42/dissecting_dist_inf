@@ -360,6 +360,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         del model
         gc.collect()
         ch.cuda.empty_cache()
+        return features.shape[1:]
 
     def load_data(self):
         # Read attributes file to get attribute names

@@ -17,7 +17,9 @@ class Epoch_ThresholdAttack(Attack):
                ground_truth,
                calc_acc: Callable,
                get_preds: bool = False,
-               ratio: bool = False):
+               ratio: bool = False,
+               not_using_logits: bool = False):
+
         assert calc_acc is not None, "Must provide function to compute accuracy"
         assert ground_truth is not None, "Must provide ground truth to compute accuracy"
         assert not (

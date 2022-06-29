@@ -1,12 +1,51 @@
 import numpy as np
 import torch as ch
 from tqdm import tqdm
-import random
-from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions,PredictionsOnOneDistribution
+import gc
+from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions,PredictionsOnOneDistribution,Attack
 from distribution_inference.attacks.blackbox.utils import get_preds
+from distribution_inference.config.core import GenerativeAttackConfig
+from torch.utils.data import Dataset
+from distribution_inference.attacks.blackbox.per_point import PerPointThresholdAttack
+def get_differences(models, x_use, latent_focus, reduce=True):
+    # View resulting activation distribution for current models
+    reprs = ch.stack([m(x_use, latent=latent_focus).detach()
+                      for m in models], 0)
+    # Count number of neuron activations
+    reprs = (1. * ch.sum(reprs > 0, 2))
+    if reduce:
+        reprs = ch.mean(reprs, 1)
+    reprs = reprs.cpu().numpy()
+    return reprs
+
+
+def ordered_samples(models_0, models_1, loader, latent_focus,n_samples):
+    diffs_0, diffs_1, inputs = [], [], []
+    for tup in loader:
+        x = tup[0]
+        inputs.append(x)
+        x = x.cuda()
+        reprs_0 = get_differences(models_0, x, latent_focus, reduce=False)
+        reprs_1 = get_differences(models_1, x, latent_focus, reduce=False)
+        diffs_0.append(reprs_0)
+        diffs_1.append(reprs_1)
+
+    diffs_0 = np.concatenate(diffs_0, 1).T
+    diffs_1 = np.concatenate(diffs_1, 1).T
+    # diffs = (np.mean(diffs_1, 1) - np.mean(diffs_0, 1))
+    diffs = (np.min(diffs_1, 1) - np.max(diffs_0, 1))
+    # diffs = (np.min(diffs_0, 1) - np.max(diffs_1, 1))
+    inputs = ch.cat(inputs)
+    # Pick examples with maximum difference
+    diff_ids = np.argsort(-np.abs(diffs))[:n_samples]
+    print("Best samples had differences", diffs[diff_ids])
+    return inputs[diff_ids].cuda()
+
+
+
 def gen_optimal(m1,m2, sample_shape, n_samples,
-                n_steps, step_size,loader,latent_focus,preload:bool=False,
-                use_normal=None, constrained=False,model_ratio=1.0):
+                n_steps, step_size,latent_focus,
+                use_normal=None, constrained=False,model_ratio=1.0,clamp=False):
     # Generate set of query points such that
     # Their outputs (or simply activations produced by model)
     # Help an adversary differentiate between models
@@ -15,7 +54,7 @@ def gen_optimal(m1,m2, sample_shape, n_samples,
     
     
     if use_normal is None:
-        x_rand_data = ch.rand((n_samples,sample_shape[0])).cuda()
+        x_rand_data = ch.rand(*((n_samples,) + sample_shape)).cuda()
     else:
         x_rand_data = use_normal.clone().cuda()
 
@@ -27,15 +66,11 @@ def gen_optimal(m1,m2, sample_shape, n_samples,
         x_rand = ch.autograd.Variable(x_rand_data.clone(), requires_grad=True)
 
         x_use = x_rand
-        l1 = list(range(len(m1)))
-        
-        l2 = list(range(len(m2)))
-        if model_ratio != 1.0:
-            random.shuffle(l1)
-            random.shuffle(l2)
         # Get representations from all models
-        reprs1 = get_preds(loader,np.array(m1)[l1])
-        reprs2 = ch.stack([m2[j](x_use, latent=latent_focus) for j in l2[0:int(model_ratio*len(l2))]], 0)
+        reprs1 = ch.stack([m(x_use, latent=latent_focus)
+                           for m in np.random.permutation(m1)[:int(model_ratio*len(m1))]], 0)
+        reprs2 = ch.stack([m(x_use, latent=latent_focus)
+                           for m in np.random.permutation(m2)[:int(model_ratio*len(m2))]], 0)
         reprs_z = ch.mean(reprs1, 2)
         reprs_o = ch.mean(reprs2, 2)
         # If latent_focus is None, simply maximize difference in prediction probs
@@ -87,70 +122,104 @@ def gen_optimal(m1,m2, sample_shape, n_samples,
                 x_rand_data = x_rand_data_start - difference_norm
             else:
                 x_rand_data = x_intermediate
+            if clamp:
+                x_rand_data = ch.clamp(x_rand_data, -1, 1)
+
             #x_rand_data = ch.clamp(x_rand_data, -1, 1)
 
     if latent_focus is None:
         return x_rand.clone().detach(), loss.item()
     return x_rand.clone().detach(), (l1 + l2).item()
 
-def generate_data(X_train_1, X_train_2, ratio, args,shuffle=True):
-    df_ = heuristic(
-        df_val, filter, float(ratio),
-        cwise_sample=10000,
-        class_imbalance=1.0, n_tries=300)
-    ds =  BoneWrapper(
-        df_, df_, features=features)
-    if args.use_normal:
-        _, test_loader = ds.get_loaders(args.n_samples, shuffle=shuffle)
+def generate_data(X_train_1, X_train_2, ds, batch_size:int, config:GenerativeAttackConfig,seed_data=None):
+    if config.use_normal:
+        _, test_loader = ds.get_loaders(batch_size)
         normal_data = next(iter(test_loader))[0]
     else:
         _, test_loader = ds.get_loaders(100,shuffle=True)
         normal_data = next(iter(test_loader))[0].cuda()
-    if args.use_natural:
-        x_use = ordered_samples(X_train_1, X_train_2, test_loader, args)
-    else:
-        if args.start_natural:
-            normal_data = ordered_samples(
-                X_train_1, X_train_2, test_loader, args)
-            print("Starting with natural data")
-
-        x_opt, losses = [], []
-        for i in range(args.n_samples):
-            print('Gradient ascend')
+    shape=normal_data[0].shape
+    
+    if config.start_natural:
+        normal_data = ordered_samples(
+                X_train_1, X_train_2, test_loader, config.latent_focus,config.n_samples)
+        print("Starting with natural data")
+    elif seed_data is not None:
+            # Use seed data as normal data
+        normal_data = seed_data
+    x_opt, losses = [], []
+    for i in range(config.n_samples):
+        print('Gradient ascend')
             # Get optimal point based on local set
-            if args.r2 == 1.0:
-                x_opt_, loss_ = gen_optimal(
+            
+        x_opt_, loss_ = gen_optimal(
                 X_train_1,X_train_2,
-                [1024], 1,
-                args.steps, args.step_size,
-                args.latent_focus,
+                shape, 1,
+                config.steps, config.step_size,
+                config.latent_focus,
                 use_normal=normal_data[i:i +
-                                       1].cuda() if (args.use_normal or args.start_natural) else None,
-                constrained=args.constrained,
-                model_ratio=args.r)
-            else:
-                random.shuffle(X_train_1)
-                random.shuffle(X_train_2)
-                x_opt_, loss_ = gen_optimal(
-                X_train_1[0:int(args.r2*len(X_train_1))],X_train_2[0:int(args.r2*len(X_train_2))],
-                [1024], 1,
-                args.steps, args.step_size,
-                args.latent_focus,
-                use_normal=normal_data[i:i +
-                                       1] if (args.use_normal or args.start_natural) else None,
-                constrained=args.constrained,
-                model_ratio=args.r)
-            x_opt.append(x_opt_)
-            losses.append(loss_)
+                                       1].cuda() if (config.use_normal or config.start_natural) else None,
+                constrained=config.constrained,
+                model_ratio=config.model_ratio,
+                clamp=config.clamp)
 
-        if args.use_best:
-            best_id = np.argmin(losses)
-            x_opt = x_opt[best_id:best_id+1]
+        x_opt.append(x_opt_)
+        losses.append(loss_)
 
-        x_opt = ch.cat(x_opt, 0)
-        #x_opt = normal_data
+    if config.use_best:
+        best_id = np.argmin(losses)
+        x_opt = x_opt[best_id:best_id+1]
 
+    x_opt = ch.cat(x_opt, 0)
+        
         
     x_use = x_opt
-    x_use = x_use.cuda()
     return x_use.cpu()
+class BasicDataset(Dataset):
+    def __init__(self, X, Y=None):
+        self.X = X
+        self.Y = Y
+        if self.Y is not None:
+            
+            assert len(self.X) == len(self.Y)
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        if self.Y is None:
+            return self.X[idx]
+        return self.X[idx], self.Y[idx]
+
+class GenerativeAttack(Attack):
+    def gen_data(self,m1,m2,ds1,ds2, batch_size:int, config:GenerativeAttackConfig):
+        return (generate_data(m1,m2,ds1,batch_size,config),generate_data(m1,m2,ds2,batch_size,config))
+    def _get_preds(self,m,x,multi_class:bool=False):
+        assert not multi_class
+        ps = []
+        for model in tqdm(m):
+            model = model.cuda()
+        # Make sure model is in evaluation mode
+            model.eval()
+            ch.cuda.empty_cache()
+            with ch.no_grad():
+                ps.append(model(x.cuda()).detach()[:, 0])
+            model = model.cpu()
+            del model
+            gc.collect()
+            ch.cuda.empty_cache()
+        ps = ch.stack(ps, 0).to(ch.device('cpu')).numpy()
+        
+        return ps
+    def preds_wrapper(self,m1,m2,x1,x2,multi_class:bool=False):
+        p1 = PredictionsOnOneDistribution(
+            self._get_preds(m1,x1,multi_class),
+            self._get_preds(m2,x1,multi_class))
+        p2 = PredictionsOnOneDistribution(
+            self._get_preds(m1,x2,multi_class),
+            self._get_preds(m2,x2,multi_class))
+        return PredictionsOnDistributions(p1,p2)
+    def attack(self,preds_adv: PredictionsOnDistributions,
+               preds_vic: PredictionsOnDistributions):
+        self.attack_object = PerPointThresholdAttack(self.config)
+        return self.attack_object.attack(preds_adv,preds_vic)

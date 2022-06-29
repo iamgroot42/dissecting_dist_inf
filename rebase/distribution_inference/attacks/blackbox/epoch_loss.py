@@ -14,7 +14,8 @@ class Epoch_LossAttack(Attack):
                ground_truth,
                calc_acc: Callable,
                get_preds:bool=False,
-               ratio:bool=False):
+               ratio:bool=False,
+               not_using_logits: bool = False):
         self.ratio = ratio
         multi_class = self.config.multi_class
         acc_1 = _acc_per_dis(preds_vic1.preds_on_distr_1,

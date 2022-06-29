@@ -305,6 +305,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
         del model
         gc.collect()
         ch.cuda.empty_cache()
+        return features.shape[1:]
 
     def load_data(self):
         # Get DF files for train, val

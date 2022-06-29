@@ -16,7 +16,8 @@ class PerPointThresholdAttack(Attack):
                preds_vic: PredictionsOnDistributions,
                ground_truth: Tuple[List, List] = None,
                calc_acc: Callable = None,
-               epochwise_version: bool = False):
+               epochwise_version: bool = False,
+               not_using_logits: bool = False):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models

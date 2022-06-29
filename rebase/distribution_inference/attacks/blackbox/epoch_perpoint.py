@@ -16,7 +16,8 @@ class Epoch_Perpoint(Attack):
                ground_truth,
                calc_acc: Callable,
                get_preds: bool = False,
-               ratio: bool = False):
+               ratio: bool = False,
+               not_using_logits: bool = False):
         """
         Take predictions from both distributions and run attacks.
         Pick the one that works best on adversary's models

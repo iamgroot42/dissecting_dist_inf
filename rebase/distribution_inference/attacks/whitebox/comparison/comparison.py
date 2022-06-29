@@ -19,10 +19,12 @@ class ComparisonAttack:
                 t_config: TrainConfig,
                 wb_config: WhiteBoxAttackConfig,
                 info,
-                save_m :bool=False
+                save_m :bool=False,
+                name:str=None
                 ):
         self.t_config = replace(t_config)
         self.t_config.save_every_epoch = False
+        self.name = name
         assert not (wb_config.save or wb_config.load), "Not implemented"
         assert wb_config.comparison_config, "No comparison config"
         self.wb_config = replace(wb_config)
@@ -116,8 +118,12 @@ class ComparisonAttack:
         assert train_config.data_config.scale == 1.0
         if train_config.data_config.drop_senstive_cols:
             save_path = os.path.join(save_path, "drop")
+        """
         if self.trial!=None:
             save_path = os.path.join(save_path, str(self.trial))
+        """
+        if self.name!=None:
+            save_path = os.path.join(save_path, str(self.name))
         # Make sure this directory exists
         if not os.path.isdir(save_path):
             os.makedirs(save_path)

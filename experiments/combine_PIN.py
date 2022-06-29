@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 get_names=True)
             # Get victim and adv predictions on loaders for first ratio
 
-            preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
+            preds_adv_on_1, preds_vic_on_1, ground_truth_1, not_using_logits = get_vic_adv_preds_on_distr(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
                 ds_obj=ds_adv_1,
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                 multi_class=bb_attack_config.multi_class
             )
             # Get victim and adv predictions on loaders for second ratio
-            preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
+            preds_adv_on_2, preds_vic_on_2, ground_truth_2, _ = get_vic_adv_preds_on_distr(
                 models_vic=(models_vic_1, models_vic_2),
                 models_adv=(models_adv_1, models_adv_2),
                 ds_obj=ds_adv_2,
@@ -163,7 +163,8 @@ if __name__ == "__main__":
                     bbm_preds_adv, bbm_preds_vic,
                     ground_truth=(ground_truth_1, ground_truth_2),
                     calc_acc=calculate_accuracies,
-                    epochwise_version=attack_config.train_config.save_every_epoch)
+                    epochwise_version=attack_config.train_config.save_every_epoch,
+                    not_using_logits=not_using_logits)
                 if attack_config.save_bb:
                     bb_logger.add_results(attack_type, prop_value,
                                           result[0][0], result[1][0])
