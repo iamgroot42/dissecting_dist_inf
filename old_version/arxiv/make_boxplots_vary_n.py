@@ -1,9 +1,13 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 if __name__ == "__main__":
@@ -234,7 +238,7 @@ if __name__ == "__main__":
         },
     }
 
-    focus_n = 1600
+    focus_n = 20
     for n, v1 in raw_data.items():
         if n not in ["First Layer", "All"]:
             continue
@@ -270,4 +274,5 @@ if __name__ == "__main__":
     # Make sure axis label not cut off
     plt.tight_layout()
 
-    sns_plot.figure.savefig("./plots/meta_boxplot_varying_n_%s.pdf" % str(focus_n))
+    sns_plot.figure.savefig("./plots/arxiv_%s.pdf" % str(focus_n))
+    # sns_plot.figure.savefig("./plots/meta_boxplot_varying_n_%s.pdf" % str(focus_n))

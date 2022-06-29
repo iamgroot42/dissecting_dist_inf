@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -7,7 +11,7 @@ import numpy as np
 from data_utils import SUPPORTED_PROPERTIES
 import matplotlib.patches as mpatches
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 if __name__ == "__main__":
@@ -299,5 +303,5 @@ if __name__ == "__main__":
 
     # Save plot
     suffix = "_multi" if args.multimode else ""
-    sns_plot.figure.savefig("./plots/celeba_meta_boxplot_%s%s.png" %
+    sns_plot.figure.savefig("./plots/celeba_meta_boxplot_%s%s.pdf" %
                             (args.filter, suffix))

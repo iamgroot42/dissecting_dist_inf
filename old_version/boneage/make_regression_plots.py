@@ -1,6 +1,10 @@
 """
     Meta-classifier experiment using Permutation Invariant Networks for direct regression.
 """
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import utils
 from data_utils import SUPPORTED_RATIOS
 from model_utils import get_model_features, BASE_MODELS_DIR
@@ -12,7 +16,7 @@ import torch as ch
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 def load_stuff(model_dir, args, max_read):
@@ -39,7 +43,7 @@ if __name__ == "__main__":
     palette = {x: f"C{i}" for i, x in enumerate(all_ratios_sorted)}
     for ratio in ratios_to_use:
         # Load up data for this ratio
-        test_dir = os.path.join(BASE_MODELS_DIR, "victim/%s/" % ratio)
+        test_dir = os.path.join(BASE_MODELS_DIR, "bonemodel/victim/gender/%s/" % ratio)
         dims, vecs_test = load_stuff(test_dir, args, max_read=100)
         X_test.append(vecs_test)
         Y_test += [float(ratio)] * len(vecs_test)
@@ -49,7 +53,7 @@ if __name__ == "__main__":
 
     for ratio in SUPPORTED_RATIOS:
         # Load up data for this ratio
-        test_dir = os.path.join(BASE_MODELS_DIR, "victim/%s/" % ratio)
+        test_dir = os.path.join(BASE_MODELS_DIR, "bonemodel/victim/gender/%s/" % ratio)
         dims, vecs_test = load_stuff(test_dir, args, max_read=1000)
         X_test_og.append(vecs_test)
         Y_test_og += [float(ratio)] * len(vecs_test)
@@ -120,5 +124,5 @@ if __name__ == "__main__":
     ax2.set_ylabel(r"MSE")
 
     sns_plot.set_xticklabels(sns_plot.get_xticklabels(), rotation=60)
-    #sns_plot.figure.savefig("plots/regression_plots.pdf", bbox_inches='tight')
-    sns_plot.figure.savefig("plots/regression_plots.png", bbox_inches='tight')
+    sns_plot.figure.savefig("plots/regression_plot.pdf", bbox_inches='tight')
+    # sns_plot.figure.savefig("plots/regression_plot.png", bbox_inches='tight')

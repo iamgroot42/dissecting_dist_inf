@@ -1,7 +1,11 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 def bound_1(x, y, n):
@@ -1042,6 +1046,7 @@ if __name__ == "__main__":
     plt.style.use('seaborn')
     plt.legend()
     plt.savefig("./bound_curves_%.1f.pdf" % picked_ratio)
+    # plt.savefig("./bound_curves_%.1f.png" % picked_ratio)
 
     # print(bound(0.1, 0.2, 2))
     # print(bound(0.5, 0.6, 2))

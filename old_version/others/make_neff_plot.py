@@ -1,14 +1,18 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 # For ratio-based datasets
-targets = ["0.0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]
+# targets = ["0.0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]
 
 # for arXiv
-# targets = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
+targets = ["9", "10", "11", "12", "13", "14", "15", "16", "17"]
 
 # for Boneage
 # targets = ["0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8"]
@@ -129,36 +133,36 @@ fill_data_other = np.zeros((len(targets), len(targets)))
 #fill_data_other[10][:10] = [800, 0.89, 1.13, 1.51, 1.87, 1.99, 1.57, 0.94, 0.49, 0.27]
 
 # CelebA Young
-fill_data[0][1:]  = [51, 54, 61, 64, 70, 75, 77, 89, 92, 95]
-fill_data[1][2:]  = [51, 53, 60, 65, 67, 77, 82, 87, 92]
-fill_data[2][3:]  = [50, 51, 55, 65, 66, 79, 75, 87]
-fill_data[3][4:]  = [50, 52, 57, 61, 69, 79, 80]
-fill_data[4][5:]  = [50, 53, 56, 59, 71, 82]
-fill_data[5][6:]  = [49, 53, 62, 69, 72]
-fill_data[6][7:]  = [50, 55, 58, 72]
-fill_data[7][8:]  = [50, 54, 64]
-fill_data[8][9:]  = [49, 54]
-fill_data[9][10:] = [50]
-annot_data[0][1:]  = [r'51 $\pm$ 1', r'54 $\pm$ 3', r'61 $\pm$ 3', r'64 $\pm$ 7', r'70 $\pm$ 9', r'75 $\pm$ 5', r'77 $\pm$ 14', r'89 $\pm$ 0', r'92 $\pm$ 0', r'95 $\pm$ 0']
-annot_data[1][2:]  = [r'51 $\pm$ 0', r'53 $\pm$ 2', r'60 $\pm$ 2', r'65 $\pm$ 1', r'67 $\pm$ 8', r'77 $\pm$ 2', r'82 $\pm$ 2', r'87 $\pm$ 2', r'92 $\pm$ 1']
-annot_data[2][3:]  = [r'50 $\pm$ 0', r'51 $\pm$ 1', r'55 $\pm$ 4', r'65 $\pm$ 1', r'66 $\pm$ 6', r'79 $\pm$ 0', r'75 $\pm$ 12', r'87 $\pm$ 3']
-annot_data[3][4:]  = [r'50 $\pm$ 1', r'52 $\pm$ 2', r'57 $\pm$ 3', r'61 $\pm$ 7', r'69 $\pm$ 9', r'79 $\pm$ 0', r'80 $\pm$ 15']
-annot_data[4][5:]  = [r'50 $\pm$ 0', r'53 $\pm$ 1', r'56 $\pm$ 4', r'59 $\pm$ 8', r'71 $\pm$ 4', r'82 $\pm$ 2']
-annot_data[5][6:]  = [r'49 $\pm$ 0', r'53 $\pm$ 1', r'62 $\pm$ 1', r'69 $\pm$ 0', r'72 $\pm$ 11']
-annot_data[6][7:]  = [r'50 $\pm$ 0', r'55 $\pm$ 2', r'58 $\pm$ 6', r'72 $\pm$ 5']
-annot_data[7][8:]  = [r'50 $\pm$ 1', r'54 $\pm$ 3', r'64 $\pm$ 4']
-annot_data[8][9:]  = [r'49 $\pm$ 1', r'54 $\pm$ 3']
-annot_data[9][10:] = [r'50 $\pm$ 1']
-fill_data_other[1][:1]   = [0.03]
-fill_data_other[2][:2]   = [0.13, 0.01]
-fill_data_other[3][:3]   = [0.31, 0.07, 0.01]
-fill_data_other[4][:4]   = [0.34, 0.18, 0.01, 0.01]
-fill_data_other[5][:5]   = [0.47, 0.21, 0.12, 0.03, 0.01]
-fill_data_other[6][:6]   = [0.51, 0.32, 0.19, 0.08, 0.04, 0]
-fill_data_other[7][:7]   = [0.58, 0.40, 0.22, 0.15, 0.07, 0.05, 0]
-fill_data_other[8][:8]   = [0.67, 0.44, 0.33, 0.31, 0.20, 0.17, 0.11, 0.01]
-fill_data_other[9][:9]   = [0.59, 0.46, 0.45, 0.42, 0.40, 0.33, 0.24, 0.11, 0]
-fill_data_other[10][:10] = [800, 0.68, 0.72, 0.79, 0.71, 0.63, 0.61, 0.45, 0.18, 0.04]
+# fill_data[0][1:]  = [51, 54, 61, 64, 70, 75, 77, 89, 92, 95]
+# fill_data[1][2:]  = [51, 53, 60, 65, 67, 77, 82, 87, 92]
+# fill_data[2][3:]  = [50, 51, 55, 65, 66, 79, 75, 87]
+# fill_data[3][4:]  = [50, 52, 57, 61, 69, 79, 80]
+# fill_data[4][5:]  = [50, 53, 56, 59, 71, 82]
+# fill_data[5][6:]  = [49, 53, 62, 69, 72]
+# fill_data[6][7:]  = [50, 55, 58, 72]
+# fill_data[7][8:]  = [50, 54, 64]
+# fill_data[8][9:]  = [49, 54]
+# fill_data[9][10:] = [50]
+# annot_data[0][1:]  = [r'51 $\pm$ 1', r'54 $\pm$ 3', r'61 $\pm$ 3', r'64 $\pm$ 7', r'70 $\pm$ 9', r'75 $\pm$ 5', r'77 $\pm$ 14', r'89 $\pm$ 0', r'92 $\pm$ 0', r'95 $\pm$ 0']
+# annot_data[1][2:]  = [r'51 $\pm$ 0', r'53 $\pm$ 2', r'60 $\pm$ 2', r'65 $\pm$ 1', r'67 $\pm$ 8', r'77 $\pm$ 2', r'82 $\pm$ 2', r'87 $\pm$ 2', r'92 $\pm$ 1']
+# annot_data[2][3:]  = [r'50 $\pm$ 0', r'51 $\pm$ 1', r'55 $\pm$ 4', r'65 $\pm$ 1', r'66 $\pm$ 6', r'79 $\pm$ 0', r'75 $\pm$ 12', r'87 $\pm$ 3']
+# annot_data[3][4:]  = [r'50 $\pm$ 1', r'52 $\pm$ 2', r'57 $\pm$ 3', r'61 $\pm$ 7', r'69 $\pm$ 9', r'79 $\pm$ 0', r'80 $\pm$ 15']
+# annot_data[4][5:]  = [r'50 $\pm$ 0', r'53 $\pm$ 1', r'56 $\pm$ 4', r'59 $\pm$ 8', r'71 $\pm$ 4', r'82 $\pm$ 2']
+# annot_data[5][6:]  = [r'49 $\pm$ 0', r'53 $\pm$ 1', r'62 $\pm$ 1', r'69 $\pm$ 0', r'72 $\pm$ 11']
+# annot_data[6][7:]  = [r'50 $\pm$ 0', r'55 $\pm$ 2', r'58 $\pm$ 6', r'72 $\pm$ 5']
+# annot_data[7][8:]  = [r'50 $\pm$ 1', r'54 $\pm$ 3', r'64 $\pm$ 4']
+# annot_data[8][9:]  = [r'49 $\pm$ 1', r'54 $\pm$ 3']
+# annot_data[9][10:] = [r'50 $\pm$ 1']
+# fill_data_other[1][:1]   = [0.03]
+# fill_data_other[2][:2]   = [0.13, 0.01]
+# fill_data_other[3][:3]   = [0.31, 0.07, 0.01]
+# fill_data_other[4][:4]   = [0.34, 0.18, 0.01, 0.01]
+# fill_data_other[5][:5]   = [0.47, 0.21, 0.12, 0.03, 0.01]
+# fill_data_other[6][:6]   = [0.51, 0.32, 0.19, 0.08, 0.04, 0]
+# fill_data_other[7][:7]   = [0.58, 0.40, 0.22, 0.15, 0.07, 0.05, 0]
+# fill_data_other[8][:8]   = [0.67, 0.44, 0.33, 0.31, 0.20, 0.17, 0.11, 0.01]
+# fill_data_other[9][:9]   = [0.59, 0.46, 0.45, 0.42, 0.40, 0.33, 0.24, 0.11, 0]
+# fill_data_other[10][:10] = [800, 0.68, 0.72, 0.79, 0.71, 0.63, 0.61, 0.45, 0.18, 0.04]
 
 # CelebA Threshold (young)
 # fill_data[0][1:] = [49, 50, 50, 49, 50, 49, 50, 46, 58, 63]
@@ -225,30 +229,30 @@ fill_data_other[10][:10] = [800, 0.68, 0.72, 0.79, 0.71, 0.63, 0.61, 0.45, 0.18,
 # fill_data_other[10][:10] = [800, 0.67, 0.76, 0.78, 0.77, 0.76, 0.61, 0.38, 0.11, 0.03]
 
 # arXiv Meta
-# fill_data[0][1:] = [52, 89, 97, 98, 99, 98, 99, 99]
-# fill_data[1][2:] = [75, 92, 95, 95, 99, 99, 99]
-# fill_data[2][3:] = [76, 92, 96, 98, 99, 99]
-# fill_data[3][4:] = [91, 100, 95, 99, 100]
-# fill_data[4][5:] = [90, 97, 98, 99]
-# fill_data[5][6:] = [94, 97, 100]
-# fill_data[6][7:] = [64, 79]
-# fill_data[7][8:] = [89]
-# annot_data[0][1:] = [r'52 $\pm$ 1', r'89 $\pm$ 9', r'97 $\pm$ 2', r'98 $\pm$ 0', r'99 $\pm$ 0', r'98 $\pm$ 1', r'99 $\pm$ 0', r'99 $\pm$ 0']
-# annot_data[1][2:] = [r'75 $\pm$ 22', r'92 $\pm$ 7', r'95 $\pm$ 2', r'95 $\pm$ 4', r'99 $\pm$ 1', r'99 $\pm$ 0', r'99 $\pm$ 0']
-# annot_data[2][3:] = [r'76 $\pm$ 19', r'92 $\pm$ 1', r'96 $\pm$ 6', r'98 $\pm$ 3', r'99 $\pm$ 0', r'99 $\pm$ 0']
-# annot_data[3][4:] = [r'91 $\pm$ 5', r'100 $\pm$ 0', r'95 $\pm$ 5', r'99 $\pm$ 0', r'100 $\pm$ 0']
-# annot_data[4][5:] = [r'90 $\pm$ 2', r'97 $\pm$ 3', r'98 $\pm$ 2', r'99 $\pm$ 0']
-# annot_data[5][6:] = [r'94 $\pm$ 10', r'97 $\pm$ 1', r'100 $\pm$ 0']
-# annot_data[6][7:] = [r'64 $\pm$ 12', r'79 $\pm$ 11']
-# annot_data[7][8:] = [r'89 $\pm$ 11']
-# fill_data_other[1][:1] = [800]
-# fill_data_other[2][:2] = [15.72, 15.99]
-# fill_data_other[3][:3] = [800, 800, 9.99]
-# fill_data_other[4][:4] = [800, 15.99, 7.07, 5.80]
-# fill_data_other[5][:5] = [800, 800, 800, 800, 4.53]
-# fill_data_other[6][:6] = [800, 800, 800, 800, 800, 800]
-# fill_data_other[7][:7] = [800, 800, 800, 800, 779, 800, 3.3]
-# fill_data_other[8][:8] = [800, 800, 800, 800, 800, 800, 40.12, 800]
+fill_data[0][1:] = [52, 89, 97, 98, 99, 98, 99, 99]
+fill_data[1][2:] = [75, 92, 95, 95, 99, 99, 99]
+fill_data[2][3:] = [76, 92, 96, 98, 99, 99]
+fill_data[3][4:] = [91, 100, 95, 99, 100]
+fill_data[4][5:] = [90, 97, 98, 99]
+fill_data[5][6:] = [94, 97, 100]
+fill_data[6][7:] = [64, 79]
+fill_data[7][8:] = [89]
+annot_data[0][1:] = [r'52 $\pm$ 1', r'89 $\pm$ 9', r'97 $\pm$ 2', r'98 $\pm$ 0', r'99 $\pm$ 0', r'98 $\pm$ 1', r'99 $\pm$ 0', r'99 $\pm$ 0']
+annot_data[1][2:] = [r'75 $\pm$ 22', r'92 $\pm$ 7', r'95 $\pm$ 2', r'95 $\pm$ 4', r'99 $\pm$ 1', r'99 $\pm$ 0', r'99 $\pm$ 0']
+annot_data[2][3:] = [r'76 $\pm$ 19', r'92 $\pm$ 1', r'96 $\pm$ 6', r'98 $\pm$ 3', r'99 $\pm$ 0', r'99 $\pm$ 0']
+annot_data[3][4:] = [r'91 $\pm$ 5', r'100 $\pm$ 0', r'95 $\pm$ 5', r'99 $\pm$ 0', r'100 $\pm$ 0']
+annot_data[4][5:] = [r'90 $\pm$ 2', r'97 $\pm$ 3', r'98 $\pm$ 2', r'99 $\pm$ 0']
+annot_data[5][6:] = [r'94 $\pm$ 10', r'97 $\pm$ 1', r'100 $\pm$ 0']
+annot_data[6][7:] = [r'64 $\pm$ 12', r'79 $\pm$ 11']
+annot_data[7][8:] = [r'89 $\pm$ 11']
+fill_data_other[1][:1] = [800]
+fill_data_other[2][:2] = [15.72, 15.99]
+fill_data_other[3][:3] = [800, 800, 9.99]
+fill_data_other[4][:4] = [800, 15.99, 7.07, 5.80]
+fill_data_other[5][:5] = [800, 800, 800, 800, 4.53]
+fill_data_other[6][:6] = [800, 800, 800, 800, 800, 800]
+fill_data_other[7][:7] = [800, 800, 800, 800, 779, 800, 3.3]
+fill_data_other[8][:8] = [800, 800, 800, 800, 800, 800, 40.12, 800]
 
 # boneAge Meta
 # fill_data[0][1:] = [81, 98, 99, 99, 99, 99]
@@ -331,4 +335,4 @@ sns_plot = sns.heatmap(fill_data_other, xticklabels=targets,
 
 sns_plot.set(xlabel=r'$\alpha_0$', ylabel=r'$\alpha_1$')
 plt.tight_layout()
-sns_plot.figure.savefig("./yeah.pdf")
+sns_plot.figure.savefig("./arxiv_heatmap_meta.pdf")
