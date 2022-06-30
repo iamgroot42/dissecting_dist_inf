@@ -249,7 +249,8 @@ class CustomDatasetWrapper:
                    epochwise_version: bool = False,
                    get_names: bool = False,
                    model_arch: str = None,
-                   custom_models_path: str = None):
+                   custom_models_path: str = None,
+                   target_epoch: int = None):
         """
             Load models. Either return list of requested models, or a 
             list of list of models, where each nested list is the model's
@@ -276,7 +277,7 @@ class CustomDatasetWrapper:
                     continue
 
                 # Skip any directories we may stumble upon
-                if epochwise_version:
+                if epochwise_version or (target_epoch is not None):
                     if os.path.isdir(os.path.join(folder_path, mpath)):
                         # Make sure not accidentally looking into model with adv-trained models
                         if not (mpath.startswith("adv_train_") or mpath == "full"):
@@ -286,6 +287,13 @@ class CustomDatasetWrapper:
                                 os.path.join(folder_path, mpath))
                             files_inside.sort(
                                 key=lambda x: int(x.split("_")[0]))
+
+                            # Pick only target epoch
+                            if target_epoch is not None:
+                                files_inside = [f for f in files_inside if int(f.split("_")[0]) == (target_epoch - 1)]
+                                if len(files_inside) == 0:
+                                    raise ValueError(f"No model found for epoch {target_epoch}")
+
                             for mpath_inside in files_inside:
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),
@@ -336,7 +344,8 @@ class CustomDatasetWrapper:
                            shuffle: bool = True,
                            epochwise_version: bool = False,
                            model_arch: str = None,
-                           custom_models_path: str = None):
+                           custom_models_path: str = None,
+                           target_epoch: int = None):
         """
             Extract features for a given model.
             Make sure only the parts that are needed inside the model are extracted
@@ -361,7 +370,7 @@ class CustomDatasetWrapper:
                     continue
 
                 # Skip any directories we may stumble upon
-                if epochwise_version:
+                if epochwise_version or (target_epoch is not None):
                     if os.path.isdir(os.path.join(folder_path, mpath)):
                         # Make sure not accidentally looking into model with adv-trained models
                         if not (mpath.startswith("adv_train_") or mpath == "full"):
@@ -371,6 +380,13 @@ class CustomDatasetWrapper:
                                 os.path.join(folder_path, mpath))
                             files_inside.sort(
                                 key=lambda x: int(x.split("_")[0]))
+
+                            # Pick only target epoch
+                            if target_epoch is not None:
+                                files_inside = [f for f in files_inside if int(f.split("_")[0]) == (target_epoch - 1)]
+                                if len(files_inside) == 0:
+                                    raise ValueError(f"No model found for epoch {target_epoch}")
+
                             for mpath_inside in files_inside:
                                 model = self.load_model(os.path.join(
                                     folder_path, mpath, mpath_inside),

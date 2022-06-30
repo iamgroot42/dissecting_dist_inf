@@ -1,3 +1,8 @@
+# Sets font-type to 'Normal' to make it compatible with camera-ready versions
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import os
 from simple_parsing import ArgumentParser
 
@@ -59,6 +64,9 @@ if __name__ == "__main__":
     parser.add_argument("--pdf",
                         action="store_true",
                         help="Save PDF instead of PNG",)
+    parser.add_argument("--skip_prefix",
+                        action="store_true",
+                        help="Skip prefix of attack name in plotting legend",)
     args = parser.parse_args()
 
     # Columns for axis and names
@@ -70,7 +78,8 @@ if __name__ == "__main__":
                             legend_titles=args.legend_titles,
                             attacks_wanted=args.wanted,
                             ratios_wanted=args.ratios,
-                            no_legend=args.nolegend)
+                            no_legend=args.nolegend,
+                            skip_prefix=args.skip_prefix)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,
