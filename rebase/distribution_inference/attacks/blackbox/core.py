@@ -35,7 +35,6 @@ class Attack:
     def __init__(self, config: BlackBoxAttackConfig):
         self.config = config
         self.supports_saving_preds = False
-
     def attack(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
@@ -53,6 +52,7 @@ class Attack:
     def wrap_preds_to_save(self, result: List):
         if self.supports_saving_preds:
             raise NotImplementedError("Method should be implemented if attack generated soft-labels")
+    
 
 
 def multi_model_sampling(arr, multi):
@@ -112,7 +112,7 @@ def threshold_test_per_dist(calc_acc: Callable,
     pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
 
     # Get optimal order of point
-    order = order_points(p1, p2)
+    order = order_points(p1, p2,config.order_name)
 
     # Order points according to computed utility
     multi_class = config.multi_class
@@ -138,7 +138,7 @@ def threshold_test_per_dist(calc_acc: Callable,
             pv2_use = [x[:leng] for x in pv2]
         else:
             pv1_use, pv2_use = pv1[:leng], pv2[:leng]
-
+ 
         # Calculate accuracies for these points in [0,100]
         accs_1 = 100 * calc_acc(p1_use, yg_use, multi_class=multi_class)
         accs_2 = 100 * calc_acc(p2_use, yg_use, multi_class=multi_class)
@@ -444,8 +444,10 @@ def get_threshold_pred_multi(
         return res, acc
     return acc
 
-
-def order_points(p1s, p2s):
+def sigmoid(x):
+    exp = np.exp(x)
+    return exp / (1 + exp)
+def order_points1(p1s, p2s):
     """
         Estimate utility of individual points, done by taking
         absolute difference in their predictions.
@@ -462,7 +464,33 @@ def order_points(p1s, p2s):
 
     inds = np.argsort(abs_diff)
     return inds
+def order_sq(p1s, p2s):
+    """
+        Estimate utility of individual points, done by taking
+        points that maximize confidence for models on one distribution
+        while get near random predictions on the others.
+    """
+    if p1s.shape != p2s.shape:
+        raise ValueError(
+            f"Both predictions should be same shape, got {p1s.shape} and {p2s.shape}")
+    p1s = np.mean(sigmoid(p1s),axis=0)
+    p2s = np.mean(sigmoid(p2s),axis=0)
+    a1 = np.maximum(np.square(p1s-0.5)+np.square(p2s-1.0),np.square(p1s-0.5)+np.square(p2s))
+    a2 = np.maximum(np.square(p1s-1.0)+np.square(p2s-0.5),np.square(p1s)+np.square(p2s-0.5))
+    a_combined = np.maximum(a1,a2)
+    if len(p1s.shape) == 3:
+        # Handle multi-class case
+        a_combined = np.mean(a_combined, 1)
 
+    inds = np.argsort(a_combined)
+    return inds
+def order_points(p1s,p2s,order:str=None):
+        if order=="square":
+            return order_sq(p1s,p2s)
+        elif order is None:
+            return order_points1(p1s,p2s)
+        else:
+            raise Exception("No implementation")
 def epoch_order_p(p11,p12,p21,p22):
         #pij: ith epoch, jth distribution
         #TODO: find a better order rather than only using the last epoch

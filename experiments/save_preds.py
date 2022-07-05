@@ -142,7 +142,7 @@ if __name__ == "__main__":
                     gt[prop_value][t]= (ground_truth_1,ground_truth_2)
                     continue
                 # Get victim and adv predictions on loaders for first ratio
-                preds_adv_on_1, preds_vic_on_1, ground_truth_1 = get_vic_adv_preds_on_distr(
+                preds_adv_on_1, preds_vic_on_1, ground_truth_1, _ = get_vic_adv_preds_on_distr(
                     models_vic=(models_vic_1, models_vic_2),
                     models_adv=(models_adv_1, models_adv_2),
                     ds_obj=ds_adv_1,
@@ -153,7 +153,7 @@ if __name__ == "__main__":
                     make_processed_version=attack_config.victim_processed_variant
                 )
                 # Get victim and adv predictions on loaders for second ratio
-                preds_adv_on_2, preds_vic_on_2, ground_truth_2 = get_vic_adv_preds_on_distr(
+                preds_adv_on_2, preds_vic_on_2, ground_truth_2, _ = get_vic_adv_preds_on_distr(
                     models_vic=(models_vic_1, models_vic_2),
                     models_adv=(models_adv_1, models_adv_2),
                     ds_obj=ds_adv_2,

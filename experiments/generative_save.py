@@ -25,8 +25,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--victim_path", help="path to victim'smodels directory",
         type=str, default=None)
-    parser.add_argument('--trial_offset',type=int,
-                        default=None, help="device number")
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     attack_config: AttackConfig = AttackConfig.load(
@@ -122,6 +120,6 @@ if __name__ == "__main__":
     with open(os.path.join(preds_path,"preds_a.p"),"wb") as f:
         pickle.dump(preds_a, f)
     with open(os.path.join(preds_path,"preds_v.p"),"wb") as f:
-        pickle.dump(preds_vic, f)
+        pickle.dump(preds_v, f)
     with open(os.path.join(preds_path,"generated.p"),"wb") as f:
         pickle.dump(x_use, f)

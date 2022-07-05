@@ -3,7 +3,6 @@ import torch as ch
 from tqdm import tqdm
 import gc
 from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions,PredictionsOnOneDistribution,Attack
-from distribution_inference.attacks.blackbox.utils import get_preds
 from distribution_inference.config.core import GenerativeAttackConfig
 from torch.utils.data import Dataset
 from distribution_inference.attacks.blackbox.per_point import PerPointThresholdAttack
@@ -222,4 +221,4 @@ class GenerativeAttack(Attack):
     def attack(self,preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions):
         self.attack_object = PerPointThresholdAttack(self.config)
-        return self.attack_object.attack(preds_adv,preds_vic)
+        return self.attack_object.attack(preds_adv,preds_vic,ground_truth=(None,None))
