@@ -125,7 +125,7 @@
         "victim_local_attack": false,
         "victim_model_arch": null,
         "adv_model_arch": null,
-        "victim_processed_variant": false,
+        "adv_processed_variant": false,
         "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Male",
         "save_bb": false,
         "save_data": true,

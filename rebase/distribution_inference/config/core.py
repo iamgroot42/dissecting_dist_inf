@@ -357,8 +357,8 @@ class AttackConfig(Serializable):
     """Architecture of victim model (defaults to dataset-specific model)"""
     adv_model_arch: str = None
     """Architecture for adversary model (defaults to dataset-specific model)"""
-    victim_processed_variant: Optional[bool] = False
-    """Use processed variant for victim data?"""
+    adv_processed_variant: Optional[bool] = False
+    """Use processed variant for adv data?"""
 
     adv_target_epoch: Optional[int] = None
     """Which epoch to target for adversary. If not None, automatically use last epoch"""
