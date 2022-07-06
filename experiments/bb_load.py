@@ -45,7 +45,7 @@ if __name__ == "__main__":
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
-    ds_info = get_dataset_information(data_config.name)(epoch_wise=EPOCH)
+    ds_info = get_dataset_information(data_config.name)()
     preds_path = os.path.join(ds_info.base_models_dir,"preds",args.pred_name)
     preds_a = pickle.load( open( os.path.join(preds_path,"preds_a.p"), "rb" ) )
     preds_v = pickle.load( open( os.path.join(preds_path,"preds_v.p"), "rb" ) )

@@ -19,7 +19,8 @@
         "num_adv_models": 50,
         "batch_size": 50,
         "attack_type": [
-            "KL"
+            "binary_perpoint",
+            "threshold_perpoint"
         ],
         "ratios": [
             0.05,
