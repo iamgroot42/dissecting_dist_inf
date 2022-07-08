@@ -1,0 +1,43 @@
+{
+    "white_box": {
+        "attack": "affinity",
+        "epochs": 120,
+        "batch_size": 1000,
+        "affinity_config": {
+            "num_final": 16,
+            "frac_retain_pairs": 0.2,
+            "num_samples_use": 50,
+            "shared_layerwise_params": true
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "misc_config": {
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "sample_ratio": 0.75
+            }
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "tries": 3,
+    "values": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9
+    ],
+    "num_victim_models": 500
+}

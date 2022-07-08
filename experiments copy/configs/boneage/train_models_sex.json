@@ -1,0 +1,16 @@
+{
+    "data_config": {
+        "name": "boneage",
+        "prop": "age",
+        "classify": "gender",
+        "split": "victim",
+        "squeeze": true,
+        "value": 0.2
+    },
+    "epochs": 20,
+    "learning_rate": 2e-3,
+    "batch_size": 8192,
+    "weight_decay": 0.02,
+    "num_models": 1000,
+    "get_best": true
+}

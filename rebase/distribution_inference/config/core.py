@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from lib2to3.pgen2.token import OP
 from typing import Optional, List
 import numpy as np
 from simple_parsing.helpers import Serializable, field
@@ -215,7 +216,8 @@ class BlackBoxAttackConfig(Serializable):
     kl_voting: Optional[bool] = False
     """Use comparison instead of differences"""
     generative_attack:Optional[GenerativeAttackConfig]=None,
-    order_name: Optional[str] = None
+    order_name: Optional[str] = None,
+    geo_mean:Optional[bool] = False
 
 @dataclass
 class PermutationAttackConfig(Serializable):

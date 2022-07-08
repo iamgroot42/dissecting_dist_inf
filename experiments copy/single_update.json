@@ -1,0 +1,50 @@
+{
+    
+    "train_config": {
+        "data_config": {
+            "name": "texas",
+            "prop": "sex",
+            "split": "victim",
+            "squeeze": true,
+            "value": 0.5,
+            "drop_senstive_cols": false
+        },
+        "multi_class": true,
+        "offset": 0,
+        "epochs": 30,
+        "learning_rate": 1e-3,
+        "batch_size": 200,
+        "weight_decay": 1e-4,
+        "num_models": 50,
+        "verbose": true,
+        "save_every_epoch":true
+    },
+    "num_victim_models": 100,
+    "tries": 5,
+    "black_box": {
+        "granularity" : 0.05,
+        "num_adv_models": 50,
+        "batch_size": 1000,
+        "attack_type": [
+            "single_update_loss",
+            "single_update_threshold",
+            "single_update_perpoint"
+        ],
+        "ratios": [
+            0.05,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            1.0
+        ],
+        "preload": true,
+        "loss_variant": false,
+        "Start_epoch":2,
+        "End_epoch":30,
+        "multi_class": true
+    },
+    "values": [0.0, 0.1, 0.2, 0.3, 0.4,0.6,0.7,0.8,0.9,1.0],
+    "on_cpu":true
+}

@@ -1,0 +1,18 @@
+{
+    "data_config": {
+        "name": "texas",
+        "prop": "sex",
+        "split": "victim",
+        "squeeze": true,
+        "value": 0.5,
+        "drop_senstive_cols": false
+    },
+    "multi_class": true,
+    "offset": 0,
+    "epochs": 30,
+    "learning_rate": 1e-3,
+    "batch_size": 200,
+    "weight_decay": 1e-4,
+    "num_models": 50,
+    "verbose": true
+}

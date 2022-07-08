@@ -1,0 +1,32 @@
+{
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 200,
+        "batch_size": 1000,
+        "permutation_config": {
+            "focus": "fc"
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0,
+        "save_every_epoch": true,
+        "offset": 10
+    },
+    "num_victim_models": 10,
+    "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4
+    ]
+}
