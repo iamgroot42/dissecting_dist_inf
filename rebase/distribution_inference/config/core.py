@@ -202,7 +202,9 @@ class BlackBoxAttackConfig(Serializable):
     """Tune final classification threshold, instead of a blind 0.5?"""
 
     Start_epoch: Optional[int] = 1
+    "Start epoch to consider for single-update attack"
     End_epoch: Optional[int] = 20
+    "End epoch to consider for single-update attack"
     
     relative_threshold: Optional[bool] = False
     """Thresholds are relative to mean accuracy/logits"""
@@ -373,8 +375,13 @@ class AttackConfig(Serializable):
     """Architecture of victim model (defaults to dataset-specific model)"""
     adv_model_arch: str = None
     """Architecture for adversary model (defaults to dataset-specific model)"""
-    victim_processed_variant: Optional[bool] = False
-    """Use processed variant for victim data?"""
+    adv_processed_variant: Optional[bool] = False
+    """Use processed variant for adv data?"""
+
+    adv_target_epoch: Optional[int] = None
+    """Which epoch to target for adversary. If not None, automatically use last epoch"""
+    victim_target_epoch: Optional[int] = None
+    """Which epoch to target for victim. If not None, automatically use last epoch"""
 
 
     

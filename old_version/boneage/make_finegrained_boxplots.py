@@ -1,10 +1,14 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
 from utils import flash_utils, get_n_effective, bound
 import numpy as np
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 if __name__ == "__main__":
@@ -160,7 +164,7 @@ if __name__ == "__main__":
     # exit(0)
     # print(eff_vals)
     # print(max_values)
-    exit(0)
+    # exit(0)
 
     eff_vals_mean = eff_vals.flatten()
     eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]

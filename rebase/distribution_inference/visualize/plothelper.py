@@ -9,7 +9,7 @@ import pandas as pd
 import warnings
 from typing import List
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 class PlotHelper():
@@ -20,7 +20,8 @@ class PlotHelper():
                  legend_titles: List = None,
                  attacks_wanted: List = None,
                  ratios_wanted: List = None,
-                 no_legend: bool = False):
+                 no_legend: bool = False,
+                 skip_prefix: bool = False):
         self.df = []
         self.paths = paths
         self.loggers = loggers
@@ -37,6 +38,7 @@ class PlotHelper():
             'reg': self.regplot,
             'line': self.lineplot
         }
+        self.skip_prefix = skip_prefix
         self.legend_titles = legend_titles
         # If legend titles given, must be same length as paths/loggers
         if self.legend_titles is not None:
@@ -89,16 +91,21 @@ class PlotHelper():
     def _parse(self, logger, legend_entry_index: int = None):
         # Look at all the results
         for attack_res in logger['result']:
-            print(attack_res)
             if self.attacks_wanted is not None and attack_res not in self.attacks_wanted:
                 print(f"Not plotting {attack_res}")
                 continue
+            print(f"Plotting {attack_res}")
             title_prefix = ""
             if self.legend_titles is not None:
                 title_prefix = self.legend_titles[legend_entry_index] + " : "
             attack_names = get_attack_name(attack_res)
+
             # Loss & Threshold attacks
             if(attack_res == "loss_and_threshold"):
+                if self.skip_prefix:
+                    column_names = attack_names
+                else:
+                    column_names = [title_prefix + x for x in attack_names]
                 for ratio in logger['result'][attack_res]:
                     if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
                         continue
@@ -112,23 +119,24 @@ class PlotHelper():
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     self.columns[1]: l,
-                                    self.columns[2]: title_prefix + attack_names[0],
+                                    self.columns[2]: title_prefix + column_names[0],
                                     self.columns[3]: epoch + 1})
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     self.columns[1]: t,
-                                    self.columns[2]: title_prefix + attack_names[1],
+                                    self.columns[2]: title_prefix + column_names[1],
                                     self.columns[3]: epoch + 1})
                         else:
                             assert type(threshold) != list
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 self.columns[1]: loss,
-                                self.columns[2]: title_prefix + attack_names[0]})
+                                self.columns[2]: title_prefix + column_names[0]})
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 self.columns[1]: threshold,
-                                self.columns[2]: title_prefix + attack_names[1]})
+                                self.columns[2]: title_prefix + column_names[1]})
+
             # Per-point threshold attack, or white-box attack
             elif attack_res in ATTACK_MAPPING.keys():
                 for ratio in logger['result'][attack_res]:
@@ -142,7 +150,7 @@ class PlotHelper():
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
                                     self.columns[1]: result,  # * 100,
-                                    self.columns[2]: title_prefix + attack_names,
+                                    self.columns[2]: column_name,
                                     self.columns[3]: epoch + 1})
                         else:
                             self.df.append({

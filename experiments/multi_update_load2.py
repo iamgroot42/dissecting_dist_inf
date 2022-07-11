@@ -77,17 +77,16 @@ if __name__ == "__main__":
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
                 preds_accross_epoch = []
                 for i in range(bb_attack_config.Start_epoch-1, bb_attack_config.End_epoch):
-                    preds_ve,preds_ae = preds_ve[i], preds_ae[i]
+                    preds_vic,preds_adv = preds_ve[i], preds_ae[i]
                 
 
                 # Launch attack
                     raw_preds = attacker_obj.attack(
-                        preds_ae,preds_ve,
+                        preds_adv,preds_vic,
                         ground_truth=(gt[0], gt[1]),
-                        calc_acc=calculate_accuracies,
-                        get_preds=True)
-                    preds_accross_epoch.append(raw_preds)
-                preds_accross_epoch = np.array(preds_accross_epoch)
+                        calc_acc=calculate_accuracies)
+                    preds_accross_epoch.append(raw_preds[0][1])
+                preds_accross_epoch = np.array(preds_accross_epoch).astype(float)
                 aggre_preds = mean(preds_accross_epoch, axis=0) >= 0.5
                 result = 100*np.mean(aggre_preds)
                 logger.add_results(attack_type, prop_value,

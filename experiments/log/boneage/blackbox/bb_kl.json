@@ -75,7 +75,7 @@
         "victim_local_attack": false,
         "victim_model_arch": null,
         "adv_model_arch": null,
-        "victim_processed_variant": false
+        "adv_processed_variant": false
     },
     "result": {
         "KL": {

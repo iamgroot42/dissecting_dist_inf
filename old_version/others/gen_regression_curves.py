@@ -1,7 +1,11 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 def bound(alpha, n):
@@ -131,6 +135,7 @@ if __name__ == "__main__":
     plt.gca().invert_yaxis()
     plt.legend()
     plt.savefig("./bound_curves_regression.pdf")
+    # plt.savefig("./bound_curves_regression.png")
 
     # print(bound(0.1, 0.2, 2))
     # print(bound(0.5, 0.6, 2))

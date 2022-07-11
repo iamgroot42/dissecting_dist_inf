@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -9,7 +13,7 @@ from model_utils import BASE_MODELS_DIR
 from data_utils import PROPERTY_FOCUS, SUPPORTED_PROPERTIES
 import matplotlib.patches as mpatches
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 if __name__ == "__main__":
@@ -157,4 +161,4 @@ if __name__ == "__main__":
     plt.tight_layout()
 
     # Save plot
-    sns_plot.figure.savefig("./plots/meta_boxplot_%s.pdf" % args.filter)
+    sns_plot.figure.savefig("./plots/census_%s.pdf" % args.filter)

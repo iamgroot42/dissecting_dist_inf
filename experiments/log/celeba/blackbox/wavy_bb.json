@@ -86,7 +86,7 @@
         "victim_local_attack": false,
         "victim_model_arch": "alexnet",
         "adv_model_arch": "alexnet",
-        "victim_processed_variant": false
+        "adv_processed_variant": false
     },
     "result": {
         "loss_and_threshold": {

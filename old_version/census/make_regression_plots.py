@@ -1,6 +1,10 @@
 """
     Meta-classifier experiment using Permutation Invariant Networks for direct regression.
 """
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import utils
 from data_utils import SUPPORTED_PROPERTIES, SUPPORTED_RATIOS
 from model_utils import get_models_path, get_model_representations
@@ -115,4 +119,5 @@ if __name__ == "__main__":
     ax2.set_ylabel(r"MSE")
 
     sns_plot.set_xticklabels(sns_plot.get_xticklabels(), rotation=60)
-    sns_plot.figure.savefig("plots/regression_plots.pdf", bbox_inches = 'tight')
+    sns_plot.figure.savefig(
+        "plots/regression_plot_%s.pdf" % args.filter, bbox_inches='tight')

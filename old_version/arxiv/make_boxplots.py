@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -14,10 +18,10 @@ columns = [
     "Accuracy (%)"
 ]
 
-darkmode = True
-add_legend = False
-novtitle = True
-dashed = True
+darkmode = False
+add_legend = True
+novtitle = False
+dashed = False
 
 if darkmode:
     # Set dark background style
@@ -124,4 +128,4 @@ if add_legend:
 # Make sure axis label not cut off
 plt.tight_layout()
 
-sns_plot.figure.savefig("./plots/meta_boxplot.png")
+sns_plot.figure.savefig("./plots/boxplot.pdf")

@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 import argparse
@@ -5,7 +9,7 @@ from utils import flash_utils
 import numpy as np
 from data_utils import find_n_eff, compute_bound, PARAM_MAPPING
 import matplotlib as mpl
-mpl.rcParams['figure.dpi'] = 200
+mpl.rcParams['figure.dpi'] = 300
 
 
 if __name__ == "__main__":

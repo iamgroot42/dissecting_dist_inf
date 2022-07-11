@@ -66,12 +66,6 @@ class RandomForest(BaseModel):
             n_jobs=n_jobs, min_samples_leaf=min_samples_leaf)
 
 
-class SVM(BaseModel):
-    def __init__(self, C: float = 1.0):
-        super().__init__(is_sklearn_model=True)
-        self.model = SVC(C=C)
-
-
 class InceptionModel(BaseModel):
     def __init__(self,
                  num_classes: int = 1,
