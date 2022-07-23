@@ -284,7 +284,7 @@ class RegressionConfig(Serializable):
 class ComparisonAttackConfig(Serializable):
     Start_epoch:int
     End_epoch: int
-    
+    num_models:int
 
 @dataclass
 class WhiteBoxAttackConfig(Serializable):

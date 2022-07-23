@@ -370,7 +370,9 @@ class CustomDatasetWrapper:
         feature_vectors = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
             if epochwise_version:
+                
                 model_paths = list(model_paths)
+                print(model_paths)
                 model_paths.sort(key=lambda i: int(i))
             for mpath in model_paths:
                 # Break reading if requested number of models is reached

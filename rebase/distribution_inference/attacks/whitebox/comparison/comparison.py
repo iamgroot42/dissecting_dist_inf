@@ -29,7 +29,6 @@ class ComparisonAttack:
         self.t_config = replace(t_config)
         self.t_config.save_every_epoch = False
         self.name = name
-        assert not (wb_config.save or wb_config.load), "Not implemented"
         assert wb_config.comparison_config, "No comparison config"
         self.wb_config = replace(wb_config)
         self.t_config.epochs=self.wb_config.comparison_config.End_epoch-self.wb_config.comparison_config.Start_epoch
@@ -38,8 +37,10 @@ class ComparisonAttack:
         self.v_r=None
         self.save=save_m
         self.ratio=None
-    def train(self,vic_models,ratio,v_r,trial:int):
+        self.model_num = 0
+    def train(self,vic_models,ratio,v_r,trial:int,model_num:int):
         dp_config = None
+        self.model_num=model_num
         self.trial=trial
         self.v_r=v_r
         train_config: TrainConfig = replace(self.t_config)
@@ -86,10 +87,11 @@ class ComparisonAttack:
             
                 save_model(model, save_path)
         return models
-    def set_val(self,ratio,v_r,trial:int):
+    def set_val(self,ratio,v_r,trial:int,model_num:int):
         self.trial=trial
         self.v_r=v_r
         self.ratio = ratio
+        self.model_num = model_num
     def _model_save_path(self, train_config: TrainConfig, model_arch: str) -> str:
         base_models_dir = self.info_object.base_models_dir
         dp_config = None
@@ -119,6 +121,7 @@ class ComparisonAttack:
         if train_config.label_noise:
             base_path = os.path.join(
                 base_models_dir, "label_noise:{}".format(train_config.label_noise))
+        base_path = os.path.join(base_path,str(self.model_num))
         assert self.v_r != None
         save_path = os.path.join(base_path,"model_from_{}".format(self.v_r))
         assert train_config.data_config.value != None
@@ -234,8 +237,8 @@ class ComparisonAttack:
         p1, p2 = (sigmoid(preds_adv1.preds_property_1),sigmoid(preds_adv1.preds_property_2)), (sigmoid(preds_adv2.preds_property_1),sigmoid(preds_adv2.preds_property_2))
         # Predictions made by the  victim's models
         pv1, pv2 = sigmoid(preds_victim.preds_property_1), sigmoid(preds_victim.preds_property_2)
-        KL1 = (KL_func(p1[0],pv1),KL_func(p1[1],pv1))
-        KL2 = (KL_func(p2[0],pv2),KL_func(p2[1],pv2)) #(np.array([np.mean(KL_func(p1_,pv2_))  for p1_,pv2_ in zip(p2[0],pv2)]),np.array([np.mean(KL_func(p2_,pv2_))  for p2_,pv2_ in zip(p2[1],pv2)]))
+        KL1 = (np.mean([KL_func(p,pv1) for p in p1[0]],axis=0),np.mean([KL_func(p,pv1) for p in p1[1]],axis=0))
+        KL2 = (np.mean([KL_func(p,pv2) for p in p2[0]],axis=0),np.mean([KL_func(p,pv2) for p in p2[1]],axis=0)) #(np.array([np.mean(KL_func(p1_,pv2_))  for p1_,pv2_ in zip(p2[0],pv2)]),np.array([np.mean(KL_func(p2_,pv2_))  for p2_,pv2_ in zip(p2[1],pv2)]))
         res1 = KL1[1] - KL1[0]
         res2 = KL2[0] - KL2[1]
         

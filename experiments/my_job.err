@@ -1,0 +1,2 @@
+/var/spool/slurmd/job1558236/slurm_script: line 13: echo: write error: Stale file handle
+/var/spool/slurmd/job1558235/slurm_script: line 13: echo: write error: Stale file handle

@@ -5,7 +5,8 @@
         "batch_size": 30000,
         "comparison_config": {
             "Start_epoch": 1,
-            "End_epoch":20
+            "End_epoch":20,
+            "num_models":50
         },
         "save": false
     },
@@ -25,7 +26,7 @@
         "num_models": 50,
         "save_every_epoch": true
     },
-    "tries": 5,
+    "tries": 3,
     "values": [
         0.0,
         0.1,

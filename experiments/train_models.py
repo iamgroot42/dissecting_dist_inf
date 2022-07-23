@@ -1,7 +1,7 @@
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from simple_parsing import ArgumentParser
 from pathlib import Path
-
+import numpy as np
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
 from distribution_inference.training.utils import save_model
@@ -9,7 +9,7 @@ from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainC
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
 
-
+EXTRA=True
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
@@ -53,13 +53,19 @@ if __name__ == "__main__":
         data_config.name)(train_config.save_every_epoch)
 
     # Create new DS object
-    ds = ds_wrapper_class(data_config)
+    ds = ds_wrapper_class(data_config,epoch=train_config.save_every_epoch)
 
     # train_ds, val_ds = ds.load_data()
     # print(len(train_ds))
     # print(len(val_ds))
     # exit(0)
-
+    train_ds, val_ds = ds.load_data()
+    y=[]
+    for t in val_ds:
+        y.append(t[1])
+    print("loaded")
+    y = np.array(y)
+    print(max(np.mean(y==1), 1 - np.mean(y==1)))
     # Train models
     for i in range(1, train_config.num_models + 1):
         # Skip training model if it already exists
@@ -83,14 +89,23 @@ if __name__ == "__main__":
             model = ds_info.get_model_for_dp()
 
         # Train model
-        model, (vloss, vacc) = train(model, (train_loader, val_loader),
+        if EXTRA:
+            model, (vloss, vacc,extras) = train(model, (train_loader, val_loader),
+                                     train_config=train_config,
+                                     extra_options={
+            "curren_model_num": i + train_config.offset,
+            "save_path_fn": ds.get_save_path,
+            "more_metrics":EXTRA})
+            logger.add_result(data_config.value, vloss, vacc,extras)
+        else:
+            model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                      train_config=train_config,
                                      extra_options={
             "curren_model_num": i + train_config.offset,
             "save_path_fn": ds.get_save_path})
+            logger.add_result(data_config.value, vloss, vacc)
         
-        # Log results
-        logger.add_result(data_config.value, vloss, vacc)
+      
 
         # If saving only the final model
         if not train_config.save_every_epoch:
@@ -105,7 +120,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            save_model(model, save_path)
+            #save_model(model, save_path)
 
     # Save logger
-    logger.save()
+    #logger.save()
