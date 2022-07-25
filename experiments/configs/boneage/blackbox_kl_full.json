@@ -7,7 +7,7 @@
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
-            "processed_variant": true,
+            "processed_variant": false,
             "cwise_samples": null
         },
         "epochs": 0,
@@ -39,6 +39,6 @@
     "num_victim_models": 250,
     "victim_model_arch": "densenet",
     "adv_model_arch": "bonemodel",
-    "victim_processed_variant": false,
+    "adv_processed_variant": true,
     "on_cpu": true
 }

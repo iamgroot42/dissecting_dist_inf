@@ -49,5 +49,5 @@
     "victim_model_arch": "alexnet",
     "adv_model_arch": "mlp2",
     "on_cpu": true,
-    "victim_processed_variant": true
+    "adv_processed_variant": true
 }
