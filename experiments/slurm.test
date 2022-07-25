@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name="Cel aff12"
-#SBATCH --output="onaff12.out"
+#SBATCH --job-name="Cel lotus"
+#SBATCH --output="onlotus.out"
 #SBATCH --partition=gpu
-#SBATCH --nodelist=affogato12
-#SBATCH --gres=gpu:4
-#SBATCH --cpus-per-task=30
-#SBATCH --mem=50000
+#SBATCH --nodelist=lotus
+#SBATCH --gres=gpu:7
+#SBATCH --cpus-per-task=64
+#SBATCH --mem=100000
 source /etc/profile.d/modules.sh
-nohup ./do_all.sh "0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0" victim 454 2>&1 > onaff12.out &
-#minus 4 models in config
+nohup ./do_all.sh "0.4 0.5 0.6 0.7 0.8 0.9 1.0" adv 400 2>&1 > onlotus.out &
+nohup ./do_all.sh "0.4 0.5 0.6 0.7 0.8 0.9 1.0" adv 450 2>&1 > onlotus.out &
 #nohup python metrics.py --load_config race_metric.json --en race --ratios 0.0 0.1 0.2 0.3 0.4 0.6 0.7 0.8 0.9 1.0 2>&1 > m.out &
 #nohup python comparison_load.py --load_config nc_comp.json --en sex_comp_50m --pred_name sex_comp &
 wait

@@ -25,7 +25,8 @@ if __name__ == "__main__":
     parser.add_argument('--offset',
                         default=0,type=int)
     args = parser.parse_args()
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     train_config = TrainConfig.load(args.load_config, drop_extra_fields=False)
     
     # Extract configuration information from config file
