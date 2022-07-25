@@ -24,6 +24,8 @@ if __name__ == "__main__":
                         default=None, help="device number")
     parser.add_argument('--offset',
                         default=0,type=int)
+    parser.add_argument('--num',
+                        default=None,type=int)
     args = parser.parse_args()
     if args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
@@ -83,6 +85,8 @@ if __name__ == "__main__":
         print(max(np.mean(y==1), 1 - np.mean(y==1)))
         """
         # Train models
+        if args.num:
+            train_config.num_models = args.num
         for i in range(1, train_config.num_models + 1):
             # Skip training model if it already exists
             if not train_config.save_every_epoch:
