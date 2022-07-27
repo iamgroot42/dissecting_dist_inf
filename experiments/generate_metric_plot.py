@@ -2,7 +2,8 @@
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
-
+import numpy as np
+from scipy.stats import pearsonr
 import os
 from simple_parsing import ArgumentParser
 import seaborn as sns
@@ -128,7 +129,15 @@ if __name__ == "__main__":
 
     # Save plot
     suffix = "pdf" if args.pdf else "png"
-    graph.figure.savefig(os.path.join('%s_%s.%s' %
-                         (args.savepath, "lineplot", suffix)))
+    R_c = []
+    af = []
+    for i in range(1,21):
+        R_c.append(np.mean(plothelper.df.query("Metric=='R_cross'").query("Epoch=={}".format(i)).to_numpy()[:,1]))
+
+        af.append(np.mean(plothelper.df.query("Metric=='Activation-Correlation Meta-Classifier'").query("Epoch=={}".format(i)).to_numpy()[:,1]))
+    print(pearsonr(R_c,af)[0])
+    
+    #graph.figure.savefig(os.path.join('%s_%s.%s' %
+    #                     (args.savepath, "lineplot", suffix)))
     #graph.figure.savefig(os.path.join('%s_%s.%s' %
     #                     (args.savepath, args.plot, suffix)))
