@@ -2,7 +2,7 @@
     "data_config": {
         "name": "new_census",
         "prop": "sex",
-        "split": "victim",
+        "split": "adv",
         "squeeze": true,
         "value": 0.5
     },
@@ -12,6 +12,6 @@
     "learning_rate": 1e-3,
     "batch_size": 200,
     "weight_decay": 1e-4,
-    "num_models": 1000,
+    "num_models": 500,
     "get_best": true
 }
