@@ -146,7 +146,7 @@ class MetricPlotHelper():
             if self.attacks_wanted is not None and attack_res not in self.attacks_wanted:
                 print(f"Not plotting {attack_res}")
                 continue
-            print(f"Plotting {attack_res}")
+            #print(f"Plotting {attack_res}")
             title_prefix = ""
             if self.legend_titles is not None:
                 title_prefix = self.legend_titles[legend_entry_index] + " : "

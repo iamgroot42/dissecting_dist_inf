@@ -433,7 +433,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
                     val_factor: int = 2,
-                    num_workers: int = 4,
+                    num_workers: int = 24,
                     prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
         return super().get_loaders(batch_size, shuffle=shuffle,
