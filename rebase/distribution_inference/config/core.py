@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from lib2to3.pgen2.token import OP
 from typing import Optional, List
 import numpy as np
 from simple_parsing.helpers import Serializable, field
@@ -160,7 +161,18 @@ class TrainConfig(Serializable):
     parallel: Optional[bool] = False
     """Use multiple GPUs for model training?"""
 
-
+@dataclass
+class GenerativeAttackConfig(Serializable):
+    steps: int
+    step_size: float
+    latent_focus: int
+    model_ratio:float
+    n_samples:Optional[int] = 500
+    use_normal:Optional[bool] = True
+    start_natural:Optional[bool] = False
+    constrained:Optional[bool] = False
+    use_best:Optional[bool] = False
+    clamp:Optional[bool] = False
 @dataclass
 class BlackBoxAttackConfig(Serializable):
     """
@@ -205,7 +217,9 @@ class BlackBoxAttackConfig(Serializable):
     """Frac of pairs to use (if KL test)"""
     kl_voting: Optional[bool] = False
     """Use comparison instead of differences"""
-
+    generative_attack:Optional[GenerativeAttackConfig]=None,
+    order_name: Optional[str] = None,
+    geo_mean:Optional[bool] = False
 
 @dataclass
 class PermutationAttackConfig(Serializable):
@@ -266,7 +280,11 @@ class RegressionConfig(Serializable):
     """
     additional_values_to_test: Optional[List] = None
     """Values of property to use while testing in addition to ratios used to train"""
-
+@dataclass
+class ComparisonAttackConfig(Serializable):
+    Start_epoch:int
+    End_epoch: int
+    num_models:int
 
 @dataclass
 class WhiteBoxAttackConfig(Serializable):
@@ -326,7 +344,7 @@ class WhiteBoxAttackConfig(Serializable):
     """Configuration for permutation-invariant attacks"""
     affinity_config: Optional[AffinityAttackConfig] = None
     """Configuration for affinity-based attacks"""
-
+    comparison_config: Optional[ComparisonAttackConfig] = None
 
 @dataclass
 class AttackConfig(Serializable):
@@ -366,6 +384,7 @@ class AttackConfig(Serializable):
     """Which epoch to target for victim. If not None, automatically use last epoch"""
 
 
+    
 @dataclass
 class UnlearningConfig(Serializable):
     """

@@ -1,3 +1,5 @@
+
+
 from typing import List, Tuple, Callable, Union
 import numpy as np
 from tqdm import tqdm
@@ -33,7 +35,6 @@ class Attack:
     def __init__(self, config: BlackBoxAttackConfig):
         self.config = config
         self.supports_saving_preds = False
-
     def attack(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
@@ -51,6 +52,7 @@ class Attack:
     def wrap_preds_to_save(self, result: List):
         if self.supports_saving_preds:
             raise NotImplementedError("Method should be implemented if attack generated soft-labels")
+    
 
 
 def multi_model_sampling(arr, multi):
@@ -76,16 +78,18 @@ def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
                preds_d2: PredictionsOnOneDistribution,
                ground_truth,
                calc_acc: Callable,
-               t = False):
+               t = False,
+               multi_class:bool=False):
         #pi means ith epoch
     p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
     p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
+    transpose_order = (1, 0, 2) if multi_class else (1, 0)
     if not t:
         for i in range(2):
-            p1[i] = np.transpose(p1[i])
-            p2[i] = np.transpose(p2[i])
-    acc1 = [100*calc_acc(p,ground_truth) for p in p1]
-    acc2 = [100*calc_acc(p,ground_truth) for p in p2]
+            p1[i] = np.transpose(p1[i],transpose_order)
+            p2[i] = np.transpose(p2[i],transpose_order)
+    acc1 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p1]
+    acc2 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p2]
     return (np.array(acc1),np.array(acc2))
 def threshold_test_per_dist(calc_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
@@ -108,7 +112,7 @@ def threshold_test_per_dist(calc_acc: Callable,
     pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
 
     # Get optimal order of point
-    order = order_points(p1, p2)
+    order = order_points(p1, p2,config.order_name)
 
     # Order points according to computed utility
     multi_class = config.multi_class
@@ -134,7 +138,7 @@ def threshold_test_per_dist(calc_acc: Callable,
             pv2_use = [x[:leng] for x in pv2]
         else:
             pv1_use, pv2_use = pv1[:leng], pv2[:leng]
-
+ 
         # Calculate accuracies for these points in [0,100]
         accs_1 = 100 * calc_acc(p1_use, yg_use, multi_class=multi_class)
         accs_2 = 100 * calc_acc(p2_use, yg_use, multi_class=multi_class)
@@ -228,17 +232,26 @@ def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):
     return best_acc, best_threshold, best_rule
 
 
-def get_threshold_acc(X, Y, threshold, rule=None):
+def get_threshold_acc(X, Y, threshold, rule=None,get_preds:bool=False):
     """
         Get accuracy of predictions using given threshold,
         considering both possible (<= and >=) rules. Also
         return which of the two rules gives a better accuracy.
     """
-    # Rule-1: everything above threshold is 1 class
-    acc_1 = np.mean((X >= threshold) == Y)
-    # Rule-2: everything below threshold is 1 class
-    acc_2 = np.mean((X <= threshold) == Y)
 
+    p1 = (X >= threshold) == Y
+    p2 = (X <= threshold) == Y
+    # Rule-1: everything above threshold is 1 class
+    acc_1 = np.mean(p1)
+    # Rule-2: everything below threshold is 1 class
+    acc_2 = np.mean(p2)
+    if get_preds:
+        if rule == 1:
+            return acc_1,p1
+        elif rule == 2:
+            return acc_2,p2
+        else:
+            raise Exception("Need specified rule if get_preds")
     # If rule is specified, use that
     if rule == 1:
         return acc_1
@@ -330,7 +343,8 @@ def find_threshold_pred(pred_1, pred_2,
 
 def get_threshold_pred(X, Y, threshold, rule,
                        get_pred: bool = False,
-                       tune_final_threshold: Union[bool, float] = False):
+                       tune_final_threshold: Union[bool, float] = False,
+                       voting:bool=True):
     """
         Get distinguishing accuracy between distributions, given predictions
         for models on datapoints, and thresholds with prediction rules.
@@ -355,7 +369,13 @@ def get_threshold_pred(X, Y, threshold, rule,
     # For each model
     for i in range(X.shape[1]):
         # Compute expected P[distribution=1] using given data, threshold, rules
-        prob = np.average((X[:, i] <= threshold) == rule)
+        if voting:
+            prob = np.average((X[:, i] <= threshold) == rule)
+        else:
+            raw_prob = (X[:, i] - threshold)*((-2*rule)+1)
+            raw_prob -= np.min(raw_prob)
+            raw_prob /= np.max(raw_prob)
+            prob = np.mean(raw_prob)
         # Store direct average P[distribution=1]
         res.append(prob)
     res = np.array(res)
@@ -424,8 +444,10 @@ def get_threshold_pred_multi(
         return res, acc
     return acc
 
-
-def order_points(p1s, p2s):
+def sigmoid(x):
+    exp = np.exp(x)
+    return exp / (1 + exp)
+def order_points1(p1s, p2s):
     """
         Estimate utility of individual points, done by taking
         absolute difference in their predictions.
@@ -442,7 +464,33 @@ def order_points(p1s, p2s):
 
     inds = np.argsort(abs_diff)
     return inds
+def order_sq(p1s, p2s):
+    """
+        Estimate utility of individual points, done by taking
+        points that maximize confidence for models on one distribution
+        while get near random predictions on the others.
+    """
+    if p1s.shape != p2s.shape:
+        raise ValueError(
+            f"Both predictions should be same shape, got {p1s.shape} and {p2s.shape}")
+    p1s = np.mean(sigmoid(p1s),axis=0)
+    p2s = np.mean(sigmoid(p2s),axis=0)
+    a1 = np.maximum(np.square(p1s-0.5)+np.square(p2s-1.0),np.square(p1s-0.5)+np.square(p2s))
+    a2 = np.maximum(np.square(p1s-1.0)+np.square(p2s-0.5),np.square(p1s)+np.square(p2s-0.5))
+    a_combined = np.maximum(a1,a2)
+    if len(p1s.shape) == 3:
+        # Handle multi-class case
+        a_combined = np.mean(a_combined, 1)
 
+    inds = np.argsort(a_combined)
+    return inds
+def order_points(p1s,p2s,order:str=None):
+        if order=="square":
+            return order_sq(p1s,p2s)
+        elif order is None:
+            return order_points1(p1s,p2s)
+        else:
+            raise Exception("No implementation")
 def epoch_order_p(p11,p12,p21,p22):
         #pij: ith epoch, jth distribution
         #TODO: find a better order rather than only using the last epoch

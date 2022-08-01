@@ -5,6 +5,7 @@ from tqdm import tqdm
 import numpy as np
 import torch as ch
 import gc
+
 from distribution_inference.attacks.blackbox.per_point import PerPointThresholdAttack
 from distribution_inference.attacks.blackbox.standard import LossAndThresholdAttack
 from distribution_inference.attacks.blackbox.core import PredictionsOnOneDistribution
@@ -13,8 +14,11 @@ from distribution_inference.attacks.blackbox.epoch_loss import Epoch_LossAttack
 from distribution_inference.attacks.blackbox.epoch_threshold import Epoch_ThresholdAttack
 from distribution_inference.attacks.blackbox.epoch_perpoint import Epoch_Perpoint
 from distribution_inference.attacks.blackbox.epoch_meta import Epoch_Tree
+from distribution_inference.attacks.blackbox.perpoint_choose import PerPointChooseAttack
+from distribution_inference.attacks.blackbox.perpoint_choose_dif import PerPointChooseDifAttack
 from distribution_inference.attacks.blackbox.KL import KLAttack
-
+from distribution_inference.attacks.blackbox.generative import GenerativeAttack
+from distribution_inference.attacks.blackbox.binary_perpoint import BinaryPerPointThresholdAttack
 
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
@@ -22,8 +26,13 @@ ATTACK_MAPPING = {
     "single_update_loss": Epoch_LossAttack,
     "single_update_threshold": Epoch_ThresholdAttack,
     "single_update_perpoint": Epoch_Perpoint,
+
     "epoch_meta": Epoch_Tree,
-    "KL": KLAttack
+    "perpoint_choose": PerPointChooseAttack,
+    "perpoint_choose_dif": PerPointChooseDifAttack,
+    "KL": KLAttack,
+    "generative":GenerativeAttack,
+    "binary_perpoint":BinaryPerPointThresholdAttack
 }
 
 
@@ -62,7 +71,8 @@ def calculate_accuracies(data, labels,
 def get_preds(loader, models: List[nn.Module],
               preload: bool = False,
               verbose: bool = True,
-              multi_class: bool = False):
+              multi_class: bool = False,
+              latent:int=None):
     """
         Get predictions for given models on given data
     """
@@ -98,7 +108,10 @@ def get_preds(loader, models: List[nn.Module],
             # Skip multiple CPU-CUDA copy ops
             if preload:
                 for data_batch in inputs:
-                    prediction = model(data_batch).detach()
+                    if latent!=None:
+                        prediction = model(data_batch,latent=latent).detach()
+                    else:
+                        prediction = model(data_batch).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]
                     predictions_on_model.append(prediction.cpu())
@@ -107,6 +120,10 @@ def get_preds(loader, models: List[nn.Module],
                 for data in loader:
                     data_points, labels, _ = data
                     # Get prediction
+                    if latent!=None:
+                        prediction = model(data_points.cuda(),latent=latent).detach()
+                    else:
+                        prediction = model(data_points.cuda()).detach()
                     prediction = model(data_points.cuda()).detach()
                     if not multi_class:
                         prediction = prediction[:, 0]
@@ -209,6 +226,35 @@ def _get_preds_for_vic_and_adv(
     assert np.all(ground_truth ==
                   ground_truth_repeat), "Val loader is shuffling data!"
     return preds_vic, preds_adv, ground_truth, not_using_logits
+
+
+def get_vic_adv_preds_on_distr_seed(
+    models_vic: Tuple[List[nn.Module], List[nn.Module]],
+    models_adv: Tuple[List[nn.Module], List[nn.Module]],
+    loader,
+        epochwise_version: bool = False,
+        preload: bool = False,
+        multi_class: bool = False):
+    preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
+        models_vic[0], models_adv[0], loader,
+        epochwise_version=epochwise_version,
+        preload=preload,
+        multi_class=multi_class)
+    # Get predictions for second set of models
+    preds_vic_2, preds_adv_2, _ = _get_preds_for_vic_and_adv(
+        models_vic[1], models_adv[1], loader,
+        epochwise_version=epochwise_version,
+        preload=preload,
+        multi_class=multi_class)
+    adv_preds = PredictionsOnOneDistribution(
+        preds_property_1=preds_adv_1,
+        preds_property_2=preds_adv_2
+    )
+    vic_preds = PredictionsOnOneDistribution(
+        preds_property_1=preds_vic_1,
+        preds_property_2=preds_vic_2
+    )
+    return (adv_preds, vic_preds, ground_truth)
 
 
 def get_vic_adv_preds_on_distr(

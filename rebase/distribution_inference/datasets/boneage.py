@@ -47,7 +47,7 @@ def get_transforms(augment):
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self, epoch: bool = False):
+    def __init__(self, epoch_wise: bool = False):
         ratios = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
         super().__init__(name="RSNA-Boneage",
                          data_path="rsnabone/data",
@@ -56,7 +56,7 @@ class DatasetInformation(base.DatasetInformation):
                          values={"gender": ratios, "age": ratios},
                          supported_models=["densenet", "bonemodel"],
                          default_model="bonemodel",
-                         epoch_wise=epoch)
+                         epoch_wise=epoch_wise)
         self.supported_properties = ["gender", "age"]
 
     def get_model(self,

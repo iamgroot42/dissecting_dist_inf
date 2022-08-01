@@ -6,6 +6,8 @@ from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDi
 
 
 class KLAttack(Attack):
+    
+    
     def attack(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
@@ -54,6 +56,7 @@ class KLAttack(Attack):
         choice_information = (None, None)
         return [(acc, preds), (None, None), choice_information]
     
+    
     def _get_kl_preds(self, ka, kb, kc1, kc2):
         # Apply sigmoid to ones that are not already sigmoided
         ka_, kb_ = ka, kb
@@ -94,7 +97,57 @@ class KLAttack(Attack):
             pairwise_comparisons = (x_ - y_)
         preds = np.array([z[xx, yy] for z in pairwise_comparisons])
         return preds
+"""
+    def attack(self,
+               preds_adv: PredictionsOnDistributions,
+               preds_vic: PredictionsOnDistributions,
+               ground_truth: Tuple[List, List] = None,
+               calc_acc: Callable = None,
+               epochwise_version: bool = False):
+        
+            Perform Threshold-Test and Loss-Test attacks using
+            given accuracies of models.
+        
+        #assert calc_acc is not None, "Must provide function to compute accuracy"
+        assert not (
+            self.config.multi2 and self.config.multi), "No implementation for both multi model"
+        assert not (
+            epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
+        frac = 0.3
+        # Get values using data from first distribution
+        preds_1_first, preds_1_second = get_kl_preds(
+            preds_adv.preds_on_distr_1.preds_property_1,
+            preds_adv.preds_on_distr_1.preds_property_2,
+            preds_vic.preds_on_distr_1.preds_property_1,
+            preds_vic.preds_on_distr_1.preds_property_2,
+            frac=frac)
+        # Get values using data from second distribution
+        preds_2_first, preds_2_second = get_kl_preds(
+            preds_adv.preds_on_distr_2.preds_property_1,
+            preds_adv.preds_on_distr_2.preds_property_2,
+            preds_vic.preds_on_distr_2.preds_property_1,
+            preds_vic.preds_on_distr_2.preds_property_2,
+            frac=frac)
 
+        # Combine data
+        preds_first = np.concatenate((preds_1_first, preds_2_first), 1)
+        preds_second = np.concatenate((preds_1_second, preds_2_second), 1)
+
+        # Get predictions (voting)
+        preds_first = np.mean(preds_first, 1)
+        preds_second = np.mean(preds_second, 1)
+        preds = np.concatenate((preds_first, preds_second))
+        
+        gt = np.concatenate((np.zeros_like(preds_first),
+                            np.ones_like(preds_second)))
+        acc = np.mean((preds >= 0.5) == gt)
+
+        # No concept of "choice" (are we in the Matrix :P)
+        choice_information = (None, None)
+        return [(acc, preds), (None, None), choice_information]
+    """
+
+    
 
 def sigmoid(x):
     exp = np.exp(x)

@@ -42,7 +42,8 @@ def check_if_inside_cluster():
     if os.environ.get('ISRIVANNA') == "1":
         return True
     return False
-
+def check_user():
+    return os.environ.get('USER')
 
 def flash_utils(args, root: bool = True, num_tabs: int = 0):
     prefix = "    " * num_tabs

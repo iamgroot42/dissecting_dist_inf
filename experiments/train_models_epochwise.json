@@ -1,10 +1,10 @@
 {
     "data_config": {
         "name": "new_census",
-        "prop": "sex",
+        "prop": "race",
         "split": "adv",
         "squeeze": true,
-        "value": 0.4
+        "value": 0.5
     },
     "epochs": 20,
     "offset": 0,
@@ -12,5 +12,6 @@
     "batch_size": 200,
     "weight_decay": 1e-4,
     "num_models": 50,
-    "save_every_epoch": true
+    "save_every_epoch": true,
+    "model_arch":"mlp2"
 }

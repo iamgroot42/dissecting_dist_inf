@@ -58,10 +58,8 @@ class Epoch_Perpoint(Attack):
             ground_truth=ground_truth[0])
         # Get data for second distribution
         adv_accs_2, adv_preds_2, victim_accs_2, victim_preds_2, final_thresholds_2, classes_use = perpoint_threshold_test_per_dist(
-            PredictionsOnOneDistribution(preds_adv2.preds_on_distr_2.preds_property_1-preds_adv1.preds_on_distr_2.preds_property_1,
-                                         preds_adv2.preds_on_distr_2.preds_property_2-preds_adv1.preds_on_distr_2.preds_property_2),
-            PredictionsOnOneDistribution(preds_vic2.preds_on_distr_2.preds_property_1-preds_vic1.preds_on_distr_2.preds_property_1,
-                                         preds_vic2.preds_on_distr_2.preds_property_2-preds_vic1.preds_on_distr_2.preds_property_2),
+            p2,
+            pv2,
             self.config,
             order=o2,
             ground_truth=ground_truth[1])
@@ -78,12 +76,14 @@ class Epoch_Perpoint(Attack):
             victim_accs_use, victim_preds_use = victim_accs_2, victim_preds_2
             final_thresholds_use = final_thresholds_2
             chosen_distribution = 1
-
+        
         # Out of the best distribution, pick best ratio according to accuracy on adversary's models
         chosen_ratio_index = np.argmax(adv_accs_use)
-
+        
         victim_acc_use = victim_accs_use[chosen_ratio_index]
         victim_pred_use = victim_preds_use[chosen_ratio_index]
+        if get_preds:
+            return victim_pred_use[chosen_ratio_index]
         adv_acc_use = adv_accs_use[chosen_ratio_index]
         adv_pred_use = adv_preds_use[chosen_ratio_index]
         final_threshold_use = final_thresholds_use[chosen_ratio_index]
@@ -162,13 +162,28 @@ def perpoint_threshold_test_per_dist(
         pv1 = preds_victim.preds_property_1.copy()
         pv2 = preds_victim.preds_property_2.copy()
 
+    if config.loss_variant:
+        # Use loss values instead of raw logits (or prediction probabilities)
+        assert ground_truth is not None, "Need ground-truth for loss_variant setting"
+        print("yes")
+        p1 = np_compute_losses(p1, ground_truth, multi_class=False)
+        p2 = np_compute_losses(p2, ground_truth, multi_class=False)
+        if victim_preds_present:
+            pv1 = np_compute_losses(pv1, ground_truth, multi_class=False)
+            pv2 = np_compute_losses(pv2, ground_truth, multi_class=False)
+
+    
     # Optimal order of point
     assert order is not None
 
     # Order points according to computed utility
     transpose_order = (1, 0, 2) if config.multi_class else (1, 0)
-    p1 = np.transpose(p1, transpose_order)[order]
-    p2 = np.transpose(p2, transpose_order)[order]
+    if epochwise_version:
+        p1 = [np.transpose(x, transpose_order)[order] for x in p1]
+        p2 = [np.transpose(x, transpose_order)[order] for x in p2]
+    else:
+        p1 = np.transpose(p1, transpose_order)[order]
+        p2 = np.transpose(p2, transpose_order)[order] 
     if victim_preds_present:
         if epochwise_version:
             pv1 = [np.transpose(x, transpose_order)[order] for x in pv1]
@@ -176,15 +191,17 @@ def perpoint_threshold_test_per_dist(
         else:
             pv1 = np.transpose(pv1, transpose_order)[order]
             pv2 = np.transpose(pv2, transpose_order)[order]
+            
         if config.multi:
             pv1 = multi_model_sampling(pv1, config.multi)
             pv2 = multi_model_sampling(pv2, config.multi)
+    
     if config.multi_class:
         # If multi-class, replace predictions with loss values
         assert ground_truth is not None, "Need ground-truth for multi-class setting"
         y_gt = ground_truth[order][::-1]
-        p1, p2 = np_compute_losses(p1, y_gt), np_compute_losses(p2, y_gt)
-        pv1, pv2 = np_compute_losses(pv1, y_gt), np_compute_losses(pv2, y_gt)
+        p1, p2 = np_compute_losses(p1, y_gt,multi_class=True), np_compute_losses(p2, y_gt,multi_class=True)
+        pv1, pv2 = np_compute_losses(pv1, y_gt,multi_class=True), np_compute_losses(pv2, y_gt,multi_class=True)
 
     # Get thresholds for all points
     _, thres, rs = find_threshold_pred(p1, p2, granularity=config.granularity)
@@ -254,14 +271,27 @@ def perpoint_threshold_test_per_dist(
     return adv_accs, adv_preds, victim_accs, victim_preds, adv_final_thress, (classes_adv, classes_victim)
 
 
-def np_compute_losses(preds, labels):
+def np_compute_losses(preds: np.ndarray,
+                      labels: np.ndarray,
+                      multi_class: bool = False):
     """
         Convert to PyTorch tensors, compute crossentropyloss
         Convert back to numpy arrays, return.
     """
-    preds_ch = ch.from_numpy(preds.copy()).transpose(0, 1)
-    labels_ch = ch.from_numpy(labels.copy()).long()
-    loss = ch.nn.CrossEntropyLoss(reduction='none')
+    # Convert to PyTorch tensors
+    preds_ch = ch.from_numpy(preds.copy())
+    labels_ch = ch.from_numpy(labels.copy())
+
+    if multi_class:
+        loss = ch.nn.CrossEntropyLoss(reduction='none')
+        labels_ch = labels_ch.long()
+        preds_ch = preds_ch.transpose(0, 1)
+    else:
+        loss = ch.nn.BCEWithLogitsLoss(reduction='none')
+        labels_ch = labels_ch.float()
+
     loss_vals = [loss(pred_ch, labels_ch).numpy() for pred_ch in preds_ch]
     loss_vals = np.array(loss_vals)
-    return loss_vals.T
+    if multi_class:
+        loss_vals = loss_vals.T
+    return loss_vals

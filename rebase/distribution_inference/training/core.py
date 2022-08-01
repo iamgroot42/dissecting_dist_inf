@@ -109,14 +109,20 @@ def validate_epoch(val_loader, model, criterion,
                    input_is_list: bool = False,
                    regression: bool = False,
                    get_preds: bool = False,
-                   multi_class: bool = False):
+                   multi_class: bool = False,
+                   more_metrics:bool=False):
     model.eval()
     val_loss = AverageMeter()
     adv_val_loss = AverageMeter()
     if not regression:
         val_acc = AverageMeter()
         adv_val_acc = AverageMeter()
-
+        if more_metrics:
+            num_true_pos = 0
+            num_pred_pos = 0
+            num_actual_pos = 0
+            assert not multi_class, "No implementation"
+            
     collected_preds = []
     with ch.set_grad_enabled(adv_config is not None):
         for tuple in val_loader:
@@ -145,6 +151,11 @@ def validate_epoch(val_loader, model, criterion,
                     prediction = (outputs >= 0)
                 val_acc.update(prediction.eq(
                     labels.view_as(prediction)).sum().item()/N)
+                if more_metrics:
+                    num_true_pos+=ch.logical_and(prediction,labels.view_as(prediction)).sum().item()
+                    num_pred_pos+=prediction.sum().item()
+                    num_actual_pos+=labels.sum().item()
+                
             val_loss_specific = criterion(
                 outputs, labels.long() if multi_class else labels.float())
             val_loss.update(val_loss_specific.item())
@@ -182,7 +193,10 @@ def validate_epoch(val_loader, model, criterion,
                 print('[Validation], Loss: %.5f, Accuracy: %.4f | Adv-Loss: %.5f, Adv-Accuracy: %.4f' %
                       (val_loss.avg, val_acc.avg, adv_val_loss.avg, adv_val_acc.avg))
         print()
-
+    if more_metrics:
+        precision = num_true_pos/num_pred_pos
+        recall = num_true_pos/num_actual_pos
+        F1 = 2*(precision*recall)/(precision+recall)
     if get_preds:
         collected_preds = np.concatenate(collected_preds, axis=0)
 
@@ -193,8 +207,12 @@ def validate_epoch(val_loader, model, criterion,
             else:
                 return val_loss.avg, None
         if get_preds:
+            if more_metrics:
+                return val_loss.avg, val_acc.avg, collected_preds, {"precision":precision,"recall":recall,"F1":F1}
             return val_loss.avg, val_acc.avg, collected_preds
         else:
+            if more_metrics:
+                return val_loss.avg, val_acc.avg, {"precision":precision,"recall":recall,"F1":F1}
             return val_loss.avg, val_acc.avg
     if regression:
         if get_preds:
@@ -241,6 +259,10 @@ def sklearn_train(model, loaders, train_config: TrainConfig,
 def train_without_dp(model, loaders, train_config: TrainConfig,
                      input_is_list: bool = False,
                      extra_options: dict = None):
+    if extra_options !=None and "more_metrics" in extra_options.keys():
+        more_metrics = extra_options["more_metrics"]
+    else:
+        more_metrics = False
     # Wrap with dataparallel if requested
     if train_config.parallel:
         model = ch.nn.DataParallel(model)
@@ -323,7 +345,19 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             use_loader_for_metric_log = val_loader
         else:
             use_loader_for_metric_log = test_loader
-        vloss, vacc = validate_epoch(use_loader_for_metric_log,
+
+        if more_metrics:
+            vloss, vacc,extra_metrics = validate_epoch(use_loader_for_metric_log,
+                                     model, criterion,
+                                     verbose=train_config.verbose,
+                                     adv_config=adv_config,
+                                     expect_extra=train_config.expect_extra,
+                                     input_is_list=input_is_list,
+                                     regression=train_config.regression,
+                                     multi_class=train_config.multi_class,
+                                     more_metrics=more_metrics)
+        else:
+            vloss, vacc = validate_epoch(use_loader_for_metric_log,
                                      model, criterion,
                                      verbose=train_config.verbose,
                                      adv_config=adv_config,
@@ -394,7 +428,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
 
     # Use test-loader to compute final test metrics
     if val_loader is not None:
-        test_loss, test_acc = validate_epoch(
+        if more_metrics:
+            test_loss, test_acc,extra_metrics_te = validate_epoch(
             test_loader,
             model, criterion,
             verbose=False,
@@ -402,14 +437,31 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             expect_extra=train_config.expect_extra,
             input_is_list=input_is_list,
             regression=train_config.regression,
-            multi_class=train_config.multi_class)
+            multi_class=train_config.multi_class,
+            more_metrics=more_metrics)
+        else:
+            test_loss, test_acc = validate_epoch(
+            test_loader,
+            model, criterion,
+            verbose=False,
+            adv_config=adv_config,
+            expect_extra=train_config.expect_extra,
+            input_is_list=input_is_list,
+            regression=train_config.regression,
+            multi_class=train_config.multi_class,
+            more_metrics=more_metrics)
     else:
         test_loss, test_acc = vloss, vacc
-
+        if more_metrics:
+            extra_metrics_te = extra_metrics
     # Now that training is over, remove dataparallel wrapper
     if train_config.parallel:
         model = model.module
 
     if train_config.get_best:
+        if more_metrics:
+            return best_model, (test_loss, test_acc,extra_metrics_te)
         return best_model, (test_loss, test_acc)
+    if more_metrics:
+        return test_loss, test_acc,extra_metrics_te
     return test_loss, test_acc
