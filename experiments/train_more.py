@@ -69,7 +69,7 @@ if __name__ == "__main__":
             data_config.name)(train_config.save_every_epoch)
 
         # Create new DS object
-        ds = ds_wrapper_class(data_config,epoch=train_config.save_every_epoch)
+        ds = ds_wrapper_class(data_config,epoch=train_config.save_every_epoch,label_noise=train_config.label_noise)
         """
         # train_ds, val_ds = ds.load_data()
         # print(len(train_ds))

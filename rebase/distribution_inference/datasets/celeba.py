@@ -274,7 +274,7 @@ class CelebACustomBinary(base.CustomDataset):
         if label_noise:
             idx = np.random.choice(self.num_samples,int (label_noise*self.num_samples),replace=False)
             for x in idx:
-                self.attr_dict[x][classify]=1-self.attr_dict[x][classify]
+                self.attr_dict[self.filenames[x]][classify]=1-self.attr_dict[self.filenames[x]][classify]
     def _create_df(self, attr_dict, filenames):
         # Create DF from filenames to use heuristic for ratio-preserving splits
         all = []

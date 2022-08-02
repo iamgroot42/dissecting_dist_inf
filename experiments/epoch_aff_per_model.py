@@ -140,7 +140,7 @@ if __name__ == "__main__":
         accs[:50] = 1-accs[:50]
         for x in accs:
             logger.add_results("affinity", prop_value,
-                            list(x), None)
+                            x.tolist(), None)
        
     # Summarize results over runs, for each ratio and attack
     logger.save()
