@@ -1,6 +1,6 @@
 {
     "name": "sex_epo_aff_permodel",
-    "start time": "2022-08-01 14:31:23.359564",
+    "start time": "2022-08-01 20:46:47.350779",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -214,4 +214,5 @@
                     null
                 ],
                 "victim_acc": [
-                    
+                    [
+                        

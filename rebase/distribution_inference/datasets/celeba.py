@@ -246,7 +246,8 @@ class CelebACustomBinary(base.CustomDataset):
                  prop, ratio, cwise_sample,
                  shuffle: bool = False,
                  transform = None,
-                 features = None):
+                 features = None,
+                 label_noise:float=0):
         self.attr_dict = attr_dict
         self.transform = transform
         self.features = features
@@ -268,9 +269,12 @@ class CelebACustomBinary(base.CustomDataset):
 
         if shuffle:
             np.random.shuffle(self.filenames)
-
+        
         self.num_samples = len(self.filenames)
-
+        if label_noise:
+            idx = np.random.choice(self.num_samples,int (label_noise*self.num_samples),replace=False)
+            for x in idx:
+                self.attr_dict[x][classify]=1-self.attr_dict[x][classify]
     def _create_df(self, attr_dict, filenames):
         # Create DF from filenames to use heuristic for ratio-preserving splits
         all = []
@@ -321,7 +325,7 @@ class CelebACustomBinary(base.CustomDataset):
 
 class CelebaWrapper(base.CustomDatasetWrapper):
     def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0,epoch:bool=False):
-        super().__init__(data_config, skip_data)
+        super().__init__(data_config, skip_data,label_noise)
         self.info_object = DatasetInformation()
 
         # Make sure specified label is valid
@@ -421,19 +425,19 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             self.classify, filelist_train, attr_dict,
             self.prop, self.ratio, cwise_sample[0],
             transform=self.train_transforms,
-            features=features)
+            features=features,label_noise=self.label_noise)
         ds_val = CelebACustomBinary(
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
             transform=self.test_transforms,
-            features=features)
+            features=features,label_noise=self.label_noise)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
                     val_factor: int = 2,
-                    num_workers: int = 8,
+                    num_workers: int = 24,
                     prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
         return super().get_loaders(batch_size, shuffle=shuffle,
@@ -471,7 +475,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         if model_arch is None:
             model_arch = self.info_object.default_model
         base_models_dir = os.path.join(base_models_dir, model_arch)
-
+        if self.label_noise:
+            base_models_dir = os.path.join(
+                base_models_dir, "label_noise:{}".format(train_config.label_noise))
         save_path = os.path.join(base_models_dir, subfolder_prefix)
 
         # # Make sure this directory exists
