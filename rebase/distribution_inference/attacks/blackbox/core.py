@@ -22,6 +22,7 @@ class PredictionsOnDistributions:
         Wrapper to store predictions on two distributions,
         for models trained on two different training distributions.
     """
+
     def __init__(self,
                  preds_on_distr_1: PredictionsOnOneDistribution,
                  preds_on_distr_2: PredictionsOnOneDistribution):
@@ -50,7 +51,8 @@ class Attack:
 
     def wrap_preds_to_save(self, result: List):
         if self.supports_saving_preds:
-            raise NotImplementedError("Method should be implemented if attack generated soft-labels")
+            raise NotImplementedError(
+                "Method should be implemented if attack generated soft-labels")
 
 
 def multi_model_sampling(arr, multi):
@@ -72,21 +74,29 @@ def multi_model_sampling(arr, multi):
         raise ValueError("Dimension mismatch")
     return res
 
+
 def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
-               preds_d2: PredictionsOnOneDistribution,
-               ground_truth,
-               calc_acc: Callable,
-               t = False):
-        #pi means ith epoch
+                 preds_d2: PredictionsOnOneDistribution,
+                 ground_truth,
+                 calc_acc: Callable,
+                 t=False):
+    #pi means ith epoch
     p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
     p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
     if not t:
         for i in range(2):
             p1[i] = np.transpose(p1[i])
             p2[i] = np.transpose(p2[i])
-    acc1 = [100*calc_acc(p,ground_truth) for p in p1]
-    acc2 = [100*calc_acc(p,ground_truth) for p in p2]
-    return (np.array(acc1),np.array(acc2))
+    acc1 = [100*calc_acc(p, ground_truth) for p in p1]
+    acc2 = [100*calc_acc(p, ground_truth) for p in p2]
+    return (np.array(acc1), np.array(acc2))
+
+
+def sigmoid(x):
+    exp = np.exp(x)
+    return exp / (1 + exp)
+
+
 def threshold_test_per_dist(calc_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
@@ -99,7 +109,8 @@ def threshold_test_per_dist(calc_acc: Callable,
     """
     assert not (
         epochwise_version and config.multi), "No implementation for both epochwise and multi model"
-    assert not (config.multi2 and config.multi), "No implementation for both multi model"
+    assert not (
+        config.multi2 and config.multi), "No implementation for both multi model"
     assert not (
         epochwise_version and config.multi2), "No implementation for both epochwise and multi model"
     # Predictions made by the adversary's models
@@ -324,7 +335,8 @@ def find_threshold_pred(pred_1, pred_2,
     predictions_combined = np.concatenate((pred_1, pred_2), axis=1)
     ground_truth = np.concatenate(
         (np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1])))
-    acc, _ = get_threshold_pred(predictions_combined, ground_truth, thres, rules)
+    acc, _ = get_threshold_pred(
+        predictions_combined, ground_truth, thres, rules)
     return acc, thres, rules
 
 
@@ -443,10 +455,13 @@ def order_points(p1s, p2s):
     inds = np.argsort(abs_diff)
     return inds
 
-def epoch_order_p(p11,p12,p21,p22):
-        #pij: ith epoch, jth distribution
-        #TODO: find a better order rather than only using the last epoch
-        return order_points(p21,p22)[::-1]
+
+def epoch_order_p(p11, p12, p21, p22):
+    #pij: ith epoch, jth distribution
+    #TODO: find a better order rather than only using the last epoch
+    return order_points(p21, p22)[::-1]
+
+
 def find_max_acc_threshold(preds, labels, granularity=0.01):
     """
         Find the threshold that maximizes accuracy.
