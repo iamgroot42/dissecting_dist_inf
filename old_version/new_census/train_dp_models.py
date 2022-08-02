@@ -93,6 +93,7 @@ if __name__ == "__main__":
                 save_path, "sample_size_scale:{}".format(args.scale))
         if args.drop_senstive_cols:
             save_path = os.path.join(save_path, "drop")
+        """
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
 
@@ -100,3 +101,4 @@ if __name__ == "__main__":
         save_path = os.path.join(save_path, str(
             i + args.offset) + "_%.2f.ch" % test_acc)
         model_utils.save_model(clf, save_path)
+        """

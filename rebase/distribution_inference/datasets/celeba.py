@@ -17,7 +17,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self, epoch:bool = False):
+    def __init__(self, epoch_wise:bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Celeb-A",
                          data_path="celeba",
@@ -28,7 +28,7 @@ class DatasetInformation(base.DatasetInformation):
                                  'Wavy_Hair': ratios, 'High_Cheekbones': ratios},
                          supported_models=["inception", "alexnet", "mlp2"],
                          default_model="alexnet",
-                         epoch_wise=epoch)
+                         epoch_wise=epoch_wise)
         self.preserve_properties = ['Smiling', 'Young', 'Male', 'Attractive']
         self.supported_properties = [
             '5_o_Clock_Shadow', 'Arched_Eyebrows', 'Attractive',
@@ -320,7 +320,7 @@ class CelebACustomBinary(base.CustomDataset):
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0,epoch:bool=False):
         super().__init__(data_config, skip_data)
         self.info_object = DatasetInformation()
 
@@ -433,7 +433,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
                     val_factor: int = 2,
-                    num_workers: int = 16,
+                    num_workers: int = 24,
                     prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
         return super().get_loaders(batch_size, shuffle=shuffle,
@@ -476,7 +476,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         # # Make sure this directory exists
         if not os.path.isdir(save_path):
-            os.makedirs(save_path)
+            os.makedirs(save_path,exist_ok =True)
 
         return save_path
 

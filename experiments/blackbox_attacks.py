@@ -159,7 +159,7 @@ if __name__ == "__main__":
 
                     logger.add_results(attack_type, prop_value,
                                        result[0][0], result[1][0])
-
+                    print(result[0][0])
                     # Save predictions, if requested
                     if bb_attack_config.save and attacker_obj.supports_saving_preds:
                         save_dic = attacker_obj.wrap_preds_to_save(result)

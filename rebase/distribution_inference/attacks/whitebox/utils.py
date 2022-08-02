@@ -12,7 +12,7 @@ from distribution_inference.config import WhiteBoxAttackConfig
 from distribution_inference.models.core import BaseModel
 from distribution_inference.utils import warning_string
 import distribution_inference.datasets.utils as utils
-
+#from distribution_inference.attacks.whitebox.comparison.comparison import ComparisonAttack
 
 ATTACK_MAPPING = {
     "permutation_invariant": PINAttack,

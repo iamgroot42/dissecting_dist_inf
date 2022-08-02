@@ -2,7 +2,7 @@
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "sex",
+            "prop": "race",
             "split": "adv",
             "squeeze": true,
             "value": 0.5

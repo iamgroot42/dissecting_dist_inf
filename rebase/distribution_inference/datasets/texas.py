@@ -15,7 +15,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self, epoch: bool = False, num_dropped_features: int = 0):
+    def __init__(self, epoch_wise: bool = False, num_dropped_features: int = 0):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         self.num_features = 3611 + 3
         self.num_classes = 20
@@ -31,7 +31,7 @@ class DatasetInformation(base.DatasetInformation):
                              "sex": 'female',
                              "race": 'white',
                              "ethnicity": 'hispanic'},
-                         epoch_wise=epoch,
+                         epoch_wise=epoch_wise,
                          num_dropped_features=num_dropped_features)
 
     def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
@@ -46,6 +46,8 @@ class DatasetInformation(base.DatasetInformation):
 
         if not cpu:
             model = model.cuda()
+        else:
+            model.to("cpu")
         return model
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:
@@ -362,13 +364,14 @@ class TexasSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class TexasWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False,label_noise: float = 0):
         super().__init__(data_config, skip_data)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
         if data_config.drop_senstive_cols:
             self.num_features_drop += 3
-
+        self.info_object = DatasetInformation(
+            num_dropped_features=self.num_features_drop,epoch_wise=epoch)
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
@@ -385,15 +388,13 @@ class TexasWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, on_cpu: bool = False) -> nn.Module:
-        info_object = DatasetInformation(
-            num_dropped_features=self.num_features_drop)
-        model = info_object.get_model(cpu=on_cpu)
+    def load_model(self, path: str, model_arch: str,on_cpu: bool = False) -> nn.Module:
+        info_object = self.info_object
+        model = info_object.get_model(cpu=on_cpu,model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
-        info_object = DatasetInformation(
-            num_dropped_features=self.num_features_drop)
+        info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         dp_config = None
         if train_config.misc_config is not None:

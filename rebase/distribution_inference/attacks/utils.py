@@ -9,11 +9,16 @@ ATTACK_MAPPING = {
     "threshold_perpoint": "Point-Wise Threshold Test",
     "loss_and_threshold": ("Loss Test", "Threshold Test"),
     "single_update_loss": "Loss test across epoch",
-    "single_update_threshold": "Threshold test across epoch",
-    "single_update_perpoint": "Perpoint test across epoch",
+    "single_update_threshold":"Threshold test across epoch",
+    "single_update_perpoint":"Perpoint test across epoch",
     "epoch_meta": "Decision Tree on raw predictions across epoch",
-    "combine": "Combine WB and BB attacks",
-    "KL": "KL-Divergence Attack"
+    "perpoint_choose": "Perpoint test on pairs of points",
+    "perpoint_choose_dif":"Perpoint test on pairs of points from different distributions",
+    "KL":"Attack using KL divergences",
+    "Combine": "Combining results",
+    "comparison": "Comparison attack by training victim models",
+    "generative": "Perpoint attack using generated data",
+    "binary_perpoint": "perpoint attack using only binary predictions"
 }
 
 

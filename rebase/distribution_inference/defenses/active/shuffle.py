@@ -49,8 +49,8 @@ class ShuffleDefense:
         else:
             # If not enough for both, then oversampling
             oversampling = True
-            num_sample_one = len(one_label)
-            num_sample_zero = len(zero_label)
+            num_sample_one = final_samples_one
+            num_sample_zero = final_samples_zero
 
         if oversampling:
             one_sample = np.random.choice(one_label, size=num_sample_one)

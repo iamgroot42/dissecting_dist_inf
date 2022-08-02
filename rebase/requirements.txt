@@ -2,6 +2,7 @@ git+https://github.com/lebrice/SimpleParsing
 git+https://github.com/iamgroot42/cleverhans
 git+https://github.com/iamgroot42/opacus
 git+https://github.com/iamgroot42/robustness
+git+https://github.com/iamgroot42/facenet-pytorch
 torch==1.10.2
 torchvision==0.11.3
 torchaudio==0.10.2

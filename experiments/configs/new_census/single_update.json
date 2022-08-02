@@ -1,0 +1,41 @@
+{
+    
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0,
+        "save_every_epoch": true
+    },
+    "num_victim_models": 100,
+    "tries": 5,
+    "black_box": {
+        "granularity" : 0.05,
+        "num_adv_models": 50,
+        "batch_size": 30000,
+        "attack_type": [
+            "single_update_loss",
+            "single_update_threshold",
+            "single_update_perpoint"
+        ],
+        "ratios": [
+            0.05,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            1.0
+        ],
+        "preload": true,
+        "loss_variant": false,
+        "Start_epoch":2
+    },
+    "values": [0.0, 0.1, 0.2, 0.3, 0.4,0.6,0.7,0.8,0.9,1.0]
+}

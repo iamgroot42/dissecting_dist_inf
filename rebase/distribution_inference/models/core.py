@@ -216,14 +216,20 @@ class MLPTwoLayer(BaseModel):
                 detach_before_return: bool = False,
                 get_all: bool = False,
                 layers_to_target_conv: List[int] = None,
-                layers_to_target_fc: List[int] = None,):
+                layers_to_target_fc: List[int] = None,
+                latent:int=None):
 
         # Override list of layers if given
         valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
-
+        latent_mapping = {0: 1, 1:3}
         all_latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)
+            if latent is not None and i == latent_mapping[latent]:
+                if detach_before_return:
+                    return x.detach()
+                else:
+                    return x
             if get_all and i in valid_fc:
                 if detach_before_return:
                     all_latents.append(x.detach())

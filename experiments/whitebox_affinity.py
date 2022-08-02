@@ -1,7 +1,7 @@
 from simple_parsing import ArgumentParser
 from pathlib import Path
 import numpy as np
-
+import os
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.attacks.whitebox.utils import wrap_into_loader, get_attack, get_train_val_from_pool
@@ -19,11 +19,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--en", help="experiment name",
         type=str, required=True)
+    parser.add_argument('--gpu',
+                        default=None, help="device number")
+    parser.add_argument("--ratios",
+                        nargs='+',
+                        type=float)
+    parser.add_argument(
+        "--trial",
+        type=int, default=None)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
-
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     # Extract configuration information from config file
     wb_attack_config: WhiteBoxAttackConfig = attack_config.white_box
     train_config: TrainConfig = attack_config.train_config
@@ -77,7 +86,7 @@ if __name__ == "__main__":
         model_arch=attack_config.victim_model_arch)
 
     # For each value (of property) asked to experiment with
-    for prop_value in attack_config.values:
+    for prop_value in args.ratios if args.ratios else attack_config.values:
         # Creata a copy of the data config, with the property value
         # changed to the current value
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
@@ -124,7 +133,7 @@ if __name__ == "__main__":
                 shuffle=False,
                 model_arch=attack_config.adv_model_arch)
 
-        for _ in range(attack_config.tries):
+        for _ in range(args.trial if args.trial else attack_config.tries):
 
             # Prepare train, val data
             if attack_config.victim_local_attack:
@@ -244,4 +253,4 @@ if __name__ == "__main__":
                     victim_local=attack_config.victim_local_attack)
 
             # Keep saving results (more I/O, minimal loss of information in crash)
-            logger.save()
+            #logger.save()
