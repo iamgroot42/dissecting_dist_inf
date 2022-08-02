@@ -23,7 +23,7 @@ if __name__ == "__main__":
                         default=None, help="device number")
     parser.add_argument("--ratios",
                         nargs='+',
-                        type=float)
+                        type=float,default = None)
     parser.add_argument(
         "--trial",
         type=int, default=None)
@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(attack_config)
-
+    print(args.ratios)
     # Define logger
     logger = AttackResult(args.en, attack_config)
 
@@ -253,4 +253,4 @@ if __name__ == "__main__":
                     victim_local=attack_config.victim_local_attack)
 
             # Keep saving results (more I/O, minimal loss of information in crash)
-            #logger.save()
+            logger.save()
