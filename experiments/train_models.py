@@ -41,8 +41,11 @@ if __name__ == "__main__":
     flash_utils(train_config)
 
     # Define logger
-    exp_name = "_".join([config.data_config.split, config.data_config.prop,
-                        config.model_arch, str(config.data_config.value), str(config.offset)])
+    exp_name = "_".join([config.data_config.split,
+                        config.data_config.prop,
+                        config.model_arch,
+                        str(config.data_config.value),
+                        str(config.offset)])
     logger = TrainingResult(exp_name, train_config)
 
     # Get dataset wrapper
@@ -104,8 +107,6 @@ if __name__ == "__main__":
             "curren_model_num": i + train_config.offset,
             "save_path_fn": ds.get_save_path})
             logger.add_result(data_config.value, vloss, vacc)
-        
-      
 
         # If saving only the final model
         if not train_config.save_every_epoch:
