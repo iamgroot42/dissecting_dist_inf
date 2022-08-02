@@ -80,7 +80,6 @@ class MetricPlotHelper():
                 logger = thing.dic
             # Parse data from given results-object
             if "result" in logger.keys():
-                
                 self._parse_attack(logger,i)
             else:
                 self._parse(logger, i)
@@ -110,7 +109,6 @@ class MetricPlotHelper():
             if self.legend_titles is not None:
                 title_prefix = self.legend_titles[legend_entry_index] + " : "
   
-            
             for metric in logger['log'][ratio]:
                 
                 if self.metrics_wanted is not None and metric not in self.metrics_wanted:
@@ -136,9 +134,6 @@ class MetricPlotHelper():
                             # Temporary (below) - ideally all results should be in [0, 100] across entire module
                             self.columns[1]: results*100 if results<=1 else results,  # * 100,
                             self.columns[2]: title_prefix + metric})
-
-           
-        
 
     def _parse_attack(self, logger, legend_entry_index: int = None):
         # Look at all the results

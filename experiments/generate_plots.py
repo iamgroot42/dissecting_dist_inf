@@ -1,12 +1,10 @@
 # Sets font-type to 'Normal' to make it compatible with camera-ready versions
+from distribution_inference.visualize.plothelper import PlotHelper
+from simple_parsing import ArgumentParser
+import os
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
-
-import os
-from simple_parsing import ArgumentParser
-
-from distribution_inference.visualize.plothelper import PlotHelper
 
 
 if __name__ == "__main__":
