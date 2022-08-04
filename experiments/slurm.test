@@ -7,8 +7,8 @@
 #SBATCH --cpus-per-task=30
 #SBATCH --mem=100000
 source /etc/profile.d/modules.sh
-./do_all.sh "0.0 0.1 0.2 0.3 0.4 0.5" adv 900 &
-./do_all.sh "0.0 0.1 0.2 0.3 0.4 0.5" adv 950 &
+./do_all.sh "0.5 0.6 0.7 0.8 0.9 1.0" victim 400 &
+./do_all.sh "0.5 0.6 0.7 0.8 0.9 1.0" victim 450 &
 #nohup python metrics.py --load_config race_metric.json --en race --ratios 0.0 0.1 0.2 0.3 0.4 0.6 0.7 0.8 0.9 1.0 2>&1 > m.out &
 #nohup python comparison_load.py --load_config nc_comp.json --en sex_comp_50m --pred_name sex_comp &
 wait
