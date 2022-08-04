@@ -506,7 +506,7 @@ def order_points(p1s, p2s, order: str = None):
     elif order is None:
         return order_points1(p1s, p2s)
     else:
-        raise Exception("No implementation")
+        raise Exception(f"No implementation found for {order}")
 
 
 def epoch_order_p(p11, p12, p21, p22):
