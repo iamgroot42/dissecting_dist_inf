@@ -172,18 +172,12 @@ class TrainingResult(Result):
         self.dic["train_config"] = deepcopy(train_config)
         self.convert_to_dict(self.dic)
 
-    def add_result(self, prop, loss: float, acc: float=None,extra_metrics=None,R_cross:float=None):
+    def add_result(self, prop, **metrics):
         self.check_rec(self.dic, ['log', prop])
         # Log loss of model
-        self.conditional_append(self.dic['log'][prop],
-                                'loss', loss)
-        # Log accuracy of mode
-        self.conditional_append(self.dic['log'][prop],
-                                'acc', acc)
-        if extra_metrics:
-            for e in extra_metrics.keys():
-                self.conditional_append(self.dic['log'][prop],
-                                e, extra_metrics[e])
-        if R_cross:
+        
+        
+        for e in metrics.keys():
             self.conditional_append(self.dic['log'][prop],
-                                'R_cross', R_cross)
+                    e, metrics[e])
+        

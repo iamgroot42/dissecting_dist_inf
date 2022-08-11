@@ -46,7 +46,7 @@ class DatasetInformation(base.DatasetInformation):
     def get_model(self, parallel: bool = False, fake_relu: bool = False,
                   latent_focus=None, cpu: bool = False,
                   model_arch: str = None) -> nn.Module:
-        if model_arch is None:
+        if model_arch is None or model_arch=="None":
             model_arch = self.default_model
 
         if model_arch == "inception":
@@ -430,7 +430,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
             transform=self.test_transforms,
-            features=features,label_noise=self.label_noise)
+            features=features)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size: int,
@@ -468,12 +468,12 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 subfolder_prefix, adv_folder_prefix)
 
         # Standard logic
+        if model_arch == "None":
+            model_arch = self.info_object.default_model
         if model_arch is None:
             model_arch = self.info_object.default_model
         if model_arch not in self.info_object.supported_models:
             raise ValueError(f"Model architecture {model_arch} not supported")
-        if model_arch is None:
-            model_arch = self.info_object.default_model
         base_models_dir = os.path.join(base_models_dir, model_arch)
         if self.label_noise:
             base_models_dir = os.path.join(

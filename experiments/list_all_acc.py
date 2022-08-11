@@ -22,6 +22,6 @@ if __name__ == "__main__":
         for m in os.listdir(os.path.join(args.dir, r)):
             if not os.path.isdir(os.path.join(args.dir, r, m)):
                 names.append(m)
-    names = [float(x.split(".")[1]) for x in names]
+    names = [float(x.split("_")[1]) for x in names]
     print(np.average(names))
     print(np.std(names))

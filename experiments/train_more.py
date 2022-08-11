@@ -124,7 +124,7 @@ if __name__ == "__main__":
                                         extra_options={
                 "curren_model_num": i + offset,
                 "save_path_fn": ds.get_save_path})
-                logger.add_result(data_config.value, vloss, vacc)
+                logger.add_result(data_config.value, loss=vloss, acc=vacc)
             
         
 
