@@ -324,7 +324,11 @@ class CelebACustomBinary(base.CustomDataset):
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0,epoch:bool=False):
+    def __init__(self,
+                 data_config: DatasetConfig,
+                 skip_data: bool = False,
+                 label_noise: float = 0,
+                 epoch:bool = False):
         super().__init__(data_config, skip_data,label_noise)
         self.info_object = DatasetInformation()
 

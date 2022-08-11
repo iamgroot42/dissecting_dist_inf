@@ -83,6 +83,8 @@ class DatasetConfig(Serializable):
     """Whether to squeeze label data (because of extra dimension)"""
     processed_variant: Optional[bool] = True
     """Use processed version of data (relevant for BoneAge,CelebA)?"""
+    prune: Optional[float] = 0
+    """Prune graph by removing nodes? (only valid for arXiv dataset)"""
 
 
 @dataclass

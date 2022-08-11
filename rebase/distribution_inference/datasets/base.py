@@ -114,7 +114,11 @@ class CustomDataset(Dataset):
 
 
 class CustomDatasetWrapper:
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: bool = 0):
+    def __init__(self,
+                 data_config: DatasetConfig,
+                 skip_data: bool = False,
+                 label_noise: bool = 0,
+                 is_graph_data: bool = False):
         """
             self.ds_train and self.ds_val should be set to
             datasets to be used to train and evaluate.
@@ -129,6 +133,8 @@ class CustomDatasetWrapper:
         self.scale = data_config.scale
         self.squeeze = data_config.squeeze
         self.processed_variant = data_config.processed_variant
+        self.prune = data_config.prune
+        self.is_graph_data = is_graph_data
 
         # Either set ds_train and ds_val here
         # Or set them inside get_loaders

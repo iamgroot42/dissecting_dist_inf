@@ -1,6 +1,8 @@
 from distribution_inference.attacks.utils import get_attack_name,ATTACK_MAPPING
 from distribution_inference.utils import warning_string
 from distribution_inference.logging.core import AttackResult
+from distribution_inference.neff.neff import BinaryRatio
+
 import seaborn
 import matplotlib.pyplot as plt
 import json
@@ -95,20 +97,28 @@ class PlotHelper():
                 print(f"Not plotting {attack_res}")
                 continue
             print(f"Plotting {attack_res}")
-            title_prefix = ""
+            legend_entry = ""
             if self.legend_titles is not None:
-                title_prefix = self.legend_titles[legend_entry_index] + " : "
+                legend_entry = self.legend_titles[legend_entry_index]
             attack_names = get_attack_name(attack_res)
 
-            # Loss & Threshold attacks
-            if(attack_res == "loss_and_threshold"):
-                if self.skip_prefix:
-                    column_names = attack_names
+            if self.skip_prefix:
+                column_names = legend_entry
+            else:
+                if type(attack_names) is list:
+                    column_names = [f"{legend_entry} : {name}" for name in attack_names]
                 else:
-                    column_names = [title_prefix + x for x in attack_names]
+                    column_names = f"{legend_entry} : {attack_names}"
+
+            # Loss & Threshold attacks
+            if (attack_res == "loss_and_threshold"):
                 for ratio in logger['result'][attack_res]:
                     if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
                         continue
+                        
+                    if self.skip_prefix:
+                        raise ValueError("Cannot skip prefix in presence of loss&threshold test")
+
                     victim_results = logger['result'][attack_res][ratio]['victim_acc']
                     for results in victim_results:
                         loss = results[1]
@@ -119,23 +129,23 @@ class PlotHelper():
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     self.columns[1]: l,
-                                    self.columns[2]: title_prefix + column_names[0],
+                                    self.columns[2]: column_names[0],
                                     self.columns[3]: epoch + 1})
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     self.columns[1]: t,
-                                    self.columns[2]: title_prefix + column_names[1],
+                                    self.columns[2]: column_names[1],
                                     self.columns[3]: epoch + 1})
                         else:
                             assert type(threshold) != list
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 self.columns[1]: loss,
-                                self.columns[2]: title_prefix + column_names[0]})
+                                self.columns[2]: column_names[0]})
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 self.columns[1]: threshold,
-                                self.columns[2]: title_prefix + column_names[1]})
+                                self.columns[2]: column_names[1]})
 
             # Per-point threshold attack, or white-box attack
             elif attack_res in ATTACK_MAPPING.keys():
@@ -150,14 +160,14 @@ class PlotHelper():
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
                                     self.columns[1]: result,  # * 100,
-                                    self.columns[2]: column_name,
+                                    self.columns[2]: column_names,
                                     self.columns[3]: epoch + 1})
                         else:
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
                                 self.columns[1]: results*100 if results<=1 else results,  # * 100,
-                                self.columns[2]: title_prefix + attack_names})
+                                self.columns[2]: column_names})
             else:
                 warnings.warn(warning_string(
                     f"\nAttack type {attack_res} not supported\n"))

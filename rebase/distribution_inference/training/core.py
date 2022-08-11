@@ -4,6 +4,7 @@ import torch as ch
 import torch.nn as nn
 import numpy as np
 from copy import deepcopy
+from ogb.nodeproppred import Evaluator
 import os
 
 from distribution_inference.training.utils import AverageMeter, generate_adversarial_input, save_model
@@ -18,6 +19,8 @@ def train(model, loaders, train_config: TrainConfig,
           extra_options: dict = None):
     if model.is_sklearn_model:
         return sklearn_train(model, loaders, train_config, extra_options)
+    elif model.is_graph_model:
+        return gcn_train(model, loaders, train_config, extra_options)
     if train_config.misc_config and train_config.misc_config.dp_config:
         # If DP training, call appropriate function
         return train_with_dp(model, loaders, train_config, input_is_list, extra_options)
@@ -256,10 +259,103 @@ def sklearn_train(model, loaders, train_config: TrainConfig,
     return test_loss, test_acc
 
 
+@ch.no_grad()
+def gcn_test(model, ds, train_idx, test_idx, evaluator, loss_fn):
+    model.eval()
+
+    X = ds.get_features()
+    Y = ds.get_labels()
+
+    out = model(ds.g, X)
+    y_pred = out.argmax(dim=-1, keepdim=True)
+
+    train_acc = evaluator.eval({
+        'y_true': Y[train_idx],
+        'y_pred': y_pred[train_idx],
+    })['acc']
+    test_acc = evaluator.eval({
+        'y_true': Y[test_idx],
+        'y_pred': y_pred[test_idx],
+    })['acc']
+
+    out = model(ds.g, X)[test_idx]
+    test_loss = loss_fn(out, Y.squeeze(1)[test_idx])
+
+    return train_acc, (test_acc, test_loss)
+
+
+def _gcn_train(model, ds, train_idx, optimizer, loss_fn):
+    model.train()
+
+    X = ds.get_features()
+    Y = ds.get_labels()
+
+    optimizer.zero_grad()
+    out = model(ds.g, X)[train_idx]
+    loss = loss_fn(out, Y.squeeze(1)[train_idx])
+    loss.backward()
+    optimizer.step()
+
+    return loss.item()
+
+
+def gcn_train(model, loaders, train_config: TrainConfig,
+              input_is_list: bool = False,
+              extra_options: dict = None):
+    evaluator = Evaluator(name='ogbn-arxiv')
+
+    # Extract data from loaders
+    ds, (train_idx, test_idx) = loaders
+
+    metrics = {
+        "train": [],
+        "test": [],
+        "test_loss": []
+    }
+
+    optimizer = ch.optim.Adam(
+        model.parameters(),
+        lr=train_config.learning_rate,
+        weight_decay=train_config.weight_decay)
+    loss_fn = ch.nn.CrossEntropyLoss().cuda()
+    iterator = tqdm(range(1, 1 + train_config.epochs))
+    best_model, best_loss = None, np.inf
+
+    for epoch in iterator:
+        # Train epoch
+        train_loss = _gcn_train(
+            model, ds, train_idx,
+            optimizer, loss_fn)
+        # Test epoch
+        train_acc, (test_acc, test_loss) = gcn_test(
+            model, ds, train_idx, test_idx,
+            evaluator, loss_fn)
+
+        iterator.set_description(f'Epoch: {epoch:02d}, '
+                                 f'Loss: {train_loss:.4f}, '
+                                 f'Train: {100 * train_acc:.2f}%, '
+                                 f'Test: {100 * test_acc:.2f}%')
+        
+        if best_loss > test_loss:
+            best_loss = test_loss
+            best_model = deepcopy(model)
+
+        # Keep track of train/test accuracies across runs
+        metrics["train"].append(train_acc)
+        metrics["test"].append(test_acc)
+        metrics["test_loss"].append(test_loss)
+
+    # Evaluate model
+    if train_config.get_best:
+        print(warning_string("\nUsing test-data to pick best-performing model\n"))
+        return best_model, (test_loss, test_acc)
+    return model, (test_loss, test_acc)
+
+
 def train_without_dp(model, loaders, train_config: TrainConfig,
                      input_is_list: bool = False,
                      extra_options: dict = None):
-    if extra_options !=None and "more_metrics" in extra_options.keys():
+    if extra_options != None and "more_metrics" in extra_options.keys():
         more_metrics = extra_options["more_metrics"]
     else:
         more_metrics = False
@@ -347,7 +443,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             use_loader_for_metric_log = test_loader
 
         if more_metrics:
-            vloss, vacc,extra_metrics = validate_epoch(use_loader_for_metric_log,
+            vloss, vacc, extra_metrics = validate_epoch(use_loader_for_metric_log,
                                      model, criterion,
                                      verbose=train_config.verbose,
                                      adv_config=adv_config,
@@ -429,7 +525,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
     # Use test-loader to compute final test metrics
     if val_loader is not None:
         if more_metrics:
-            test_loss, test_acc,extra_metrics_te = validate_epoch(
+            test_loss, test_acc, extra_metrics_te = validate_epoch(
             test_loader,
             model, criterion,
             verbose=False,
@@ -460,8 +556,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
 
     if train_config.get_best:
         if more_metrics:
-            return best_model, (test_loss, test_acc,extra_metrics_te)
+            return best_model, (test_loss, test_acc, extra_metrics_te)
         return best_model, (test_loss, test_acc)
     if more_metrics:
-        return test_loss, test_acc,extra_metrics_te
+        return test_loss, test_acc, extra_metrics_te
     return test_loss, test_acc

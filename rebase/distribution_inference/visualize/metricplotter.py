@@ -1,6 +1,6 @@
-from distribution_inference.attacks.utils import get_attack_name,ATTACK_MAPPING
+from distribution_inference.attacks.utils import get_attack_name, ATTACK_MAPPING
 from distribution_inference.utils import warning_string
-from distribution_inference.logging.core import AttackResult,TrainingResult
+from distribution_inference.logging.core import AttackResult, TrainingResult
 import seaborn
 import matplotlib.pyplot as plt
 import json
@@ -17,10 +17,10 @@ class MetricPlotHelper():
                  paths: List[str] = [''],
                  loggers: List[TrainingResult] = [None],
                  attack_paths: List[str] = [''],
-                 attack_loggers:List[AttackResult] = [None],
+                 attack_loggers: List[AttackResult] = [None],
                  columns=['Ratios', 'Values', 'Hues', 'Epoch'],
                  legend_titles: List = None,
-                 metrics_wanted:List=["loss","acc"],
+                 metrics_wanted: List = ["loss", "acc"],
                  attacks_wanted: List = ["affinity"],
                  ratios_wanted: List = None,
                  no_legend: bool = False,
@@ -60,12 +60,12 @@ class MetricPlotHelper():
         if self.paths[0] != '' and self.loggers[0] is not None:
             raise ValueError(
                 "Must pass either a logger class or a path")
-        
+
         if self.loggers[0] is not None:
             self._parse_results(self.loggers, are_paths=False)
         elif self.paths[0] != '':
             self._parse_results(self.paths, are_paths=True)
-        if self.attack_paths!=None and self.attack_paths[0] != '':
+        if self.attack_paths != None and self.attack_paths[0] != '':
             self._parse_results(self.attack_paths, are_paths=True)
         # Convert data to dataframe
         self.df = pd.DataFrame(self.df)
@@ -80,7 +80,7 @@ class MetricPlotHelper():
                 logger = thing.dic
             # Parse data from given results-object
             if "result" in logger.keys():
-                self._parse_attack(logger,i)
+                self._parse_attack(logger, i)
             else:
                 self._parse(logger, i)
         pass
@@ -104,20 +104,20 @@ class MetricPlotHelper():
         for ratio in logger['log']:
             if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
                 continue
-            
+
             title_prefix = ""
             if self.legend_titles is not None:
                 title_prefix = self.legend_titles[legend_entry_index] + " : "
-  
+
             for metric in logger['log'][ratio]:
-                
+
                 if self.metrics_wanted is not None and metric not in self.metrics_wanted:
                     continue
                 if self.skip_prefix:
                     column_name = metric
                 else:
                     column_name = title_prefix + metric
-               
+
                 victim_results = logger['log'][ratio][metric]
                 for results in victim_results:
                     if type(results) == list:
@@ -125,14 +125,16 @@ class MetricPlotHelper():
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                self.columns[1]: result*100 if result<=1 else result,  # * 100,
+                                # * 100,
+                                self.columns[1]: result*100 if result <= 1 else result,
                                 self.columns[2]: column_name,
                                 self.columns[3]: epoch + 1})
                     else:
                         self.df.append({
                             self.columns[0]: float(ratio),
                             # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                            self.columns[1]: results*100 if results<=1 else results,  # * 100,
+                            # * 100,
+                            self.columns[1]: results*100 if results <= 1 else results,
                             self.columns[2]: title_prefix + metric})
 
     def _parse_attack(self, logger, legend_entry_index: int = None):
@@ -207,7 +209,8 @@ class MetricPlotHelper():
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                self.columns[1]: results*100 if results<=1 else results,  # * 100,
+                                # * 100,
+                                self.columns[1]: results*100 if results <= 1 else results,
                                 self.columns[2]: title_prefix + attack_names})
             else:
                 warnings.warn(warning_string(
@@ -236,7 +239,7 @@ class MetricPlotHelper():
         plt.tight_layout()
 
         if self.no_legend:
-            plt.legend([],[], frameon=False)
+            plt.legend([], [], frameon=False)
 
     # Box plot, returns a graph object given a logger object
     def boxplot(self, title='', darkplot=True, dash=True):
