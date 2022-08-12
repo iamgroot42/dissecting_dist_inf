@@ -6,8 +6,6 @@ from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDi
 
 
 class KLAttack(Attack):
-    
-    
     def attack(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
@@ -74,10 +72,14 @@ class KLAttack(Attack):
 
         # Compare the KL divergence between the two distributions
         # For both sets of victim models
-        KL_vals_1_a = np.array([KL(ka_, x) for x in kc1_])
-        KL_vals_1_b = np.array([KL(kb_, x) for x in kc1_])
-        KL_vals_2_a = np.array([KL(ka_, x) for x in kc2_])
-        KL_vals_2_b = np.array([KL(kb_, x) for x in kc2_])
+        KL_vals_1_a = np.array([KL(ka_, x,
+            multi_class=self.config.multi_class) for x in kc1_])
+        KL_vals_1_b = np.array(
+            [KL(kb_, x, multi_class=self.config.multi_class) for x in kc1_])
+        KL_vals_2_a = np.array([KL(ka_, x,
+            multi_class=self.config.multi_class) for x in kc2_])
+        KL_vals_2_b = np.array([KL(kb_, x,
+            multi_class=self.config.multi_class) for x in kc2_])
 
         preds_first = self._pairwise_compare(
             KL_vals_1_a, KL_vals_1_b, xx, yy)
