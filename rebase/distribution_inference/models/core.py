@@ -7,6 +7,8 @@ from sklearn.metrics import log_loss
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
+import torch.nn.functional as F
+from dgl.nn.pytorch import GraphConv
 
 from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 
@@ -15,10 +17,12 @@ class BaseModel(nn.Module):
     def __init__(self,
                  is_conv: bool = False,
                  transpose_features: bool = True,
-                 is_sklearn_model: bool = False):
+                 is_sklearn_model: bool = False,
+                 is_graph_model: bool = False):
         self.is_conv = is_conv
         self.transpose_features = transpose_features
         self.is_sklearn_model = is_sklearn_model
+        self.is_graph_model = is_graph_model
         super(BaseModel, self).__init__()
     
     def forward(self, x: Union[np.ndarray, ch.Tensor]) -> Union[np.ndarray, ch.Tensor]:
@@ -462,3 +466,40 @@ class PortedMLPClassifier(nn.Module):
                     return x
 
         return latents
+
+
+class GCN(BaseModel):
+    def __init__(self, n_hidden, n_layers,
+                 dropout,  num_classes,
+                 num_features):
+        super().__init__(is_conv=True,
+                         is_graph_model=True,
+                         transpose_features=False)
+
+        self.layers = nn.ModuleList()
+        # input layer
+        self.layers.append(
+            GraphConv(num_features, n_hidden, activation=F.relu))
+
+        # hidden layers
+        for i in range(n_layers - 1):
+            self.layers.append(
+                GraphConv(n_hidden, n_hidden, activation=F.relu))
+
+        # output layer
+        self.layers.append(GraphConv(n_hidden, num_classes))
+        self.dropout = nn.Dropout(p=dropout)
+
+    def forward(self, graph, features, latent=None):
+        if latent is not None:
+            if latent < 0 or latent > len(self.layers):
+                raise ValueError("Invald interal layer requested")
+
+        h = features
+        for i, layer in enumerate(self.layers):
+            if i != 0:
+                h = self.dropout(h)
+            h = layer(graph, h)
+            if i == latent:
+                return h
+        return h

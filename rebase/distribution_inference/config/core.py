@@ -83,6 +83,8 @@ class DatasetConfig(Serializable):
     """Whether to squeeze label data (because of extra dimension)"""
     processed_variant: Optional[bool] = True
     """Use processed version of data (relevant for BoneAge,CelebA)?"""
+    prune: Optional[float] = 0
+    """Prune graph by removing nodes? (only valid for arXiv dataset)"""
 
 
 @dataclass
@@ -164,15 +166,24 @@ class TrainConfig(Serializable):
 @dataclass
 class GenerativeAttackConfig(Serializable):
     steps: int
+    """Number of steps to run generation for"""
     step_size: float
+    """Step size for generation"""
     latent_focus: int
-    model_ratio:float
-    n_samples:Optional[int] = 500
-    use_normal:Optional[bool] = True
-    start_natural:Optional[bool] = False
-    constrained:Optional[bool] = False
-    use_best:Optional[bool] = False
-    clamp:Optional[bool] = False
+    """Latent dimension to focus on"""
+    model_ratio: float
+    n_samples: Optional[int] = 500
+    """Number of samples to generate"""
+    use_normal: Optional[bool] = True
+    start_natural: Optional[bool] = False
+    """Whether to start with natural images"""
+    constrained: Optional[bool] = False
+    """Whether to use constrained generation"""
+    use_best: Optional[bool] = False
+    """Whether to use the best attack image, or the most recent one"""
+    clamp: Optional[bool] = False
+
+
 @dataclass
 class BlackBoxAttackConfig(Serializable):
     """
@@ -217,9 +228,12 @@ class BlackBoxAttackConfig(Serializable):
     """Frac of pairs to use (if KL test)"""
     kl_voting: Optional[bool] = False
     """Use comparison instead of differences"""
-    generative_attack:Optional[GenerativeAttackConfig]=None,
-    order_name: Optional[str] = None,
+    generative_attack: Optional[GenerativeAttackConfig]=None
+    """Use generative attack?"""
+    order_name: Optional[str] = None
+    """Type of ordering to use"""
     geo_mean:Optional[bool] = False
+
 
 @dataclass
 class PermutationAttackConfig(Serializable):
@@ -280,11 +294,16 @@ class RegressionConfig(Serializable):
     """
     additional_values_to_test: Optional[List] = None
     """Values of property to use while testing in addition to ratios used to train"""
+
+
 @dataclass
 class ComparisonAttackConfig(Serializable):
-    Start_epoch:int
+    Start_epoch: int
+    """Epoch to use for 'before'"""
     End_epoch: int
-    num_models:int
+    """Epoch to use for 'after'"""
+    num_models: int
+    """Number of models to use for attack"""
 
 @dataclass
 class WhiteBoxAttackConfig(Serializable):
@@ -352,7 +371,7 @@ class AttackConfig(Serializable):
         Configuration values for attacks in general.
     """
     train_config: TrainConfig
-    """Configuration used when training models"""
+    """Configuratdion used when training models"""
     values: List
     """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     black_box:  Optional[BlackBoxAttackConfig] = None

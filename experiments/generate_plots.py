@@ -5,6 +5,7 @@ import os
 import matplotlib
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
+# matplotlib.rcParams["font.family"] = "Times New Roman"
 
 
 if __name__ == "__main__":

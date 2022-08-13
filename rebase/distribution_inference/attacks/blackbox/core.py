@@ -24,6 +24,7 @@ class PredictionsOnDistributions:
         Wrapper to store predictions on two distributions,
         for models trained on two different training distributions.
     """
+
     def __init__(self,
                  preds_on_distr_1: PredictionsOnOneDistribution,
                  preds_on_distr_2: PredictionsOnOneDistribution):
@@ -35,6 +36,7 @@ class Attack:
     def __init__(self, config: BlackBoxAttackConfig):
         self.config = config
         self.supports_saving_preds = False
+
     def attack(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
@@ -51,8 +53,8 @@ class Attack:
 
     def wrap_preds_to_save(self, result: List):
         if self.supports_saving_preds:
-            raise NotImplementedError("Method should be implemented if attack generated soft-labels")
-    
+            raise NotImplementedError(
+                "Method should be implemented if attack generated soft-labels")
 
 
 def multi_model_sampling(arr, multi):
@@ -74,23 +76,26 @@ def multi_model_sampling(arr, multi):
         raise ValueError("Dimension mismatch")
     return res
 
+
 def _acc_per_dis(preds_d1: PredictionsOnOneDistribution,
-               preds_d2: PredictionsOnOneDistribution,
-               ground_truth,
-               calc_acc: Callable,
-               t = False,
-               multi_class:bool=False):
-        #pi means ith epoch
+                 preds_d2: PredictionsOnOneDistribution,
+                 ground_truth,
+                 calc_acc: Callable,
+                 t=False,
+                 multi_class: bool = False):
+     #pi means ith epoch
     p1 = [preds_d1.preds_property_1, preds_d1.preds_property_2]
     p2 = [preds_d2.preds_property_1, preds_d2.preds_property_2]
     transpose_order = (1, 0, 2) if multi_class else (1, 0)
     if not t:
         for i in range(2):
-            p1[i] = np.transpose(p1[i],transpose_order)
-            p2[i] = np.transpose(p2[i],transpose_order)
-    acc1 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p1]
-    acc2 = [100*calc_acc(p,ground_truth,multi_class=multi_class) for p in p2]
-    return (np.array(acc1),np.array(acc2))
+            p1[i] = np.transpose(p1[i], transpose_order)
+            p2[i] = np.transpose(p2[i], transpose_order)
+    acc1 = [100*calc_acc(p, ground_truth, multi_class=multi_class) for p in p1]
+    acc2 = [100*calc_acc(p, ground_truth, multi_class=multi_class) for p in p2]
+    return (np.array(acc1), np.array(acc2))
+
+
 def threshold_test_per_dist(calc_acc: Callable,
                             preds_adv: PredictionsOnOneDistribution,
                             preds_victim: PredictionsOnOneDistribution,
@@ -103,7 +108,8 @@ def threshold_test_per_dist(calc_acc: Callable,
     """
     assert not (
         epochwise_version and config.multi), "No implementation for both epochwise and multi model"
-    assert not (config.multi2 and config.multi), "No implementation for both multi model"
+    assert not (
+        config.multi2 and config.multi), "No implementation for both multi model"
     assert not (
         epochwise_version and config.multi2), "No implementation for both epochwise and multi model"
     # Predictions made by the adversary's models
@@ -112,7 +118,7 @@ def threshold_test_per_dist(calc_acc: Callable,
     pv1, pv2 = preds_victim.preds_property_1, preds_victim.preds_property_2
 
     # Get optimal order of point
-    order = order_points(p1, p2,config.order_name)
+    order = order_points(p1, p2, config.order_name)
 
     # Order points according to computed utility
     multi_class = config.multi_class
@@ -138,7 +144,7 @@ def threshold_test_per_dist(calc_acc: Callable,
             pv2_use = [x[:leng] for x in pv2]
         else:
             pv1_use, pv2_use = pv1[:leng], pv2[:leng]
- 
+
         # Calculate accuracies for these points in [0,100]
         accs_1 = 100 * calc_acc(p1_use, yg_use, multi_class=multi_class)
         accs_2 = 100 * calc_acc(p2_use, yg_use, multi_class=multi_class)
@@ -232,7 +238,7 @@ def find_threshold_acc(accs_1, accs_2, granularity: float = 0.1):
     return best_acc, best_threshold, best_rule
 
 
-def get_threshold_acc(X, Y, threshold, rule=None,get_preds:bool=False):
+def get_threshold_acc(X, Y, threshold, rule=None, get_preds: bool = False):
     """
         Get accuracy of predictions using given threshold,
         considering both possible (<= and >=) rules. Also
@@ -247,9 +253,9 @@ def get_threshold_acc(X, Y, threshold, rule=None,get_preds:bool=False):
     acc_2 = np.mean(p2)
     if get_preds:
         if rule == 1:
-            return acc_1,p1
+            return acc_1, p1
         elif rule == 2:
-            return acc_2,p2
+            return acc_2, p2
         else:
             raise Exception("Need specified rule if get_preds")
     # If rule is specified, use that
@@ -337,14 +343,15 @@ def find_threshold_pred(pred_1, pred_2,
     predictions_combined = np.concatenate((pred_1, pred_2), axis=1)
     ground_truth = np.concatenate(
         (np.zeros(pred_1.shape[1]), np.ones(pred_2.shape[1])))
-    acc, _ = get_threshold_pred(predictions_combined, ground_truth, thres, rules)
+    acc, _ = get_threshold_pred(
+        predictions_combined, ground_truth, thres, rules)
     return acc, thres, rules
 
 
 def get_threshold_pred(X, Y, threshold, rule,
                        get_pred: bool = False,
                        tune_final_threshold: Union[bool, float] = False,
-                       voting:bool=True):
+                       voting: bool = True):
     """
         Get distinguishing accuracy between distributions, given predictions
         for models on datapoints, and thresholds with prediction rules.
@@ -444,9 +451,12 @@ def get_threshold_pred_multi(
         return res, acc
     return acc
 
+
 def sigmoid(x):
     exp = np.exp(x)
     return exp / (1 + exp)
+
+
 def order_points1(p1s, p2s):
     """
         Estimate utility of individual points, done by taking
@@ -464,6 +474,8 @@ def order_points1(p1s, p2s):
 
     inds = np.argsort(abs_diff)
     return inds
+
+
 def order_sq(p1s, p2s):
     """
         Estimate utility of individual points, done by taking
@@ -473,28 +485,36 @@ def order_sq(p1s, p2s):
     if p1s.shape != p2s.shape:
         raise ValueError(
             f"Both predictions should be same shape, got {p1s.shape} and {p2s.shape}")
-    p1s = np.mean(sigmoid(p1s),axis=0)
-    p2s = np.mean(sigmoid(p2s),axis=0)
-    a1 = np.maximum(np.square(p1s-0.5)+np.square(p2s-1.0),np.square(p1s-0.5)+np.square(p2s))
-    a2 = np.maximum(np.square(p1s-1.0)+np.square(p2s-0.5),np.square(p1s)+np.square(p2s-0.5))
-    a_combined = np.maximum(a1,a2)
+    p1s = np.mean(sigmoid(p1s), axis=0)
+    p2s = np.mean(sigmoid(p2s), axis=0)
+    a1 = np.maximum(np.square(p1s-0.5)+np.square(p2s-1.0),
+                    np.square(p1s-0.5)+np.square(p2s))
+    a2 = np.maximum(np.square(p1s-1.0)+np.square(p2s-0.5),
+                    np.square(p1s)+np.square(p2s-0.5))
+    a_combined = np.maximum(a1, a2)
     if len(p1s.shape) == 3:
         # Handle multi-class case
         a_combined = np.mean(a_combined, 1)
 
     inds = np.argsort(a_combined)
     return inds
-def order_points(p1s,p2s,order:str=None):
-        if order=="square":
-            return order_sq(p1s,p2s)
-        elif order is None:
-            return order_points1(p1s,p2s)
-        else:
-            raise Exception("No implementation")
-def epoch_order_p(p11,p12,p21,p22):
-        #pij: ith epoch, jth distribution
-        #TODO: find a better order rather than only using the last epoch
-        return order_points(p21,p22)[::-1]
+
+
+def order_points(p1s, p2s, order: str = None):
+    if order == "square":
+        return order_sq(p1s, p2s)
+    elif order is None:
+        return order_points1(p1s, p2s)
+    else:
+        raise Exception(f"No implementation found for {order}")
+
+
+def epoch_order_p(p11, p12, p21, p22):
+     #pij: ith epoch, jth distribution
+     #TODO: find a better order rather than only using the last epoch
+      return order_points(p21, p22)[::-1]
+
+
 def find_max_acc_threshold(preds, labels, granularity=0.01):
     """
         Find the threshold that maximizes accuracy.

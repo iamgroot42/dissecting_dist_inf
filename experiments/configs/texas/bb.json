@@ -31,8 +31,7 @@
         "multi_class": true,
         "batch_size": 1000,
         "attack_type": [
-            "threshold_perpoint",
-            "loss_and_threshold"
+            "KL"
         ],
         "ratios": [
             0.05,
