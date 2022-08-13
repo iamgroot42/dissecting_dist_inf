@@ -1,6 +1,7 @@
 {
     "data_config": {
         "name": "arxiv",
+        "multi_class": true,
         "prop": "mean",
         "split": "adv",
         "value": 18

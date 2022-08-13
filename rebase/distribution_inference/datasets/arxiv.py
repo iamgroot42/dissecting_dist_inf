@@ -383,7 +383,6 @@ class ArxivWrapper(base.CustomDatasetWrapper):
         return self.ds.get_features()
 
     def load_data(self):
-
         self.ds = ArxivNodeDataset(self.split)
 
         # Modify mean degree
@@ -397,6 +396,13 @@ class ArxivWrapper(base.CustomDatasetWrapper):
         train_idx, test_idx = self.ds.get_idx_split()
 
         return train_idx, test_idx
+    
+    def get_processed_val_loader(self, batch_size: int,
+                                 shuffle: bool = False,
+                                 val_factor: float = 1,
+                                 num_workers: int = 0,
+                                 prefetch_factor: int = 2):
+        raise ValueError("Processed variant does not exist for this dataset")
 
     def get_loaders(self, batch_size,
                     shuffle: bool = False,
@@ -416,7 +422,11 @@ class ArxivWrapper(base.CustomDatasetWrapper):
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
         info_object = DatasetInformation()
         base_models_dir = info_object.base_models_dir
-        subfolder_prefix = os.path.join(self.split, self.prop, "deg" + str(self.ratio))
+        if int(self.ratio) == self.ratio:
+            deg_name = "deg%d" % self.ratio
+        else:
+            "deg%.1f" % self.ratio
+        subfolder_prefix = os.path.join(self.split, self.prop, deg_name)
 
         # Standard logic
         if model_arch is None:

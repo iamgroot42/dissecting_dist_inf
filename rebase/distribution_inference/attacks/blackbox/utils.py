@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import List, Tuple, Callable
+from typing import List, Tuple
 import torch.nn as nn
 from tqdm import tqdm
 import numpy as np
@@ -26,7 +26,6 @@ ATTACK_MAPPING = {
     "single_update_loss": Epoch_LossAttack,
     "single_update_threshold": Epoch_ThresholdAttack,
     "single_update_perpoint": Epoch_Perpoint,
-
     "epoch_meta": Epoch_Tree,
     "perpoint_choose": PerPointChooseAttack,
     "perpoint_choose_dif": PerPointChooseDifAttack,
@@ -68,14 +67,67 @@ def calculate_accuracies(data, labels,
     return np.average(1. * (preds == expanded_gt), axis=0)
 
 
+def get_graph_preds(ds, indices,
+                    models: List[nn.Module],
+                    verbose: bool = False,
+                    multi_class: bool = False,
+                    latent: int = None):
+    """
+        Get predictions for given graph models
+    """
+    X = ds.get_features()
+    Y = ds.get_labels()
+
+    predictions = []
+    iterator = models
+    if verbose:
+        iterator = tqdm(iterator, desc="Generating Predictions")
+    for model in iterator:
+        # Shift model to GPU
+        model = model.cuda()
+        # Make sure model is in evaluation mode
+        model.eval()
+        # Clear GPU cache
+        ch.cuda.empty_cache()
+
+        # Get model outputs/preds
+        prediction = model(ds.g, X, latent=latent)[indices].detach().cpu().numpy()
+        if latent != None and not multi_class:
+            prediction = prediction[:, 0]
+        predictions.append(prediction)
+    
+        # Shift model back to CPU
+        model = model.cpu()
+        del model
+        gc.collect()
+        ch.cuda.empty_cache()
+
+    predictions = np.stack(predictions, 0)
+    gc.collect()
+    ch.cuda.empty_cache()
+
+    labels = Y[indices].cpu().numpy()[:, 0]
+    return predictions, labels
+
+
 def get_preds(loader, models: List[nn.Module],
               preload: bool = False,
               verbose: bool = True,
               multi_class: bool = False,
-              latent:int=None):
+              latent: int = None):
     """
         Get predictions for given models on given data
     """
+
+    # Check if models are graph-related
+    if models[0].is_graph_model:
+        return get_graph_preds(ds=loader[0],
+                               indices=loader[1],
+                               models=models,
+                               verbose=verbose,
+                               latent=latent,
+                               multi_class=multi_class)
+
     predictions = []
     ground_truth = []
     inputs = []
@@ -108,25 +160,24 @@ def get_preds(loader, models: List[nn.Module],
             # Skip multiple CPU-CUDA copy ops
             if preload:
                 for data_batch in inputs:
-                    if latent!=None:
+                    if latent != None:
                         prediction = model(data_batch,latent=latent).detach()
                     else:
                         prediction = model(data_batch).detach()
-                    if not multi_class:
-                        prediction = prediction[:, 0]
+                        if not multi_class:
+                            prediction = prediction[:, 0]
                     predictions_on_model.append(prediction.cpu())
             else:
                 # Iterate through data-loader
                 for data in loader:
                     data_points, labels, _ = data
                     # Get prediction
-                    if latent!=None:
-                        prediction = model(data_points.cuda(),latent=latent).detach()
+                    if latent != None:
+                        prediction = model(data_points.cuda(), latent=latent).detach()
                     else:
                         prediction = model(data_points.cuda()).detach()
-                    prediction = model(data_points.cuda()).detach()
-                    if not multi_class:
-                        prediction = prediction[:, 0]
+                        if not multi_class:
+                            prediction = prediction[:, 0]
                     predictions_on_model.append(prediction)
         predictions_on_model = ch.cat(predictions_on_model).cpu().numpy()
         predictions.append(predictions_on_model)
@@ -229,12 +280,13 @@ def _get_preds_for_vic_and_adv(
 
 
 def get_vic_adv_preds_on_distr_seed(
-    models_vic: Tuple[List[nn.Module], List[nn.Module]],
-    models_adv: Tuple[List[nn.Module], List[nn.Module]],
-    loader,
+        models_vic: Tuple[List[nn.Module], List[nn.Module]],
+        models_adv: Tuple[List[nn.Module], List[nn.Module]],
+        loader,
         epochwise_version: bool = False,
         preload: bool = False,
         multi_class: bool = False):
+
     preds_vic_1, preds_adv_1, ground_truth = _get_preds_for_vic_and_adv(
         models_vic[0], models_adv[0], loader,
         epochwise_version=epochwise_version,
@@ -267,18 +319,30 @@ def get_vic_adv_preds_on_distr(
         multi_class: bool = False,
         make_processed_version: bool = False):
 
-    loader_for_shape, loader_vic = ds_obj.get_loaders(batch_size=batch_size)
-    adv_datum_shape = next(iter(loader_for_shape))[0].shape[1:]
-    if make_processed_version:
-        # Make version of DS for victim that processes data
-        # before passing on
-        adv_datum_shape = ds_obj.prepare_processed_data(loader_vic)
-        loader_adv = ds_obj.get_processed_val_loader(batch_size=batch_size)
-    else:
-        # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
-        loader_adv = loader_vic
+    # Check if models are graph-related
+    are_graph_models = False
+    if models_vic[0][0].is_graph_model:
+        are_graph_models = True
 
-    # TODO: Use preload logic here to speed things even more
+    if are_graph_models:
+        # No concept of 'processed'
+        data_ds, (_, test_idx) = ds_obj.get_loaders(batch_size=batch_size)
+        loader_vic = (data_ds, test_idx)
+        loader_adv = loader_vic
+    else:
+        loader_for_shape, loader_vic = ds_obj.get_loaders(batch_size=batch_size)
+        adv_datum_shape = next(iter(loader_for_shape))[0].shape[1:]
+
+        if make_processed_version:
+            # Make version of DS for victim that processes data
+            # before passing on
+            adv_datum_shape = ds_obj.prepare_processed_data(loader_vic)
+            loader_adv = ds_obj.get_processed_val_loader(batch_size=batch_size)
+        else:
+            # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
+            loader_adv = loader_vic
+
+        # TODO: Use preload logic here to speed things even more
 
     # Get predictions for first set of models
     preds_vic_1, preds_adv_1, ground_truth, not_using_logits = _get_preds_for_vic_and_adv(
