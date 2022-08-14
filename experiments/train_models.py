@@ -40,13 +40,7 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(train_config)
 
-    # Define logger
-    exp_name = "_".join([config.data_config.split,
-                        config.data_config.prop,
-                        config.model_arch,
-                        str(config.data_config.value),
-                        str(config.offset)])
-    logger = TrainingResult(exp_name, train_config)
+    
 
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -54,7 +48,14 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(
         data_config.name)(train_config.save_every_epoch)
-
+    exp_name = "_".join([config.data_config.split,
+                        config.data_config.prop,
+                        config.model_arch if config.model_arch else ds_info.default_model,
+                        str(config.data_config.value),
+                        str(config.offset)])
+    # Define logger
+    
+    logger = TrainingResult(exp_name, train_config)
     # Create new DS object
     ds = ds_wrapper_class(data_config,epoch=train_config.save_every_epoch,label_noise=train_config.label_noise)
 
@@ -100,14 +101,15 @@ if __name__ == "__main__":
                 "curren_model_num": i + train_config.offset,
                 "save_path_fn": ds.get_save_path,
                 "more_metrics": EXTRA})
-            logger.add_result(data_config.value, vloss, vacc, extras)
+            logger.add_result(data_config.value, loss=vloss, acc=vacc,**extras)
+            
         else:
             model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                          train_config=train_config,
                                          extra_options={
                 "curren_model_num": i + train_config.offset,
                 "save_path_fn": ds.get_save_path})
-            logger.add_result(data_config.value, vloss, vacc)
+            logger.add_result(data_config.value, loss=vloss, acc=vacc)
 
         # If saving only the final model
         if not train_config.save_every_epoch:

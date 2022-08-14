@@ -17,7 +17,6 @@ class KLAttack(Attack):
             Perform Threshold-Test and Loss-Test attacks using
             given accuracies of models.
         """
-        assert calc_acc is not None, "Must provide function to compute accuracy"
         assert not (
             self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (
@@ -157,19 +156,18 @@ def sigmoid(x):
 
 
 def KL(x, y, multi_class: bool = False):
+    small_eps = 1e-6
+    x_, y_ = x, y
+    x_[x_ == 0] += small_eps
+    x_[x_ == 1] -= small_eps
+    y_[y_ == 0] += small_eps
+    y_[y_ == 1] -= small_eps
     if multi_class:
-        raise NotImplementedError("Not implemented multi-class model yet")
+        return np.mean(np.sum(x * (np.log(x) - np.log(y)),axis=2),axis=1)
     else:
         # Strategy 1: Add (or subtract) small noise to avoid NaNs/INFs
-        small_eps = 1e-6
-        x_, y_ = x, y
-        x_[x_ == 0] += small_eps
-        x_[x_ == 1] -= small_eps
-        y_[y_ == 0] += small_eps
-        y_[y_ == 1] -= small_eps
-
         # Get preds for other class as well
         x_, y_ = 1 - x, 1 - y
         first_term = x * (np.log(x) - np.log(y))
         second_term = x_ * (np.log(x_) - np.log(y_))
-    return np.mean(first_term + second_term, 1)
+        return np.mean(first_term + second_term, 1)
