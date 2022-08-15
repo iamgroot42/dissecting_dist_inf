@@ -25,7 +25,7 @@
         "attack_type": [
             "KL",
             "loss_and_threshold",
-            "threshold_perpoint",
+            "threshold_perpoint"
         ],
         "ratios": [
             0.05,

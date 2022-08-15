@@ -55,19 +55,18 @@ if __name__ == "__main__":
     exp = args.exp if args.exp else "not saving"
     # Define logger
     offset = args.offset if args.offset else train_config.offset
+    # Get dataset info object
+    ds_info = get_dataset_information(
+            data_config.name)(train_config.save_every_epoch)
+
     exp_name = "_".join([train_config.data_config.split, train_config.data_config.prop,
-                        train_config.model_arch, exp,str(offset)])
+                        train_config.model_arch if train_config.model_arch else ds_info.default_model, exp,str(offset)])
     logger = TrainingResult(exp_name, train_config)
     for ratio in args.ratios:
         data_config.value = ratio
         train_config.data_config.value = ratio
         # Get dataset wrapper
         ds_wrapper_class = get_dataset_wrapper(data_config.name)
-
-        # Get dataset info object
-        ds_info = get_dataset_information(
-            data_config.name)(train_config.save_every_epoch)
-
         # Create new DS object
         ds = ds_wrapper_class(data_config,epoch=train_config.save_every_epoch,label_noise=train_config.label_noise)
         """
@@ -116,7 +115,7 @@ if __name__ == "__main__":
                 "curren_model_num": i + offset,
                 "save_path_fn": ds.get_save_path,
                 "more_metrics":EXTRA})
-                logger.add_result(data_config.value, vloss, vacc,extras)
+                logger.add_result(data_config.value, loss=vloss, acc=vacc,**extras)
                 print("Precision:{},Recall:{},F1:{}".format(extras["precision"],extras["recall"],extras["F1"]))
             else:
                 model, (vloss, vacc) = train(model, (train_loader, val_loader),

@@ -62,6 +62,7 @@ class AttackResult(Result):
     def __init__(self,
                  experiment_name: str,
                  attack_config: AttackConfig,
+                 D0 = None,
                  aname: str = None):
         # Infer path from data_config inside attack_config
         dataset_name = attack_config.train_config.data_config.name
@@ -71,8 +72,12 @@ class AttackResult(Result):
         else:
             attack_name = "blackbox" if attack_config.white_box is None else "whitebox"
         save_path = get_save_path()
-        path = Path(os.path.join(save_path, dataset_name, attack_name))
-        super().__init__(path, experiment_name)
+        if D0==None:
+            path = Path(os.path.join(save_path, dataset_name, attack_name))
+            super().__init__(path, experiment_name)
+        else:
+            path = Path(os.path.join(save_path, dataset_name, attack_name,experiment_name))
+            super().__init__(path, str(D0))
 
         self.dic["attack_config"] = deepcopy(attack_config)
         self.convert_to_dict(self.dic)

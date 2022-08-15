@@ -45,7 +45,9 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(attack_config)
     ratios = args.ratios
+    are_graph_models = data_config.name=="arxiv"
     EPOCH=train_config.save_every_epoch
+    assert not (are_graph_models and EPOCH)
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -102,27 +104,33 @@ if __name__ == "__main__":
                         on_cpu=attack_config.on_cpu,
                         model_arch=attack_config.adv_model_arch,
                         epochwise_version=EPOCH)
-                    loader_for_shape, loader_vic = ds_adv_2.get_loaders(batch_size=batch_size)
-                    adv_datum_shape = next(iter(loader_for_shape))[0].shape[1:]
-                    if make_processed_version:
-                        # Make version of DS for victim that processes data
-                        # before passing on
-                        adv_datum_shape = ds_adv_2.prepare_processed_data(loader_vic)
-                        loader_adv = ds_adv_2.get_processed_val_loader(batch_size=batch_size)
-                    else:
-                        # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
+                    if are_graph_models:
+                        assert not make_processed_version
+                        data_ds, (_, test_idx) = ds_adv_2.get_loaders(batch_size=batch_size)
+                        loader_vic = (data_ds, test_idx)
                         loader_adv = loader_vic
+                    else:
+                        loader_for_shape, loader_vic = ds_adv_2.get_loaders(batch_size=batch_size)
+                        adv_datum_shape = next(iter(loader_for_shape))[0].shape[1:]
+                        if make_processed_version:
+                            # Make version of DS for victim that processes data
+                            # before passing on
+                            adv_datum_shape = ds_adv_2.prepare_processed_data(loader_vic)
+                            loader_adv = ds_adv_2.get_processed_val_loader(batch_size=batch_size)
+                        else:
+                            # Get val data loader (should be same for all models, since get_loaders() gets new data for every call)
+                            loader_adv = loader_vic
                     if EPOCH:
                         assert not make_processed_version
-                        adv_p,gt = _get_preds_accross_epoch(models_adv_1,loader_vic,preload=bb_attack_config.preload,multi_class=bb_attack_config.multi_class)
-                        vic_p,_ = _get_preds_accross_epoch(models_vic_1,loader_vic,preload=bb_attack_config.preload,multi_class=bb_attack_config.multi_class)
-
+                        adv_p,gt_ = _get_preds_accross_epoch(models_adv_1,loader_vic,preload=bb_attack_config.preload,multi_class=bb_attack_config.multi_class)
+                        vic_p,gt__ = _get_preds_accross_epoch(models_vic_1,loader_vic,preload=bb_attack_config.preload,multi_class=bb_attack_config.multi_class)
+                        assert np.array_equal(gt__,gt_)
                     else:
-                        adv_p,vic_p,gt,_=_get_preds_for_vic_and_adv(models_vic_1,models_adv_1, (loader_vic, loader_adv),
+                        adv_p,vic_p,gt_,_=_get_preds_for_vic_and_adv(models_vic_1,models_adv_1, (loader_vic, loader_adv),
                         epochwise_version=EPOCH,preload=bb_attack_config.preload,multi_class=bb_attack_config.multi_class)
                     preds_a[r0][prop_value][t] = adv_p
                     preds_v[r0][prop_value][t] = vic_p
-                    gt[r0][prop_value][t] = gt
+                    gt[r0][prop_value][t] = gt_
         return preds_a,preds_v,gt
     
     preds = single_evaluation()
