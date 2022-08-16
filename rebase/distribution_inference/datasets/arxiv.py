@@ -2,7 +2,6 @@ import os
 import torch as ch
 from tqdm import tqdm
 import torch.nn as nn
-import gc
 
 import distribution_inference.datasets.base as base
 from distribution_inference.models.core import GCN

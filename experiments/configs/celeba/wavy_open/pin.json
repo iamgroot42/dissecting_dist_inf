@@ -1,0 +1,37 @@
+{
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 100,
+        "batch_size": 150,
+        "permutation_config": {
+            "focus": "all"
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "celeba",
+            "prop": "Wavy_Hair",
+            "classify": "Mouth_Slightly_Open",
+            "split": "adv",
+            "value": 0.5,
+            "processed_variant": false
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "num_victim_models": 500,
+    "tries": 3,
+    "values": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
+    ],
+    "on_cpu": true
+}

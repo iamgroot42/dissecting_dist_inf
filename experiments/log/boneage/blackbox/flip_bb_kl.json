@@ -1,20 +1,21 @@
 {
-    "name": "bone_full_KL",
-    "start time": "2022-06-17 18:43:00.547479",
+    "name": "flip_bb_kl",
+    "start time": "2022-08-16 13:53:21.713480",
     "attack_config": {
         "train_config": {
             "data_config": {
                 "name": "boneage",
-                "prop": "gender",
+                "prop": "age",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "age",
+                "classify": "gender",
                 "cwise_samples": null,
                 "squeeze": true,
-                "processed_variant": false
+                "processed_variant": true,
+                "prune": 0
             },
             "epochs": 0,
             "learning_rate": 0.0,
@@ -33,7 +34,8 @@
             "regression": false,
             "multi_class": false,
             "label_noise": 0,
-            "full_model": false
+            "model_arch": null,
+            "parallel": false
         },
         "values": [
             0.2,
@@ -48,17 +50,11 @@
                 "KL"
             ],
             "ratios": [
-                0.05,
-                0.1,
-                0.2,
-                0.3,
-                0.4,
-                0.5,
                 1.0
             ],
-            "batch_size": 50,
+            "batch_size": 30000,
             "num_adv_models": 50,
-            "granularity": 0.05,
+            "granularity": 0.005,
             "preload": true,
             "multi": null,
             "multi2": null,
@@ -69,17 +65,25 @@
             "End_epoch": 20,
             "relative_threshold": false,
             "loss_variant": false,
-            "random_order": false
+            "random_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false
         },
         "white_box": null,
-        "tries": 3,
-        "num_victim_models": 250,
-        "on_cpu": true,
+        "tries": 5,
+        "num_victim_models": 500,
+        "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
-        "victim_full_model": true,
-        "adv_full_model": false
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null
     },
     "result": {
         "KL": {
@@ -87,75 +91,33 @@
                 "adv_acc": [
                     null,
                     null,
+                    null,
+                    null,
                     null
                 ],
                 "victim_acc": [
-                    67.0,
-                    72.6,
-                    54.6
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
                 ]
             },
             "0.3": {
                 "adv_acc": [
                     null,
                     null,
-                    null
-                ],
-                "victim_acc": [
-                    61.199999999999996,
-                    62.8,
-                    55.800000000000004
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null,
                     null,
                     null
                 ],
                 "victim_acc": [
-                    55.2,
-                    50.2,
-                    50.2
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    50.4,
-                    51.4,
-                    59.4
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    58.60000000000001,
-                    64.8,
-                    66.4
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    77.60000000000001,
-                    76.6,
-                    77.60000000000001
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
                 ]
             }
         }
     },
-    "save time": "2022-06-18 04:58:56.779927"
+    "save time": "2022-08-16 14:24:42.285070"
 }

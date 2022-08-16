@@ -1,7 +1,6 @@
-from distribution_inference.attacks.utils import get_attack_name,ATTACK_MAPPING
+from distribution_inference.attacks.utils import get_attack_name, ATTACK_MAPPING
 from distribution_inference.utils import warning_string
 from distribution_inference.logging.core import AttackResult
-from distribution_inference.neff.neff import BinaryRatio
 
 import seaborn
 import matplotlib.pyplot as plt
