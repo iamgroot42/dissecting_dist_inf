@@ -47,7 +47,8 @@ if __name__ == "__main__":
     # Convert data to dataframe
     df = pd.DataFrame(df)
 
-    print(df)
+    # Replace very-high values with something less
+    df.loc[df['acc_or_loss'] == 100, 'acc_or_loss'] = 100 - 1e-3
 
     # Maintain maximum per ratio
     df = df.groupby(['prop_val']).max().reset_index()

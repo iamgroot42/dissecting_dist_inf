@@ -8,7 +8,7 @@ from sklearn.metrics import log_loss
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 import torch.nn.functional as F
-from dgl.nn.pytorch import GraphConv
+# from dgl.nn.pytorch import GraphConv
 
 from distribution_inference.models.utils import BasicWrapper, FakeReluWrapper
 

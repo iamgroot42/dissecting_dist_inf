@@ -108,9 +108,75 @@
                     null,
                     null,
                     null,
+                    null,
                     null
                 ],
                 "victim_acc": [
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.7,
+                    98.7,
+                    98.7,
+                    98.8,
+                    98.4
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    99.7,
+                    99.7,
+                    99.7,
+                    99.7,
+                    99.5
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
                     100.0,
                     100.0,
                     100.0,
@@ -119,5 +185,5 @@
             }
         }
     },
-    "save time": "2022-08-16 14:24:42.285070"
+    "save time": "2022-08-16 15:35:32.752497"
 }
