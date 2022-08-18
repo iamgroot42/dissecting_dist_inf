@@ -330,7 +330,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                  label_noise: float = 0,
                  epoch:bool = False):
         super().__init__(data_config, skip_data,label_noise)
-        self.info_object = DatasetInformation()
+        self.info_object = DatasetInformation(epoch_wise=epoch)
 
         # Make sure specified label is valid
         # if self.classify not in self.info_object.preserve_properties:

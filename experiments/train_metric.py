@@ -19,7 +19,7 @@ from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 
-def train(model, loaders, loader2, train_config: TrainConfig,
+def train(model, loaders, train_config: TrainConfig,
           input_is_list: bool = False,
           extra_options: dict = None):
     if extra_options != None and "more_metrics" in extra_options.keys():
@@ -91,7 +91,7 @@ def train(model, loaders, loader2, train_config: TrainConfig,
     if adv_config is not None and adv_config.epsilon_iter is None:
         adv_config.epsilon_iter = 2.5 * adv_config.epsilon / adv_config.iters
 
-    tlosses, tacces, R_crosses = [], [], []
+    tlosses, tacces = [], []
     vlosses, vacces = [], []
     for epoch in iterator:
         tloss, tacc = train_epoch(train_loader, model,
@@ -122,26 +122,41 @@ def train(model, loaders, loader2, train_config: TrainConfig,
                                      multi_class=train_config.multi_class)
         vlosses.append(vloss)
         vacces.append(vacc)
-        R_crosse, _ = validate_epoch(
-            loader2,
-            model, criterion,
-            verbose=False,
-            adv_config=None,
-            expect_extra=train_config.expect_extra,
-            input_is_list=False,
-            regression=train_config.regression,
-            multi_class=train_config.multi_class)
-        R_crosses.append(R_crosse)
+        
         # LR Scheduler, if requested
         if lr_scheduler is not None:
             lr_scheduler.step(vloss)
 
-    R_crosses = list(np.array(R_crosses)-np.array(vlosses))
+    
     # Now that training is over, remove dataparallel wrapper
     if train_config.parallel:
         model = model.module
+    if train_config.save_every_epoch:
+        # If adv training, suffix is a bit different
+        if train_config.misc_config and train_config.misc_config.adv_config:
+            if train_config.regression:
+                suffix = "_%.4f_adv_%.4f.ch" % (vloss[0], vloss[1])
+            else:
+                suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
+        else:
+            if train_config.regression:
+                suffix = "_tr%.4f_te%.4f.ch" % (tloss, vloss)
+            else:
+                suffix = "_tr%.2f_te%.2f.ch" % (tacc, vacc)
 
-    return vlosses, vacces, tlosses, tacces, R_crosses
+        # Get model "name" and function to save model
+        model_num = extra_options.get("curren_model_num")
+        save_path_fn = extra_options.get("save_path_fn")
+
+        # Save model in current epoch state
+        file_name = os.path.join(str(epoch), str(
+            model_num + train_config.offset) + suffix)
+        save_path = save_path_fn(train_config, file_name)
+        # Make sure this directory exists
+        if not os.path.isdir(os.path.dirname(save_path)):
+            os.makedirs(os.path.dirname(save_path))
+        save_model(model, save_path)
+    return vlosses, vacces, tlosses, tacces
 
 
 if __name__ == "__main__":
@@ -186,10 +201,13 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(train_config)
     exp = args.exp if args.exp else "not saving"
+    # Get dataset info object
+    ds_info = get_dataset_information(
+        data_config.name)(train_config.save_every_epoch)
     # Define logger
     offset = args.offset if args.offset else train_config.offset
     exp_name = "_".join([train_config.data_config.split, train_config.data_config.prop,
-                        train_config.model_arch, exp, str(offset)])
+                        train_config.model_arch if train_config.model_arch else ds_info.default_model, exp, str(offset)])
     logger = TrainingResult(exp_name, train_config)
     for ratio in args.ratios:
         data_config.value = ratio
@@ -197,9 +215,7 @@ if __name__ == "__main__":
         # Get dataset wrapper
         ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
-        # Get dataset info object
-        ds_info = get_dataset_information(
-            data_config.name)(train_config.save_every_epoch)
+        
 
         # Create new DS object
         ds = ds_wrapper_class(data_config, epoch=train_config.save_every_epoch)
@@ -240,15 +256,8 @@ if __name__ == "__main__":
                 model = ds_info.get_model_for_dp()
 
             # Train model
-            _, data_config_vic = get_dfs_for_victim_and_adv(
-                data_config, prop_value=0.5)
-            ds_vic_2 = ds_wrapper_class(
-                data_config_vic,
-                label_noise=train_config.label_noise,
-                epoch=True)
-            _, loader2 = ds_vic_2.get_loaders(
-                batch_size=train_config.batch_size)
-            vlosses, vacces, tlosses, tacces, R_crosses = train(model, (train_loader, val_loader), loader2,
+            
+            vlosses, vacces, tlosses, tacces = train(model, (train_loader, val_loader),
                                                                 train_config=train_config,
                                                                 extra_options={
                 "curren_model_num": i + offset,
@@ -256,8 +265,8 @@ if __name__ == "__main__":
 
             extras = {"train_loss": tlosses, "train_acc": tacces, "loss_dif": list(np.array(
                 vlosses)-np.array(tlosses)), "acc_dif": list(np.array(tacces)-np.array(vacces))}
-            logger.add_result(data_config.value, vlosses,
-                              vacces, extras, R_cross=list(R_crosses))
+            logger.add_result(data_config.value, loss=vlosses,
+                              acc=vacces, **extras)
 
     # Save logger
     if args.exp:

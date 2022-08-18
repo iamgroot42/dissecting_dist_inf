@@ -6,7 +6,8 @@ from torchvision.models import densenet121
 from sklearn.metrics import log_loss
 
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier as KN
+from sklearn.gaussian_process import GaussianProcessClassifier as GPC
 import torch.nn.functional as F
 from dgl.nn.pytorch import GraphConv
 
@@ -68,6 +69,26 @@ class RandomForest(BaseModel):
         self.model = RandomForestClassifier(
             max_depth=max_depth, n_estimators=n_estimators,
             n_jobs=n_jobs, min_samples_leaf=min_samples_leaf)
+
+class KNeighborsClassifier(BaseModel):
+    def __init__(self,
+                n_neighbors: int = 5,
+                leaf_size:int=30,
+                p:int=2,
+                n_jobs:int = -1
+                ):
+        super().__init__(is_sklearn_model=True)
+        self.model = KN(n_neighbors=n_neighbors,leaf_size=leaf_size,p=p,n_jobs=n_jobs)
+
+class GaussianProcessClassifier(BaseModel):
+    def __init__(self,
+                n_restarts_optimizer: int = 0,
+                max_iter_predictint:int=100,
+                n_jobs:int = -1
+                ):
+        super().__init__(is_sklearn_model=True)
+        self.model = GPC(n_restarts_optimizer=n_restarts_optimizer,
+        max_iter_predictint=max_iter_predictint,n_jobs=n_jobs)
 
 
 class InceptionModel(BaseModel):

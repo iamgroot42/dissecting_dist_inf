@@ -267,7 +267,7 @@ class _RawBoneWrapper:
 
 
 class BoneWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0):
+    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, label_noise: float = 0, epoch: bool = False):
         # Call parent constructor
         super().__init__(data_config, skip_data, label_noise)
         self.sample_sizes = {
@@ -281,7 +281,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
             }
         }
         # Define DI object
-        self.info_object = DatasetInformation()
+        self.info_object = DatasetInformation(epoch_wise=epoch)
 
     def _filter(self, x):
         return x[self.prop] == 1
@@ -358,13 +358,13 @@ class BoneWrapper(base.CustomDatasetWrapper):
                                    prefetch_factor=prefetch_factor)
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
-        info_object = DatasetInformation()
+        info_object = self.info_object
         base_models_dir = info_object.base_models_dir
         subfolder_prefix = os.path.join(self.split, self.prop, str(self.ratio))
 
         # Standard logic
         if model_arch is None:
-            model_arch = self.info_object.default_model
+            model_arch = info_object.default_model
         if model_arch not in info_object.supported_models:
             raise ValueError(f"Model architecture {model_arch} not supported")
         if model_arch is None:
