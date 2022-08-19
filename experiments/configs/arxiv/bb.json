@@ -11,9 +11,15 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 1,
+    "tries": 5,
     "values": [
         9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
         17
     ],
     "on_cpu": false,
@@ -24,8 +30,7 @@
         "batch_size": 512,
         "attack_type": [
             "KL",
-            "loss_and_threshold",
-            "threshold_perpoint",
+            "threshold_perpoint"
         ],
         "ratios": [
             0.05,

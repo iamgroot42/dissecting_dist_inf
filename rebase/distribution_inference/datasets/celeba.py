@@ -248,6 +248,7 @@ class CelebACustomBinary(base.CustomDataset):
                  transform = None,
                  features = None,
                  label_noise:float=0):
+        super().__init__()
         self.attr_dict = attr_dict
         self.transform = transform
         self.features = features
@@ -275,6 +276,7 @@ class CelebACustomBinary(base.CustomDataset):
             idx = np.random.choice(self.num_samples,int (label_noise*self.num_samples),replace=False)
             for x in idx:
                 self.attr_dict[self.filenames[x]][classify]=1-self.attr_dict[self.filenames[x]][classify]
+
     def _create_df(self, attr_dict, filenames):
         # Create DF from filenames to use heuristic for ratio-preserving splits
         all = []
@@ -303,10 +305,14 @@ class CelebACustomBinary(base.CustomDataset):
         return parsed_df["filename"].tolist()
 
     def __len__(self):
-        return len(self.filenames)
+        return len(self.filenames) if self.mask is None else len(self.mask)
+
+    def mask_data_selection(self, mask):
+        self.mask = mask
 
     def __getitem__(self, idx):
-        filename = self.filenames[idx]
+        idx_ = idx if self.mask is None else self.mask[idx]
+        filename = self.filenames[idx_]
 
         if self.features:
             # Use extracted feature

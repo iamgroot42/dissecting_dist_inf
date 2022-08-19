@@ -27,7 +27,7 @@ if __name__ == "__main__":
         "--meta_path", help="path to trained meta-models directory",
         type=str, required=True)
     parser.add_argument(
-        "--victim_path", help="path to victim'smodels directory",
+        "--victim_path", help="path to victim's models directory",
         type=str, default=None)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
@@ -46,21 +46,22 @@ if __name__ == "__main__":
                 train_config.misc_config.adv_config.epsilon /= 255
 
     # Make sure regression config is not being used here
+    is_regression = False
     if wb_attack_config.regression_config:
-        raise ValueError(
-            "This script is not designed to be used with regression attacks")
+        is_regression = True
 
-    if len(attack_config.values) != 1:
+    if len(attack_config.values) != 1 and (not is_regression):
         warnings.warn(warning_string(
             "\nTesting one meta-classifier against multiple ratios.\n"))
 
     # Make sure a model is present for each value to be tested
     values_to_test = [str(x) for x in attack_config.values]
-    folders = os.listdir(args.meta_path)
-    for value in values_to_test:
-        if value not in folders:
-            raise ValueError(
-                f"No model found for value {value} in {args.meta_path}")
+    if not is_regression:
+        folders = os.listdir(args.meta_path)
+        for value in values_to_test:
+            if value not in folders:
+                raise ValueError(
+                    f"No model found for value {value} in {args.meta_path}")
 
     # Print out arguments
     flash_utils(attack_config)
@@ -79,8 +80,71 @@ if __name__ == "__main__":
         data_config)
     ds_vic_1 = ds_wrapper_class(data_config_vic_1, skip_data=True)
 
-    def single_evaluation(models_1_path=None, models_2_paths=None):
+    def single_regression_evaluation():
 
+        for i, prop_value in enumerate(attack_config.values):
+            # Creata a copy of the data config, with the property value
+            # changed to the current value
+            _, data_config_vic = get_dfs_for_victim_and_adv(
+                data_config, prop_value=prop_value)
+            
+            # Create new DS object for both and victim (for other ratio)
+            ds_vic = ds_wrapper_class(data_config_vic, skip_data=True)
+
+            # Load victim's model for other value
+            models_vic = ds_vic.get_models(
+                train_config,
+                n_models=attack_config.num_victim_models,
+                on_cpu=attack_config.on_cpu,
+                shuffle=False,
+                model_arch=attack_config.victim_model_arch)
+        
+            # Get labels for regression
+            test_labels = [float(prop_value)]
+
+            # Generate test set
+            test_data = wrap_into_loader(
+                [models_vic],
+                batch_size=wb_attack_config.batch_size,
+                labels_list=test_labels,
+                shuffle=False,
+                wrap_with_loader=False
+            )
+
+            # Look at all models
+            # Ends up loading attack models multiple times, but:
+            # 1. Straightforward to get ratio-wise MSE values
+            # 2. Lower memory footprint, all ratios need not be loaded together
+            for attack_model_path in os.listdir(args.meta_path):
+
+                # Create attacker object
+                attacker_obj = get_attack(wb_attack_config.attack)(
+                    None, wb_attack_config)
+
+                # Load model
+                attacker_obj.load_model(os.path.join(
+                    args.meta_path, attack_model_path))
+
+                # Make seed-data loader for this attack
+                seed_data_loader = get_loader_for_seed_data(
+                    attacker_obj.seed_data_ds, wb_attack_config)
+                # Create affinity features
+                features_test = attacker_obj.make_affinity_features(
+                    test_data[0], seed_data_loader)
+
+                # Execute attack
+                chosen_mse = attacker_obj.eval_attack(
+                    test_loader=(features_test, test_data[1]),
+                    element_wise=True)
+
+                if not attack_config.train_config.save_every_epoch:
+                    print("Test MSE: %.3f" % chosen_mse)
+                logger.add_results(wb_attack_config.attack,
+                                    prop_value, chosen_mse, None)
+                # Save logger results
+                logger.save()
+
+    def single_evaluation(models_1_path=None, models_2_paths=None):
         # Load victim's model for first value
         models_vic_1 = ds_vic_1.get_models(
             train_config,
@@ -148,16 +212,22 @@ if __name__ == "__main__":
                     print("Test accuracy: %.3f" % chosen_accuracy)
                 logger.add_results(wb_attack_config.attack,
                                    prop_value, chosen_accuracy, None)
+                # Save logger results
+                logger.save()
 
     if args.victim_path:
         def joinpath(x, y): return os.path.join(
             args.victim_path, str(x), str(y))
-        for i in range(1, 3+1):
-            models_1_path = joinpath(data_config.value, i)
-            model_2_paths = [joinpath(v, i) for v in attack_config.values]
-            single_evaluation(models_1_path, model_2_paths)
-    else:
-        single_evaluation()
 
-    # Save logger results
-    logger.save()
+        if is_regression:
+            single_regression_evaluation()
+        else:
+            for i in range(1, 3+1):
+                models_1_path = joinpath(data_config.value, i)
+                model_2_paths = [joinpath(v, i) for v in attack_config.values]
+                single_evaluation(models_1_path, model_2_paths)
+    else:
+        if is_regression:
+            single_regression_evaluation()
+        else:
+            single_evaluation()

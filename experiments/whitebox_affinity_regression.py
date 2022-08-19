@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
-    # Loading up all models altogether gives oom for system
+    # Loading up all models altogether gives OOM for system
     # Have to load all models from scratch again, but only
     # the ones needed; even victim models need to be
     # re-loaded per trial
@@ -182,5 +182,5 @@ if __name__ == "__main__":
         del train_data, test_data
         del attacker_obj
 
-    # Save logger results
-    logger.save()
+        # Save logger results
+        logger.save()

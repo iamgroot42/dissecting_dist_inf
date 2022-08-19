@@ -1,38 +1,28 @@
 {
-    "name": "affinity_adv_16_young",
-    "start time": "2022-04-27 09:30:30.568000",
+    "name": "cheek_amc_save",
+    "start time": "2022-08-18 18:16:16.188874",
     "attack_config": {
         "train_config": {
             "data_config": {
                 "name": "celeba",
-                "prop": "Young",
+                "prop": "High_Cheekbones",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "Male",
+                "classify": "Mouth_Slightly_Open",
                 "cwise_samples": null,
-                "squeeze": false
+                "squeeze": false,
+                "processed_variant": false,
+                "prune": 0
             },
             "epochs": 0,
             "learning_rate": 0.0,
             "batch_size": 0,
-            "misc_config": {
-                "adv_config": {
-                    "epsilon": 0.06274509803921569,
-                    "iters": 7,
-                    "epsilon_iter": null,
-                    "clip_min": -1.0,
-                    "clip_max": 1.0,
-                    "random_restarts": 1,
-                    "norm": Infinity,
-                    "scale_by_255": true
-                },
-                "dp_config": null
-            },
-            "verbose": false,
+            "misc_config": null,
             "lr_scheduler": null,
+            "verbose": false,
             "num_models": 1,
             "offset": 0,
             "weight_decay": 0,
@@ -41,7 +31,11 @@
             "expect_extra": true,
             "save_every_epoch": false,
             "extra_info": null,
-            "regression": false
+            "regression": false,
+            "multi_class": false,
+            "label_noise": 0,
+            "model_arch": null,
+            "parallel": false
         },
         "values": [
             0.0,
@@ -64,13 +58,14 @@
             "weight_decay": 0.01,
             "train_sample": 750,
             "val_sample": 50,
-            "save": false,
+            "save": true,
             "load": null,
             "regression_config": null,
             "eval_every": 10,
             "binary": true,
             "gpu": true,
             "shuffle": true,
+            "multi_class": false,
             "custom_layers_fc": null,
             "start_n_fc": 0,
             "first_n_fc": null,
@@ -81,7 +76,11 @@
             "affinity_config": {
                 "num_final": 16,
                 "only_latent": false,
+                "random_edge_selection": false,
                 "frac_retain_pairs": 0.2,
+                "better_retain_pair": false,
+                "optimal_data_identity": false,
+                "model_sample_for_optimal_data_identity": 50,
                 "num_samples_use": 50,
                 "layer_agnostic": false,
                 "inner_dims": [
@@ -92,26 +91,23 @@
                 "sequential_variant": false,
                 "num_rnn_layers": 2,
                 "layers_to_target_conv": null,
-                "layers_to_target_fc": null
-            }
+                "layers_to_target_fc": null,
+                "perpoint_based_selection": 0,
+                "flip_selection_logic": false
+            },
+            "comparison_config": null
         },
         "tries": 3,
         "num_victim_models": 500,
         "on_cpu": true,
-        "adv_misc_config": {
-            "adv_config": {
-                "epsilon": 0.06274509803921569,
-                "iters": 7,
-                "epsilon_iter": null,
-                "clip_min": -1.0,
-                "clip_max": 1.0,
-                "random_restarts": 1,
-                "norm": Infinity,
-                "scale_by_255": true
-            },
-            "dp_config": null
-        },
-        "num_total_adv_models": 1000
+        "adv_misc_config": null,
+        "num_total_adv_models": 1000,
+        "victim_local_attack": false,
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null
     },
     "result": {
         "affinity": {
@@ -122,9 +118,9 @@
                     null
                 ],
                 "victim_acc": [
-                    88.2,
-                    91.39999999999999,
-                    88.5
+                    96.0,
+                    88.3,
+                    91.7
                 ]
             },
             "0.1": {
@@ -134,9 +130,9 @@
                     null
                 ],
                 "victim_acc": [
-                    80.60000000000001,
-                    85.0,
-                    80.89999999999999
+                    88.0,
+                    84.4,
+                    87.2
                 ]
             },
             "0.2": {
@@ -146,9 +142,9 @@
                     null
                 ],
                 "victim_acc": [
-                    66.8,
-                    72.0,
-                    82.5
+                    80.4,
+                    78.8,
+                    79.0
                 ]
             },
             "0.3": {
@@ -158,9 +154,9 @@
                     null
                 ],
                 "victim_acc": [
-                    68.39999999999999,
-                    68.0,
-                    50.0
+                    69.39999999999999,
+                    68.9,
+                    70.6
                 ]
             },
             "0.4": {
@@ -170,72 +166,22 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    52.300000000000004,
-                    50.0
+                    53.800000000000004,
+                    58.20000000000001,
+                    56.00000000000001
                 ]
             },
             "0.6": {
                 "adv_acc": [
                     null,
-                    null,
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    50.0,
-                    54.1,
-                    54.300000000000004
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    50.8,
-                    67.19999999999999,
-                    60.9
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    76.1,
-                    63.7,
-                    69.10000000000001
-                ]
-            },
-            "1.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    89.7,
-                    95.8,
-                    83.80000000000001
+                    57.3,
+                    57.699999999999996
                 ]
             }
         }
     },
-    "save time": "2022-04-28 07:24:13.662753"
+    "save time": "2022-08-19 10:15:44.537583"
 }

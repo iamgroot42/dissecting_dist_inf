@@ -344,6 +344,7 @@ class _Texas:
 
 class TexasSet(base.CustomDataset):
     def __init__(self, data, targets, squeeze=False):
+        super().__init__()
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
         self.squeeze = squeeze

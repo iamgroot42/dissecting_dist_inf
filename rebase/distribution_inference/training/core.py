@@ -1,4 +1,5 @@
 
+from ..defenses.active.shuffle import ShuffleDefense
 from tqdm import tqdm
 import torch as ch
 import torch.nn as nn
@@ -7,16 +8,16 @@ from copy import deepcopy
 import os
 
 from distribution_inference.training.utils import AverageMeter, generate_adversarial_input, save_model
-from distribution_inference.config import TrainConfig, AdvTrainingConfig, ShuffleDefenseConfig
+from distribution_inference.config import TrainConfig, AdvTrainingConfig
 from distribution_inference.training.dp import train as train_with_dp
 from distribution_inference.training.graph import train as gcn_train
 from distribution_inference.utils import warning_string
-from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 
 def train(model, loaders, train_config: TrainConfig,
           input_is_list: bool = False,
-          extra_options: dict = None):
+          extra_options: dict = None,
+          shuffle_defense: ShuffleDefense = None):
     if model.is_sklearn_model:
         return sklearn_train(model, loaders, train_config, extra_options)
     elif model.is_graph_model:
@@ -26,7 +27,7 @@ def train(model, loaders, train_config: TrainConfig,
         return train_with_dp(model, loaders, train_config, input_is_list, extra_options)
     else:
         # If DP training, call appropriate function
-        return train_without_dp(model, loaders, train_config, input_is_list, extra_options)
+        return train_without_dp(model, loaders, train_config, input_is_list, extra_options, shuffle_defense)
 
 
 def train_epoch(train_loader, model, criterion, optimizer, epoch,
@@ -36,7 +37,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
                 input_is_list: bool = False,
                 regression: bool = False,
                 multi_class: bool = False,
-                shuffle_defense: ShuffleDefenseConfig = None):
+                shuffle_defense: ShuffleDefense = None):
     model.train()
     train_loss = AverageMeter()
     if not regression:
@@ -50,10 +51,10 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
             data, labels, prop_labels = tuple
         else:
             data, labels = tuple
-
-        # Shuffle and sub-sample data, if needed
+        
+        # Use shuffle defense, as per need
         if shuffle_defense:
-            data, labels, prop_labels = shuffle_defense.process(
+            data, labels, prop_labels = shuffle_defense.process_batch(
                 data, labels, prop_labels)
 
         # Support for using same code for AMC
@@ -113,7 +114,8 @@ def validate_epoch(val_loader, model, criterion,
                    regression: bool = False,
                    get_preds: bool = False,
                    multi_class: bool = False,
-                   more_metrics:bool=False):
+                   more_metrics: bool=False,
+                   element_wise: bool = False):
     model.eval()
     val_loss = AverageMeter()
     adv_val_loss = AverageMeter()
@@ -161,7 +163,11 @@ def validate_epoch(val_loader, model, criterion,
                 
             val_loss_specific = criterion(
                 outputs, labels.long() if multi_class else labels.float())
-            val_loss.update(val_loss_specific.item())
+            if element_wise:
+                for i in range(N):
+                    val_loss.update(val_loss_specific[i].item())
+            else:
+                val_loss.update(val_loss_specific.item())
 
             if adv_config is not None:
                 adv_x = generate_adversarial_input(model, data, adv_config)
@@ -179,7 +185,11 @@ def validate_epoch(val_loader, model, criterion,
                         labels.view_as(prediction_adv)).sum().item()/N)
                 adv_loss_specific = criterion(
                     outputs_adv, labels.long() if multi_class else labels.float())
-                adv_val_loss.update(adv_loss_specific.item())
+                if element_wise:
+                    for i in range(N):
+                        adv_val_loss.update(adv_loss_specific[i].item())
+                else:
+                    adv_val_loss.update(adv_loss_specific.item())
 
     if verbose:
         if adv_config is None:
@@ -261,7 +271,8 @@ def sklearn_train(model, loaders, train_config: TrainConfig,
 
 def train_without_dp(model, loaders, train_config: TrainConfig,
                      input_is_list: bool = False,
-                     extra_options: dict = None):
+                     extra_options: dict = None,
+                     shuffle_defense: ShuffleDefense = None):
     if extra_options != None and "more_metrics" in extra_options.keys():
         more_metrics = extra_options["more_metrics"]
     else:
@@ -309,16 +320,8 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         iterator = tqdm(iterator)
 
     adv_config = None
-    shuffle_defense = None
     if train_config.misc_config is not None:
         adv_config = train_config.misc_config.adv_config
-        shuffle_defense_config = train_config.misc_config.shuffle_defense_config
-        if shuffle_defense_config and not train_config.expect_extra:
-            raise ValueError(
-                "Need access to property labels for shuffle defense. Set expect_extra to True")
-
-        if shuffle_defense_config is not None:
-            shuffle_defense = ShuffleDefense(shuffle_defense_config)
 
         # Special case for CelebA
         # Given the way scaling is done, eps (passed as argument) should be

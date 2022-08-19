@@ -7,7 +7,7 @@ import distribution_inference.datasets.base as base
 from distribution_inference.models.core import GCN
 from distribution_inference.config import DatasetConfig, TrainConfig
 from collections import Counter
-from distribution_inference.training.utils import load_model
+from distribution_inference.training.utils import load_model, get_arxiv_node_params_mapping
 
 import dgl
 import numpy as np
@@ -27,17 +27,7 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch_wise)
         self.supported_properties = ["mean"]
         # Mapping between distributions and their (n, s) values
-        self.param_mapping = {
-            9: (86, 1.843366),
-            10: (133, 1.881514),
-            11: (214, 1.929022),
-            12: (257, 1.927125),
-            13: (253, 1.918591),
-            14: (267, 1.914586),
-            15: (265, 1.903623),
-            16: (263, 1.886148),
-            17: (263, 1.876854)
-        }
+        self.param_mapping = get_arxiv_node_params_mapping()
 
     def get_model(self,
                   cpu: bool = False,

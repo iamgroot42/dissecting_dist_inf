@@ -98,6 +98,7 @@ class DatasetInformation:
 class CustomDataset(Dataset):
     def __init__(self):
         self.num_samples = None
+        self.mask = None
 
     def __len__(self):
         """
@@ -111,6 +112,13 @@ class CustomDataset(Dataset):
             Should return (datum, attribute, class-label)
         """
         raise NotImplementedError("Dataset does not implement __getitem__")
+    
+    def mask_data_selection(self, mask):
+        """
+            Use specified mask to use only part of data.
+            Useful for shuffle defense and other related processes.
+        """
+        raise NotImplementedError("Dataset does not implement mask_data_selection. Cannot use ShuffleDefense")
 
 
 class CustomDatasetWrapper:
@@ -227,6 +235,10 @@ class CustomDatasetWrapper:
 
     def __str__(self):
         return f"{type(self).__name__}(prop={self.prop}, ratio={self.ratio}, split={self.split}, classify={self.classify})"
+    
+    def mask_data_selection(self, mask):
+        # Mask data for train data
+        self.ds_train.mask_data_selection(mask)
 
     def _get_model_paths(self,
                          train_config: TrainConfig,

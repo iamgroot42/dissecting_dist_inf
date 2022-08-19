@@ -255,16 +255,22 @@ class _CensusIncome:
 
 class CensusSet(base.CustomDataset):
     def __init__(self, data, targets, prop_labels, squeeze=False):
+        super().__init__()
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
         self.prop_labels = ch.from_numpy(prop_labels).float()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
+    
+    def mask_data_selection(self, mask):
+        self.mask = mask
+        self.num_samples = len(self.mask)
 
     def __getitem__(self, index):
-        x = self.data[index]
-        y = self.targets[index]
-        prop_label = self.prop_labels[index]
+        index_ = self.mask[index] if self.mask is not None else index
+        x = self.data[index_]
+        y = self.targets[index_]
+        prop_label = self.prop_labels[index_]
 
         if self.squeeze:
             y = y.squeeze()

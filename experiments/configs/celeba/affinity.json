@@ -14,8 +14,8 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Male",
-            "classify": "Smiling",
+            "prop": "Young",
+            "classify": "Male",
             "split": "adv",
             "value": 0.5,
             "processed_variant": false

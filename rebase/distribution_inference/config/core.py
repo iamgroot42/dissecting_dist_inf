@@ -54,6 +54,8 @@ class ShuffleDefenseConfig(Serializable):
     """Desired ratio to be achieved when shuffling"""
     sample_ratio: float = 0.75
     """Desired fraction of original data left over after ratio is achieved"""
+    data_level: bool = False
+    """Perform under/over sampling at data level (true), or batch level (false)?"""
 
 
 @dataclass

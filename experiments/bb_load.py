@@ -2,13 +2,13 @@ from simple_parsing import ArgumentParser
 from pathlib import Path
 import os
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
-from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
-from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
-from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
+from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies
 from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
 import pickle
+from tqdm import tqdm
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -47,10 +47,14 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(data_config.name)()
     preds_path = os.path.join(ds_info.base_models_dir,"preds",args.pred_name)
-    preds_a = pickle.load( open( os.path.join(preds_path,"preds_a.p"), "rb" ) )
-    preds_v = pickle.load( open( os.path.join(preds_path,"preds_v.p"), "rb" ) )
+    print("Loading adverary predictions file (this may take a while)")
+    preds_a = pickle.load(open(os.path.join(preds_path,"preds_a.p"), "rb" ) )
+    print(preds_a.keys())
+    print("Loading victim predictions file (this may take a while)")
+    preds_v = pickle.load(open(os.path.join(preds_path,"preds_v.p"), "rb" ) )
+    print(preds_v.keys())
     ground_truths = pickle.load( open( os.path.join(preds_path,"gt.p"), "rb" ) )
-    for prop_value in attack_config.values:
+    for prop_value in tqdm(attack_config.values):
         for t in range(attack_config.tries):
             preds_adv = preds_a[prop_value][t]
             preds_vic = preds_v[prop_value][t]
@@ -69,6 +73,6 @@ if __name__ == "__main__":
                 logger.add_results(attack_type, prop_value,
                                        result[0][0], result[1][0])
                 print(result[0][0])
-                   
-                    
-    logger.save()
+
+                # Save after every result (helps when scripts crash)      
+                logger.save()

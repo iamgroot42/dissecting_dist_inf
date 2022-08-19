@@ -219,6 +219,7 @@ class BoneDataset(base.CustomDataset):
                  processed: bool = False,
                  classify: str = "age",
                  property: str = "gender"):
+        super().__init__()
         if processed:
             self.features = argument
         else:

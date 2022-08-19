@@ -1,4 +1,5 @@
 from typing import List, Tuple
+from xml.dom import NotSupportedErr
 import torch as ch
 import torch.nn as nn
 import numpy as np
@@ -275,6 +276,9 @@ class PINAttack(Attack):
               get_preds: bool = False,
               get_latents: bool = False,
               verbose: bool = False):
+        if get_latents:
+            raise ValueError("Latent representations not supported right now")
+
         # Set model to evaluation mode
         model.eval()
         regression = (self.config.regression_config is not None)
@@ -293,7 +297,7 @@ class PINAttack(Attack):
                 y_batch = y_batch.cuda(0)
                 param_batch = [a.cuda() for a in param_batch]
 
-            model_output = model(param_batch, get_latent=get_latents)
+            model_output = model(param_batch)
             # Handle binary and regression cases
             if self.config.binary or regression:
                 outputs.append(model_output[:, 0])

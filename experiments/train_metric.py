@@ -8,15 +8,12 @@ from tqdm import tqdm
 from distribution_inference.utils import warning_string
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train_epoch, validate_epoch
-from distribution_inference.training.utils import save_model
 from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
 import os
-from copy import deepcopy
 import torch.nn as nn
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
-from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 
 def train(model, loaders, loader2, train_config: TrainConfig,
@@ -69,16 +66,8 @@ def train(model, loaders, loader2, train_config: TrainConfig,
         iterator = tqdm(iterator)
 
     adv_config = None
-    shuffle_defense = None
     if train_config.misc_config is not None:
         adv_config = train_config.misc_config.adv_config
-        shuffle_defense_config = train_config.misc_config.shuffle_defense_config
-        if shuffle_defense_config and not train_config.expect_extra:
-            raise ValueError(
-                "Need access to property labels for shuffle defense. Set expect_extra to True")
-
-        if shuffle_defense_config is not None:
-            shuffle_defense = ShuffleDefense(shuffle_defense_config)
 
         # Special case for CelebA
         # Given the way scaling is done, eps (passed as argument) should be
@@ -101,8 +90,7 @@ def train(model, loaders, loader2, train_config: TrainConfig,
                                   expect_extra=train_config.expect_extra,
                                   input_is_list=input_is_list,
                                   regression=train_config.regression,
-                                  multi_class=train_config.multi_class,
-                                  shuffle_defense=shuffle_defense)
+                                  multi_class=train_config.multi_class)
         tlosses.append(tloss)
         tacces.append(tacc)
 

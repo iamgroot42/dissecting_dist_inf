@@ -194,6 +194,11 @@ if __name__ == "__main__":
             print(targets[i], targets[i+j+1], eff_vals[i][j])
             bound_computed = compute_bound(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[int(targets[j])], n_eff)
 
+    print(eff_vals)
+    wanted = [eff_vals[0][3], eff_vals[1][2], eff_vals[2][1], eff_vals[3][0], eff_vals[4][0], eff_vals[4][1], eff_vals[4][2], eff_vals[4][3]]
+    # exit(0)
+    # wanted[wanted == np.inf] = 1e5
+    print(np.median(wanted))
     eff_vals_mean = eff_vals.flatten()
     # Look at only 13 rows, cols
     eff_vals_mean = eff_vals_mean[eff_vals_mean != np.inf]
