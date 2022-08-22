@@ -7,7 +7,7 @@ import os
 import torch as ch
 import torch.nn as nn
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPTwoLayer, RandomForest
+from distribution_inference.models.core import MLPTwoLayer, RandomForest, LRClassifier, MLPThreeLayer
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -21,7 +21,7 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models_new_census/60_40",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
-                         supported_models=["mlp2", "random_forest"],
+                         supported_models=["mlp2", "random_forest", "lr", "mlp3"],
                          property_focus={"sex": 'female', "race": 'white'},
                          default_model="mlp2",
                          epoch_wise=epoch_wise)
@@ -31,8 +31,12 @@ class DatasetInformation(base.DatasetInformation):
             model_arch = self.default_model
         if model_arch == "mlp2":
             model = MLPTwoLayer(n_inp=105)
+        elif model_arch == "mlp3":
+            model = MLPThreeLayer(n_inp=105)
         elif model_arch == "random_forest":
             model = RandomForest(min_samples_leaf=5, n_jobs=4, n_estimators=10)
+        elif model_arch == "lr":
+            model = LRClassifier()
         else:
             raise NotImplementedError("Model architecture not supported")
 
@@ -281,7 +285,11 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, epoch: bool = False, label_noise: float = 0):
+    def __init__(self,
+                 data_config: DatasetConfig,
+                 skip_data: bool = False,
+                 epoch: bool = False,
+                 label_noise: float = 0):
         super().__init__(data_config, skip_data, label_noise)
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
@@ -331,8 +339,8 @@ class CensusWrapper(base.CustomDatasetWrapper):
                 base_path = os.path.join(base_models_dir, "normal")
             else:
                 base_path = os.path.join(base_models_dir, "shuffle_defense",
-                                         "%.2f" % shuffle_defense_config.desired_value,
-                                         "%.2f" % shuffle_defense_config.sample_ratio)
+                                         "%s" % shuffle_defense_config.sample_type,
+                                         "%.2f" % shuffle_defense_config.desired_value)
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)

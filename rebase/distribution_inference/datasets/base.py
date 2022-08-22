@@ -119,6 +119,14 @@ class CustomDataset(Dataset):
             Useful for shuffle defense and other related processes.
         """
         raise NotImplementedError("Dataset does not implement mask_data_selection. Cannot use ShuffleDefense")
+    
+    def insert_extra_data(self, data):
+        """
+            Addd given data as 'extra data' to existing
+            train data. Used for augmentation-based
+            shuffle defense
+        """
+        raise NotImplementedError("Data insertion not supported. Cannot use augmentation-based ShuffleDefense")
 
 
 class CustomDatasetWrapper:
@@ -239,6 +247,10 @@ class CustomDatasetWrapper:
     def mask_data_selection(self, mask):
         # Mask data for train data
         self.ds_train.mask_data_selection(mask)
+    
+    def insert_extra_data(self, data):
+        # Add extra data to train data
+        self.ds_train.insert_extra_data(data)
 
     def _get_model_paths(self,
                          train_config: TrainConfig,

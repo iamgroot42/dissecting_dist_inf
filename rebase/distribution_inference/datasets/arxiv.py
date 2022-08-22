@@ -7,7 +7,8 @@ import distribution_inference.datasets.base as base
 from distribution_inference.models.core import GCN
 from distribution_inference.config import DatasetConfig, TrainConfig
 from collections import Counter
-from distribution_inference.training.utils import load_model, get_arxiv_node_params_mapping
+from distribution_inference.training.utils import load_model
+from distribution_inference.utils import get_arxiv_node_params_mapping
 
 import dgl
 import numpy as np

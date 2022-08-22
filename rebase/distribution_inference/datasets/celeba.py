@@ -17,7 +17,7 @@ from distribution_inference.training.utils import load_model
 
 
 class DatasetInformation(base.DatasetInformation):
-    def __init__(self, epoch_wise:bool = False):
+    def __init__(self, epoch_wise: bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Celeb-A",
                          data_path="celeba",
@@ -67,7 +67,7 @@ class DatasetInformation(base.DatasetInformation):
         if parallel:
             model = nn.DataParallel(model)
         return model
-    
+
     def _get_pre_processor(self):
         # Load model
         model = InceptionResnetV1(pretrained='casia-webface').eval()
@@ -80,7 +80,7 @@ class DatasetInformation(base.DatasetInformation):
         model = model.cuda()
         model = nn.DataParallel(model)
         basepath = os.path.join(self.base_data_dir, "img_align_celeba")
-        
+
         class MyDataset(ch.utils.data.Dataset):
             def __init__(self, filenames, transform):
                 self.filenames = filenames
@@ -88,17 +88,18 @@ class DatasetInformation(base.DatasetInformation):
 
             def __len__(self):
                 return len(self.filenames)
-            
+
             def __getitem__(self, idx):
-                X = Image.open(os.path.join(basepath, self.filenames[idx])).convert('RGB')
+                X = Image.open(os.path.join(
+                    basepath, self.filenames[idx])).convert('RGB')
                 X = self.transform(X)
                 return X
 
         # Create custom Dataset
         transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.5), (0.5))
-            ])
+            transforms.ToTensor(),
+            transforms.Normalize((0.5), (0.5))
+        ])
         filenames = os.listdir(basepath)
         custom_ds = MyDataset(filenames, transform=transform)
 
@@ -245,9 +246,9 @@ class CelebACustomBinary(base.CustomDataset):
     def __init__(self, classify, filelist_path, attr_dict,
                  prop, ratio, cwise_sample,
                  shuffle: bool = False,
-                 transform = None,
-                 features = None,
-                 label_noise:float=0):
+                 transform=None,
+                 features=None,
+                 label_noise: float = 0):
         super().__init__()
         self.attr_dict = attr_dict
         self.transform = transform
@@ -255,6 +256,7 @@ class CelebACustomBinary(base.CustomDataset):
         self.info_object = DatasetInformation()
         self.classify_index = self.info_object.supported_properties.index(
             classify)
+        self.prop_index = self.info_object.supported_properties.index(prop)
 
         # Get filenames
         with open(filelist_path) as f:
@@ -270,12 +272,14 @@ class CelebACustomBinary(base.CustomDataset):
 
         if shuffle:
             np.random.shuffle(self.filenames)
-        
+
         self.num_samples = len(self.filenames)
         if label_noise:
-            idx = np.random.choice(self.num_samples,int (label_noise*self.num_samples),replace=False)
+            idx = np.random.choice(self.num_samples, int(
+                label_noise*self.num_samples), replace=False)
             for x in idx:
-                self.attr_dict[self.filenames[x]][classify]=1-self.attr_dict[self.filenames[x]][classify]
+                self.attr_dict[self.filenames[x]][classify] = 1 - \
+                    self.attr_dict[self.filenames[x]][classify]
 
     def _create_df(self, attr_dict, filenames):
         # Create DF from filenames to use heuristic for ratio-preserving splits
@@ -326,7 +330,7 @@ class CelebACustomBinary(base.CustomDataset):
 
         y = np.array(list(self.attr_dict[filename].values()))
 
-        return x, y[self.classify_index], y
+        return x, y[self.classify_index], y[self.prop_index]
 
 
 class CelebaWrapper(base.CustomDatasetWrapper):
@@ -334,8 +338,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                  data_config: DatasetConfig,
                  skip_data: bool = False,
                  label_noise: float = 0,
-                 epoch:bool = False):
-        super().__init__(data_config, skip_data,label_noise)
+                 epoch: bool = False):
+        super().__init__(data_config, skip_data, label_noise)
         self.info_object = DatasetInformation()
 
         # Make sure specified label is valid
@@ -360,7 +364,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             ]
             train_transforms = augment_transforms + train_transforms
         self.train_transforms = transforms.Compose(train_transforms)
-    
+
     def prepare_processed_data(self, loader):
         # Load model
         model = self.info_object._get_pre_processor()
@@ -369,7 +373,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         features, task_labels, prop_labels = self.info_object._collect_features(
             loader, model, collect_all_info=True)
         self.ds_val_processed = ch.utils.data.TensorDataset(features,
-                                                        task_labels, prop_labels)
+                                                            task_labels, prop_labels)
         # Clear cache
         del model
         gc.collect()
@@ -428,19 +432,20 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         features = None
         if self.processed_variant:
-            features = ch.load(os.path.join(self.info_object.base_data_dir, "features.pt"))
+            features = ch.load(os.path.join(
+                self.info_object.base_data_dir, "features.pt"))
 
         # Create datasets
         ds_train = CelebACustomBinary(
             self.classify, filelist_train, attr_dict,
             self.prop, self.ratio, cwise_sample[0],
             transform=self.train_transforms,
-            features=features,label_noise=self.label_noise)
+            features=features, label_noise=self.label_noise)
         ds_val = CelebACustomBinary(
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
             transform=self.test_transforms,
-            features=features,label_noise=self.label_noise)
+            features=features, label_noise=self.label_noise)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size: int,
@@ -462,20 +467,27 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             self.split, self.prop, str(self.ratio)
         )
 
-        if train_config.misc_config and train_config.misc_config.adv_config:
-            # Extract epsilon to be used
-            adv_folder_prefix = "adv_train_"
-            adv_config = train_config.misc_config.adv_config
-            if adv_config.scale_by_255:
-                # Use 'int' value
-                epsilon_val = int(adv_config.epsilon * 255)
-                adv_folder_prefix += ("%d" % epsilon_val)
+        if train_config.misc_config:
+            if train_config.misc_config.shuffle_defense_config is None:
+                if train_config.misc_config.adv_config:
+                    # Extract epsilon to be used
+                    adv_folder_prefix = "adv_train_"
+                    adv_config = train_config.misc_config.adv_config
+                    if adv_config.scale_by_255:
+                        # Use 'int' value
+                        epsilon_val = int(adv_config.epsilon * 255)
+                        adv_folder_prefix += ("%d" % epsilon_val)
+                    else:
+                        # If actual epsilon value, use as it is
+                        epsilon_val = adv_config.epsilon
+                        adv_folder_prefix += ("%.4f" % epsilon_val)
+                    subfolder_prefix = os.path.join(
+                        subfolder_prefix, adv_folder_prefix)
             else:
-                # If actual epsilon value, use as it is
-                epsilon_val = adv_config.epsilon
-                adv_folder_prefix += ("%.4f" % epsilon_val)
-            subfolder_prefix = os.path.join(
-                subfolder_prefix, adv_folder_prefix)
+                shuffle_defense_config = train_config.misc_config.shuffle_defense_config
+                base_models_dir = os.path.join(base_models_dir, "shuffle_defense",
+                                               "%s" % shuffle_defense_config.sample_type,
+                                               "%.2f" % shuffle_defense_config.desired_value)
 
         # Standard logic
         if model_arch is None:
@@ -484,7 +496,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             raise ValueError(f"Model architecture {model_arch} not supported")
         if model_arch is None:
             model_arch = self.info_object.default_model
+
         base_models_dir = os.path.join(base_models_dir, model_arch)
+
         if self.label_noise:
             base_models_dir = os.path.join(
                 base_models_dir, "label_noise:{}".format(train_config.label_noise))
@@ -492,7 +506,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         # # Make sure this directory exists
         if not os.path.isdir(save_path):
-            os.makedirs(save_path,exist_ok =True)
+            os.makedirs(save_path, exist_ok=True)
 
         return save_path
 

@@ -52,10 +52,14 @@ class ShuffleDefenseConfig(Serializable):
     """
     desired_value: float
     """Desired ratio to be achieved when shuffling"""
-    sample_ratio: float = 0.75
-    """Desired fraction of original data left over after ratio is achieved"""
+    sample_type: str = field(choices=["over", "under"])
+    """Over-sample or under-sample?"""
     data_level: bool = False
     """Perform under/over sampling at data level (true), or batch level (false)?"""
+    augment: bool = False
+    """Augment data during over-sampling?"""
+    use_mixup: bool = False
+    """Use mixup during augmentation?"""
 
 
 @dataclass

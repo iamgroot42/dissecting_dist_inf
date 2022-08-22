@@ -1,0 +1,28 @@
+{
+    "data_config": {
+        "name": "celeba",
+        "prop": "Young",
+        "classify": "Male",
+        "split": "adv",
+        "value": 0.3,
+        "processed_variant": false
+    },
+    "misc_config": {
+        "shuffle_defense_config": {
+            "desired_value": 0.5,
+            "data_level": true,
+            "sample_type": "over",
+            "augment": true
+        }
+    },
+    "epochs": 10,
+    "offset": 0,
+    "learning_rate": 1e-4,
+    "batch_size": 128,
+    "weight_decay": 1e-3,
+    "num_models": 1,
+    "save_every_epoch": false,
+    "get_best": true,
+    "verbose": false,
+    "model_arch": "alexnet"
+}

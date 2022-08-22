@@ -61,6 +61,7 @@ if __name__ == "__main__":
         df = df[df['prop_val'] != 1]
         # Maintain minimum per ratio
         df = df.groupby(['prop_val']).min().reset_index()
+        # df = df.groupby(['prop_val']).mean().reset_index()
         df['n_leaked'] = df.apply(lambda row: Regression(row['prop_val']).get_n_effective(row['acc_or_loss']), axis=1)
         print(df)
         exit(0)
@@ -69,6 +70,7 @@ if __name__ == "__main__":
         df.loc[df['acc_or_loss'] == 100, 'acc_or_loss'] = 100 - 1e-3
         # Maintain maximum per ratio
         df = df.groupby(['prop_val']).max().reset_index()
+        # df = df.groupby(['prop_val']).mean().reset_index()
 
         # If graph-based, use appropriate formula
         if is_graph:

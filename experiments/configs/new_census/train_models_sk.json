@@ -6,7 +6,7 @@
         "squeeze": true,
         "value": 0.5
     },
-    "model_arch": "random_forest",
+    "model_arch": "gp",
     "offset": 0,
     "epochs": 20,
     "learning_rate": 1e-3,

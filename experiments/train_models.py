@@ -1,12 +1,15 @@
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
+from distribution_inference.defenses.active.augment import AugmentDefense
 from simple_parsing import ArgumentParser
 from pathlib import Path
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
+from distribution_inference.training.utils import save_model
 from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
+
 
 EXTRA = False  #True
 if __name__ == "__main__":
@@ -82,6 +85,7 @@ if __name__ == "__main__":
         print("Training classifier %d / %d" % (i, train_config.num_models))
 
         # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
+        shuffle_defense = None
         if train_config.misc_config is not None:
             shuffle_defense_config = train_config.misc_config.shuffle_defense_config
             if shuffle_defense_config and not train_config.expect_extra:
@@ -89,7 +93,10 @@ if __name__ == "__main__":
                     "Need access to property labels for shuffle defense. Set expect_extra to True")
 
             if shuffle_defense_config is not None:
-                shuffle_defense = ShuffleDefense(shuffle_defense_config)
+                if shuffle_defense_config.augment:
+                    shuffle_defense = AugmentDefense(shuffle_defense_config)
+                else:
+                    shuffle_defense = ShuffleDefense(shuffle_defense_config)
                 shuffle_defense.initialize(ds, train_config)
 
         # Get data loaders
@@ -134,7 +141,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            # save_model(model, save_path)
+            save_model(model, save_path)
 
-        # Save logger
-        logger.save()
+            # Save logger
+            logger.save()

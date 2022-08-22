@@ -55,7 +55,7 @@ def train_epoch(train_loader, model, criterion, optimizer, epoch,
         # Use shuffle defense, as per need
         if shuffle_defense:
             data, labels, prop_labels = shuffle_defense.process_batch(
-                data, labels, prop_labels)
+                (data, labels, prop_labels))
 
         # Support for using same code for AMC
         if input_is_list:
