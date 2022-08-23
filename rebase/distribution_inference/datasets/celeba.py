@@ -280,6 +280,8 @@ class CelebACustomBinary(base.CustomDataset):
             for x in idx:
                 self.attr_dict[self.filenames[x]][classify] = 1 - \
                     self.attr_dict[self.filenames[x]][classify]
+        
+        self.num_samples = len(self.filenames)
 
     def _create_df(self, attr_dict, filenames):
         # Create DF from filenames to use heuristic for ratio-preserving splits
@@ -309,24 +311,46 @@ class CelebACustomBinary(base.CustomDataset):
         return parsed_df["filename"].tolist()
 
     def __len__(self):
-        return len(self.filenames) if self.mask is None else len(self.mask)
+        return self.num_samples if self.mask is None else len(self.mask)
 
     def mask_data_selection(self, mask):
         self.mask = mask
+    
+    def insert_extra_data(self, extra_data):
+        # Given new X, Y, P, count them in extra data
+        self.extra_X = extra_data[0]
+        self.extra_Y = extra_data[1].numpy()
+        self.extra_P = extra_data[2].numpy()
+        self.using_extra_data = True
+        self.num_samples += len(self.extra_X)
 
     def __getitem__(self, idx):
         idx_ = idx if self.mask is None else self.mask[idx]
-        filename = self.filenames[idx_]
+
+        if self.using_extra_data and self.mask is not None:
+            raise ValueError("Cannot have mask and augmented data ") 
 
         if self.features:
+            if self.using_extra_data:
+                raise ValueError("Pre-extracted features not supported with augmententation-based data shuffling")
             # Use extracted feature
+            filename = self.filenames[idx_]
             x = self.features[filename]
         else:
-            # Open image
-            x = Image.open(os.path.join(
-                self.info_object.base_data_dir, "img_align_celeba", filename))
-            if self.transform:
-                x = self.transform(x)
+            if self.using_extra_data and idx >= len(self.filenames):
+                # Use extra data
+                effective_idx = idx - len(self.filenames)
+                x_ = self.extra_X[effective_idx]
+                y_ = self.extra_Y[effective_idx]
+                p_ = self.extra_P[effective_idx]
+                return x_, y_, p_
+            else:
+                # Open image
+                filename = self.filenames[idx_]
+                x = Image.open(os.path.join(
+                    self.info_object.base_data_dir, "img_align_celeba", filename))
+                if self.transform:
+                    x = self.transform(x)
 
         y = np.array(list(self.attr_dict[filename].values()))
 
@@ -338,9 +362,10 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                  data_config: DatasetConfig,
                  skip_data: bool = False,
                  label_noise: float = 0,
-                 epoch: bool = False):
-        super().__init__(data_config, skip_data, label_noise)
-        self.info_object = DatasetInformation()
+                 epoch: bool = False,
+                 shuffle_defense: bool = False,):
+        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
+        self.info_object = DatasetInformation(epoch_wise=epoch)
 
         # Make sure specified label is valid
         # if self.classify not in self.info_object.preserve_properties:

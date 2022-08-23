@@ -326,7 +326,7 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         # Special case for CelebA
         # Given the way scaling is done, eps (passed as argument) should be
         # 2^(1/p) for L_p norm
-        if train_config.data_config.name == "celeba":
+        if adv_config is not None and train_config.data_config.name == "celeba":
             adv_config.epsilon *= 2
             print(warning_string("Special Behavior: Doubling epsilon for Celeb-A"))
 
@@ -429,8 +429,9 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
 
     # Special case for CelebA
     # Return epsilon back to normal
-    if train_config.misc_config is not None and train_config.data_config.name == "celeba":
-        adv_config.epsilon /= 2
+    if train_config.misc_config is not None:
+        if adv_config is not None and train_config.data_config.name == "celeba":
+            adv_config.epsilon /= 2
 
     # Use test-loader to compute final test metrics
     if val_loader is not None:

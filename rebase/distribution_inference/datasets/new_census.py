@@ -1,3 +1,4 @@
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.model_selection import train_test_split
 import pickle
@@ -289,8 +290,9 @@ class CensusWrapper(base.CustomDatasetWrapper):
                  data_config: DatasetConfig,
                  skip_data: bool = False,
                  epoch: bool = False,
-                 label_noise: float = 0):
-        super().__init__(data_config, skip_data, label_noise)
+                 label_noise: float = 0,
+                 shuffle_defense: ShuffleDefense = None):
+        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)
@@ -338,9 +340,14 @@ class CensusWrapper(base.CustomDatasetWrapper):
             if shuffle_defense_config is None:
                 base_path = os.path.join(base_models_dir, "normal")
             else:
-                base_path = os.path.join(base_models_dir, "shuffle_defense",
-                                         "%s" % shuffle_defense_config.sample_type,
-                                         "%.2f" % shuffle_defense_config.desired_value)
+                if self.ratio == shuffle_defense_config.desired_value:
+                    # When ratio of models loaded is same as target ratio of defense,
+                    # simply load 'normal' model of that ratio
+                    base_path = os.path.join(base_models_dir, "normal")
+                else:
+                    base_path = os.path.join(base_models_dir, "shuffle_defense",
+                                             "%s" % shuffle_defense_config.sample_type,
+                                             "%.2f" % shuffle_defense_config.desired_value)
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)

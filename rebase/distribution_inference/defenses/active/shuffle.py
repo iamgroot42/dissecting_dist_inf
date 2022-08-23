@@ -1,7 +1,6 @@
-from ...config.core import TrainConfig
 import torch as ch
 import numpy as np
-from distribution_inference.config import ShuffleDefenseConfig, TrainConfig
+from distribution_inference.config import ShuffleDefenseConfig
 
 
 class ShuffleDefense:
@@ -10,19 +9,14 @@ class ShuffleDefense:
         self.desired_value = self.config.desired_value
         self.sample_type = self.config.sample_type
     
-    def initialize(self, ds, train_config: TrainConfig):
+    def initialize(self, train_loader):
         if self.config.data_level is False:
             # Nothing to do here- whatever happens will be at batch level
             return
 
-        # Get loaders
-        train_loader, _ = ds.get_loaders(
-            batch_size=train_config.batch_size,
-            shuffle=False)
         # Get mask
         selected_mask = self._get_mask_from_loader(train_loader)
-        # Update data-wrapper
-        ds.mask_data_selection(selected_mask)
+        return selected_mask
     
     def _get_mask_from_loader(self, loader):
         """

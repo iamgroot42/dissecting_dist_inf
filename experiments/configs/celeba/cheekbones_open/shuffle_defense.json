@@ -1,0 +1,26 @@
+{
+    "data_config": {
+        "name": "celeba",
+        "prop": "High_Cheekbones",
+        "classify": "Mouth_Slightly_Open",
+        "split": "victim",
+        "value": 0.9,
+        "processed_variant": false
+    },
+    "misc_config": {
+        "shuffle_defense_config": {
+            "desired_value": 0.5,
+            "data_level": true,
+            "sample_type": "over"
+        }
+    },
+    "epochs": 30,
+    "offset": 0,
+    "learning_rate": 2e-5,
+    "batch_size": 64,
+    "model_arch": "alexnet",
+    "weight_decay": 1e-3,
+    "num_models": 3,
+    "get_best": true,
+    "verbose": true
+}

@@ -1,9 +1,7 @@
-from ...config.core import TrainConfig
 import torch as ch
-import warnings
 import numpy as np
 from torchvision import transforms
-from distribution_inference.config import ShuffleDefenseConfig, TrainConfig
+from distribution_inference.config import ShuffleDefenseConfig
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from torch.distributions.beta import Beta
 from tqdm import tqdm
@@ -15,20 +13,15 @@ class AugmentDefense(ShuffleDefense):
         super().__init__(config)
         self.sample_type = "over"
     
-    def initialize(self, ds, train_config: TrainConfig):
+    def initialize(self, train_loader):
         if self.config.data_level is False:
             # Nothing to do here- whatever happens will be at batch level
             return
 
-        # Get loaders
-        train_loader, _ = ds.get_loaders(
-            batch_size=train_config.batch_size,
-            shuffle=False)
-        # Get mask
+        # Get extra data
         extra_data = self._get_data_from_loader(train_loader)
-        # Update data-wrapper
-        ds.insert_extra_data(extra_data)
-    
+        return extra_data
+
     def _get_data_from_loader(self, loader):
         """
             Collect data across all of the loader, process
@@ -112,7 +105,7 @@ class AugmentDefense(ShuffleDefense):
             transforms.RandomHorizontalFlip()
         ])
 
-        # Apply transform per image
+        # Apply random transform per image
         # Clip data to [0, 1] (should  be already)
         x_ = ch.clamp(x_, 0, 1)
         x_ = transforms.Lambda(lambda x: ch.stack([augment_transforms(x_) for x_ in x]))(x)

@@ -1,4 +1,5 @@
 import os
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import numpy as np
 import torch as ch
 from torch.utils.data import DataLoader, Dataset
@@ -98,6 +99,7 @@ class DatasetInformation:
 class CustomDataset(Dataset):
     def __init__(self):
         self.num_samples = None
+        self.using_extra_data = False
         self.mask = None
 
     def __len__(self):
@@ -134,7 +136,8 @@ class CustomDatasetWrapper:
                  data_config: DatasetConfig,
                  skip_data: bool = False,
                  label_noise: bool = 0,
-                 is_graph_data: bool = False):
+                 is_graph_data: bool = False,
+                 shuffle_defense: ShuffleDefense = None,):
         """
             self.ds_train and self.ds_val should be set to
             datasets to be used to train and evaluate.
@@ -159,12 +162,35 @@ class CustomDatasetWrapper:
         self.num_features_drop = 0
         self.label_noise = label_noise
 
+        # Active defenses
+        self.shuffle_defense = shuffle_defense
+
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
                     val_factor: float = 1,
                     num_workers: int = 0,
                     prefetch_factor: int = 2):
+        
+        if self.shuffle_defense:
+            # This function should return new loaders at every call
+            temp_train_loader = DataLoader(
+                self.ds_train,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=num_workers,
+                worker_init_fn=utils.worker_init_fn,
+                #pin_memory=True,
+                prefetch_factor=prefetch_factor
+            )
+            # Data-level defense, apply logic here
+            mask_or_extra_data = self.shuffle_defense.initialize(temp_train_loader)
+            if mask_or_extra_data is not None:
+                if self.shuffle_defense.config.augment:
+                    self.insert_extra_data(mask_or_extra_data)
+                else:
+                    self.mask_data_selection(mask_or_extra_data)
+
         # This function should return new loaders at every call
         train_loader = DataLoader(
             self.ds_train,
@@ -245,11 +271,9 @@ class CustomDatasetWrapper:
         return f"{type(self).__name__}(prop={self.prop}, ratio={self.ratio}, split={self.split}, classify={self.classify})"
     
     def mask_data_selection(self, mask):
-        # Mask data for train data
         self.ds_train.mask_data_selection(mask)
     
     def insert_extra_data(self, data):
-        # Add extra data to train data
         self.ds_train.insert_extra_data(data)
 
     def _get_model_paths(self,
@@ -502,7 +526,7 @@ class CustomDatasetWrapper:
 
         if len(feature_vectors) != len(models):
             warnings.warn(warning_string(
-                f"\nNumber of models loaded ({len(feature_vectors)}) is less than requested ({n_models})"))
+                f"\nNumber of models loaded ({len(feature_vectors)}) is less than requested ({models})"))
 
         feature_vectors = np.array(feature_vectors, dtype='object')
         return dims, feature_vectors

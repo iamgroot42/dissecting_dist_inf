@@ -56,9 +56,25 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(
         data_config.name)(train_config.save_every_epoch)
+    
+    # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
+    shuffle_defense = None
+    if train_config.misc_config is not None:
+        shuffle_defense_config = train_config.misc_config.shuffle_defense_config
+        if shuffle_defense_config and not train_config.expect_extra:
+            raise ValueError(
+                "Need access to property labels for shuffle defense. Set expect_extra to True")
+
+        if shuffle_defense_config is not None:
+            if shuffle_defense_config.augment:
+                shuffle_defense = AugmentDefense(shuffle_defense_config)
+            else:
+                shuffle_defense = ShuffleDefense(shuffle_defense_config)
 
     # Create new DS object
-    ds = ds_wrapper_class(data_config, epoch=train_config.save_every_epoch)
+    ds = ds_wrapper_class(data_config,
+                         epoch=train_config.save_every_epoch,
+                         shuffle_defense=shuffle_defense)
 
     # train_ds, val_ds = ds.load_data()
     # print(len(train_ds))
@@ -84,24 +100,13 @@ if __name__ == "__main__":
 
         print("Training classifier %d / %d" % (i, train_config.num_models))
 
-        # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
-        shuffle_defense = None
-        if train_config.misc_config is not None:
-            shuffle_defense_config = train_config.misc_config.shuffle_defense_config
-            if shuffle_defense_config and not train_config.expect_extra:
-                raise ValueError(
-                    "Need access to property labels for shuffle defense. Set expect_extra to True")
-
-            if shuffle_defense_config is not None:
-                if shuffle_defense_config.augment:
-                    shuffle_defense = AugmentDefense(shuffle_defense_config)
-                else:
-                    shuffle_defense = ShuffleDefense(shuffle_defense_config)
-                shuffle_defense.initialize(ds, train_config)
-
         # Get data loaders
         train_loader, val_loader = ds.get_loaders(
             batch_size=train_config.batch_size)
+        
+        print(len(train_loader.dataset))
+        print(len(val_loader.dataset))
+        # exit(0)
 
         # Get model
         if dp_config is None:

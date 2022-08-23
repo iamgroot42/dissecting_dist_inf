@@ -1,4 +1,5 @@
 import os
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import pandas as pd
 import torch as ch
 import torch.nn as nn
@@ -231,20 +232,26 @@ class BoneDataset(base.CustomDataset):
         self.num_samples = len(self.df)
         self.classify = classify
         self.property = property
+    
+    def mask_data_selection(self, mask):
+        self.mask = mask
+        self.num_samples = len(self.mask)
 
     def __getitem__(self, index):
+        index_ = self.mask[index].item() if self.mask is not None else index
+
         if self.processed:
-            X = self.features[self.df['path'].iloc[index]]
+            X = self.features[self.df['path'].iloc[index_]]
         else:
-            # X = Image.open(self.df['path'][index])
-            X = Image.open(self.df['path'][index]).convert('RGB')
+            # X = Image.open(self.df['path'][index_])
+            X = Image.open(self.df['path'][index_]).convert('RGB')
             if self.transform:
                 X = self.transform(X)
 
-        y = ch.tensor(int(self.df[self.classify][index]))
-        prop_label = ch.tensor(int(self.df[self.property][index]))
+        y = ch.tensor(int(self.df[self.classify][index_]))
+        prop_label = ch.tensor(int(self.df[self.property][index_]))
 
-        return X, y, (prop_label)
+        return X, y, prop_label
 
 
 class _RawBoneWrapper:
@@ -274,16 +281,17 @@ class BoneWrapper(base.CustomDatasetWrapper):
                  data_config: DatasetConfig,
                  skip_data: bool = False,
                  epoch: bool = False,
-                 label_noise: float = 0):
+                 label_noise: float = 0,
+                 shuffle_defense: ShuffleDefense = None):
         # Call parent constructor
-        super().__init__(data_config, skip_data, label_noise)
+        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
         self.sample_sizes = {
             "gender": {
                 "adv": (700, 200),
                 "victim": (1400, 400)
             },
             "age": {
-                "adv": (7000, 2000),
+                "adv": (700, 200),
                 "victim": (1400, 400)
             }
         }
@@ -338,19 +346,29 @@ class BoneWrapper(base.CustomDatasetWrapper):
         if self.processed_variant:
             features = self._get_features()
             ds_train = BoneDataset(
-                self.df_train, features["train"], processed=True)
+                self.df_train, features["train"],
+                processed=True,
+                classify=self.classify,
+                property=self.prop)
             ds_val = BoneDataset(
-                self.df_val, features["val"], processed=True)
+                self.df_val, features["val"],
+                processed=True,
+                classify=self.classify,
+                property=self.prop)
         else:
             # Get transforms
             train_transform, test_transform = get_transforms(self.augment)
 
             ds_train = BoneDataset(
                 self.df_train, train_transform,
-                processed=False)
+                processed=False,
+                classify=self.classify,
+                property=self.prop)
             ds_val = BoneDataset(
                 self.df_val, test_transform,
-                processed=False)
+                processed=False,
+                classify=self.classify,
+                property=self.prop)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size,
@@ -366,6 +384,9 @@ class BoneWrapper(base.CustomDatasetWrapper):
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
         base_models_dir = self.info_object.base_models_dir
+        shuffle_defense_config = None
+        if train_config.misc_config is not None:
+            shuffle_defense_config = train_config.misc_config.shuffle_defense_config
         subfolder_prefix = os.path.join(self.split, self.prop, str(self.ratio))
 
         # Standard logic
@@ -377,6 +398,19 @@ class BoneWrapper(base.CustomDatasetWrapper):
             model_arch = self.info_object.default_model
         base_models_dir = os.path.join(base_models_dir, model_arch)
 
+        if shuffle_defense_config is None:
+            base_models_dir = os.path.join(base_models_dir, "normal")
+        else:
+            if self.ratio == shuffle_defense_config.desired_value:
+                # When ratio of models loaded is same as target ratio of defense,
+                # simply load 'normal' model of that ratio
+                base_models_dir = os.path.join(base_models_dir, "normal")
+            else:
+                base_models_dir = os.path.join(base_models_dir, "shuffle_defense",
+                                            "%s" % shuffle_defense_config.sample_type,
+                                            "%.2f" % shuffle_defense_config.desired_value)
+
+        # Get final savepath
         save_path = os.path.join(base_models_dir, subfolder_prefix)
 
         # Make sure this directory exists
