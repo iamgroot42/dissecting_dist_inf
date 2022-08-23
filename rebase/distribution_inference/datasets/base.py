@@ -178,7 +178,7 @@ class CustomDatasetWrapper:
                 self.ds_train,
                 batch_size=batch_size,
                 shuffle=False,
-                num_workers=num_workers,
+                num_workers=10,
                 worker_init_fn=utils.worker_init_fn,
                 #pin_memory=True,
                 prefetch_factor=prefetch_factor

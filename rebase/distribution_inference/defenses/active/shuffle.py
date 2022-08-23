@@ -1,5 +1,6 @@
 import torch as ch
 import numpy as np
+from tqdm import tqdm
 from distribution_inference.config import ShuffleDefenseConfig
 
 
@@ -25,7 +26,7 @@ class ShuffleDefense:
             version of loader with desired data.
         """
         all_labels = []
-        for _, _, prop_labels in loader:
+        for _, _, prop_labels in tqdm(loader, desc="Collecting data for ShuffleDefense"):
             all_labels.append(prop_labels)
         all_labels = ch.cat(all_labels)
         selected_indices = self.process(all_labels)

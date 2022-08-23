@@ -99,9 +99,9 @@ class AugmentDefense(ShuffleDefense):
         x_ = (x.clone() + 1) / 2
         # Data not on GPU at this stage
         augment_transforms = transforms.Compose([
-            transforms.RandomAffine(degrees=20,
-                                    translate=(0.2, 0.2),
-                                    shear=0.2),
+            transforms.RandomAffine(degrees=15,
+                                    translate=(0.1, 0.1),
+                                    shear=0.1),
             transforms.RandomHorizontalFlip()
         ])
 
