@@ -511,9 +511,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             else:
                 shuffle_defense_config = train_config.misc_config.shuffle_defense_config
                 if shuffle_defense_config.augment:
-                    shuff_name = shuffle_defense_config.sample_type
-                else:
                     shuff_name = "augment"
+                else:
+                    shuff_name = shuffle_defense_config.sample_type
                 base_models_dir = os.path.join(base_models_dir, "shuffle_defense",
                                                shuff_name,
                                                "%.2f" % shuffle_defense_config.desired_value)
