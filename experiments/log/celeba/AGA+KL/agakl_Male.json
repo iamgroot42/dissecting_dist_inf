@@ -1,20 +1,20 @@
 {
-    "name": "combine_agakl_race",
-    "start time": "2022-08-25 12:47:43.947653",
+    "name": "agakl_Male",
+    "start time": "2022-08-25 15:18:37.060568",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "new_census",
-                "prop": "race",
+                "name": "celeba",
+                "prop": "Male",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": null,
+                "classify": "Smiling",
                 "cwise_samples": null,
-                "squeeze": true,
-                "processed_variant": true,
+                "squeeze": false,
+                "processed_variant": false,
                 "prune": 0
             },
             "epochs": 0,
@@ -56,7 +56,7 @@
             "ratios": [
                 1.0
             ],
-            "batch_size": 30000,
+            "batch_size": 512,
             "num_adv_models": 150,
             "granularity": 0.05,
             "preload": true,
@@ -79,7 +79,7 @@
         "white_box": {
             "attack": "affinity",
             "epochs": 120,
-            "batch_size": 1000,
+            "batch_size": 500,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
             "train_sample": 750,
@@ -134,7 +134,7 @@
         "adv_processed_variant": false,
         "adv_target_epoch": null,
         "victim_target_epoch": null,
-        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/new_census/race",
+        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Male",
         "save_bb": false,
         "save_data": true,
         "restore_data": null,
@@ -145,91 +145,13 @@
         "combine": {
             "0.0": {
                 "adv_acc": [
-                    100.0,
-                    100.0,
                     100.0
                 ],
                 "victim_acc": [
-                    100.0,
-                    99.3,
-                    84.5
-                ]
-            },
-            "0.1": {
-                "adv_acc": [
-                    100.0,
-                    100.0,
-                    100.0
-                ],
-                "victim_acc": [
-                    99.2,
-                    99.3,
-                    99.2
-                ]
-            },
-            "0.2": {
-                "adv_acc": [
-                    99.5,
-                    97.5,
-                    99.0
-                ],
-                "victim_acc": [
-                    87.9,
-                    86.2,
-                    91.2
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    87.5,
-                    90.5,
-                    93.0
-                ],
-                "victim_acc": [
-                    75.0,
-                    68.4,
-                    80.5
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    63.5
-                ],
-                "victim_acc": [
-                    65.10000000000001
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    66.0
-                ],
-                "victim_acc": [
-                    60.699999999999996
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    85.0,
-                    84.5,
-                    90.0
-                ],
-                "victim_acc": [
-                    67.7,
-                    68.89999999999999,
-                    83.3
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    96.5,
-                    93.5
-                ],
-                "victim_acc": [
-                    92.2,
-                    92.30000000000001
+                    94.89999999999999
                 ]
             }
         }
     },
-    "save time": "2022-08-25 16:04:18.561690"
+    "save time": "2022-08-25 15:45:41.980920"
 }
