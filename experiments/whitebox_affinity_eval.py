@@ -45,7 +45,6 @@ if __name__ == "__main__":
             if train_config.misc_config.adv_config.scale_by_255:
                 train_config.misc_config.adv_config.epsilon /= 255
 
-    # Make sure regression config is not being used here
     is_regression = False
     if wb_attack_config.regression_config:
         is_regression = True

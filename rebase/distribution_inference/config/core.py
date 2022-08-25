@@ -468,3 +468,5 @@ class CombineAttackConfig(AttackConfig):
     """path to restore all the data"""
     use_wb_latents: Optional[bool] = False
     """Use feature outputs from WB models (instead of logits)?"""
+    num_for_meta: Optional[int] = 50
+    """Number of data points to use for meta-classifier on top of WB and BB"""
