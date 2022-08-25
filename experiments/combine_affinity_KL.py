@@ -261,7 +261,7 @@ if __name__ == "__main__":
             labels_vic = np.concatenate(
                 ([0] * len(models_vic_1), [1] * len(models_vic_2)))
             clf.fit(preds_adv, labels_adv)
-            logger.add_results("combine", prop_value,
+            logger.add_results("AGA+KL", prop_value,
                                100 * clf.score(preds_vic, labels_vic),
                                100 * clf.score(preds_adv, labels_adv))
             # Summarize results over runs, for each ratio and attack

@@ -18,7 +18,8 @@ ATTACK_MAPPING = {
     "Combine": "Combining results",
     "comparison": "Comparison attack by training victim models",
     "generative": "Perpoint attack using generated data",
-    "binary_perpoint": "perpoint attack using only binary predictions"
+    "binary_perpoint": "perpoint attack using only binary predictions",
+    "AGA+KL": "AGA+KL"
 }
 
 
