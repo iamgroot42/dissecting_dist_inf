@@ -14,8 +14,8 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Male",
-            "classify": "Smiling",
+            "prop": "Wavy_Hair",
+            "classify": "Mouth_Slightly_Open",
             "split": "adv",
             "value": 0.5,
             "processed_variant": false
@@ -24,34 +24,34 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "num_victim_models": 500,
     "tries": 3,
     "black_box": {
         "granularity": 0.05,
-        "num_adv_models": 50,
+        "num_adv_models": 150,
         "attack_type": [
-            "threshold_perpoint"
+            "KL"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
-        "batch_size": 30000,
+        "batch_size": 512,
         "preload": true
     },
     "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
         0.6,
         0.7,
         0.8,
         0.9,
         1.0
     ],
-    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Male",
-    "save_bb": false,
-    "use_wb_latents": false
+    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Wavy_Hair",
+    "use_wb_latents": false,
+    "num_victim_models": 500,
+    "num_total_adv_models": 500,
+    "num_for_meta": 100
 }
