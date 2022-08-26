@@ -398,7 +398,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
             model_arch = self.info_object.default_model
         base_models_dir = os.path.join(base_models_dir, model_arch)
 
-        if shuffle_defense_config is None:
+        if shuffle_defense_config is None or shuffle_defense_config.desired_value == self.ratio:
             base_models_dir = os.path.join(base_models_dir, "normal")
         else:
             if self.ratio == shuffle_defense_config.desired_value:
