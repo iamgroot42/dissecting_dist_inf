@@ -9,6 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier as KN
 from sklearn.gaussian_process import GaussianProcessClassifier as GPC
 from sklearn.naive_bayes import MultinomialNB as MNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 import torch.nn.functional as F
 from dgl.nn.pytorch import GraphConv
 
@@ -21,11 +23,11 @@ class BaseModel(nn.Module):
                  transpose_features: bool = True,
                  is_sklearn_model: bool = False,
                  is_graph_model: bool = False):
+        super().__init__()
         self.is_conv = is_conv
         self.transpose_features = transpose_features
         self.is_sklearn_model = is_sklearn_model
         self.is_graph_model = is_graph_model
-        super(BaseModel, self).__init__()
     
     def forward(self, x: Union[np.ndarray, ch.Tensor]) -> Union[np.ndarray, ch.Tensor]:
         converted = False
@@ -60,6 +62,18 @@ class BaseModel(nn.Module):
         return self.model.score(x, y)
 
 
+class SVMClassifier(BaseModel):
+    def __init__(self,
+                 C=1.0,
+                 kernel='rbf',
+                 degree=3):
+        super().__init__(is_sklearn_model=True)
+        self.model = SVC(probability=True,
+                         C=C,
+                         kernel=kernel,
+                         degree=degree)
+
+
 class RandomForest(BaseModel):
     def __init__(self,
                  max_depth: int = None,
@@ -68,8 +82,50 @@ class RandomForest(BaseModel):
                  min_samples_leaf: int = 1):
         super().__init__(is_sklearn_model=True)
         self.model = RandomForestClassifier(
-            max_depth=max_depth, n_estimators=n_estimators,
-            n_jobs=n_jobs, min_samples_leaf=min_samples_leaf)
+            max_depth=max_depth,
+            n_estimators=n_estimators,
+            n_jobs=n_jobs,
+            min_samples_leaf=min_samples_leaf)
+
+
+class LRClassifier(BaseModel):
+    def __init__(self,
+                 C: float = 1.0,
+                 penalty: str = 'l2',
+                 solver: str = 'lbfgs',
+                 multi_class: str = 'multinomial'):
+        super().__init__(is_sklearn_model=True)
+        self.model = LogisticRegression(
+            C=C,
+            penalty=penalty,
+            solver=solver,
+            multi_class=multi_class)
+
+
+class KNeighborsClassifier(BaseModel):
+    def __init__(self,
+                n_neighbors: int = 5,
+                leaf_size: int=30,
+                p :int=2,
+                n_jobs: int = -1):
+        super().__init__(is_sklearn_model=True)
+        self.model = KN(
+            n_neighbors=n_neighbors,
+            leaf_size=leaf_size,
+            p=p,
+            n_jobs=n_jobs)
+
+
+class GaussianProcessClassifier(BaseModel):
+    def __init__(self,
+                n_restarts_optimizer: int = 0,
+                max_iter_predict: int = 100,
+                n_jobs:int = -1):
+        super().__init__(is_sklearn_model=True)
+        self.model = GPC(
+            n_restarts_optimizer=n_restarts_optimizer,
+            max_iter_predict=max_iter_predict,
+            n_jobs=n_jobs)
 
 class KNeighborsClassifier(BaseModel):
     def __init__(self,
@@ -254,6 +310,51 @@ class MLPTwoLayer(BaseModel):
         # Override list of layers if given
         valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
         latent_mapping = {0: 1, 1:3}
+        all_latents = []
+        for i, layer in enumerate(self.layers):
+            x = layer(x)
+            if latent is not None and i == latent_mapping[latent]:
+                if detach_before_return:
+                    return x.detach()
+                else:
+                    return x
+            if get_all and i in valid_fc:
+                if detach_before_return:
+                    all_latents.append(x.detach())
+                else:
+                    all_latents.append(x)
+
+        if get_all:
+            return all_latents
+        if detach_before_return:
+            return x.detach()
+        return x
+
+
+class MLPThreeLayer(BaseModel):
+    def __init__(self, n_inp: int, num_classes: int = 1, dims: List[int] = [64, 32, 16]):
+        super().__init__(is_conv=False)
+        self.layers = nn.Sequential(
+            nn.Linear(n_inp, dims[0]),
+            nn.ReLU(),
+            nn.Linear(dims[0], dims[1]),
+            nn.ReLU(),
+            nn.Linear(dims[1], dims[2]),
+            nn.ReLU(),
+            nn.Linear(dims[2], num_classes),
+        )
+        self.valid_for_all_fc = [1, 3, 5, 6]
+
+    def forward(self, x,
+                detach_before_return: bool = False,
+                get_all: bool = False,
+                layers_to_target_conv: List[int] = None,
+                layers_to_target_fc: List[int] = None,
+                latent:int=None):
+
+        # Override list of layers if given
+        valid_fc = layers_to_target_fc if layers_to_target_fc else self.valid_for_all_fc
+        latent_mapping = {0: 1, 1:3, 2:5}
         all_latents = []
         for i, layer in enumerate(self.layers):
             x = layer(x)

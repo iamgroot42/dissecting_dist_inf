@@ -52,8 +52,14 @@ class ShuffleDefenseConfig(Serializable):
     """
     desired_value: float
     """Desired ratio to be achieved when shuffling"""
-    sample_ratio: float = 0.75
-    """Desired fraction of original data left over after ratio is achieved"""
+    sample_type: str = field(choices=["over", "under"])
+    """Over-sample or under-sample?"""
+    data_level: bool = False
+    """Perform under/over sampling at data level (true), or batch level (false)?"""
+    augment: bool = False
+    """Augment data during over-sampling?"""
+    use_mixup: bool = False
+    """Use mixup during augmentation?"""
 
 
 @dataclass
@@ -462,3 +468,5 @@ class CombineAttackConfig(AttackConfig):
     """path to restore all the data"""
     use_wb_latents: Optional[bool] = False
     """Use feature outputs from WB models (instead of logits)?"""
+    num_for_meta: Optional[int] = 50
+    """Number of data points to use for meta-classifier on top of WB and BB"""

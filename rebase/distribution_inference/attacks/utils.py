@@ -18,7 +18,8 @@ ATTACK_MAPPING = {
     "Combine": "Combining results",
     "comparison": "Comparison attack by training victim models",
     "generative": "Perpoint attack using generated data",
-    "binary_perpoint": "perpoint attack using only binary predictions"
+    "binary_perpoint": "perpoint attack using only binary predictions",
+    "AGA+KL": "AGA+KL"
 }
 
 
@@ -51,7 +52,7 @@ def get_train_config_for_adv(train_config: TrainConfig,
                              attack_config: AttackConfig):
     """
         Check if misc training config for adv is different.
-        If yes, make one and return. Else use same as base config.
+        If yes, make one and return. Else, misc_config is None.
     """
     train_config_adv = replace(train_config)
     train_config_adv.misc_config = attack_config.adv_misc_config

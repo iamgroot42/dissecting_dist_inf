@@ -19,14 +19,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--en", help="experiment name",
         type=str, required=True)
-    parser.add_argument('--gpu',
-                        default=None, help="device number")
-    parser.add_argument("--ratios",
-                        nargs='+',
-                        type=float,default = None)
+    parser.add_argument(
+        '--gpu',
+        default=None, help="device number")
+    parser.add_argument(
+        "--ratios",
+        nargs='+',
+        type=float,default = None)
     parser.add_argument(
         "--trial",
-        type=int, default=None)
+        type=int,
+        default=None)
     args = parser.parse_args()
     # Attempt to extract as much information from config file as you can
     attack_config: AttackConfig = AttackConfig.load(
@@ -94,7 +97,9 @@ if __name__ == "__main__":
 
         # Create new DS object for both and victim (for other ratio)
         ds_vic_2 = ds_wrapper_class(
-            data_config_vic_2, skip_data=not attack_config.victim_local_attack,label_noise=train_config.label_noise)
+            data_config_vic_2,
+            skip_data=not attack_config.victim_local_attack,
+            label_noise=train_config.label_noise)
         if not attack_config.victim_local_attack:
             ds_adv_2 = ds_wrapper_class(data_config_adv_2)
 

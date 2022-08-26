@@ -1,0 +1,169 @@
+{
+    "name": "agakl_Cheek",
+    "start time": "2022-08-25 15:19:14.681381",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "celeba",
+                "prop": "High_Cheekbones",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": "Mouth_Slightly_Open",
+                "cwise_samples": null,
+                "squeeze": false,
+                "processed_variant": false,
+                "prune": 0
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false,
+            "label_noise": 0,
+            "model_arch": null,
+            "parallel": false
+        },
+        "values": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+        ],
+        "black_box": {
+            "attack_type": [
+                "KL"
+            ],
+            "ratios": [
+                1.0
+            ],
+            "batch_size": 512,
+            "num_adv_models": 150,
+            "granularity": 0.05,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
+            "multi_class": false,
+            "save": false,
+            "tune_final_threshold": false,
+            "Start_epoch": 1,
+            "End_epoch": 20,
+            "relative_threshold": false,
+            "loss_variant": false,
+            "random_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false
+        },
+        "white_box": {
+            "attack": "affinity",
+            "epochs": 120,
+            "batch_size": 500,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 750,
+            "val_sample": 50,
+            "save": true,
+            "load": null,
+            "regression_config": null,
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "multi_class": false,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": null,
+            "affinity_config": {
+                "num_final": 16,
+                "only_latent": false,
+                "random_edge_selection": false,
+                "frac_retain_pairs": 0.2,
+                "better_retain_pair": false,
+                "optimal_data_identity": false,
+                "model_sample_for_optimal_data_identity": 50,
+                "num_samples_use": 50,
+                "layer_agnostic": false,
+                "inner_dims": [
+                    1024,
+                    64
+                ],
+                "shared_layerwise_params": true,
+                "sequential_variant": false,
+                "num_rnn_layers": 2,
+                "layers_to_target_conv": null,
+                "layers_to_target_fc": null,
+                "perpoint_based_selection": 0,
+                "flip_selection_logic": false
+            },
+            "comparison_config": null
+        },
+        "tries": 3,
+        "num_victim_models": 500,
+        "on_cpu": false,
+        "adv_misc_config": null,
+        "num_total_adv_models": 500,
+        "victim_local_attack": false,
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null,
+        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/High_Cheekbones",
+        "save_bb": false,
+        "save_data": true,
+        "restore_data": null,
+        "use_wb_latents": false,
+        "num_for_meta": 100
+    },
+    "result": {
+        "combine": {
+            "0.0": {
+                "adv_acc": [
+                    100.0,
+                    100.0,
+                    100.0
+                ],
+                "victim_acc": [
+                    91.8,
+                    91.2,
+                    96.8
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    100.0
+                ],
+                "victim_acc": [
+                    94.0
+                ]
+            }
+        }
+    },
+    "save time": "2022-08-25 17:02:59.807148"
+}

@@ -379,7 +379,8 @@ class AffinityAttack(Attack):
     def _eval_attack(self, test_loader,
                      epochwise_version: bool = False,
                      get_preds: bool = False,
-                     get_latents: bool = False):
+                     get_latents: bool = False,
+                     element_wise: bool = False):
         def collate_fn(data):
             features, labels = zip(*data)
             # Combine them per-layer
@@ -421,9 +422,15 @@ class AffinityAttack(Attack):
 
         # Evaluate model
         if (self.config.regression_config is not None):
-            criterion = nn.MSELoss()
+            if element_wise:
+                criterion = nn.MSELoss(reduction='none')
+            else:
+                criterion = nn.MSELoss()
         else:
-            criterion = nn.BCEWithLogitsLoss()
+            if element_wise:
+                criterion = nn.BCEWithLogitsLoss(reduction='none')
+            else:
+                criterion = nn.BCEWithLogitsLoss()
         returned_results = validate_epoch(
             test_loader_,
             self.model,
@@ -431,7 +438,8 @@ class AffinityAttack(Attack):
             input_is_list=True,
             expect_extra=False,
             regression=(self.config.regression_config is not None),
-            get_preds=get_preds)
+            get_preds=get_preds,
+            element_wise=element_wise)
         if get_preds:
             test_loss, test_acc, preds = returned_results
         else:

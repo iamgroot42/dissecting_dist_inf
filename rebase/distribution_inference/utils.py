@@ -71,3 +71,21 @@ def get_save_path():
         Path where results/trained meta-models are stored
     """
     return "./log"
+
+
+def get_arxiv_node_params_mapping():
+    """
+        Get parameters for Zipf distribution estimation
+        of arXiv graphs
+    """
+    return {
+        9: (86, 1.843366),
+        10: (133, 1.881514),
+        11: (214, 1.929022),
+        12: (257, 1.927125),
+        13: (253, 1.918591),
+        14: (267, 1.914586),
+        15: (265, 1.903623),
+        16: (263, 1.886148),
+        17: (263, 1.876854)
+    }

@@ -3,7 +3,7 @@
         "name": "boneage",
         "prop": "age",
         "classify": "gender",
-        "split": "adv",
+        "split": "victim",
         "squeeze": true,
         "value": 0.8
     },
@@ -11,6 +11,7 @@
     "learning_rate": 2e-3,
     "batch_size": 8192,
     "weight_decay": 0.02,
-    "num_models": 1000,
+    "num_models": 500,
+    "model_arch": "bonemodel",
     "get_best": true
 }

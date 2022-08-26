@@ -31,7 +31,7 @@ ATTACK_MAPPING = {
     "perpoint_choose_dif": PerPointChooseDifAttack,
     "KL": KLAttack,
     "generative":GenerativeAttack,
-    "binary_perpoint":BinaryPerPointThresholdAttack
+    "binary_perpoint": BinaryPerPointThresholdAttack
 }
 
 
@@ -161,9 +161,18 @@ def get_preds(loader, models: List[nn.Module],
             if preload:
                 for data_batch in inputs:
                     if latent != None:
-                        prediction = model(data_batch,latent=latent).detach()
+                        prediction = model(data_batch, latent=latent).detach()
                     else:
                         prediction = model(data_batch).detach()
+
+                        # If None for whatever reason, re-run
+                        # Weird bug that pops in every now and then
+                        if prediction is None:
+                            if latent != None:
+                                prediction = model(data_batch,latent=latent).detach()
+                            else:
+                                prediction = model(data_batch).detach()
+
                         if not multi_class:
                             prediction = prediction[:, 0]
                     predictions_on_model.append(prediction.cpu())

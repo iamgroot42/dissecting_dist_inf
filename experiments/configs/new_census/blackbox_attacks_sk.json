@@ -29,9 +29,7 @@
             0.5,
             1.0
         ],
-        "preload": true,
-        "tune_final_threshold": false,
-        "relative_threshold": false
+        "preload": true
     },
     "values": [
         0.0,
@@ -45,7 +43,7 @@
         0.9,
         1.0
     ],
-    "num_victim_models": 500,
-    "adv_model_arch": "mlp2",
+    "num_victim_models": 10,
+    "adv_model_arch": "mlp3",
     "victim_model_arch": "random_forest"
 }

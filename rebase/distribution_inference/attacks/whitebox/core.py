@@ -37,7 +37,8 @@ class Attack:
     def eval_attack(self, test_loader,
                     epochwise_version: bool = False,
                     get_preds: bool = False,
-                    get_latents: bool = False):
+                    get_latents: bool = False,
+                    element_wise: bool = False):
         """
             Evaluate attack on given test data
         """
@@ -46,11 +47,13 @@ class Attack:
         return self._eval_attack(test_loader,
                                  epochwise_version=epochwise_version,
                                  get_preds=get_preds,
-                                 get_latents=get_latents)
+                                 get_latents=get_latents,
+                                 element_wise=element_wise)
 
     def _eval_attack(self, test_loader,
                      epochwise_version: bool = False,
-                     get_preds: bool = False):
+                     get_preds: bool = False,
+                     element_wise: bool = False):
         raise NotImplementedError("Must be implemented in subclass")
 
     def load_model(self, path):

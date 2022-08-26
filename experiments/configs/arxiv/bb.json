@@ -23,7 +23,6 @@
         "batch_size": 512,
         "attack_type": [
             "KL",
-            "loss_and_threshold",
             "threshold_perpoint"
         ],
         "ratios": [

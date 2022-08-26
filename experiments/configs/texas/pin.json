@@ -10,7 +10,7 @@
     "train_config": {
         "data_config": {
             "name": "texas",
-            "prop": "sex",
+            "prop": "ethnicity",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,

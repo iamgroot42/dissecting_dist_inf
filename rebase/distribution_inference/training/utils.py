@@ -51,6 +51,8 @@ def load_model(model, path, on_cpu: bool = False):
         if model.is_sklearn_model:
             with open(path, 'rb') as f:
                 model = pickle.load(f)
+            # Sklearn model is obviously not a graph model
+            model.is_graph_model = False
         else:
             model.load_state_dict(ch.load(path, map_location=map_location))
     except:

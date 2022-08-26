@@ -1,3 +1,4 @@
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.model_selection import train_test_split
 import pickle
@@ -7,7 +8,7 @@ import os
 import torch as ch
 import torch.nn as nn
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPTwoLayer, RandomForest
+from distribution_inference.models.core import MLPTwoLayer, RandomForest, LRClassifier, MLPThreeLayer
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -21,7 +22,7 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models_new_census/60_40",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
-                         supported_models=["mlp2", "random_forest"],
+                         supported_models=["mlp2", "random_forest", "lr", "mlp3"],
                          property_focus={"sex": 'female', "race": 'white'},
                          default_model="mlp2",
                          epoch_wise=epoch_wise)
@@ -31,8 +32,12 @@ class DatasetInformation(base.DatasetInformation):
             model_arch = self.default_model
         if model_arch == "mlp2":
             model = MLPTwoLayer(n_inp=105)
+        elif model_arch == "mlp3":
+            model = MLPThreeLayer(n_inp=105)
         elif model_arch == "random_forest":
             model = RandomForest(min_samples_leaf=5, n_jobs=4, n_estimators=10)
+        elif model_arch == "lr":
+            model = LRClassifier()
         else:
             raise NotImplementedError("Model architecture not supported")
 
@@ -255,16 +260,22 @@ class _CensusIncome:
 
 class CensusSet(base.CustomDataset):
     def __init__(self, data, targets, prop_labels, squeeze=False):
+        super().__init__()
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
         self.prop_labels = ch.from_numpy(prop_labels).float()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
+    
+    def mask_data_selection(self, mask):
+        self.mask = mask
+        self.num_samples = len(self.mask)
 
     def __getitem__(self, index):
-        x = self.data[index]
-        y = self.targets[index]
-        prop_label = self.prop_labels[index]
+        index_ = self.mask[index] if self.mask is not None else index
+        x = self.data[index_]
+        y = self.targets[index_]
+        prop_label = self.prop_labels[index_]
 
         if self.squeeze:
             y = y.squeeze()
@@ -275,8 +286,13 @@ class CensusSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class CensusWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False, epoch: bool = False, label_noise: float = 0):
-        super().__init__(data_config, skip_data, label_noise)
+    def __init__(self,
+                 data_config: DatasetConfig,
+                 skip_data: bool = False,
+                 epoch: bool = False,
+                 label_noise: float = 0,
+                 shuffle_defense: ShuffleDefense = None):
+        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)
@@ -325,9 +341,14 @@ class CensusWrapper(base.CustomDatasetWrapper):
             if shuffle_defense_config is None:
                 base_path = os.path.join(base_models_dir, "normal")
             else:
-                base_path = os.path.join(base_models_dir, "shuffle_defense",
-                                         "%.2f" % shuffle_defense_config.desired_value,
-                                         "%.2f" % shuffle_defense_config.sample_ratio)
+                if self.ratio == shuffle_defense_config.desired_value:
+                    # When ratio of models loaded is same as target ratio of defense,
+                    # simply load 'normal' model of that ratio
+                    base_path = os.path.join(base_models_dir, "normal")
+                else:
+                    base_path = os.path.join(base_models_dir, "shuffle_defense",
+                                             "%s" % shuffle_defense_config.sample_type,
+                                             "%.2f" % shuffle_defense_config.desired_value)
         else:
             base_path = os.path.join(
                 base_models_dir, "DP_%.2f" % dp_config.epsilon)

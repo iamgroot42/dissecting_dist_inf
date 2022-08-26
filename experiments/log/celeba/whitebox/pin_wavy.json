@@ -1,0 +1,219 @@
+{
+    "name": "pin_wavy",
+    "start time": "2022-08-16 14:17:40.986278",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "celeba",
+                "prop": "Wavy_Hair",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": "Mouth_Slightly_Open",
+                "cwise_samples": null,
+                "squeeze": false,
+                "processed_variant": false,
+                "prune": 0
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false,
+            "label_noise": 0,
+            "model_arch": null,
+            "parallel": false
+        },
+        "values": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+        ],
+        "black_box": null,
+        "white_box": {
+            "attack": "permutation_invariant",
+            "epochs": 100,
+            "batch_size": 150,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 750,
+            "val_sample": 50,
+            "save": false,
+            "load": null,
+            "regression_config": null,
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "multi_class": false,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": {
+                "focus": "all",
+                "scale_invariance": false
+            },
+            "affinity_config": null,
+            "comparison_config": null
+        },
+        "tries": 3,
+        "num_victim_models": 500,
+        "on_cpu": true,
+        "adv_misc_config": null,
+        "num_total_adv_models": 1000,
+        "victim_local_attack": false,
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null
+    },
+    "result": {
+        "permutation_invariant": {
+            "0.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    78.1,
+                    65.5,
+                    72.5
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    62.4,
+                    68.0,
+                    62.8
+                ]
+            },
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    57.5,
+                    61.1,
+                    59.4
+                ]
+            },
+            "0.3": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    59.3,
+                    58.3,
+                    58.7
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    50.7,
+                    54.2,
+                    50.4
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    51.1,
+                    51.5,
+                    53.0
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    66.3,
+                    63.0,
+                    57.7
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    69.3,
+                    67.3,
+                    74.2
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    70.7,
+                    66.9,
+                    77.0
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    89.0,
+                    76.2,
+                    81.8
+                ]
+            }
+        }
+    },
+    "save time": "2022-08-16 21:18:22.891924"
+}

@@ -115,7 +115,7 @@ n_eff = [find_n_eff(PARAM_MAPPING[int(targets[i])], PARAM_MAPPING[13], baselines
                     # baselines[i] / 100) for i in range(len(targets))]
 print(["%.2f" % x for x in n_eff])
 print(np.mean(n_eff[:4]), np.mean(n_eff[4:]))
-print("Neff for threshold:", np.mean(n_eff))
+print("Nleaked for threshold:", np.mean(n_eff))
 
 if add_legend:
     # Custom legend

@@ -1,13 +1,19 @@
+# Handle multiple workers
+import torch.multiprocessing
+torch.multiprocessing.set_sharing_strategy('file_system')
+
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
+from distribution_inference.defenses.active.augment import AugmentDefense
 from simple_parsing import ArgumentParser
 from pathlib import Path
-import numpy as np
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train
 from distribution_inference.training.utils import save_model
 from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
+
 
 EXTRA = False  #True
 if __name__ == "__main__":
@@ -57,8 +63,25 @@ if __name__ == "__main__":
     # Define logger
     
     logger = TrainingResult(exp_name, train_config)
+   
+    # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
+    shuffle_defense = None
+    if train_config.misc_config is not None:
+        shuffle_defense_config = train_config.misc_config.shuffle_defense_config
+        if shuffle_defense_config and not train_config.expect_extra:
+            raise ValueError(
+                "Need access to property labels for shuffle defense. Set expect_extra to True")
+
+        if shuffle_defense_config is not None:
+            if shuffle_defense_config.augment:
+                shuffle_defense = AugmentDefense(shuffle_defense_config)
+            else:
+                shuffle_defense = ShuffleDefense(shuffle_defense_config)
+
     # Create new DS object
-    ds = ds_wrapper_class(data_config,epoch=train_config.save_every_epoch,label_noise=train_config.label_noise)
+    ds = ds_wrapper_class(data_config,
+                         epoch=train_config.save_every_epoch,
+                         shuffle_defense=shuffle_defense)
 
     # train_ds, val_ds = ds.load_data()
     # print(len(train_ds))
@@ -101,16 +124,17 @@ if __name__ == "__main__":
                                                  extra_options={
                 "curren_model_num": i + train_config.offset,
                 "save_path_fn": ds.get_save_path,
-                "more_metrics": EXTRA})
-            logger.add_result(data_config.value, loss=vloss, acc=vacc,**extras)
-            
+                "more_metrics": EXTRA},
+                shuffle_defense=shuffle_defense)
+            logger.add_result(data_config.value, vloss, vacc, extras)
         else:
             model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                          train_config=train_config,
                                          extra_options={
                 "curren_model_num": i + train_config.offset,
-                "save_path_fn": ds.get_save_path})
-            logger.add_result(data_config.value, loss=vloss, acc=vacc)
+                "save_path_fn": ds.get_save_path},
+                shuffle_defense=shuffle_defense)
+            logger.add_result(data_config.value, vloss, vacc)
 
         # If saving only the final model
         if not train_config.save_every_epoch:
@@ -125,7 +149,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            #save_model(model, save_path)
+            save_model(model, save_path)
 
-    # Save logger
-    #logger.save()
+            # Save logger
+            logger.save()

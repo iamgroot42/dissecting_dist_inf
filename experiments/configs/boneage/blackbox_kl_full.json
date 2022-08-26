@@ -20,7 +20,8 @@
         "num_adv_models": 50,
         "batch_size": 50,
         "attack_type": [
-            "KL"
+            "KL",
+            "threshold_perpoint"
         ],
         "ratios": [
             1.0
@@ -38,7 +39,7 @@
     ],
     "num_victim_models": 250,
     "victim_model_arch": "densenet",
-    "adv_model_arch": "bonemodel",
+    "adv_model_arch": "svm",
     "adv_processed_variant": true,
     "on_cpu": true
 }

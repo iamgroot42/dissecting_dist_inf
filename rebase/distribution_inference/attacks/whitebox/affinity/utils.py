@@ -20,21 +20,27 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
                          attack_config: WhiteBoxAttackConfig,
                          num_samples_use: int = None,
                          adv_models: List[BaseModel] = None,
-                         also_get_raw_data: bool = False):
+                         also_get_raw_data: bool = False,
+                         is_graph_model: bool = False):
     """
         Collect data from given datasets and wrap into a dataloader.
     """
     warnings.warn(warning_string("\nCollecting seed data\n"))
-    all_data = []
+    all_data, all_ds_objs = [], []
     # For each given loader
     for ds in ds_list:
         # Use val-loader and collect all data
-        _, test_loader = ds.get_loaders(
-            attack_config.batch_size,
-            eval_shuffle=True)
+        if is_graph_model:
+            ds_obj, (_, data) = ds.get_loaders(
+                attack_config.batch_size,
+                eval_shuffle=True)
+        else:
+            _, test_loader = ds.get_loaders(
+                attack_config.batch_size,
+                eval_shuffle=True)
 
-        # Collect this data
-        data, _ = collect_data(test_loader)
+            # Collect this data
+            data, _ = collect_data(test_loader)
 
         # Collect preds on adv data, if given
         # Use these for picking top points
@@ -62,6 +68,8 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
                     data.shape[0], num_samples_use, replace=False)]
 
         all_data.append(data)
+        if is_graph_model:
+            all_ds_objs.append(ds_obj)
     
     all = ch.cat(all_data, dim=0)
 
@@ -70,10 +78,15 @@ def get_seed_data_loader(ds_list: List[CustomDatasetWrapper],
     print(warning_string(f"Seed data has {len(basic_ds)} samples."))
     # Get loader using given dataset
     if also_get_raw_data:
-        
-        _,l1 = make_ds_and_loader((all_data[0],ch.from_numpy(np.zeros(len(all_data[0])))), attack_config,Y=True)
-        _,l2 = make_ds_and_loader((all_data[1],ch.from_numpy(np.ones(len(all_data[1])))), attack_config,Y=True)
-        return basic_ds, loader, (l1,l2),all_data
+        _,l1 = make_ds_and_loader(
+            (all_data[0], ch.from_numpy(np.zeros(len(all_data[0])))),
+            attack_config,
+            Y=True)
+        _,l2 = make_ds_and_loader(
+            (all_data[1], ch.from_numpy(np.ones(len(all_data[1])))),
+            attack_config,
+            Y=True)
+        return basic_ds, loader, (l1,l2), all_data
     return basic_ds, loader
 
 

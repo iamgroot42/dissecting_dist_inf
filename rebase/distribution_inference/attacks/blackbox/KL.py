@@ -53,7 +53,6 @@ class KLAttack(Attack):
         choice_information = (None, None)
         return [(acc, preds), (None, None), choice_information]
     
-    
     def _get_kl_preds(self, ka, kb, kc1, kc2):
         # Apply sigmoid to ones that are not already sigmoided
         ka_, kb_ = ka, kb
@@ -148,8 +147,6 @@ class KLAttack(Attack):
         return [(acc, preds), (None, None), choice_information]
     """
 
-    
-
 def sigmoid(x):
     exp = np.exp(x)
     return exp / (1 + exp)
@@ -157,11 +154,8 @@ def sigmoid(x):
 
 def KL(x, y, multi_class: bool = False):
     small_eps = 1e-6
-    x_, y_ = x, y
-    x_[x_ == 0] += small_eps
-    x_[x_ == 1] -= small_eps
-    y_[y_ == 0] += small_eps
-    y_[y_ == 1] -= small_eps
+    x_ = np.clip(x, small_eps, 1 - small_eps)
+    y_ = np.clip(y, small_eps, 1 - small_eps)
     if multi_class:
         return np.mean(np.sum(x * (np.log(x) - np.log(y)),axis=2),axis=1)
     else:

@@ -29,6 +29,7 @@ class AffinityMetaClassifier(nn.Module):
         self.num_rnn_layers = config.num_rnn_layers
         self.sequential_variant = config.sequential_variant
         self.shared_layerwise_params = config.shared_layerwise_params
+        self.is_graph_model = False
         assert len(self.inner_dims) >= 1, "inner_dims must have at least 1 element"
 
         # Make inner model
