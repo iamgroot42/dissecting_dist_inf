@@ -1,4 +1,3 @@
-from types import NotImplementedType
 import torch as ch
 import numpy as np
 from torchvision import transforms
@@ -7,7 +6,6 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from torch.distributions.beta import Beta
 from tqdm import tqdm
 from itertools import product
-from distribution_inference.utils import warning_string
 
 
 class AugmentDefense(ShuffleDefense):
@@ -99,7 +97,7 @@ class AugmentDefense(ShuffleDefense):
         x, y, prop_labels = data
 
         if self.config.use_mixup:
-            raise NotImplementedType("Mixup not implemented yet")
+            raise ValueError("Mixup not implemented yet")
 
         # Transform data back to (0, 1) range from (-1, 1)
         x_ = (x.clone() + 1) / 2
@@ -107,7 +105,7 @@ class AugmentDefense(ShuffleDefense):
         augment_transforms = transforms.Compose([
             transforms.RandomAffine(degrees=15,
                                     translate=(0.1, 0.1),
-                                    shear=0.1),
+                                    scale=(0.85, 1.15)),
             transforms.RandomHorizontalFlip()
         ])
 
