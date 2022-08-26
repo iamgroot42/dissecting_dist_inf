@@ -1,10 +1,10 @@
 {
-    "name": "combine_agakl_sex",
-    "start time": "2022-08-25 12:46:46.426330",
+    "name": "sex_save_aga",
+    "start time": "2022-08-26 09:40:17.074955",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "new_census",
+                "name": "texas",
                 "prop": "sex",
                 "value": 0.5,
                 "split": "adv",
@@ -49,33 +49,7 @@
             0.9,
             1.0
         ],
-        "black_box": {
-            "attack_type": [
-                "KL"
-            ],
-            "ratios": [
-                1.0
-            ],
-            "batch_size": 30000,
-            "num_adv_models": 150,
-            "granularity": 0.05,
-            "preload": true,
-            "multi": null,
-            "multi2": null,
-            "multi_class": false,
-            "save": false,
-            "tune_final_threshold": false,
-            "Start_epoch": 1,
-            "End_epoch": 20,
-            "relative_threshold": false,
-            "loss_variant": false,
-            "random_order": false,
-            "kl_frac": 0.8,
-            "kl_voting": false,
-            "generative_attack": null,
-            "order_name": null,
-            "geo_mean": false
-        },
+        "black_box": null,
         "white_box": {
             "attack": "affinity",
             "epochs": 120,
@@ -91,7 +65,7 @@
             "binary": true,
             "gpu": true,
             "shuffle": true,
-            "multi_class": false,
+            "multi_class": true,
             "custom_layers_fc": null,
             "start_n_fc": 0,
             "first_n_fc": null,
@@ -127,125 +101,49 @@
         "num_victim_models": 500,
         "on_cpu": false,
         "adv_misc_config": null,
-        "num_total_adv_models": 500,
+        "num_total_adv_models": 1000,
         "victim_local_attack": false,
         "victim_model_arch": null,
         "adv_model_arch": null,
         "adv_processed_variant": false,
         "adv_target_epoch": null,
-        "victim_target_epoch": null,
-        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/new_census/sex",
-        "save_bb": false,
-        "save_data": true,
-        "restore_data": null,
-        "use_wb_latents": false,
-        "num_for_meta": 100
+        "victim_target_epoch": null
     },
     "result": {
-        "AGA+KL": {
+        "affinity": {
             "0.0": {
                 "adv_acc": [
-                    100.0,
-                    100.0
+                    null,
+                    null,
+                    null
                 ],
                 "victim_acc": [
-                    100.0,
-                    99.7
+                    50.1,
+                    53.5,
+                    50.0
                 ]
             },
             "0.1": {
                 "adv_acc": [
-                    100.0,
-                    100.0
+                    null,
+                    null,
+                    null
                 ],
                 "victim_acc": [
-                    99.8,
-                    99.8
+                    50.8,
+                    52.300000000000004,
+                    50.2
                 ]
             },
             "0.2": {
                 "adv_acc": [
-                    99.5,
-                    100.0
+                    null
                 ],
                 "victim_acc": [
-                    98.9,
-                    98.8
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    94.5,
-                    96.0
-                ],
-                "victim_acc": [
-                    89.0,
-                    91.9
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    84.5,
-                    75.0
-                ],
-                "victim_acc": [
-                    77.9,
-                    68.30000000000001
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    82.0,
-                    82.5
-                ],
-                "victim_acc": [
-                    77.60000000000001,
-                    76.2
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    93.5,
-                    96.5
-                ],
-                "victim_acc": [
-                    91.9,
-                    92.2
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    100.0,
-                    100.0,
-                    100.0
-                ],
-                "victim_acc": [
-                    98.3,
-                    98.2,
-                    97.0
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    100.0,
-                    100.0
-                ],
-                "victim_acc": [
-                    100.0,
-                    100.0
-                ]
-            },
-            "1.0": {
-                "adv_acc": [
-                    100.0,
-                    100.0
-                ],
-                "victim_acc": [
-                    100.0,
-                    99.9
+                    62.3
                 ]
             }
         }
     },
-    "save time": "2022-08-25 17:50:17.512336"
+    "save time": "2022-08-26 12:40:21.071341"
 }

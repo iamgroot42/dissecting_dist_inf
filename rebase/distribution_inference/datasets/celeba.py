@@ -493,7 +493,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         )
 
         if train_config.misc_config:
-            if train_config.misc_config.shuffle_defense_config is None:
+            if train_config.misc_config.shuffle_defense_config is None or (train_config.misc_config.shuffle_defense_config.desired_value == self.ratio):
                 if train_config.misc_config.adv_config:
                     # Extract epsilon to be used
                     adv_folder_prefix = "adv_train_"
