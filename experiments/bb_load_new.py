@@ -3,13 +3,13 @@ from pathlib import Path
 import os
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.attacks.blackbox.utils import get_attack, calculate_accuracies, get_vic_adv_preds_on_distr
-from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions
+from distribution_inference.attacks.blackbox.core import PredictionsOnDistributions, PredictionsOnOneDistribution
 from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get_train_config_for_adv
 from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
 import pickle
-
+import numpy as np
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
@@ -57,10 +57,19 @@ if __name__ == "__main__":
         # Define logger
         logger = AttackResult(args.en, attack_config,D0=d)
         for prop_value in args.ratios if args.ratios else attack_config.values:
+            if prop_value == d:
+                continue
             for t in range(attack_config.tries):
-                preds_adv = preds_a[d][prop_value][t]
-                preds_vic = preds_v[d][prop_value][t]
-                gt = ground_truths[d][prop_value][t]
+                preds_adv = PredictionsOnDistributions(
+                    PredictionsOnDistributions(preds_a[prop_value][prop_value][t],preds_a[d][prop_value][t]),
+                    PredictionsOnDistributions(preds_a[prop_value][d][t],preds_a[d][d][t]))
+                preds_vic = PredictionsOnDistributions(
+                    PredictionsOnDistributions(preds_v[prop_value][prop_value][t],preds_v[d][prop_value][t]),
+                    PredictionsOnDistributions(preds_v[prop_value][d][t],preds_v[d][d][t]))
+                gt = (ground_truths[d][prop_value][t],ground_truths[prop_value][d][t])
+                assert np.array_equal(gt[0],ground_truths[prop_value][prop_value][t])
+                assert np.array_equal(gt[1],ground_truths[d][d][t])
+                print("passed")
                 for attack_type in bb_attack_config.attack_type:
                         # Create attacker object
                     attacker_obj = get_attack(attack_type)(bb_attack_config)
@@ -68,7 +77,7 @@ if __name__ == "__main__":
                         # Launch attack
                     result = attacker_obj.attack(
                             preds_adv, preds_vic,
-                            ground_truth=(gt[0], gt[1]),
+                            ground_truth=gt,
                             calc_acc=calculate_accuracies,
                             epochwise_version=attack_config.train_config.save_every_epoch)
 

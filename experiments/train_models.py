@@ -11,6 +11,7 @@ from distribution_inference.logging.core import TrainingResult
 
 EXTRA = False  #True
 if __name__ == "__main__":
+    print("started")
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path)

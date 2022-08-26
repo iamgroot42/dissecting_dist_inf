@@ -8,7 +8,7 @@ import torch as ch
 import torch.nn as nn
 
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer
+from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer,RandomForest,KNeighborsClassifier,GaussianProcessClassifier,MultinomialNB
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -25,7 +25,7 @@ class DatasetInformation(base.DatasetInformation):
                          properties=["sex", "race", "ethnicity"],
                          values={"sex": ratios, "race": ratios,
                                  "ethnicity": ratios},
-                         supported_models=["mlp4"],
+                         supported_models=["mlp4", "random_forest","k_neighbors","gaussian_process","multinomial_naive_bayes"],
                          default_model="mlp4",
                          property_focus={
                              "sex": 'female',
@@ -41,13 +41,21 @@ class DatasetInformation(base.DatasetInformation):
             num_eff_features = self.num_features - self.num_dropped_features
             model = MLPFourLayer(n_inp=num_eff_features,
                                  num_classes=self.num_classes)
+        elif model_arch == "random_forest":
+            model = RandomForest(n_estimators=100)
+        elif model_arch == "k_neighbors":
+            model = KNeighborsClassifier()
+        elif model_arch == "gaussian_process":
+            model = GaussianProcessClassifier()
+        elif model_arch == "multinomial_naive_bayes":
+            model = MultinomialNB()
         else:
             raise NotImplementedError("Model architecture not supported")
-
-        if not cpu:
-            model = model.cuda()
-        else:
-            model.to("cpu")
+        if not  model.is_sklearn_model:
+            if not cpu:
+                model = model.cuda()
+            else:
+                model.to("cpu")
         return model
 
     def get_model_for_dp(self, cpu: bool = False) -> nn.Module:

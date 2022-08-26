@@ -126,36 +126,36 @@ def train(model, loaders, train_config: TrainConfig,
         # LR Scheduler, if requested
         if lr_scheduler is not None:
             lr_scheduler.step(vloss)
+        if train_config.save_every_epoch:
+            # If adv training, suffix is a bit different
+            if train_config.misc_config and train_config.misc_config.adv_config:
+                if train_config.regression:
+                    suffix = "_%.4f_adv_%.4f.ch" % (vloss[0], vloss[1])
+                else:
+                    suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
+            else:
+                if train_config.regression:
+                    suffix = "_tr%.4f_te%.4f.ch" % (tloss, vloss)
+                else:
+                    suffix = "_tr%.2f_te%.2f.ch" % (tacc, vacc)
 
+            # Get model "name" and function to save model
+            model_num = extra_options.get("curren_model_num")
+            save_path_fn = extra_options.get("save_path_fn")
+
+            # Save model in current epoch state
+            file_name = os.path.join(str(epoch), str(
+                model_num + train_config.offset) + suffix)
+            save_path = save_path_fn(train_config, file_name)
+            # Make sure this directory exists
+            if not os.path.isdir(os.path.dirname(save_path)):
+                os.makedirs(os.path.dirname(save_path))
+            save_model(model, save_path)
     
     # Now that training is over, remove dataparallel wrapper
     if train_config.parallel:
         model = model.module
-    if train_config.save_every_epoch:
-        # If adv training, suffix is a bit different
-        if train_config.misc_config and train_config.misc_config.adv_config:
-            if train_config.regression:
-                suffix = "_%.4f_adv_%.4f.ch" % (vloss[0], vloss[1])
-            else:
-                suffix = "_%.2f_adv_%.2f.ch" % (vacc[0], vacc[1])
-        else:
-            if train_config.regression:
-                suffix = "_tr%.4f_te%.4f.ch" % (tloss, vloss)
-            else:
-                suffix = "_tr%.2f_te%.2f.ch" % (tacc, vacc)
-
-        # Get model "name" and function to save model
-        model_num = extra_options.get("curren_model_num")
-        save_path_fn = extra_options.get("save_path_fn")
-
-        # Save model in current epoch state
-        file_name = os.path.join(str(epoch), str(
-            model_num + train_config.offset) + suffix)
-        save_path = save_path_fn(train_config, file_name)
-        # Make sure this directory exists
-        if not os.path.isdir(os.path.dirname(save_path)):
-            os.makedirs(os.path.dirname(save_path))
-        save_model(model, save_path)
+    
     return vlosses, vacces, tlosses, tacces
 
 
