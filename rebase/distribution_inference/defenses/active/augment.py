@@ -1,3 +1,4 @@
+from types import NotImplementedType
 import torch as ch
 import numpy as np
 from torchvision import transforms
@@ -5,6 +6,7 @@ from distribution_inference.config import ShuffleDefenseConfig
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from torch.distributions.beta import Beta
 from tqdm import tqdm
+from itertools import product
 from distribution_inference.utils import warning_string
 
 
@@ -95,6 +97,10 @@ class AugmentDefense(ShuffleDefense):
             every call.
         """
         x, y, prop_labels = data
+
+        if self.config.use_mixup:
+            raise NotImplementedType("Mixup not implemented yet")
+
         # Transform data back to (0, 1) range from (-1, 1)
         x_ = (x.clone() + 1) / 2
         # Data not on GPU at this stage
@@ -111,14 +117,21 @@ class AugmentDefense(ShuffleDefense):
         x_ = transforms.Lambda(lambda x: ch.stack([augment_transforms(x_) for x_ in x]))(x)
         # Transform back to (-1, 1) range
         x_ = 2 * x_ - 1
-        
-        if self.config.use_mixup:
-            raise ValueError("Mixup augmentation not implemented yet")
-            # TODO- add logic of dividing into diff classes, apply mixup on them
-            # based on random shuffling of data
+
         return (x_, y, prop_labels)
 
-    def _mixup_data(self, data_0, data_1, alpha: float = 1.0):
+    def _mixup_data(self, X, Y, num_samples):
+        # TODO: Mixup itself should not change prop_labels distribution
+        # Select examples from y=0, y=1 class
+        zero_idx = ch.nonzero(Y).squeeze(1).numpy()
+        one_idx = ch.nonzero(1 - Y).squeeze(1).numpy()
+        # Pick random pairs of indices from zero_idx and one_idx
+        # We do not want duplicates pairs
+        all_pairs = np.array(list(product(zero_idx, one_idx)))
+        random_pairs = np.random.choice(all_pairs, size=num_samples, replace=True)
+        return self._mixup_data(X[random_pairs[:, 0]], X[random_pairs[:, 1]])
+
+    def _mixup_datum(self, data_0, data_1, alpha: float = 1.0):
         """
             Mixup augmentation
         """
