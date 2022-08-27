@@ -127,7 +127,9 @@ class _CensusIncome:
         return (X.astype(float), np.expand_dims(Y, 1), cols)
 
     def get_data(self, split, prop_ratio, filter_prop,
-                 custom_limit=None, scale: float = 1.0,label_noise:float=0):
+                 custom_limit=None,
+                 scale: float = 1.0,
+                 label_noise:float = 0):
 
         lambda_fn = self._get_prop_label_lambda(filter_prop)
 
@@ -292,7 +294,10 @@ class CensusWrapper(base.CustomDatasetWrapper):
                  epoch: bool = False,
                  label_noise: float = 0,
                  shuffle_defense: ShuffleDefense = None):
-        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
+        super().__init__(data_config,
+                         skip_data=skip_data,
+                         label_noise=label_noise,
+                         shuffle_defense=shuffle_defense)
         if not skip_data:
             self.ds = _CensusIncome(drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)

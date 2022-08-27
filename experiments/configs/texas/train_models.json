@@ -1,8 +1,8 @@
 {
     "data_config": {
         "name": "texas",
-        "prop": "sex",
-        "split": "victim",
+        "prop": "race",
+        "split": "adv",
         "squeeze": true,
         "value": 0.5,
         "drop_senstive_cols": false
@@ -13,6 +13,7 @@
     "learning_rate": 1e-3,
     "batch_size": 200,
     "weight_decay": 1e-4,
-    "num_models": 50,
-    "verbose": true
+    "num_models": 1000,
+    "verbose": false,
+    "model_arch": "mlp4"
 }

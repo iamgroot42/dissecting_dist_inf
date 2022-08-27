@@ -1,3 +1,4 @@
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from sklearn.model_selection import train_test_split
 import pickle
 import pandas as pd
@@ -8,7 +9,7 @@ import torch as ch
 import torch.nn as nn
 
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer
+from distribution_inference.models.core import MLPFourLayer
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -365,8 +366,12 @@ class TexasSet(base.CustomDataset):
 
 # Wrapper for easier access to dataset
 class TexasWrapper(base.CustomDatasetWrapper):
-    def __init__(self, data_config: DatasetConfig, skip_data: bool = False,epoch:bool=False,label_noise: float = 0):
-        super().__init__(data_config, skip_data)
+    def __init__(self, data_config: DatasetConfig,
+                 skip_data: bool = False,
+                 epoch: bool = False,
+                 label_noise: float = 0,
+                 shuffle_defense: ShuffleDefense = None):
+        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
         if not skip_data:
             self.ds = _Texas(drop_senstive_cols=self.drop_senstive_cols)
         if data_config.drop_senstive_cols:

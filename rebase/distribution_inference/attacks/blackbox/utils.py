@@ -167,11 +167,12 @@ def get_preds(loader, models: List[nn.Module],
 
                         # If None for whatever reason, re-run
                         # Weird bug that pops in every now and then
-                        if prediction is None:
-                            if latent != None:
-                                prediction = model(data_batch,latent=latent).detach()
-                            else:
-                                prediction = model(data_batch).detach()
+                        # Was valid only for LR in Sklearn models- commenting out for now
+                        # if prediction is None:
+                        #     if latent != None:
+                        #         prediction = model(data_batch, latent=latent).detach()
+                        #     else:
+                        #         prediction = model(data_batch).detach()
 
                         if not multi_class:
                             prediction = prediction[:, 0]

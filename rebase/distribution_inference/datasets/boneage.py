@@ -3,6 +3,7 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import pandas as pd
 import torch as ch
 import torch.nn as nn
+import numpy as np
 import gc
 from PIL import Image
 from sklearn.model_selection import train_test_split
@@ -221,7 +222,8 @@ class BoneDataset(base.CustomDataset):
                  argument = None,
                  processed: bool = False,
                  classify: str = "age",
-                 property: str = "gender"):
+                 property: str = "gender",
+                 label_noise: float = 0.0):
         super().__init__()
         if processed:
             self.features = argument
@@ -232,6 +234,14 @@ class BoneDataset(base.CustomDataset):
         self.num_samples = len(self.df)
         self.classify = classify
         self.property = property
+        self.label_noise = label_noise
+        if self.label_noise > 0:
+            num_flip = int(self.label_noise * self.num_samples)
+            # Randomly flip self.df[self.classify] for num_flip samples
+            random_indices = np.random.choice(
+                self.df.index, num_flip, replace=False)
+            self.df.loc[random_indices, self.classify] = \
+                1 - self.df.loc[random_indices, self.classify]
     
     def mask_data_selection(self, mask):
         self.mask = mask
@@ -284,7 +294,10 @@ class BoneWrapper(base.CustomDatasetWrapper):
                  label_noise: float = 0,
                  shuffle_defense: ShuffleDefense = None):
         # Call parent constructor
-        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
+        super().__init__(data_config,
+                         skip_data=skip_data,
+                         label_noise=label_noise,
+                         shuffle_defense=shuffle_defense)
         self.sample_sizes = {
             "gender": {
                 "adv": (700, 200),
@@ -349,7 +362,8 @@ class BoneWrapper(base.CustomDatasetWrapper):
                 self.df_train, features["train"],
                 processed=True,
                 classify=self.classify,
-                property=self.prop)
+                property=self.prop,
+                label_noise=self.label_noise)
             ds_val = BoneDataset(
                 self.df_val, features["val"],
                 processed=True,
@@ -363,7 +377,8 @@ class BoneWrapper(base.CustomDatasetWrapper):
                 self.df_train, train_transform,
                 processed=False,
                 classify=self.classify,
-                property=self.prop)
+                property=self.prop,
+                label_noise=self.label_noise)
             ds_val = BoneDataset(
                 self.df_val, test_transform,
                 processed=False,
@@ -409,6 +424,10 @@ class BoneWrapper(base.CustomDatasetWrapper):
                 base_models_dir = os.path.join(base_models_dir, "shuffle_defense",
                                             "%s" % shuffle_defense_config.sample_type,
                                             "%.2f" % shuffle_defense_config.desired_value)
+
+        if self.label_noise:
+            base_models_dir = os.path.join(
+                base_models_dir, "label_noise:{}".format(train_config.label_noise))
 
         # Get final savepath
         save_path = os.path.join(base_models_dir, subfolder_prefix)

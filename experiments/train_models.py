@@ -78,7 +78,8 @@ if __name__ == "__main__":
     # Create new DS object
     ds = ds_wrapper_class(data_config,
                          epoch=train_config.save_every_epoch,
-                         shuffle_defense=shuffle_defense)
+                         shuffle_defense=shuffle_defense,
+                         label_noise=train_config.label_noise)
 
     # train_ds, val_ds = ds.load_data()
     # print(len(train_ds))

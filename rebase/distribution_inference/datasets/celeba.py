@@ -1,4 +1,5 @@
 import os
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import pandas as pd
 from torchvision import transforms
 import gc
@@ -363,8 +364,11 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                  skip_data: bool = False,
                  label_noise: float = 0,
                  epoch: bool = False,
-                 shuffle_defense: bool = False,):
-        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
+                 shuffle_defense: ShuffleDefense = None,):
+        super().__init__(data_config,
+                         skip_data=skip_data,
+                         label_noise=label_noise,
+                         shuffle_defense=shuffle_defense)
         self.info_object = DatasetInformation(epoch_wise=epoch)
 
         # Make sure specified label is valid
