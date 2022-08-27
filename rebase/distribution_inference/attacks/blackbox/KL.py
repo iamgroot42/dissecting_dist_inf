@@ -13,10 +13,7 @@ class KLAttack(Attack):
                calc_acc: Callable = None,
                epochwise_version: bool = False,
                not_using_logits: bool = False):
-        """
-            Perform Threshold-Test and Loss-Test attacks using
-            given accuracies of models.
-        """
+        
         assert not (
             self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (

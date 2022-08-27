@@ -8,6 +8,7 @@ from tqdm import tqdm
 from distribution_inference.utils import warning_string
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.training.core import train_epoch, validate_epoch
+from distribution_inference.training.utils import save_model
 from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
