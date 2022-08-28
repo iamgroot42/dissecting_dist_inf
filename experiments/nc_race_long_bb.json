@@ -1,35 +1,24 @@
 {
+    
     "train_config": {
         "data_config": {
-            "name": "texas",
+            "name": "new_census",
             "prop": "race",
             "split": "adv",
             "squeeze": true,
-            "value": 0.5,
-            "drop_senstive_cols": false
+            "value": 0.5
         },
         "epochs": 0,
         "learning_rate": 0,
-        "batch_size": 0
+        "batch_size": 0,
+        "save_every_epoch": true
     },
-    "tries": 5,
-    "values": [
-        0.0,
-        0.1,
-        0.2,
-        0.3,
-        0.4,
-        0.6,
-        0.7,
-        0.8,
-        0.9,
-        1.0
-    ],
+    "num_victim_models": 10,
+    "tries": 3,
     "black_box": {
-        "granularity": 0.05,
+        "granularity" : 0.05,
         "num_adv_models": 50,
-        "multi_class": true,
-        "batch_size": 1000,
+        "batch_size": 30000,
         "attack_type": [
             "KL"
         ],
@@ -44,5 +33,5 @@
         ],
         "preload": true
     },
-    "num_victim_models": 500
+    "values": [0.0, 0.1, 0.2, 0.3, 0.4]
 }

@@ -272,7 +272,7 @@ def _get_preds_for_vic_and_adv(
     # Get predictions for victim models and data
     if epochwise_version:
         # Track predictions for each epoch
-        preds_vic = [[] for _ in range(len(models_vic[0]))]
+        preds_vic = []
         for models_inside_vic in tqdm(models_vic):
             preds_vic_inside, ground_truth = get_preds(
                 loader_vic, models_inside_vic, preload=preload,
@@ -282,8 +282,7 @@ def _get_preds_for_vic_and_adv(
 
             # In epoch-wise mode, we need prediction results
             # across epochs, not models
-            for i, p in enumerate(preds_vic_inside):
-                preds_vic[i].append(p)
+            preds_vic.append(preds_vic_inside)
     else:
         preds_vic, ground_truth = get_preds(
             loader_vic, models_vic, preload=preload,

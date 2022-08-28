@@ -1,37 +1,34 @@
 {
     "train_config": {
         "data_config": {
-            "name": "texas",
-            "prop": "race",
+            "name": "celeba",
+            "prop": "Male",
+            "classify": "Smiling",
             "split": "adv",
-            "squeeze": true,
             "value": 0.5,
-            "drop_senstive_cols": false
+            "processed_variant": false
         },
         "epochs": 0,
         "learning_rate": 0,
-        "batch_size": 0
+        "batch_size": 0,
+        "save_every_epoch": true
     },
-    "tries": 5,
+    "tries": 3,
     "values": [
         0.0,
         0.1,
         0.2,
         0.3,
-        0.4,
-        0.6,
-        0.7,
-        0.8,
-        0.9,
-        1.0
+        0.4
     ],
+    "on_cpu": true,
+    "num_victim_models": 10,
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
-        "multi_class": true,
-        "batch_size": 1000,
+        "batch_size": 512,
         "attack_type": [
-            "KL"
+           "KL"
         ],
         "ratios": [
             0.05,
@@ -43,6 +40,5 @@
             1.0
         ],
         "preload": true
-    },
-    "num_victim_models": 500
+    }
 }
