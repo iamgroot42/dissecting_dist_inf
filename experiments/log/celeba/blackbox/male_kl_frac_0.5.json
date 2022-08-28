@@ -208,16 +208,50 @@
                     null,
                     null,
                     null,
+                    null,
                     null
                 ],
                 "victim_acc": [
                     50.0,
                     50.0,
                     50.0,
+                    50.0,
                     50.0
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    95.0,
+                    98.9,
+                    97.7,
+                    96.7,
+                    97.1
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    99.4,
+                    99.5,
+                    99.9,
+                    99.6
                 ]
             }
         }
     },
-    "save time": "2022-08-27 18:18:43.660364"
+    "save time": "2022-08-27 20:40:57.996916"
 }
