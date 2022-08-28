@@ -14,12 +14,16 @@ ATTACK_MAPPING = {
     "epoch_meta": "Decision Tree on raw predictions across epoch",
     "perpoint_choose": "Perpoint test on pairs of points",
     "perpoint_choose_dif":"Perpoint test on pairs of points from different distributions",
-    "KL":"Attack using KL divergences",
+    "KL": "Attack using KL divergences",
     "Combine": "Combining results",
     "comparison": "Comparison attack by training victim models",
     "generative": "Perpoint attack using generated data",
     "binary_perpoint": "perpoint attack using only binary predictions",
-    "AGA+KL": "AGA+KL"
+    "AGA+KL": "AGA+KL",
+    "acc": "Test Accuracy",
+    "train_acc": "Train Accuracy",
+    "loss": "Test Loss",
+    "train_loss": "Train Loss"
 }
 
 
