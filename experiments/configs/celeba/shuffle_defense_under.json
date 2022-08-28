@@ -4,7 +4,7 @@
         "prop": "Male",
         "classify": "Smiling",
         "split": "victim",
-        "value": 0.6,
+        "value": 0.9,
         "processed_variant": false
     },
     "misc_config": {
@@ -14,8 +14,8 @@
             "sample_type": "under"
         }
     },
-    "epochs": 30,
-    "offset": 0,
+    "epochs": 15,
+    "offset": 1000,
     "learning_rate": 1e-4,
     "batch_size": 128,
     "weight_decay": 1e-3,

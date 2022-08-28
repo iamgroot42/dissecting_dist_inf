@@ -1,18 +1,19 @@
 {
     "data_config": {
         "name": "celeba",
-        "prop": "Wavy_Hair",
+        "prop": "High_Cheekbones",
         "classify": "Mouth_Slightly_Open",
         "split": "adv",
-        "value": 0.0,
+        "value": 0.5,
         "processed_variant": false
     },
-    "epochs": 30,
-    "offset": 0,
-    "learning_rate": 4e-5,
+    "epochs": 10,
+    "offset": 3000,
+    "learning_rate": 1e-4,
     "batch_size": 128,
     "weight_decay": 1e-3,
-    "num_models": 1000,
+    "num_models": 1,
     "get_best": true,
-    "verbose": false
+    "verbose": true,
+    "model_arch": "alexnet"
 }

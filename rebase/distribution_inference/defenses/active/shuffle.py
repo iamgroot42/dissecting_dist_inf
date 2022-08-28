@@ -17,7 +17,7 @@ class ShuffleDefense:
 
         # Get mask
         selected_mask = self._get_mask_from_loader(train_loader)
-        return selected_mask
+        return selected_mask, None
     
     def _get_mask_from_loader(self, loader):
         """
