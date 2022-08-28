@@ -136,15 +136,16 @@ if __name__ == "__main__":
             preds_adv.append(adv_p)
         attacker_obj = KLRegression(bb_attack_config)
         # Execute attack
-        chosen_mse = attacker_obj.attack(
+        _,chosen_mse = attacker_obj.attack(
             preds_adv,
             preds_vic,
             not_using_logits=not_using_logits,
             labels=test_labels)
 
-        print("Test MSE: %.3f" % chosen_mse)
-        logger.add_results("KL_regression",
-                           "regression", chosen_mse, None)
+        print("Test MSE:{} ".format(chosen_mse))
+        for l,c in zip(test_labels,chosen_mse):
+            logger.add_results("KL_regression",
+                           l, c, None)
 
     # Save logger results
     logger.save()

@@ -32,7 +32,8 @@ class KLRegression(KLAttack):
             )
             p_c.append(p)
         gt = np.array([[i]*preds_vic[0].shape[0] for i in labels])
-        return np.square(p_c-gt).mean() #MSE
+
+        return np.square(p_c-gt).mean(),np.mean(np.square(p_c-gt),axis=1)
     def _get_kl_preds(self, ka,kc1):
         ka_,kc1_ = ka,kc1
         if not self.not_using_logits:
