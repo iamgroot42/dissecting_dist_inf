@@ -1,0 +1,47 @@
+{
+    "train_config": {
+        "data_config": {
+            "name": "boneage",
+            "prop": "gender",
+            "classify": "age",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "num_victim_models": 500,
+    "tries": 3,
+    "black_box": {
+        "granularity": 0.05,
+        "num_adv_models": 50,
+        "batch_size": 30000,
+        "attack_type": [
+            "KL_regression"
+        ],
+        "ratios": [
+            0.05,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.5,
+            1.0
+        ],
+        "preload": true,
+        "regression_config": {
+            "additional_values_to_test":null
+        }
+    },
+    "values": [
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8
+    ]
+}

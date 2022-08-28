@@ -1,0 +1,232 @@
+{
+    "name": "40e",
+    "start time": "2022-08-27 22:00:30.199661",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "boneage",
+                "prop": "gender",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": "age",
+                "cwise_samples": null,
+                "squeeze": true,
+                "processed_variant": true,
+                "prune": 0
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": true,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false,
+            "label_noise": 0,
+            "model_arch": null,
+            "parallel": false
+        },
+        "values": [
+            0.2,
+            0.3,
+            0.4
+        ],
+        "black_box": {
+            "attack_type": [
+                "KL"
+            ],
+            "ratios": [
+                0.05,
+                0.1,
+                0.2,
+                0.3,
+                0.4,
+                0.5,
+                1.0
+            ],
+            "batch_size": 30000,
+            "num_adv_models": 50,
+            "granularity": 0.05,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
+            "multi_class": false,
+            "save": false,
+            "tune_final_threshold": false,
+            "Start_epoch": 1,
+            "End_epoch": 20,
+            "relative_threshold": false,
+            "loss_variant": false,
+            "random_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false,
+            "regression_config": null
+        },
+        "white_box": null,
+        "tries": 3,
+        "num_victim_models": 10,
+        "on_cpu": false,
+        "adv_misc_config": null,
+        "num_total_adv_models": 1000,
+        "victim_local_attack": false,
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null
+    },
+    "result": {
+        "KL": {
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    [
+                        72.5,
+                        80.0,
+                        81.25,
+                        63.74999999999999,
+                        72.5,
+                        83.75,
+                        83.75,
+                        75.0,
+                        77.5,
+                        73.75
+                    ],
+                    [
+                        77.5,
+                        80.0,
+                        78.75,
+                        68.75,
+                        75.0,
+                        82.5,
+                        83.75,
+                        78.75,
+                        78.75,
+                        75.0
+                    ],
+                    [
+                        77.5,
+                        82.5,
+                        81.25,
+                        66.25,
+                        76.25,
+                        83.75,
+                        87.5,
+                        77.5,
+                        77.5,
+                        76.25
+                    ]
+                ]
+            },
+            "0.3": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    [
+                        77.5,
+                        82.5,
+                        65.0,
+                        77.5,
+                        68.75,
+                        78.75,
+                        77.5,
+                        73.75,
+                        76.25,
+                        75.0
+                    ],
+                    [
+                        80.0,
+                        81.25,
+                        58.75,
+                        76.25,
+                        65.0,
+                        75.0,
+                        80.0,
+                        76.25,
+                        76.25,
+                        81.25
+                    ],
+                    [
+                        70.0,
+                        76.25,
+                        55.00000000000001,
+                        67.5,
+                        58.75,
+                        72.5,
+                        77.5,
+                        76.25,
+                        72.5,
+                        72.5
+                    ]
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    [
+                        60.0,
+                        48.75,
+                        52.5,
+                        57.49999999999999,
+                        60.0,
+                        53.75,
+                        57.49999999999999,
+                        57.49999999999999,
+                        65.0,
+                        58.75
+                    ],
+                    [
+                        63.74999999999999,
+                        68.75,
+                        67.5,
+                        68.75,
+                        62.5,
+                        75.0,
+                        75.0,
+                        65.0,
+                        62.5,
+                        66.25
+                    ],
+                    [
+                        77.5,
+                        52.5,
+                        57.49999999999999,
+                        57.49999999999999,
+                        65.0,
+                        56.25,
+                        73.75,
+                        65.0,
+                        65.0,
+                        62.5
+                    ]
+                ]
+            }
+        }
+    },
+    "save time": "2022-08-27 22:45:42.122026"
+}

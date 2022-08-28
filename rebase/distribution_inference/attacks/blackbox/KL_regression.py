@@ -16,6 +16,7 @@ class KLRegression(KLAttack):
             self.config.multi2 and self.config.multi), "No implementation for both multi model"
         assert not (
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
+        assert self.config.regression_config is not None, "Only for regression"
         self.not_using_logits = not_using_logits
         p_c = [] 
         #nested for loop to test all combinations
@@ -23,6 +24,7 @@ class KLRegression(KLAttack):
             p_across = []
             for pa in preds_adv:
                 preds =  self._get_kl_preds(pa,pv)
+                #print(preds.shape)
                 p_across.append(preds)
             p_across = np.array(p_across)
             p = np.divide(np.sum([i*x for i,x in zip(labels,p_across)],axis=0),
@@ -35,6 +37,6 @@ class KLRegression(KLAttack):
         ka_,kc1_ = ka,kc1
         if not self.not_using_logits:
             ka_, kc1_ = sigmoid(ka), sigmoid(kc1)
-        KL_vals_1_a = np.array([KL(ka_, x,
-            multi_class=self.config.multi_class) for x in kc1_])
+        KL_vals_1_a = np.array([np.mean(KL(ka_, x,
+            multi_class=self.config.multi_class),axis=0) for x in kc1_])
         return KL_vals_1_a
