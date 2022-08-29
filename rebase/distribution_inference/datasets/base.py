@@ -101,6 +101,7 @@ class CustomDataset(Dataset):
         self.num_samples = None
         self.using_extra_data = False
         self.mask = None
+        self.process_fn = None
 
     def __len__(self):
         """
@@ -122,20 +123,20 @@ class CustomDataset(Dataset):
         """
         raise NotImplementedError("Dataset does not implement mask_data_selection. Cannot use ShuffleDefense")
     
-    def insert_extra_data(self, data):
+    def set_augment_process_fn(self, process_fn):
         """
             Addd given data as 'extra data' to existing
             train data. Used for augmentation-based
             shuffle defense
         """
-        raise NotImplementedError("Data insertion not supported. Cannot use augmentation-based ShuffleDefense")
+        self.process_fn = process_fn
 
 
 class CustomDatasetWrapper:
     def __init__(self,
                  data_config: DatasetConfig,
                  skip_data: bool = False,
-                 label_noise: bool = 0,
+                 label_noise: float = 0.0,
                  is_graph_data: bool = False,
                  shuffle_defense: ShuffleDefense = None,):
         """
@@ -184,12 +185,12 @@ class CustomDatasetWrapper:
                 prefetch_factor=prefetch_factor
             )
             # Data-level defense, apply logic here
-            mask_or_extra_data = self.shuffle_defense.initialize(temp_train_loader)
-            if mask_or_extra_data is not None:
-                if self.shuffle_defense.config.augment:
-                    self.insert_extra_data(mask_or_extra_data)
-                else:
-                    self.mask_data_selection(mask_or_extra_data)
+            mask, process_fn = self.shuffle_defense.initialize(temp_train_loader)
+            if mask is None:
+                raise ValueError("Defense returned null mask")
+            self.mask_data_selection(mask)
+            self.set_augment_process_fn(process_fn)
+                    
 
         # This function should return new loaders at every call
         train_loader = DataLoader(
@@ -273,8 +274,8 @@ class CustomDatasetWrapper:
     def mask_data_selection(self, mask):
         self.ds_train.mask_data_selection(mask)
     
-    def insert_extra_data(self, data):
-        self.ds_train.insert_extra_data(data)
+    def set_augment_process_fn(self, data):
+        self.ds_train.set_augment_process_fn(data)
 
     def _get_model_paths(self,
                          train_config: TrainConfig,

@@ -182,17 +182,17 @@ class MyAlexNet(BaseModel):
 
         layers = [
             nn.Conv2d(3, 64, kernel_size=11, stride=4, padding=2),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
             nn.Conv2d(64, 128, kernel_size=5, padding=2),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2),
             nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.Conv2d(128, 64, kernel_size=3, padding=1),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=3, stride=2)
         ]
         # Don't need EACH layer (too much memory) for now,
@@ -202,9 +202,9 @@ class MyAlexNet(BaseModel):
 
         clf_layers = [
             nn.Linear(64 * 6 * 6, 64),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.Linear(64, 32),
-            FakeReluWrapper(inplace=True),
+            nn.ReLU(inplace=True),
             nn.Linear(32, num_classes),
         ]
         self.valid_for_all_fc = [1, 3, 4]

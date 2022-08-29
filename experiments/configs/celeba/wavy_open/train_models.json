@@ -3,17 +3,17 @@
         "name": "celeba",
         "prop": "Wavy_Hair",
         "classify": "Mouth_Slightly_Open",
-        "split": "adv",
-        "value": 1.0,
+        "split": "victim",
+        "value": 0.5,
         "processed_variant": false
     },
-    "epochs": 30,
+    "epochs": 10,
     "offset": 0,
-    "learning_rate": 2e-5,
-    "batch_size": 64,
+    "learning_rate": 1e-4,
+    "batch_size": 128,
     "weight_decay": 1e-3,
-    "num_models": 1,
+    "num_models": 250,
     "get_best": true,
-    "verbose": true,
-    "full_model": true
+    "verbose": false,
+    "model_arch": "alexnet"
 }

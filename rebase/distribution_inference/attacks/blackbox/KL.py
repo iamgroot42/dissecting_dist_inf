@@ -87,12 +87,16 @@ class KLAttack(Attack):
         # For both sets of victim models
         KL_vals_1_a = np.array([KL(ka_, x,
             multi_class=self.config.multi_class) for x in kc1_])
+        self._check(KL_vals_1_a)
         KL_vals_1_b = np.array(
             [KL(kb_, x, multi_class=self.config.multi_class) for x in kc1_])
+        self._check(KL_vals_1_b)
         KL_vals_2_a = np.array([KL(ka_, x,
             multi_class=self.config.multi_class) for x in kc2_])
+        self._check(KL_vals_2_a)
         KL_vals_2_b = np.array([KL(kb_, x,
             multi_class=self.config.multi_class) for x in kc2_])
+        self._check(KL_vals_2_b)
 
         preds_first = self._pairwise_compare(
             KL_vals_1_a, KL_vals_1_b, xx, yy)
@@ -102,6 +106,10 @@ class KLAttack(Attack):
         # Compare KL values
         return preds_first, preds_second
     
+    def _check(self, x):
+        if np.sum(np.isinf(x)) > 0 or np.sum(np.isnan(x)) > 0:
+            raise ValueError("Invalid values found!")
+
     def _pairwise_compare(self, x, y, xx, yy):
         x_ = np.expand_dims(x, 2)
         y_ = np.expand_dims(y, 2)
@@ -168,15 +176,15 @@ def sigmoid(x):
 
 
 def KL(x, y, multi_class: bool = False):
-    small_eps = 1e-6
+    small_eps = 1e-4
     x_ = np.clip(x, small_eps, 1 - small_eps)
     y_ = np.clip(y, small_eps, 1 - small_eps)
     if multi_class:
-        return np.mean(np.sum(x * (np.log(x) - np.log(y)),axis=2),axis=1)
+        return np.mean(np.sum(x_ * (np.log(x_) - np.log(y_)),axis=2),axis=1)
     else:
         # Strategy 1: Add (or subtract) small noise to avoid NaNs/INFs
         # Get preds for other class as well
-        x_, y_ = 1 - x, 1 - y
-        first_term = x * (np.log(x) - np.log(y))
-        second_term = x_ * (np.log(x_) - np.log(y_))
-        return np.mean(first_term + second_term, 1)
+        x__, y__ = 1 - x_, 1 - y_
+        first_term = x_ * (np.log(x_) - np.log(y_))
+        second_term = x__ * (np.log(x__) - np.log(y__))
+    return np.mean(first_term + second_term, 1)

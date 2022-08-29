@@ -1,4 +1,5 @@
 import os
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import pandas as pd
 from torchvision import transforms
 import gc
@@ -274,7 +275,7 @@ class CelebACustomBinary(base.CustomDataset):
             np.random.shuffle(self.filenames)
 
         self.num_samples = len(self.filenames)
-        if label_noise:
+        if label_noise > 0:
             idx = np.random.choice(self.num_samples, int(
                 label_noise*self.num_samples), replace=False)
             for x in idx:
@@ -311,21 +312,28 @@ class CelebACustomBinary(base.CustomDataset):
         return parsed_df["filename"].tolist()
 
     def __len__(self):
-        return self.num_samples if self.mask is None else len(self.mask)
+        if self.process_fn:
+            # Normal samples + augmented data
+            return self.num_samples + len(self.mask)
+        else:
+            return self.num_samples if self.mask is None else len(self.mask)
 
     def mask_data_selection(self, mask):
         self.mask = mask
-    
-    def insert_extra_data(self, extra_data):
-        # Given new X, Y, P, count them in extra data
-        self.extra_X = extra_data[0]
-        self.extra_Y = extra_data[1].numpy()
-        self.extra_P = extra_data[2].numpy()
-        self.using_extra_data = True
-        self.num_samples += len(self.extra_X)
+
 
     def __getitem__(self, idx):
-        idx_ = idx if self.mask is None else self.mask[idx]
+        should_augment = False
+        if self.process_fn is not None:
+            if idx < self.num_samples:
+                # Normal samples
+                idx_ = idx
+            else:
+                # "Augmented" samples
+                idx_ = self.mask[idx - self.num_samples]
+                should_augment = True
+        else:
+            idx_ = idx if self.mask is None else self.mask[idx]
 
         if self.using_extra_data and self.mask is not None:
             raise ValueError("Cannot have mask and augmented data ") 
@@ -354,6 +362,10 @@ class CelebACustomBinary(base.CustomDataset):
 
         y = np.array(list(self.attr_dict[filename].values()))
 
+        if should_augment:
+            # Augment data
+            return self.process_fn((x, y[self.classify_index], y[self.prop_index]))
+
         return x, y[self.classify_index], y[self.prop_index]
 
 
@@ -363,8 +375,11 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                  skip_data: bool = False,
                  label_noise: float = 0,
                  epoch: bool = False,
-                 shuffle_defense: bool = False,):
-        super().__init__(data_config, skip_data, label_noise, shuffle_defense=shuffle_defense)
+                 shuffle_defense: ShuffleDefense = None,):
+        super().__init__(data_config,
+                         skip_data=skip_data,
+                         label_noise=label_noise,
+                         shuffle_defense=shuffle_defense)
         self.info_object = DatasetInformation(epoch_wise=epoch)
 
         # Make sure specified label is valid
@@ -470,7 +485,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
             transform=self.test_transforms,
-            features=features, label_noise=self.label_noise)
+            features=features)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size: int,
@@ -493,7 +508,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         )
 
         if train_config.misc_config:
-            if train_config.misc_config.shuffle_defense_config is None:
+            if train_config.misc_config.shuffle_defense_config is None or (train_config.misc_config.shuffle_defense_config.desired_value == self.ratio):
                 if train_config.misc_config.adv_config:
                     # Extract epsilon to be used
                     adv_folder_prefix = "adv_train_"
@@ -511,7 +526,10 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             else:
                 shuffle_defense_config = train_config.misc_config.shuffle_defense_config
                 if shuffle_defense_config.augment:
-                    shuff_name = "augment"
+                    if shuffle_defense_config.use_mixup:
+                        shuff_name = "augment_mixup"
+                    else:
+                        shuff_name = "augment"
                 else:
                     shuff_name = shuffle_defense_config.sample_type
                 base_models_dir = os.path.join(base_models_dir, "shuffle_defense",
@@ -530,7 +548,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
 
         base_models_dir = os.path.join(base_models_dir, model_arch)
 
-        if self.label_noise:
+        if self.label_noise > 0:
             base_models_dir = os.path.join(
                 base_models_dir, "label_noise:{}".format(train_config.label_noise))
         save_path = os.path.join(base_models_dir, subfolder_prefix)

@@ -71,8 +71,14 @@ class PlotHelper():
                 logger = self._get_logger_from_path_or_obj(thing, None)
             else:
                 logger = thing.dic
+            
             # Parse data from given results-object
-            self._parse(logger, i)
+            if 'log' in logger:
+                # Training logs
+                self._parse_log(logger, i)
+            else:
+                # Attack result logs
+                self._parse(logger, i)
         pass
 
     def _get_logger_from_path_or_obj(self, path, logger_obj):
@@ -88,9 +94,58 @@ class PlotHelper():
             raise ValueError(
                 "Must pass either a logger class or a path")
         return logger
+    
+    def _parse_log(self, logger, legend_entry_index: int = None):
+        # Look at all the results
+
+        for ratio in logger['log']:
+            if self.ratios_wanted is not None and ratio not in self.ratios_wanted:
+                        continue
+            
+            for metric_res in logger['log'][ratio]:
+                if self.attacks_wanted is not None and metric_res not in self.attacks_wanted:
+                    print(f"Not plotting {metric_res}")
+                    continue
+                print(f"Plotting {metric_res}")
+                legend_entry = ""
+                if self.legend_titles is not None:
+                    legend_entry = self.legend_titles[legend_entry_index]
+                metric_name = get_attack_name(metric_res)
+
+                if self.skip_prefix:
+                    column_names = legend_entry
+                else:
+                    column_names = f"{legend_entry} : {metric_name}"
+
+                if metric_res in ATTACK_MAPPING.keys():
+                    victim_results = logger['log'][ratio][metric_res]
+                    for results in victim_results:
+                        if type(results) == list:
+                            for epoch, result in enumerate(results):
+                                self.df.append({
+                                    self.columns[0]: float(ratio),
+                                    # Temporary (below) - ideally all results should be in [0, 100] across entire module
+                                    # self.columns[1]: result,
+                                    self.columns[1]: result * 100,
+                                    self.columns[2]: column_names,
+                                    self.columns[3]: epoch + 1})
+                        else:
+                            self.df.append({
+                                self.columns[0]: float(ratio),
+                                # Temporary (below) - ideally all results should be in [0, 100] across entire module
+                                # * 100,
+                                self.columns[1]: results*100 if results <= 1 else results,
+                                self.columns[2]: column_names})
+                else:
+                    warnings.warn(warning_string(
+                        f"\nMetric type {metric_res} not supported\n"))
+            if len(self.df) == 0:
+                raise ValueError(
+                    "None of the metrics in given log are supported for plotting")
 
     def _parse(self, logger, legend_entry_index: int = None):
         # Look at all the results
+
         for attack_res in logger['result']:
             if self.attacks_wanted is not None and attack_res not in self.attacks_wanted:
                 print(f"Not plotting {attack_res}")
