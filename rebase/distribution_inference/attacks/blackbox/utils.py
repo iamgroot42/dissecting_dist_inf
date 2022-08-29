@@ -20,7 +20,7 @@ from distribution_inference.attacks.blackbox.KL import KLAttack
 from distribution_inference.attacks.blackbox.generative import GenerativeAttack
 from distribution_inference.attacks.blackbox.binary_perpoint import BinaryPerPointThresholdAttack
 from distribution_inference.attacks.blackbox.KL_regression import KLRegression
-
+from distribution_inference.attacks.blackbox.label_KL import label_only_KLAttack
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
     "loss_and_threshold": LossAndThresholdAttack,
@@ -33,7 +33,8 @@ ATTACK_MAPPING = {
     "KL": KLAttack,
     "generative":GenerativeAttack,
     "binary_perpoint": BinaryPerPointThresholdAttack,
-    "KL_regression": KLRegression
+    "KL_regression": KLRegression,
+    "label_KL":label_only_KLAttack
 }
 
 

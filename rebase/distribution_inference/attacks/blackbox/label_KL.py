@@ -5,7 +5,7 @@ from typing import List, Callable
 from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
 
 
-class KLAttack(Attack):
+class label_only_KLAttack(Attack):
     def attack(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
