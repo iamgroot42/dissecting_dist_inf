@@ -1,20 +1,20 @@
 {
     "data_config": {
         "name": "celeba",
-        "prop": "Young",
-        "classify": "Male",
+        "prop": "Male",
+        "classify": "Smiling",
         "split": "victim",
-        "value": 0.4,
+        "value": 1.0,
         "processed_variant": false
     },
     "epochs": 10,
-    "offset": 0,
+    "offset": 3000,
     "learning_rate": 1e-4,
     "batch_size": 128,
     "weight_decay": 1e-3,
-    "num_models": 1,
+    "num_models": 4,
     "save_every_epoch": false,
     "get_best": true,
-    "verbose": false,
+    "verbose": true,
     "model_arch": "alexnet"
 }
