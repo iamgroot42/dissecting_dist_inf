@@ -118,7 +118,6 @@ def get_preds(loader, models: List[nn.Module],
     """
         Get predictions for given models on given data
     """
-
     # Check if models are graph-related
     if models[0].is_graph_model:
         return get_graph_preds(ds=loader[0],
