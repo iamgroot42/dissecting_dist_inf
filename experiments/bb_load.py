@@ -24,7 +24,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
    
     attack_config: AttackConfig = AttackConfig.load(
-        args.load_config, drop_extra_fields=False)
+        args.load_config, drop_extra_fields=True)
     # Extract configuration information from config file
     bb_attack_config: BlackBoxAttackConfig = attack_config.black_box
     train_config: TrainConfig = attack_config.train_config
