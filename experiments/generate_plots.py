@@ -79,7 +79,10 @@ if __name__ == "__main__":
     # Set color pallete
     color_options = {
         "green": sns.color_palette(["#228B22", "#90EE90"]),
-        "blue": sns.color_palette(["#0000CD", "#1E90FF", "#87CEEB"])
+        "blue": sns.color_palette(["#0000CD", "#1E90FF", "#87CEEB"]),
+        "brown": sns.color_palette(["#8B4513", "#D2691E", "#F4A460"]),
+        "purple": sns.color_palette(["#4B0082", "#6A5ACD", "#9370DB", "#DDA0DD"]),
+        "gray": sns.color_palette(["#708090", "#B0C4DE"]),
     }
     palette = color_options.get(args.colormap, None)
 
