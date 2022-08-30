@@ -1,6 +1,6 @@
 {
-    "name": "aga_male_save",
-    "start time": "2022-08-28 22:41:24.316796",
+    "name": "REPEAT_adv_8_male",
+    "start time": "2022-08-30 16:14:56.968361",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -20,7 +20,20 @@
             "epochs": 0,
             "learning_rate": 0.0,
             "batch_size": 0,
-            "misc_config": null,
+            "misc_config": {
+                "adv_config": {
+                    "epsilon": 0.03137254901960784,
+                    "iters": 7,
+                    "epsilon_iter": null,
+                    "clip_min": -1.0,
+                    "clip_max": 1.0,
+                    "random_restarts": 1,
+                    "norm": Infinity,
+                    "scale_by_255": true
+                },
+                "dp_config": null,
+                "shuffle_defense_config": null
+            },
             "lr_scheduler": null,
             "verbose": false,
             "num_models": 1,
@@ -58,7 +71,7 @@
             "weight_decay": 0.01,
             "train_sample": 750,
             "val_sample": 50,
-            "save": true,
+            "save": false,
             "load": null,
             "regression_config": null,
             "eval_every": 10,
@@ -98,7 +111,7 @@
             "comparison_config": null
         },
         "tries": 3,
-        "num_victim_models": 500,
+        "num_victim_models": 250,
         "on_cpu": true,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
@@ -118,106 +131,20 @@
                     null
                 ],
                 "victim_acc": [
-                    87.8,
-                    93.5,
-                    99.1
+                    52.800000000000004,
+                    68.4,
+                    51.6
                 ]
             },
             "0.1": {
                 "adv_acc": [
-                    null,
-                    null,
                     null
                 ],
                 "victim_acc": [
-                    92.6,
-                    94.6,
-                    92.30000000000001
-                ]
-            },
-            "0.2": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    60.0,
-                    85.4,
-                    75.9
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    63.5,
-                    75.9,
-                    66.5
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    50.0,
-                    63.1,
-                    59.0
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    64.0,
-                    55.00000000000001,
-                    54.49999999999999
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    68.39999999999999,
-                    73.0,
-                    75.1
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    57.199999999999996,
-                    53.0,
-                    51.4
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    77.8,
-                    82.1
+                    51.6
                 ]
             }
         }
     },
-    "save time": "2022-08-30 19:45:07.363798"
+    "save time": "2022-08-30 19:41:50.092639"
 }
