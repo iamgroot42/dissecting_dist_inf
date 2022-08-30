@@ -3,9 +3,10 @@ from distribution_inference.visualize.plothelper import PlotHelper
 from simple_parsing import ArgumentParser
 import os
 import matplotlib
+import seaborn as sns
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
-# matplotlib.rcParams["font.family"] = "Times New Roman"
+matplotlib.rcParams["font.family"] = "Times New Roman"
 
 
 if __name__ == "__main__":
@@ -36,7 +37,7 @@ if __name__ == "__main__":
                         default='',
                         help="Plot title", type=str)
     parser.add_argument("--x",
-                        default=r'$\alpha_1$',
+                        default='$\alpha_1$',
                         help="Title for X-axis",
                         type=str)
     parser.add_argument("--y",
@@ -57,6 +58,10 @@ if __name__ == "__main__":
     parser.add_argument("--dark",
                         action="store_true",
                         help="dark background")
+    parser.add_argument("--colormap",
+                        type=str,
+                        default=None,
+                        help="which colormap to use")
     parser.add_argument("--dash",
                         action="store_true",
                         help="add dashed line midway?",)
@@ -69,7 +74,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Columns for axis and names
-    columns = [args.x, args.y, args.legend, "Epoch"]
+    columns = [r'{}'.format(args.x), args.y, args.legend, "Epoch"]
+
+    # Set color pallete
+    color_options = {
+        "green": sns.color_palette(["#228B22", "#90EE90"]),
+        "blue": sns.color_palette(["#0000CD", "#1E90FF", "#87CEEB"])
+    }
+    palette = color_options.get(args.colormap, None)
 
     # Create plothelper object
     plothelper = PlotHelper(paths=args.log_path,
@@ -78,7 +90,8 @@ if __name__ == "__main__":
                             attacks_wanted=args.wanted,
                             ratios_wanted=args.ratios,
                             no_legend=args.nolegend,
-                            skip_prefix=args.skip_prefix)
+                            skip_prefix=args.skip_prefix,
+                            palette=palette)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,

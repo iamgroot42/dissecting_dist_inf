@@ -71,6 +71,9 @@ if __name__ == "__main__":
         # Take median per trial
         df = df.groupby(['prop_val']).median().reset_index()
 
+        # Convert < 50 to 50
+        df.loc[df['acc_or_loss'] < 50, 'acc_or_loss'] = 50
+
         # If graph-based, use appropriate formula
         if is_graph:
             df['n_leaked'] = df.apply(lambda row: GraphBinary(alpha_0, row['prop_val']).get_n_effective(row['acc_or_loss'] / 100.0,), axis=1)

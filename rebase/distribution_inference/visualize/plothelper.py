@@ -22,8 +22,18 @@ class PlotHelper():
                  attacks_wanted: List = None,
                  ratios_wanted: List = None,
                  no_legend: bool = False,
-                 skip_prefix: bool = False):
+                 skip_prefix: bool = False,
+                 palette = None):
+        self.fontsize = 15
+
+        # Embed PDF without issues with fontstyles
+        mpl.rcParams['pdf.fonttype'] = 42
+        mpl.rcParams['ps.fonttype'] = 42
+        mpl.rcParams['font.size'] = self.fontsize
+        mpl.rcParams['axes.labelsize'] = self.fontsize + 2
+
         self.df = []
+        self.palette = palette
         self.paths = paths
         self.loggers = loggers
         self.columns = columns
@@ -258,7 +268,8 @@ class PlotHelper():
             plt.style.use('dark_background')
         graph = seaborn.boxplot(
             x=self.columns[0], y=self.columns[1],
-            hue=self.columns[2], data=self.df)
+            hue=self.columns[2], data=self.df,
+            palette=self.palette)
         # Distinguishing accuracy range
         # TODO: Make this generic (to support loss values etc)
         graph.set(ylim=(45, 101))
