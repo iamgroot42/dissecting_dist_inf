@@ -1,6 +1,6 @@
 {
-    "name": "pin_wavy",
-    "start time": "2022-08-16 14:17:40.986278",
+    "name": "wavy_pin",
+    "start time": "2022-08-30 22:27:45.920797",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -80,7 +80,7 @@
             "comparison_config": null
         },
         "tries": 3,
-        "num_victim_models": 500,
+        "num_victim_models": 250,
         "on_cpu": true,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
@@ -100,9 +100,9 @@
                     null
                 ],
                 "victim_acc": [
-                    78.1,
-                    65.5,
-                    72.5
+                    63.0,
+                    67.4,
+                    66.4
                 ]
             },
             "0.1": {
@@ -112,108 +112,12 @@
                     null
                 ],
                 "victim_acc": [
-                    62.4,
-                    68.0,
-                    62.8
-                ]
-            },
-            "0.2": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    57.5,
-                    61.1,
-                    59.4
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    59.3,
-                    58.3,
-                    58.7
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    50.7,
-                    54.2,
-                    50.4
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    51.1,
-                    51.5,
-                    53.0
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    66.3,
+                    64.0,
                     63.0,
-                    57.7
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    69.3,
-                    67.3,
-                    74.2
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    70.7,
-                    66.9,
-                    77.0
-                ]
-            },
-            "1.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    89.0,
-                    76.2,
-                    81.8
+                    63.8
                 ]
             }
         }
     },
-    "save time": "2022-08-16 21:18:22.891924"
+    "save time": "2022-08-31 00:05:40.152720"
 }
