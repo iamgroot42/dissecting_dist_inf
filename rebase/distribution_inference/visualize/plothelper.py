@@ -23,6 +23,7 @@ class PlotHelper():
                  ratios_wanted: List = None,
                  no_legend: bool = False,
                  skip_prefix: bool = False,
+                 skip_suffix: bool = False,
                  palette = None):
         self.fontsize = 15
 
@@ -50,6 +51,7 @@ class PlotHelper():
             'line': self.lineplot
         }
         self.skip_prefix = skip_prefix
+        self.skip_suffix = skip_suffix
         self.legend_titles = legend_titles
         # If legend titles given, must be same length as paths/loggers
         if self.legend_titles is not None:
@@ -124,6 +126,8 @@ class PlotHelper():
 
                 if self.skip_prefix:
                     column_names = legend_entry
+                elif self.skip_suffix:
+                    column_names = metric_name
                 else:
                     column_names = f"{legend_entry} : {metric_name}"
 
@@ -170,9 +174,15 @@ class PlotHelper():
                 column_names = legend_entry
             else:
                 if type(attack_names) is list:
-                    column_names = [f"{legend_entry} : {name}" for name in attack_names]
+                    if self.skip_suffix:
+                        column_names = attack_names
+                    else:
+                        column_names = [f"{legend_entry} : {name}" for name in attack_names]
                 else:
-                    column_names = f"{legend_entry} : {attack_names}"
+                    if self.skip_suffix:
+                        column_names = attack_names
+                    else:
+                        column_names = f"{legend_entry} : {attack_names}"
 
             # Loss & Threshold attacks
             if (attack_res == "loss_and_threshold"):
@@ -223,7 +233,8 @@ class PlotHelper():
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                    self.columns[1]: result,  # * 100,
+                                    # self.columns[1]: result,  # * 100,
+                                    self.columns[1]: result * 100,
                                     self.columns[2]: column_names,
                                     self.columns[3]: epoch + 1})
                         else:

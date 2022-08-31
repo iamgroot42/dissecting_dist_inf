@@ -71,6 +71,12 @@ if __name__ == "__main__":
     parser.add_argument("--skip_prefix",
                         action="store_true",
                         help="Skip prefix of attack name in plotting legend",)
+    parser.add_argument("--skip_suffix",
+                        action="store_true",
+                        help="Skip suffix of logname in plotting legend",)
+    parser.add_argument("--remove_legend_title",
+                        action="store_true",
+                        help="Remove legend title?",)
     args = parser.parse_args()
 
     # Columns for axis and names
@@ -94,11 +100,15 @@ if __name__ == "__main__":
                             ratios_wanted=args.ratios,
                             no_legend=args.nolegend,
                             skip_prefix=args.skip_prefix,
+                            skip_suffix=args.skip_suffix,
                             palette=palette)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,
                        dash=args.dash)
+    
+    if args.remove_legend_title:
+        graph.legend_.set_title(None)
 
     # Save plot
     suffix = "pdf" if args.pdf else "png"
