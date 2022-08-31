@@ -131,13 +131,89 @@
             },
             "0.3": {
                 "adv_acc": [
+                    null,
+                    null,
                     null
                 ],
                 "victim_acc": [
-                    57.2
+                    57.2,
+                    53.6,
+                    55.4
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    49.6,
+                    50.0,
+                    50.0
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    51.8,
+                    54.0,
+                    56.0
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    54.4,
+                    58.4,
+                    56.6
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    57.4,
+                    60.6,
+                    58.6
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    71.4,
+                    67.8,
+                    71.4
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    71.2,
+                    70.6,
+                    73.6
                 ]
             }
         }
     },
-    "save time": "2022-08-31 01:18:11.864927"
+    "save time": "2022-08-31 06:54:18.720718"
 }
