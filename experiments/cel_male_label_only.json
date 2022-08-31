@@ -48,7 +48,8 @@
     ],
     "black_box": {
         "attack_type": [
-           "label_KL"
+            "label_KL",
+            "binary_perpoint"
         ],
         "ratios": [
             0.05,
