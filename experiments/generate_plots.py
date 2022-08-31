@@ -4,6 +4,8 @@ from simple_parsing import ArgumentParser
 import os
 import matplotlib
 import seaborn as sns
+import matplotlib.pyplot as plt
+from matplotlib.colors import rgb_to_hsv, hsv_to_rgb, to_rgb
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 matplotlib.rcParams["font.family"] = "Times New Roman"
@@ -65,6 +67,12 @@ if __name__ == "__main__":
     parser.add_argument("--dash",
                         action="store_true",
                         help="add dashed line midway?",)
+    parser.add_argument("--not_dodge",
+                        action="store_true",
+                        help="boxplots on same tick?",)
+    parser.add_argument("--low_legend",
+                        action="store_true",
+                        help="Legend outside (below) graph?",)
     parser.add_argument("--pdf",
                         action="store_true",
                         help="Save PDF instead of PNG",)
@@ -77,6 +85,10 @@ if __name__ == "__main__":
     parser.add_argument("--remove_legend_title",
                         action="store_true",
                         help="Remove legend title?",)
+    parser.add_argument("--n_legend_cols",
+                        type=int,
+                        default=2,
+                        help="Number of columns for graph legends",)
     args = parser.parse_args()
 
     # Columns for axis and names
@@ -87,7 +99,7 @@ if __name__ == "__main__":
         "green": sns.color_palette(["#228B22", "#90EE90"]),
         "blue": sns.color_palette(["#0000CD", "#1E90FF", "#87CEEB"]),
         "brown": sns.color_palette(["#8B4513", "#D2691E", "#F4A460"]),
-        "purple": sns.color_palette(["#4B0082", "#6A5ACD", "#9370DB", "#DDA0DD"]),
+        "purple": sns.color_palette(["#DDA0DD", "#9370DB", "#6A5ACD", "#4B0082"]),
         "gray": sns.color_palette(["#708090", "#B0C4DE"]),
     }
     palette = color_options.get(args.colormap, None)
@@ -101,6 +113,9 @@ if __name__ == "__main__":
                             no_legend=args.nolegend,
                             skip_prefix=args.skip_prefix,
                             skip_suffix=args.skip_suffix,
+                            not_dodge=args.not_dodge,
+                            low_legend=args.low_legend,
+                            n_legend_cols=args.n_legend_cols,
                             palette=palette)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,

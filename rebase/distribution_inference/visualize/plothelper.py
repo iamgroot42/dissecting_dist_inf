@@ -24,6 +24,9 @@ class PlotHelper():
                  no_legend: bool = False,
                  skip_prefix: bool = False,
                  skip_suffix: bool = False,
+                 not_dodge: bool = False,
+                 low_legend: bool = False,
+                 n_legend_cols: int = 2,
                  palette = None):
         self.fontsize = 15
 
@@ -41,6 +44,10 @@ class PlotHelper():
         self.attacks_wanted = attacks_wanted
         self.ratios_wanted = ratios_wanted
         self.no_legend = no_legend
+        self.low_legend = low_legend
+        self.not_dodge = not_dodge
+        self.n_legend_cols = n_legend_cols
+
         if(len(self.columns) < 3):
             raise ValueError(
                 "columns argument must be of length 3")
@@ -233,15 +240,16 @@ class PlotHelper():
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                    # self.columns[1]: result,  # * 100,
-                                    self.columns[1]: result * 100,
+                                    self.columns[1]: result,  # * 100,
+                                    # self.columns[1]: result * 100,
                                     self.columns[2]: column_names,
                                     self.columns[3]: epoch + 1})
                         else:
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                self.columns[1]: results*100 if results<=1 else results,  # * 100,
+                                # self.columns[1]: results*100 if results<=1 else results,  # * 100,
+                                self.columns[1]: results,   
                                 self.columns[2]: column_names})
             else:
                 warnings.warn(warning_string(
@@ -266,6 +274,10 @@ class PlotHelper():
             plt.axvline(x=midpoint,
                         color='white' if darkplot else 'black',
                         linewidth=1.0, linestyle='--')
+        if self.low_legend:
+            plt.legend(loc='upper center', bbox_to_anchor=(
+                0.5, -0.2), borderaxespad=0, ncol=self.n_legend_cols)
+
         # Make sure axis label not cut off
         plt.tight_layout()
 
@@ -280,7 +292,8 @@ class PlotHelper():
         graph = seaborn.boxplot(
             x=self.columns[0], y=self.columns[1],
             hue=self.columns[2], data=self.df,
-            palette=self.palette)
+            palette=self.palette,
+            dodge=not self.not_dodge)
         # Distinguishing accuracy range
         # TODO: Make this generic (to support loss values etc)
         graph.set(ylim=(45, 101))
