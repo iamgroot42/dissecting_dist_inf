@@ -85,10 +85,16 @@ if __name__ == "__main__":
     parser.add_argument("--remove_legend_title",
                         action="store_true",
                         help="Remove legend title?",)
+    parser.add_argument("--per_logfile_attacks",
+                        action="store_true",
+                        help="Extract one attack per logfile?",)
     parser.add_argument("--n_legend_cols",
                         type=int,
                         default=2,
                         help="Number of columns for graph legends",)
+    parser.add_argument("--same_colors",
+                        action="store_true",
+                        help="Same color for box line/outliers (for boxplot)?",)
     args = parser.parse_args()
 
     # Columns for axis and names
@@ -97,10 +103,13 @@ if __name__ == "__main__":
     # Set color pallete
     color_options = {
         "green": sns.color_palette(["#228B22", "#90EE90"]),
-        "blue": sns.color_palette(["#0000CD", "#1E90FF", "#87CEEB"]),
-        "brown": sns.color_palette(["#8B4513", "#D2691E", "#F4A460"]),
+        # "blue": sns.color_palette(["#0000CD", "#1E90FF", "#87CEEB"]),
+        "blue": sns.color_palette(["#00deff", "#0091b8", "#004c6d", ]),
+        "brown": sns.color_palette(["#F4A460", "#D2691E", "#8B4513"]),
         "purple": sns.color_palette(["#DDA0DD", "#9370DB", "#6A5ACD", "#4B0082"]),
         "gray": sns.color_palette(["#708090", "#B0C4DE"]),
+        "sensible": sns.color_palette(["#003f5c", "#7a5195", "#ef5675", "#ffa600"]),
+        "metrics": sns.color_palette(["#0087ab", "#00c7e5", "#de425b"]),
     }
     palette = color_options.get(args.colormap, None)
 
@@ -116,7 +125,9 @@ if __name__ == "__main__":
                             not_dodge=args.not_dodge,
                             low_legend=args.low_legend,
                             n_legend_cols=args.n_legend_cols,
-                            palette=palette)
+                            palette=palette,
+                            same_colors=args.same_colors,
+                            per_logfile_attacks=args.per_logfile_attacks)
     plotter_fn = plothelper.get_appropriate_plotter_fn(args.plot)
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,

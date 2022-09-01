@@ -1,3 +1,4 @@
+from shutil import ExecError
 from distribution_inference.attacks.utils import get_attack_name, ATTACK_MAPPING
 from distribution_inference.utils import warning_string
 from distribution_inference.logging.core import AttackResult
@@ -27,6 +28,8 @@ class PlotHelper():
                  not_dodge: bool = False,
                  low_legend: bool = False,
                  n_legend_cols: int = 2,
+                 per_logfile_attacks: bool = False,
+                 same_colors: bool = False,
                  palette = None):
         self.fontsize = 15
 
@@ -47,6 +50,8 @@ class PlotHelper():
         self.low_legend = low_legend
         self.not_dodge = not_dodge
         self.n_legend_cols = n_legend_cols
+        self.per_logfile_attacks = per_logfile_attacks
+        self.same_colors = same_colors
 
         if(len(self.columns) < 3):
             raise ValueError(
@@ -62,9 +67,9 @@ class PlotHelper():
         self.legend_titles = legend_titles
         # If legend titles given, must be same length as paths/loggers
         if self.legend_titles is not None:
-            if len(self.legend_titles) != len(self.paths) and len(self.legend_titles) != len(self.loggers):
+            if len(self.legend_titles) != len(self.paths) and len(self.legend_titles) != len(self.loggers) and len(self.legend_titles) != len(self.attacks_wanted):
                 raise ValueError(
-                    f"legend_titles ({len(legend_titles)}) must be of length equal to paths or loggers")
+                    f"legend_titles ({len(legend_titles)}) must be of length equal to paths or loggers (or attacks wanted)")
         # Must not provide empty lists
         if type(self.paths) == list and len(self.paths) == 0:
             raise ValueError("Must provide at least one path")
@@ -85,12 +90,18 @@ class PlotHelper():
         print(self.df.groupby(self.columns[2])[self.columns[1]].mean())
 
     def _parse_results(self, list_of_things, are_paths: bool):
+        if self.per_logfile_attacks:
+            attacks_copy = self.attacks_wanted.copy()
+
         for i, thing in enumerate(list_of_things):
             if are_paths:
                 logger = self._get_logger_from_path_or_obj(thing, None)
             else:
                 logger = thing.dic
-            
+                
+            if self.per_logfile_attacks:
+                self.attacks_wanted = [attacks_copy[i]]
+
             # Parse data from given results-object
             if 'log' in logger:
                 # Training logs
@@ -98,6 +109,9 @@ class PlotHelper():
             else:
                 # Attack result logs
                 self._parse(logger, i)
+            
+            if self.per_logfile_attacks:
+                self.attacks_wanted = attacks_copy
         pass
 
     def _get_logger_from_path_or_obj(self, path, logger_obj):
@@ -281,6 +295,31 @@ class PlotHelper():
         # Make sure axis label not cut off
         plt.tight_layout()
 
+        if self.same_colors:    
+            j = 0
+            for i in range(len(graph.patches)):
+                if type(graph.patches[i]) == mpl.patches.PathPatch:
+                    mybox = graph.patches[i]
+                    color = mybox.get_facecolor()
+                    # mybox.set_edgecolor(color)
+
+                    mybox.set_edgecolor(color)
+                    mybox.set_linewidth(0.75)
+
+                    # If you want the whiskers etc to match, each box has 6 associated Line2D objects (to make the whiskers, fliers, etc.)
+                    # Loop over them here, and use the same colour as above
+                    for _ in range(6):
+                        line = graph.lines[j]
+                        line.set_markerfacecolor(color)
+                        # line.set_markeredgecolor(color)
+                        # line.set_color(color)
+                        line.set_mfc(color) # Color of outliers
+                        # line.set_mec(color) # Color for box lines
+                        line.set_lw(0.75) # Thinner lines
+                        line.set_mew(0.75) # Thinner lines
+                        # line.set_color('r') # Quartile-related colors
+                        j += 1
+
         if self.no_legend:
             plt.legend([],[], frameon=False)
 
@@ -339,7 +378,8 @@ class PlotHelper():
             x=self.columns[3],
             y=self.columns[1],
             hue=self.columns[2],
-            data=self.df
+            data=self.df,
+            palette=self.palette
         )
         self._graph_specific_options(graph, title, darkplot, dash)
 
