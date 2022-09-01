@@ -99,13 +99,14 @@ if __name__ == "__main__":
     # Train models
     for i in range(1, train_config.num_models + 1):
         # Skip training model if it already exists
+        """"
         if not train_config.save_every_epoch:
             save_path = ds.get_save_path(train_config, None)
             if ds.check_if_exists(save_path, str(i + train_config.offset)):
                 print(
                     f"Model {i + train_config.offset} already exists. Skipping training.")
                 continue
-
+        """
         print("Training classifier %d / %d" % (i, train_config.num_models))
 
         # Get data loaders
@@ -150,7 +151,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            save_model(model, save_path)
+            #save_model(model, save_path)
 
             # Save logger
             logger.save()
