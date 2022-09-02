@@ -385,30 +385,3 @@ def cal_n(df, con, ratio):
             qi = ratio * n/(1 - ratio)
             return qi, n
         return 0, n
-
-
-if __name__ == "__main__":
-    "run to convert sklearn model to pytorch, have to comment out distribution_inference.datasets.util due to circular importing"
-    info = DatasetInformation()
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--suffix',
-                        default='50_50_new', help="device number")
-    args = parser.parse_args()
-    BMD = "/p/adversarialml/as9rw/models_census"
-    BMD = os.path.join(BMD, args.suffix)
-    b = os.path.join(BMD, 'normal')
-    for s in ["adv", "victim"]:
-        pa = os.path.join(BMD, s)
-        for p in ['sex', 'race']:
-            pat = os.path.join(pa, p)
-            print(pat)
-            for x in os.listdir(pat):
-                models, names = get_models(os.path.join(pat, x))
-                save_path = os.path.join(b, p, s, x)
-                if models != []:
-                    if not os.path.isdir(save_path):
-                        os.makedirs(save_path)
-                    models = convert_to_torch(models)
-                    for (m, n) in zip(models, names):
-                        save_model(m, os.path.join(save_path, n))

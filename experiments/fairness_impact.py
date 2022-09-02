@@ -72,12 +72,12 @@ if __name__ == "__main__":
         shuffle=False,
         epochwise_version=train_config.save_every_epoch,
         model_arch=train_config.model_arch)
-    
+
     # Check if models are graph-related
     are_graph_models = False
     if models[0].is_graph_model:
         are_graph_models = True
-    
+
     def to_preds(x):
         exp = np.exp(x)
         return exp / (1 + exp)
@@ -85,20 +85,22 @@ if __name__ == "__main__":
     def generate_preds(ds):
         if are_graph_models:
             # No concept of 'processed'
-            data_ds, (_, test_idx) = ds.get_loaders(batch_size=fairness_config.batch_size)
+            data_ds, (_, test_idx) = ds.get_loaders(
+                batch_size=fairness_config.batch_size)
             eval_loader = (data_ds, test_idx)
         else:
-            _, eval_loader = ds.get_loaders(batch_size=fairness_config.batch_size)
+            _, eval_loader = ds.get_loaders(
+                batch_size=fairness_config.batch_size)
 
         # Get predictions for adversary models and data
         preds, ground_truth = get_preds(
             eval_loader, models, preload=fairness_config.preload,
             multi_class=train_config.multi_class)
-    
+
         # Convert to probability values if logits
         if not models[0].is_sklearn_model:
             preds = to_preds(preds)
-        
+
         return preds, ground_truth
 
     # Now that we have model predictions and GT values, compute fairness-related metrics
@@ -108,7 +110,8 @@ if __name__ == "__main__":
     # Shapres are (num_models,num_samples) and (num_samples)
     preds_combined = np.concatenate((preds_zero_att, preds_one_att), axis=1)
     gt_combined = np.concatenate((gt_zero_att, gt_one_att), axis=0)
-    sensitive_features = np.concatenate((np.zeros(preds_zero_att.shape[1]), np.ones(preds_one_att.shape[1])), axis=0)
+    sensitive_features = np.concatenate(
+        (np.zeros(preds_zero_att.shape[1]), np.ones(preds_one_att.shape[1])), axis=0)
 
     # Function to collect fairness metrics per model
     def model_wise_eval(pred):
@@ -123,7 +126,7 @@ if __name__ == "__main__":
             sensitive_features=sensitive_features)
 
         return eq_odds_diff, dp_diff
-    
+
     def group_wise_pr(pred):
         pred_ = (pred > 0.5).astype(int)
 
@@ -131,11 +134,15 @@ if __name__ == "__main__":
         pred_group_1 = pred_[sensitive_features == 1]
 
         # Get precision and recall for both groups
-        prec_0 = precision_score(gt_combined[sensitive_features == 0], pred_group_0)
-        prec_1 = precision_score(gt_combined[sensitive_features == 1], pred_group_1)
-        rec_0 = recall_score(gt_combined[sensitive_features == 0], pred_group_0)
-        rec_1 = recall_score(gt_combined[sensitive_features == 1], pred_group_1)
-    
+        prec_0 = precision_score(
+            gt_combined[sensitive_features == 0], pred_group_0)
+        prec_1 = precision_score(
+            gt_combined[sensitive_features == 1], pred_group_1)
+        rec_0 = recall_score(
+            gt_combined[sensitive_features == 0], pred_group_0)
+        rec_1 = recall_score(
+            gt_combined[sensitive_features == 1], pred_group_1)
+
         return prec_0, prec_1, rec_0, rec_1
 
     # Metrics based on standard fairness
@@ -144,7 +151,8 @@ if __name__ == "__main__":
         metrics.append(model_wise_eval(pred))
     metrics = np.array(metrics)
     print("Average equalized-odds difference: %.3f" % np.mean(metrics[:, 0]))
-    print("Average demographic parity difference: %.3f" % np.mean(metrics[:, 1]))
+    print("Average demographic parity difference: %.3f" %
+          np.mean(metrics[:, 1]))
 
     # Metrics based on more simplistic notions
     metrics = []

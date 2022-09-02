@@ -103,13 +103,13 @@ if __name__ == "__main__":
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
                     model_arch=attack_config.adv_model_arch,
-                    target_epoch = attack_config.adv_target_epoch)
+                    target_epoch=attack_config.adv_target_epoch)
                 models_adv_2 = ds_adv_2.get_models(
                     train_adv_config,
                     n_models=bb_attack_config.num_adv_models,
                     on_cpu=attack_config.on_cpu,
                     model_arch=attack_config.adv_model_arch,
-                    target_epoch = attack_config.adv_target_epoch)
+                    target_epoch=attack_config.adv_target_epoch)
 
                 # Get victim and adv predictions on loaders for first ratio
                 preds_adv_on_1, preds_vic_on_1, ground_truth_1, not_using_logits = get_vic_adv_preds_on_distr(

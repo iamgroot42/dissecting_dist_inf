@@ -18,9 +18,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "--load_config", help="Specify config file",
         type=Path, required=True)
-    # parser.add_argument(
-    #     "--en", help="experiment name",
-    #     type=str, required=True)
     parser.add_argument(
         "--victim_path", help="path to victim'smodels directory",
         type=str, default=None)
@@ -32,9 +29,6 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(train_config)
-
-    # Define logger
-    # logger = AttackResult(args.en, attack_config)
 
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -84,6 +78,3 @@ if __name__ == "__main__":
     accs = np.array(accs)
     print(np.mean(losses), np.std(losses))
     print(np.mean(accs), np.std(accs))
-
-    # Save logger results
-    # logger.save()

@@ -132,7 +132,7 @@ if __name__ == "__main__":
     graph = plotter_fn(title=args.title,
                        darkplot=args.dark,
                        dash=args.dash)
-    
+
     if args.remove_legend_title:
         graph.legend_.set_title(None)
 

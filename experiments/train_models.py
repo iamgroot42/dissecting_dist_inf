@@ -1,7 +1,5 @@
 # Handle multiple workers
-from traceback import print_list
 import torch.multiprocessing
-torch.multiprocessing.set_sharing_strategy('file_system')
 import numpy as np
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from distribution_inference.defenses.active.augment import AugmentDefense
@@ -14,9 +12,9 @@ from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainC
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 
-EXTRA = False  #True
 if __name__ == "__main__":
     print("started")
     parser = ArgumentParser(add_help=False)
@@ -48,8 +46,6 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(train_config)
 
-    
-
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -62,9 +58,9 @@ if __name__ == "__main__":
                         str(config.data_config.value),
                         str(config.offset)])
     # Define logger
-    
+
     logger = TrainingResult(exp_name, train_config)
-   
+
     # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
     shuffle_defense = None
     if train_config.misc_config is not None:
@@ -81,33 +77,19 @@ if __name__ == "__main__":
 
     # Create new DS object
     ds = ds_wrapper_class(data_config,
-                         epoch=train_config.save_every_epoch,
-                         shuffle_defense=shuffle_defense,
-                         label_noise=train_config.label_noise)
-
-    # train_ds, val_ds = ds.load_data()
-    # print(len(train_ds))
-    # print(len(val_ds))
-    # exit(0)
-    # train_ds, val_ds = ds.load_data()
-    # y = []
-    # for t in val_ds:
-        # y.append(t[1])
-    # print("loaded")
-    # y = np.array(y)
-    # print(max(np.mean(y == 1), 1 - np.mean(y == 1)))
+                          epoch=train_config.save_every_epoch,
+                          shuffle_defense=shuffle_defense,
+                          label_noise=train_config.label_noise)
 
     # Train models
     for i in range(1, train_config.num_models + 1):
         # Skip training model if it already exists
-        """"
         if not train_config.save_every_epoch:
             save_path = ds.get_save_path(train_config, None)
             if ds.check_if_exists(save_path, str(i + train_config.offset)):
                 print(
                     f"Model {i + train_config.offset} already exists. Skipping training.")
                 continue
-        """
         print("Training classifier %d / %d" % (i, train_config.num_models))
 
         # Get data loaders
@@ -115,10 +97,10 @@ if __name__ == "__main__":
             batch_size=train_config.batch_size)
         plist = []
         for t in train_loader:
-            _,_,prop_l = t
+            _, _, prop_l = t
             for k in prop_l:
                 plist.append(k)
-        print(np.mean(plist))
+
         # Get model
         if dp_config is None:
             model = ds_info.get_model(model_arch=train_config.model_arch)
@@ -126,23 +108,13 @@ if __name__ == "__main__":
             model = ds_info.get_model_for_dp()
 
         # Train model
-        if EXTRA:
-            model, (vloss, vacc, extras) = train(model, (train_loader, val_loader),
-                                                 train_config=train_config,
-                                                 extra_options={
-                "curren_model_num": i + train_config.offset,
-                "save_path_fn": ds.get_save_path,
-                "more_metrics": EXTRA},
-                shuffle_defense=shuffle_defense)
-            logger.add_result(data_config.value, vloss, vacc, extras)
-        else:
-            model, (vloss, vacc) = train(model, (train_loader, val_loader),
-                                         train_config=train_config,
-                                         extra_options={
-                "curren_model_num": i + train_config.offset,
-                "save_path_fn": ds.get_save_path},
-                shuffle_defense=shuffle_defense)
-            logger.add_result(data_config.value, vloss, vacc)
+        model, (vloss, vacc, extra_metrics) = train(model, (train_loader, val_loader),
+                                     train_config=train_config,
+                                     extra_options={
+            "curren_model_num": i + train_config.offset,
+            "save_path_fn": ds.get_save_path},
+            shuffle_defense=shuffle_defense)
+        logger.add_result(data_config.value, vloss, vacc, extra_metrics)
 
         # If saving only the final model
         if not train_config.save_every_epoch:
@@ -157,7 +129,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            #save_model(model, save_path)
+            save_model(model, save_path)
 
             # Save logger
             logger.save()

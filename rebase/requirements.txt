@@ -14,3 +14,4 @@ pandas
 colorama
 seaborn
 jsonargparse
+fairlearn

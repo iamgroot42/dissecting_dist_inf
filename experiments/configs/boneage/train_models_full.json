@@ -14,5 +14,5 @@
     "weight_decay": 0.05,
     "num_models": 1000,
     "get_best": true,
-    "full_model": true
+    "model_arch": "bonemodel"
 }

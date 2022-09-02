@@ -1,48 +1,57 @@
 # Experiments
 
 Code for utilizing the `distribution_inference` package to run experiments.
+Example config files are provided in each of the folders to get started.
 Folder structure:
 
 - `configs`: Contains sample configuration files for various datasets for attacks, training models, etc.
 - `plots`: Folder where generated plots are saved
 - `log`: Folder where experimental result (JSON files) are saved
 
-## Training models
+# Models
+
+## Training
 
 `python train_models.py --load_config your_config_file.json`
 
-## Launching black-box attacks
+## Evaluation
+
+`python task_eval.py --load_config your_config_file.json`
+
+## KL Divergence Attack (KL) and other Black-Box attacks
 
 `python blackbox_attacks.py --load_config your_config_file.json --en name_for_your_experiment`
 
-## Launching Permutation-Invariant Network meta-classifier attacks
+## Permutation Invariant Network (PIN)
 
-### For binary classification
+### Train attack
 
-`python whitebox_attacks.py --load_config your_config_file.json --en name_for_your_experiment`
+`python pin.py --load_config your_config_file.json --en name_for_your_experiment`
 
-### For direct regression
+## Evaluate attack
 
-`python whitebox_attacks_regression.py --load_config your_config_file.json --en name_for_your_experiment`
+`python pin_eval.py --load_config your_config_file.json --en name_for_your_experiment`
 
-### For using regression variant (saved) to perform binary classification
+## Affinity Graph Attack (AGA)
 
-`python regression_for_classification.py --load_config your_config_file.json --path path_to_saved_meta_classifier`
+`python aga.py --load_config your_config_file.json --en name_for_your_experiment`
 
-## Launching Affinity Meta-Classifier attacks
+## Evaluate attack
 
-### For binary classification
+`python aga_eval.py --load_config your_config_file.json --en name_for_your_experiment`
 
-`python whitebox_aaffinity.py --load_config your_config_file.json --en name_for_your_experiment`
+## Combined Attack (AGA+KL)
 
-### For direct regression
+`python agakl.py --load_config your_config_file.json --en name_for_your_experiment`
 
-`python whitebox_affinity_regression.py --load_config your_config_file.json --en name_for_your_experiment`
+## Analyse impact of re-sampling defense on fairness
 
-### For using regression variant (saved) to perform binary classification
+`python fairness_impact.py --load_config your_config_file.json`
 
-`python affinity_regression_for_classification.py --load_config your_config_file.json --path path_to_saved_meta_classifier`
+## Compute n_leaked values for a set of results
+
+`python get_nleaked.py --load_config your_config_file.json`
 
 ## Generating plots
 
-`python generate_plots.py --log_path first_result_file second_result_file .... --plot box --dash --legend_titles first_plot second_plot ... --savepath path_to_within_plots_folder`
+`python generate_plots.py --log_path first_result_file second_result_file .... --legend_titles first_plot second_plot ... --savepath path_to_save_plot`

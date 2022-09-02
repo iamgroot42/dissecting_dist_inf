@@ -17,11 +17,11 @@ import distribution_inference.datasets.utils as utils
 class Constants:
     splits = ["victim", "adv"]
     if check_if_inside_cluster():
-        base_data_directory = "/scratch/{}/datasets/".format(check_user())
-        base_models_directory = "/scratch/{}/".format(check_user())
+        base_data_directory = "<PATH_TO_DATA_DIRECTORY_FOR_CLUSTER>"
+        base_models_directory = "<PATH_TO_MODELS_DIRECTORY_FOR_CLUSTER>"
     else:
-        base_data_directory = "/p/adversarialml/as9rw/datasets/"
-        base_models_directory = "/p/adversarialml/as9rw/"
+        base_data_directory = "<PATH_TO_DATA_DIRECTORY>"
+        base_models_directory = "<PATH_TO_MODELS_DIRECTORY>"
 
 
 class DatasetInformation:
