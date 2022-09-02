@@ -263,9 +263,10 @@ def sklearn_train(model, loaders, train_config: TrainConfig,
     # Evaluate model
     test_acc = model.acc(*test_data)
     test_loss = model.score(*test_data)
-
+    print("acc:{}, loss:{}".format ( test_acc,test_loss))
     if train_config.get_best:
         return model, (test_loss, test_acc)
+    
     return test_loss, test_acc
 
 

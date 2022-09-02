@@ -9,11 +9,12 @@ from tqdm import tqdm
 import numpy as np
 from dataclasses import replace
 import os
+
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.config import DatasetConfig, FairnessEvalConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.attacks.blackbox.utils import get_preds
-
+from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -48,12 +49,13 @@ if __name__ == "__main__":
     # Withoout-SHuffle model_config
     train_config_wo_shuffle = replace(train_config)
     train_config_wo_shuffle.misc_config = None
-
+    
     # Create config objects for data-loading
     data_config: DatasetConfig = replace(model_data_config)
     ds_baseline = ds_wrapper_class(
         data_config, skip_data=False)
-    
+    train_0_config = replace(train_config_wo_shuffle)
+    train_0_config.data_config.prop="0.5"
     # Check if models are graph-related
     are_graph_models = ds_baseline.is_graph_data
     if are_graph_models:
@@ -99,23 +101,34 @@ if __name__ == "__main__":
     # Now that we have model predictions and GT values, compute fairness-related metrics
     preds_shuffle, gt_shuffle = get_preds_for_model_config(train_config)
     preds_noshuffle, gt_no_shuffle = get_preds_for_model_config(train_config_wo_shuffle)
-    assert np.all(gt_no_shuffle == gt_shuffle)
+    preds_0, gt_0 = get_preds_for_model_config(train_0_config)
+    assert np.all(gt_no_shuffle == gt_shuffle == gt_0)
 
     # Compare agreement in predictions
     preds_shuffle = 1. * (preds_shuffle > 0.5)
     preds_noshuffle = 1. * (preds_noshuffle > 0.5)
-    agreements = []
-    for i in tqdm(range(preds_shuffle.shape[0]), desc="Aggregating"):
-        for j in range(preds_noshuffle.shape[0]):
-            agreements.append(np.mean(preds_shuffle[i] == preds_noshuffle[j]))
-    print(f"Agreement between shuffle and no-shuffle: {np.mean(agreements)}")
-
+    preds_0 = 1. * (preds_0 > 0.5)
+    def find_ag(p1,p2,n1,n2):
+        agreements = []
+        for i in tqdm(range(p1.shape[0]), desc="Aggregating"):
+            for j in range(p2.shape[0]):
+                agreements.append(np.mean(p1[i] == p2[j]))
+        print("Agreement between {} and {}:{}".format (n1,n2,np.mean(agreements)))
+    find_ag(preds_shuffle,preds_noshuffle,"shuffle","no shuffle")
+    find_ag(preds_shuffle,preds_0,"shuffle","D0")
+    find_ag(preds_noshuffle,preds_0,"no shuffle","D0")
     # (n_models, n_samples)
     # Average across all models
     preds_shuffle = np.mean(preds_shuffle, axis=0)
     preds_noshuffle = np.mean(preds_noshuffle, axis=0)
+    preds_0 = np.mean(preds_0,axis=0)
+    def find_dif(p1,p2,n1,n2):
 
-    # Compute average difference in predictions
-    diff_shuffle = np.mean(np.abs(preds_shuffle - preds_noshuffle))
-    diff_median = np.median(np.abs(preds_shuffle - preds_noshuffle))
-    print(f"Average difference in predictions between shuffle and no-shuffle: {diff_shuffle}")
+        # Compute average difference in predictions
+        diff_mean = np.mean(np.abs(p1 - p2))
+        diff_median = np.median(np.abs(p1 - p2))
+        print("Average difference in predictions between {} and {}: {}".format(n1,n2,diff_mean))
+        print("Median difference in predictions between {} and {}: {}".format(n1,n2,diff_median))
+    find_dif(preds_shuffle,preds_noshuffle,"shuffle","no shuffle")
+    find_dif(preds_shuffle,preds_0,"shuffle","D0")
+    find_dif(preds_noshuffle,preds_0,"no shuffle","D0")

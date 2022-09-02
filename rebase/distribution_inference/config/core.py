@@ -27,6 +27,13 @@ class AdvTrainingConfig(Serializable):
     scale_by_255: bool = False
     """Scale given epsilon by 255?"""
 
+@dataclass
+class RegressionConfig(Serializable):
+    """
+        Configuration for regression-based attacks
+    """
+    additional_values_to_test: Optional[List] = None
+    """Values of property to use while testing in addition to ratios used to train"""
 
 @dataclass
 class DPTrainingConfig(Serializable):

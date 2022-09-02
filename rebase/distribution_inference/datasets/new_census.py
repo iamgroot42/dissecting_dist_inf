@@ -28,7 +28,7 @@ class DatasetInformation(base.DatasetInformation):
                          epoch_wise=epoch_wise)
 
     def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
-        if model_arch is None:
+        if model_arch is None or model_arch=="None":
             model_arch = self.default_model
         if model_arch == "mlp2":
             model = MLPTwoLayer(n_inp=105)
@@ -330,12 +330,13 @@ class CensusWrapper(base.CustomDatasetWrapper):
             shuffle_defense_config = train_config.misc_config.shuffle_defense_config
 
         # Standard logic
+        if model_arch == "None":
+            model_arch = self.info_object.default_model
         if model_arch is None:
             model_arch = self.info_object.default_model
         if model_arch not in self.info_object.supported_models:
             raise ValueError(f"Model architecture {model_arch} not supported")
-        if model_arch is None:
-            model_arch = self.info_object.default_model
+        
         base_models_dir = os.path.join(base_models_dir, model_arch)
 
         if dp_config is None:

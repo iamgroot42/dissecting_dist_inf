@@ -36,7 +36,7 @@
         0.9,
         1.0
     ],
-    "num_victim_models": 250,
-    "adv_model_arch": "lr",
-    "victim_model_arch": "mlp2"
+    "num_victim_models": 10,
+    "adv_model_arch": "mlp3",
+    "victim_model_arch": "lr"
 }

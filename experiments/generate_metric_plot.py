@@ -37,7 +37,7 @@ def lineplot(plotter, title='', darkplot=True, dash=False):
         hue = plotter.columns[2],
         data=plotter.df.query("Metric!='R_cross'"), ax=ax2)
     ax2.set_ylabel("Accuracy (%)")
-    plt.xticks(range(1,21))
+    plt.xticks(range(1,41))
     #ax2.legend(handles=[Line2D([], [], marker='_', color="r", label='R_Cross')])
     plotter._graph_specific_options(graph, title, darkplot, dash)
 
@@ -129,6 +129,7 @@ if __name__ == "__main__":
 
     # Save plot
     suffix = "pdf" if args.pdf else "png"
+    """
     pear=[]
     for m in range(50):
         R_c = []
@@ -144,4 +145,4 @@ if __name__ == "__main__":
                          (args.savepath, "lineplot", suffix)))
     #graph.figure.savefig(os.path.join('%s_%s.%s' %
     #                     (args.savepath, args.plot, suffix)))
-    """
+    

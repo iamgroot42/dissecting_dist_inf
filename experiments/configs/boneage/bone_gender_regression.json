@@ -6,21 +6,20 @@
             "classify": "age",
             "split": "adv",
             "squeeze": true,
-            "value": 0.5,
-            "processed_variant": false
+            "value": 0.5
         },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 5,
+    "num_victim_models": 500,
+    "tries": 3,
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
-        "batch_size": 50,
+        "batch_size": 30000,
         "attack_type": [
-            "binary_perpoint",
-            "threshold_perpoint"
+            "KL_regression"
         ],
         "ratios": [
             0.05,
@@ -32,19 +31,17 @@
             1.0
         ],
         "preload": true,
-        "loss_variant": false
+        "regression_config": {
+            "additional_values_to_test":null
+        }
     },
     "values": [
         0.2,
         0.3,
         0.4,
+        0.5,
         0.6,
         0.7,
         0.8
-    ],
-    "num_victim_models": 250,
-    "victim_model_arch": "densenet",
-    "adv_model_arch": "bonemodel",
-    "victim_processed_variant": true,
-    "on_cpu": true
+    ]
 }

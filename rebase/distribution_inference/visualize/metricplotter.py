@@ -125,8 +125,7 @@ class MetricPlotHelper():
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                # * 100,
-                                self.columns[1]: result*100 if result <= 1 else result,
+                                self.columns[1]: result,#*100 if result<=1 else result,  # * 100,
                                 self.columns[2]: column_name,
                                 self.columns[3]: epoch + 1})
                     else:
@@ -202,7 +201,7 @@ class MetricPlotHelper():
                                 self.df.append({
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                    self.columns[1]: result,  # * 100,
+                                    self.columns[1]: result*100 if result<=1 else result,  # * 100,
                                     self.columns[2]: column_name,
                                     self.columns[3]: epoch + 1})
                         else:
