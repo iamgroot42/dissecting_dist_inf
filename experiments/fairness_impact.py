@@ -1,6 +1,5 @@
 """
     Load up models and data to measure fairness-related metrics.
-    TODO: Implement. Currently just a copy-paste of BB attacks
 """
 from distribution_inference.config.core import TrainConfig
 from simple_parsing import ArgumentParser

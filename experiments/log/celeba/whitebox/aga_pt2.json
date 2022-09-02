@@ -108,13 +108,63 @@
         "affinity": {
             "0.6": {
                 "adv_acc": [
+                    null,
+                    null,
                     null
                 ],
                 "victim_acc": [
+                    50.0,
+                    50.0,
                     50.0
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    64.8,
+                    70.8,
+                    70.39999999999999
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    71.39999999999999,
+                    74.6,
+                    79.60000000000001
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    76.0,
+                    64.2,
+                    76.4
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    79.2,
+                    93.0
                 ]
             }
         }
     },
-    "save time": "2022-09-01 02:27:09.106952"
+    "save time": "2022-09-01 12:02:44.329826"
 }

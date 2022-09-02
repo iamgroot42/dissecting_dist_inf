@@ -1,11 +1,11 @@
 {
-    "name": "aga_pt1",
-    "start time": "2022-09-01 01:41:55.727615",
+    "name": "agakl_wavy",
+    "start time": "2022-09-01 10:25:08.182039",
     "attack_config": {
         "train_config": {
             "data_config": {
                 "name": "celeba",
-                "prop": "High_Cheekbones",
+                "prop": "Wavy_Hair",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
@@ -42,9 +42,41 @@
             0.1,
             0.2,
             0.3,
-            0.4
+            0.4,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
         ],
-        "black_box": null,
+        "black_box": {
+            "attack_type": [
+                "KL"
+            ],
+            "ratios": [
+                1.0
+            ],
+            "batch_size": 512,
+            "num_adv_models": 150,
+            "granularity": 0.05,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
+            "multi_class": false,
+            "save": false,
+            "tune_final_threshold": false,
+            "Start_epoch": 1,
+            "End_epoch": 20,
+            "relative_threshold": false,
+            "loss_variant": false,
+            "random_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false,
+            "regression_config": null
+        },
         "white_box": {
             "attack": "affinity",
             "epochs": 120,
@@ -94,75 +126,59 @@
         },
         "tries": 3,
         "num_victim_models": 250,
-        "on_cpu": true,
+        "on_cpu": false,
         "adv_misc_config": null,
-        "num_total_adv_models": 1000,
+        "num_total_adv_models": 500,
         "victim_local_attack": false,
         "victim_model_arch": null,
         "adv_model_arch": null,
         "adv_processed_variant": false,
         "adv_target_epoch": null,
-        "victim_target_epoch": null
+        "victim_target_epoch": null,
+        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Wavy_Hair",
+        "save_bb": false,
+        "save_data": true,
+        "restore_data": null,
+        "use_wb_latents": false,
+        "num_for_meta": 100
     },
     "result": {
-        "affinity": {
+        "AGA+KL": {
             "0.0": {
                 "adv_acc": [
-                    null,
-                    null,
-                    null
+                    98.0,
+                    97.0
                 ],
                 "victim_acc": [
-                    92.0,
-                    89.4,
-                    92.80000000000001
+                    57.199999999999996,
+                    69.0
                 ]
             },
             "0.1": {
                 "adv_acc": [
-                    null,
-                    null,
-                    null
+                    93.0,
+                    96.0,
+                    93.0
                 ],
                 "victim_acc": [
-                    60.4,
-                    80.2,
-                    83.2
+                    52.800000000000004,
+                    61.6,
+                    67.4
                 ]
             },
             "0.2": {
                 "adv_acc": [
-                    null,
-                    null,
-                    null
+                    89.0,
+                    91.5,
+                    91.0
                 ],
                 "victim_acc": [
-                    66.4,
-                    65.60000000000001,
-                    84.2
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    71.0,
-                    61.4,
-                    70.8
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null
-                ],
-                "victim_acc": [
-                    57.199999999999996
+                    56.599999999999994,
+                    57.599999999999994,
+                    69.0
                 ]
             }
         }
     },
-    "save time": "2022-09-01 11:48:05.445711"
+    "save time": "2022-09-01 12:18:28.820814"
 }
