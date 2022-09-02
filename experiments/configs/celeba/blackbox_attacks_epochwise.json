@@ -19,26 +19,23 @@
         0.1,
         0.2,
         0.3,
-        0.4
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
     ],
     "on_cpu": true,
     "num_victim_models": 10,
-    "adv_diff_misc_config": false,
     "black_box": {
         "granularity": 0.05,
         "num_adv_models": 50,
         "batch_size": 512,
         "attack_type": [
-            "loss_and_threshold",
-            "threshold_perpoint"
+            "KL"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
         "preload": true

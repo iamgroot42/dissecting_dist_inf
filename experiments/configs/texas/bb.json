@@ -2,7 +2,7 @@
     "train_config": {
         "data_config": {
             "name": "texas",
-            "prop": "sex",
+            "prop": "ethnicity",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
@@ -31,7 +31,9 @@
         "multi_class": true,
         "batch_size": 1000,
         "attack_type": [
-            "KL"
+            "KL",
+            "threshold_perpoint",
+            "loss_and_threshold"
         ],
         "ratios": [
             0.05,

@@ -58,7 +58,8 @@ if __name__ == "__main__":
     ds_vic_1 = ds_wrapper_class(
         data_config_vic_1,
         skip_data=True,
-        label_noise=train_config.label_noise)
+        label_noise=train_config.label_noise,
+        epoch=attack_config.train_config.save_every_epoch)
     ds_adv_1 = ds_wrapper_class(data_config_adv_1)
     train_adv_config = get_train_config_for_adv(train_config, attack_config)
 
@@ -81,7 +82,8 @@ if __name__ == "__main__":
             # Create new DS object for both and victim (for other ratio)
             ds_vic_2 = ds_wrapper_class(
                 data_config_vic_2, skip_data=True,
-                label_noise=train_config.label_noise)
+                label_noise=train_config.label_noise,
+                epoch=attack_config.train_config.save_every_epoch)
             ds_adv_2 = ds_wrapper_class(data_config_adv_2)
 
             # Load victim models for other value

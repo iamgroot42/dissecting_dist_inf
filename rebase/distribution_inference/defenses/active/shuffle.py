@@ -97,10 +97,23 @@ class ShuffleDefense:
         one_label = ch.nonzero(prop_labels).squeeze(1)
         zero_label = ch.nonzero(1 - prop_labels).squeeze(1)
 
+        oversample_zero = oversampling
+        oversample_one = oversampling
+        # if oversampling:
+        #     # Need to oversample from only one of them
+        #     if num_sample_one == len(one_label):
+        #         oversample_one = False
+        #     elif num_sample_zero == len(zero_label):
+        #         oversample_zero = False
+        #     else:
+        #         raise ValueError("Should not be here")
+
         one_sample = np.random.choice(
-            one_label, size=num_sample_one, replace=oversampling)
+            one_label, size=num_sample_one,
+            replace=oversample_one)
         zero_sample = np.random.choice(
-            zero_label, size=num_sample_zero, replace=oversampling)
+            zero_label, size=num_sample_zero,
+            replace=oversample_zero)
         sample_index = ch.cat(
                 [ch.from_numpy(one_sample), ch.from_numpy(zero_sample)])
             

@@ -9,12 +9,13 @@
             "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
             "shared_layerwise_params": true
-        }
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {
             "name": "texas",
-            "prop": "sex",
+            "prop": "ethnicity",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,

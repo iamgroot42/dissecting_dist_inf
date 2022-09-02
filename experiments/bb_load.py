@@ -22,7 +22,7 @@ if __name__ == "__main__":
         "--pred_name", help="Specify preds file",
         type=Path, required=True)
     args = parser.parse_args()
-   
+
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
     # Extract configuration information from config file
@@ -40,39 +40,39 @@ if __name__ == "__main__":
     flash_utils(attack_config)
     # Define logger
     logger = AttackResult(args.en, attack_config)
-    EPOCH=train_config.save_every_epoch
+    EPOCH = train_config.save_every_epoch
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
     # Get dataset info object
     ds_info = get_dataset_information(data_config.name)()
-    preds_path = os.path.join(ds_info.base_models_dir,"preds",args.pred_name)
+    preds_path = os.path.join(ds_info.base_models_dir, "preds", args.pred_name)
     print("Loading adverary predictions file (this may take a while)")
-    preds_a = pickle.load(open(os.path.join(preds_path,"preds_a.p"), "rb" ) )
+    preds_a = pickle.load(open(os.path.join(preds_path, "preds_a.p"), "rb"))
     print(preds_a.keys())
     print("Loading victim predictions file (this may take a while)")
-    preds_v = pickle.load(open(os.path.join(preds_path,"preds_v.p"), "rb" ) )
+    preds_v = pickle.load(open(os.path.join(preds_path, "preds_v.p"), "rb"))
     print(preds_v.keys())
-    ground_truths = pickle.load( open( os.path.join(preds_path,"gt.p"), "rb" ) )
+    ground_truths = pickle.load(open(os.path.join(preds_path, "gt.p"), "rb"))
     for prop_value in tqdm(attack_config.values):
         for t in range(attack_config.tries):
             preds_adv = preds_a[prop_value][t]
             preds_vic = preds_v[prop_value][t]
             gt = ground_truths[prop_value][t]
             for attack_type in bb_attack_config.attack_type:
-                    # Create attacker object
+                # Create attacker object
                 attacker_obj = get_attack(attack_type)(bb_attack_config)
 
-                    # Launch attack
+                # Launch attack
                 result = attacker_obj.attack(
-                        preds_adv, preds_vic,
-                        ground_truth=(gt[0], gt[1]),
-                        calc_acc=calculate_accuracies,
-                        epochwise_version=attack_config.train_config.save_every_epoch)
+                    preds_adv, preds_vic,
+                    ground_truth=(gt[0], gt[1]),
+                    calc_acc=calculate_accuracies,
+                    epochwise_version=attack_config.train_config.save_every_epoch)
 
                 logger.add_results(attack_type, prop_value,
-                                       result[0][0], result[1][0])
+                                   result[0][0], result[1][0])
                 print(result[0][0])
 
-                # Save after every result (helps when scripts crash)      
+                # Save after every result (helps when scripts crash)
                 logger.save()

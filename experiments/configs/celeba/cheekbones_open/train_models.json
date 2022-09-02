@@ -3,7 +3,7 @@
         "name": "celeba",
         "prop": "High_Cheekbones",
         "classify": "Mouth_Slightly_Open",
-        "split": "adv",
+        "split": "victim",
         "value": 0.5,
         "processed_variant": false
     },

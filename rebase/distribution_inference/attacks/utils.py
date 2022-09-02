@@ -5,7 +5,8 @@ from distribution_inference.config import DatasetConfig, TrainConfig, AttackConf
 
 ATTACK_MAPPING = {
     "permutation_invariant": "Weights Meta-Classifier",
-    "affinity": "Activation-Correlation Meta-Classifier",
+    "affinity": "Activation Graph Attack",
+    # "affinity": "Attack Accuracy",
     "threshold_perpoint": "Point-Wise Threshold Test",
     "loss_and_threshold": ("Loss Test", "Threshold Test"),
     "single_update_loss": "Loss test across epoch",

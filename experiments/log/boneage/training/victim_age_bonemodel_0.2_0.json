@@ -1,0 +1,60 @@
+{
+    "name": "victim_age_bonemodel_0.2_0",
+    "start time": "2022-08-26 11:00:21.330322",
+    "train_config": {
+        "data_config": {
+            "name": "boneage",
+            "prop": "age",
+            "value": 0.2,
+            "split": "victim",
+            "drop_senstive_cols": false,
+            "scale": 1.0,
+            "augment": false,
+            "classify": "gender",
+            "cwise_samples": null,
+            "squeeze": true,
+            "processed_variant": true,
+            "prune": 0
+        },
+        "epochs": 100,
+        "learning_rate": 0.001,
+        "batch_size": 8192,
+        "misc_config": {
+            "adv_config": null,
+            "dp_config": null,
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "sample_type": "under",
+                "data_level": true,
+                "augment": false,
+                "use_mixup": false
+            }
+        },
+        "lr_scheduler": null,
+        "verbose": false,
+        "num_models": 2,
+        "offset": 0,
+        "weight_decay": 0.02,
+        "get_best": true,
+        "cpu": false,
+        "expect_extra": true,
+        "save_every_epoch": false,
+        "extra_info": null,
+        "regression": false,
+        "multi_class": false,
+        "label_noise": 0,
+        "model_arch": "bonemodel",
+        "parallel": false
+    },
+    "log": {
+        "0.2": {
+            "loss": [
+                0.6922610402107239
+            ],
+            "acc": [
+                0.6475
+            ]
+        }
+    },
+    "save time": "2022-08-26 11:01:01.026856"
+}

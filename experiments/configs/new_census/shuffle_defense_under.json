@@ -4,7 +4,7 @@
         "prop": "sex",
         "split": "victim",
         "squeeze": true,
-        "value": 0.4
+        "value": 0.1
     },
     "misc_config": {
         "shuffle_defense_config": {
@@ -19,7 +19,7 @@
     "learning_rate": 1e-3,
     "batch_size": 200,
     "weight_decay": 1e-4,
-    "num_models": 250,
+    "num_models": 20,
     "verbose": false,
     "get_best": true
 }

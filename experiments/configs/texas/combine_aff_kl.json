@@ -15,7 +15,7 @@
     "train_config": {
         "data_config": {
             "name": "texas",
-            "prop": "sex",
+            "prop": "ethnicity",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
@@ -51,7 +51,7 @@
         0.9,
         1.0
     ],
-    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/texas/sex",
+    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/texas/ethnicity",
     "use_wb_latents": false,
     "num_victim_models": 500,
     "num_total_adv_models": 500,

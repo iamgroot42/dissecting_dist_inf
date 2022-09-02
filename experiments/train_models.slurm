@@ -32,4 +32,4 @@
 #SBATCH --output=log/training/%x-%j.out
 #SBATCH --error=log/training/%x-%j.err
 
-CUDA_VISIBLE_DEVICES=0 knocky python train_models.py --load_config configs/celeba/shuffle_defense.json --value $RATIO
+CUDA_VISIBLE_DEVICES=0 knocky python train_models.py --load_config configs/celeba/shuffle_defense_over.json --value $RATIO

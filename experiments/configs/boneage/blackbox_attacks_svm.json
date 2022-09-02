@@ -19,7 +19,6 @@
         "num_adv_models": 50,
         "batch_size": 50,
         "attack_type": [
-            "threshold_perpoint",
             "KL"
         ],
         "ratios": [
@@ -42,8 +41,8 @@
         0.7,
         0.8
     ],
-    "num_victim_models": 500,
-    "victim_model_arch": "svm",
+    "num_victim_models": 250,
+    "victim_model_arch": "bonemodel",
     "adv_model_arch": "svm",
     "on_cpu": true
 }

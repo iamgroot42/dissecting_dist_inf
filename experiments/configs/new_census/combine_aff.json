@@ -23,7 +23,7 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 2,
+    "tries": 3,
     "black_box": {
         "granularity" : 0.05,
         "num_adv_models": 50,
@@ -47,9 +47,14 @@
         0.1,
         0.2,
         0.3,
-        0.4
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
     ],
-    "wb_path": "/p/adversarialml/as9rw/amc_models_for_yifu/sex",
-    "save_bb": false,
+    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/new_census/sex",
+    "save_bb": true,
     "use_wb_latents": false
 }
