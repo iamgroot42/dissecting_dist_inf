@@ -24,7 +24,7 @@ ATTACK_MAPPING = {
     "train_acc": "Train Accuracy",
     "loss": "Test Loss",
     "train_loss": "Train Loss",
-    "label_KL" : "KL attack with only label prediction"
+    "label_KL": "Label-only KL"
 }
 
 

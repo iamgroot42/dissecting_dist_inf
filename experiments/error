@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/u/pdz6an/git/property_inference/experiments/resampling_case_study.py", line 102, in <module>
+    preds_shuffle, gt_shuffle = get_preds_for_model_config(train_config)
+  File "/u/pdz6an/git/property_inference/experiments/resampling_case_study.py", line 81, in get_preds_for_model_config
+    models = ds_model.get_models(
+  File "/u/pdz6an/git/property_inference/rebase/distribution_inference/datasets/base.py", line 390, in get_models
+    raise ValueError(
+ValueError: No models found in the given path /p/adversarialml/as9rw/models_new_census/60_40/mlp2/shuffle_defense/over/0.50/0.5/victim/0.9

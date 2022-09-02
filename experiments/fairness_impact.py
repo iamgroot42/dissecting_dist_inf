@@ -1,6 +1,5 @@
 """
     Load up models and data to measure fairness-related metrics.
-    TODO: Implement. Currently just a copy-paste of BB attacks
 """
 from distribution_inference.config.core import TrainConfig
 from simple_parsing import ArgumentParser
@@ -9,10 +8,11 @@ from pathlib import Path
 import numpy as np
 from dataclasses import replace
 import os
+from tqdm import tqdm
 from distribution_inference.datasets.utils import get_dataset_wrapper, get_dataset_information
 from distribution_inference.config import DatasetConfig, FairnessEvalConfig
 from distribution_inference.utils import flash_utils
-from distribution_inference.logging.core import AttackResult
+from sklearn.metrics import precision_score, recall_score
 from distribution_inference.attacks.blackbox.utils import get_preds
 
 
@@ -123,7 +123,35 @@ if __name__ == "__main__":
             sensitive_features=sensitive_features)
 
         return eq_odds_diff, dp_diff
+    
+    def group_wise_pr(pred):
+        pred_ = (pred > 0.5).astype(int)
 
-    metrics = np.array([model_wise_eval(pred) for pred in preds_combined])
+        pred_group_0 = pred_[sensitive_features == 0]
+        pred_group_1 = pred_[sensitive_features == 1]
+
+        # Get precision and recall for both groups
+        prec_0 = precision_score(gt_combined[sensitive_features == 0], pred_group_0)
+        prec_1 = precision_score(gt_combined[sensitive_features == 1], pred_group_1)
+        rec_0 = recall_score(gt_combined[sensitive_features == 0], pred_group_0)
+        rec_1 = recall_score(gt_combined[sensitive_features == 1], pred_group_1)
+    
+        return prec_0, prec_1, rec_0, rec_1
+
+    # Metrics based on standard fairness
+    metrics = []
+    for pred in tqdm(preds_combined, desc="Evaluating fairness"):
+        metrics.append(model_wise_eval(pred))
+    metrics = np.array(metrics)
     print("Average equalized-odds difference: %.3f" % np.mean(metrics[:, 0]))
     print("Average demographic parity difference: %.3f" % np.mean(metrics[:, 1]))
+
+    # Metrics based on more simplistic notions
+    metrics = []
+    for pred in tqdm(preds_combined, desc="Evaluating fairness"):
+        metrics.append(group_wise_pr(pred))
+    metrics = np.array(metrics)
+    print("Average precision for group 0: %.3f" % np.mean(metrics[:, 0]))
+    print("Average precision for group 1: %.3f" % np.mean(metrics[:, 1]))
+    print("Average recall for group 0: %.3f" % np.mean(metrics[:, 2]))
+    print("Average recall for group 1: %.3f" % np.mean(metrics[:, 3]))

@@ -1,20 +1,20 @@
 {
-    "name": "agakl_race",
-    "start time": "2022-08-28 13:12:34.022971",
+    "name": "agakl_wavy",
+    "start time": "2022-09-01 10:25:08.182039",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "texas",
-                "prop": "race",
+                "name": "celeba",
+                "prop": "Wavy_Hair",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": null,
+                "classify": "Mouth_Slightly_Open",
                 "cwise_samples": null,
-                "squeeze": true,
-                "processed_variant": true,
+                "squeeze": false,
+                "processed_variant": false,
                 "prune": 0
             },
             "epochs": 0,
@@ -56,13 +56,13 @@
             "ratios": [
                 1.0
             ],
-            "batch_size": 1000,
+            "batch_size": 512,
             "num_adv_models": 150,
             "granularity": 0.05,
             "preload": true,
             "multi": null,
             "multi2": null,
-            "multi_class": true,
+            "multi_class": false,
             "save": false,
             "tune_final_threshold": false,
             "Start_epoch": 1,
@@ -74,12 +74,13 @@
             "kl_voting": false,
             "generative_attack": null,
             "order_name": null,
-            "geo_mean": false
+            "geo_mean": false,
+            "regression_config": null
         },
         "white_box": {
             "attack": "affinity",
             "epochs": 120,
-            "batch_size": 1000,
+            "batch_size": 500,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
             "train_sample": 750,
@@ -91,7 +92,7 @@
             "binary": true,
             "gpu": true,
             "shuffle": true,
-            "multi_class": true,
+            "multi_class": false,
             "custom_layers_fc": null,
             "start_n_fc": 0,
             "first_n_fc": null,
@@ -124,7 +125,7 @@
             "comparison_config": null
         },
         "tries": 3,
-        "num_victim_models": 500,
+        "num_victim_models": 250,
         "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 500,
@@ -134,7 +135,7 @@
         "adv_processed_variant": false,
         "adv_target_epoch": null,
         "victim_target_epoch": null,
-        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/texas/race",
+        "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Wavy_Hair",
         "save_bb": false,
         "save_data": true,
         "restore_data": null,
@@ -145,117 +146,39 @@
         "AGA+KL": {
             "0.0": {
                 "adv_acc": [
-                    100.0,
-                    100.0,
-                    100.0
+                    98.0,
+                    97.0
                 ],
                 "victim_acc": [
-                    51.5,
-                    53.5,
-                    51.800000000000004
+                    57.199999999999996,
+                    69.0
                 ]
             },
             "0.1": {
                 "adv_acc": [
-                    99.5,
-                    98.0,
-                    96.5
+                    93.0,
+                    96.0,
+                    93.0
                 ],
                 "victim_acc": [
-                    50.3,
-                    51.5,
-                    50.7
+                    52.800000000000004,
+                    61.6,
+                    67.4
                 ]
             },
             "0.2": {
                 "adv_acc": [
-                    92.0,
+                    89.0,
                     91.5,
-                    91.5
+                    91.0
                 ],
                 "victim_acc": [
-                    59.8,
-                    50.6,
-                    50.6
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    65.0,
-                    85.5,
-                    80.5
-                ],
-                "victim_acc": [
-                    53.5,
-                    50.5,
-                    57.099999999999994
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    61.5
-                ],
-                "victim_acc": [
-                    50.2
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    57.99999999999999
-                ],
-                "victim_acc": [
-                    48.4
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    69.0,
-                    82.5,
-                    89.5
-                ],
-                "victim_acc": [
-                    53.5,
-                    66.9,
-                    58.199999999999996
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    91.0,
-                    94.5,
-                    94.5
-                ],
-                "victim_acc": [
-                    67.80000000000001,
-                    61.7,
-                    55.1
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    98.5,
-                    97.0,
-                    99.0
-                ],
-                "victim_acc": [
-                    80.80000000000001,
-                    67.4,
-                    73.9
-                ]
-            },
-            "1.0": {
-                "adv_acc": [
-                    100.0,
-                    99.5,
-                    100.0
-                ],
-                "victim_acc": [
-                    56.99999999999999,
-                    56.3,
-                    71.39999999999999
+                    56.599999999999994,
+                    57.599999999999994,
+                    69.0
                 ]
             }
         }
     },
-    "save time": "2022-08-29 00:42:41.331508"
+    "save time": "2022-09-01 12:18:28.820814"
 }

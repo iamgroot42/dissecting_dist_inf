@@ -1,0 +1,26 @@
+{
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "split": "victim",
+            "squeeze": true,
+            "value": 0.9
+        },
+        "misc_config": {
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "data_level": true,
+                "sample_type": "over"
+            }
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "prop": "sex",
+    "value_min": 0.0,
+    "value_max": 1.0,
+    "num_models": 100,
+    "preload": true
+}

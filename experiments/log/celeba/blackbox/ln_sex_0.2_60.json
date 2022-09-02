@@ -1,20 +1,20 @@
 {
-    "name": "pin_ethnicity",
-    "start time": "2022-08-27 21:48:49.739372",
+    "name": "ln_sex_0.2_60",
+    "start time": "2022-09-01 02:34:05.191234",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "texas",
-                "prop": "ethnicity",
+                "name": "celeba",
+                "prop": "Male",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": null,
-                "cwise_samples": null,
-                "squeeze": true,
-                "processed_variant": true,
+                "classify": "Smiling",
+                "cwise_samples": 1000000,
+                "squeeze": false,
+                "processed_variant": false,
                 "prune": 0
             },
             "epochs": 0,
@@ -33,12 +33,11 @@
             "extra_info": null,
             "regression": false,
             "multi_class": false,
-            "label_noise": 0,
+            "label_noise": 0.2,
             "model_arch": null,
             "parallel": false
         },
         "values": [
-            0.0,
             0.1,
             0.2,
             0.3,
@@ -46,42 +45,40 @@
             0.6,
             0.7,
             0.8,
-            0.9,
-            1.0
+            0.9
         ],
-        "black_box": null,
-        "white_box": {
-            "attack": "permutation_invariant",
-            "epochs": 200,
-            "batch_size": 1000,
-            "learning_rate": 0.001,
-            "weight_decay": 0.01,
-            "train_sample": 750,
-            "val_sample": 50,
-            "save": false,
-            "load": null,
-            "regression_config": null,
-            "eval_every": 10,
-            "binary": true,
-            "gpu": true,
-            "shuffle": true,
+        "black_box": {
+            "attack_type": [
+                "KL"
+            ],
+            "ratios": [
+                1.0
+            ],
+            "batch_size": 512,
+            "num_adv_models": 50,
+            "granularity": 0.005,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
             "multi_class": false,
-            "custom_layers_fc": null,
-            "start_n_fc": 0,
-            "first_n_fc": null,
-            "custom_layers_conv": null,
-            "start_n_conv": 0,
-            "first_n_conv": null,
-            "permutation_config": {
-                "focus": "fc",
-                "scale_invariance": false
-            },
-            "affinity_config": null,
-            "comparison_config": null
+            "save": false,
+            "tune_final_threshold": false,
+            "Start_epoch": 1,
+            "End_epoch": 20,
+            "relative_threshold": false,
+            "loss_variant": false,
+            "random_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false,
+            "regression_config": null
         },
+        "white_box": null,
         "tries": 5,
-        "num_victim_models": 500,
-        "on_cpu": false,
+        "num_victim_models": 60,
+        "on_cpu": true,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
@@ -92,23 +89,7 @@
         "victim_target_epoch": null
     },
     "result": {
-        "permutation_invariant": {
-            "0.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    78.7,
-                    50.8,
-                    77.2,
-                    65.3,
-                    50.0
-                ]
-            },
+        "KL": {
             "0.1": {
                 "adv_acc": [
                     null,
@@ -118,11 +99,11 @@
                     null
                 ],
                 "victim_acc": [
-                    66.8,
-                    60.9,
-                    50.4,
-                    52.1,
-                    66.9
+                    90.0,
+                    85.83333333333333,
+                    84.16666666666667,
+                    87.5,
+                    80.83333333333333
                 ]
             },
             "0.2": {
@@ -134,11 +115,11 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    51.8,
-                    50.0,
-                    50.0,
-                    50.0
+                    65.83333333333333,
+                    65.0,
+                    65.0,
+                    72.5,
+                    62.5
                 ]
             },
             "0.3": {
@@ -150,11 +131,11 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0
+                    72.5,
+                    65.83333333333333,
+                    72.5,
+                    73.33333333333333,
+                    67.5
                 ]
             },
             "0.4": {
@@ -166,11 +147,11 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0
+                    54.166666666666664,
+                    57.49999999999999,
+                    57.49999999999999,
+                    46.666666666666664,
+                    56.666666666666664
                 ]
             },
             "0.6": {
@@ -183,9 +164,9 @@
                 ],
                 "victim_acc": [
                     50.0,
-                    50.0,
-                    50.0,
-                    50.0,
+                    47.5,
+                    50.83333333333333,
+                    50.83333333333333,
                     50.0
                 ]
             },
@@ -198,11 +179,11 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0
+                    61.66666666666667,
+                    68.33333333333333,
+                    62.5,
+                    62.5,
+                    57.49999999999999
                 ]
             },
             "0.8": {
@@ -214,11 +195,11 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0
+                    48.333333333333336,
+                    48.333333333333336,
+                    48.333333333333336,
+                    48.333333333333336,
+                    48.333333333333336
                 ]
             },
             "0.9": {
@@ -230,30 +211,14 @@
                     null
                 ],
                 "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0
-                ]
-            },
-            "1.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0,
-                    50.0
+                    97.5,
+                    90.0,
+                    94.16666666666667,
+                    94.16666666666667,
+                    91.66666666666666
                 ]
             }
         }
     },
-    "save time": "2022-08-29 07:04:45.844884"
+    "save time": "2022-09-01 05:03:44.781765"
 }

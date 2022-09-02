@@ -1,7 +1,8 @@
 # Handle multiple workers
+from traceback import print_list
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
-
+import numpy as np
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from distribution_inference.defenses.active.augment import AugmentDefense
 from simple_parsing import ArgumentParser
@@ -112,7 +113,12 @@ if __name__ == "__main__":
         # Get data loaders
         train_loader, val_loader = ds.get_loaders(
             batch_size=train_config.batch_size)
-
+        plist = []
+        for t in train_loader:
+            _,_,prop_l = t
+            for k in prop_l:
+                plist.append(k)
+        print(np.mean(plist))
         # Get model
         if dp_config is None:
             model = ds_info.get_model(model_arch=train_config.model_arch)

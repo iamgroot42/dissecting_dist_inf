@@ -16,6 +16,6 @@
     "prop": "age",
     "value_min": 0.0,
     "value_max": 1.0,
-    "num_models": 10,
+    "num_models": 100,
     "preload": true
 }

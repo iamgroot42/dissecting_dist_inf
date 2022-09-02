@@ -66,10 +66,13 @@ if __name__ == "__main__":
         print(df)
         exit(0)
     else:
-        # Replace very-high values with something less
-        df.loc[df['acc_or_loss'] == 100, 'acc_or_loss'] = 100 - 1e-3
+        # Replace very-high values with acc corresponding to getting only 1 predictiong wrong i.e. 1/500
+        df.loc[df['acc_or_loss'] == 100, 'acc_or_loss'] = 100 - 2e-3
         # Take median per trial
         df = df.groupby(['prop_val']).median().reset_index()
+
+        # Convert < 50 to 50
+        df.loc[df['acc_or_loss'] < 50, 'acc_or_loss'] = 50
 
         # If graph-based, use appropriate formula
         if is_graph:

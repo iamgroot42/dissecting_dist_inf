@@ -1,3 +1,4 @@
+from shutil import ExecError
 from distribution_inference.attacks.utils import get_attack_name, ATTACK_MAPPING
 from distribution_inference.utils import warning_string
 from distribution_inference.logging.core import AttackResult
@@ -22,14 +23,36 @@ class PlotHelper():
                  attacks_wanted: List = None,
                  ratios_wanted: List = None,
                  no_legend: bool = False,
-                 skip_prefix: bool = False):
+                 skip_prefix: bool = False,
+                 skip_suffix: bool = False,
+                 not_dodge: bool = False,
+                 low_legend: bool = False,
+                 n_legend_cols: int = 2,
+                 per_logfile_attacks: bool = False,
+                 same_colors: bool = False,
+                 palette = None):
+        self.fontsize = 15
+
+        # Embed PDF without issues with fontstyles
+        mpl.rcParams['pdf.fonttype'] = 42
+        mpl.rcParams['ps.fonttype'] = 42
+        mpl.rcParams['font.size'] = self.fontsize
+        mpl.rcParams['axes.labelsize'] = self.fontsize + 2
+
         self.df = []
+        self.palette = palette
         self.paths = paths
         self.loggers = loggers
         self.columns = columns
         self.attacks_wanted = attacks_wanted
         self.ratios_wanted = ratios_wanted
         self.no_legend = no_legend
+        self.low_legend = low_legend
+        self.not_dodge = not_dodge
+        self.n_legend_cols = n_legend_cols
+        self.per_logfile_attacks = per_logfile_attacks
+        self.same_colors = same_colors
+
         if(len(self.columns) < 3):
             raise ValueError(
                 "columns argument must be of length 3")
@@ -40,12 +63,13 @@ class PlotHelper():
             'line': self.lineplot
         }
         self.skip_prefix = skip_prefix
+        self.skip_suffix = skip_suffix
         self.legend_titles = legend_titles
         # If legend titles given, must be same length as paths/loggers
         if self.legend_titles is not None:
-            if len(self.legend_titles) != len(self.paths) and len(self.legend_titles) != len(self.loggers):
+            if len(self.legend_titles) != len(self.paths) and len(self.legend_titles) != len(self.loggers) and len(self.legend_titles) != len(self.attacks_wanted):
                 raise ValueError(
-                    f"legend_titles ({len(legend_titles)}) must be of length equal to paths or loggers")
+                    f"legend_titles ({len(legend_titles)}) must be of length equal to paths or loggers (or attacks wanted)")
         # Must not provide empty lists
         if type(self.paths) == list and len(self.paths) == 0:
             raise ValueError("Must provide at least one path")
@@ -66,12 +90,18 @@ class PlotHelper():
         print(self.df.groupby(self.columns[2])[self.columns[1]].mean())
 
     def _parse_results(self, list_of_things, are_paths: bool):
+        if self.per_logfile_attacks:
+            attacks_copy = self.attacks_wanted.copy()
+
         for i, thing in enumerate(list_of_things):
             if are_paths:
                 logger = self._get_logger_from_path_or_obj(thing, None)
             else:
                 logger = thing.dic
-            
+                
+            if self.per_logfile_attacks:
+                self.attacks_wanted = [attacks_copy[i]]
+
             # Parse data from given results-object
             if 'log' in logger:
                 # Training logs
@@ -79,6 +109,9 @@ class PlotHelper():
             else:
                 # Attack result logs
                 self._parse(logger, i)
+            
+            if self.per_logfile_attacks:
+                self.attacks_wanted = attacks_copy
         pass
 
     def _get_logger_from_path_or_obj(self, path, logger_obj):
@@ -114,6 +147,8 @@ class PlotHelper():
 
                 if self.skip_prefix:
                     column_names = legend_entry
+                elif self.skip_suffix:
+                    column_names = metric_name
                 else:
                     column_names = f"{legend_entry} : {metric_name}"
 
@@ -160,9 +195,15 @@ class PlotHelper():
                 column_names = legend_entry
             else:
                 if type(attack_names) is list:
-                    column_names = [f"{legend_entry} : {name}" for name in attack_names]
+                    if self.skip_suffix:
+                        column_names = attack_names
+                    else:
+                        column_names = [f"{legend_entry} : {name}" for name in attack_names]
                 else:
-                    column_names = f"{legend_entry} : {attack_names}"
+                    if self.skip_suffix:
+                        column_names = attack_names
+                    else:
+                        column_names = f"{legend_entry} : {attack_names}"
 
             # Loss & Threshold attacks
             if (attack_res == "loss_and_threshold"):
@@ -214,13 +255,15 @@ class PlotHelper():
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
                                     self.columns[1]: result,  # * 100,
+                                    # self.columns[1]: result * 100,
                                     self.columns[2]: column_names,
                                     self.columns[3]: epoch + 1})
                         else:
                             self.df.append({
                                 self.columns[0]: float(ratio),
                                 # Temporary (below) - ideally all results should be in [0, 100] across entire module
-                                self.columns[1]: results*100 if results<=1 else results,  # * 100,
+                                # self.columns[1]: results*100 if results<=1 else results,  # * 100,
+                                self.columns[1]: results,   
                                 self.columns[2]: column_names})
             else:
                 warnings.warn(warning_string(
@@ -245,8 +288,37 @@ class PlotHelper():
             plt.axvline(x=midpoint,
                         color='white' if darkplot else 'black',
                         linewidth=1.0, linestyle='--')
+        if self.low_legend:
+            plt.legend(loc='upper center', bbox_to_anchor=(
+                0.5, -0.2), borderaxespad=0, ncol=self.n_legend_cols)
+
         # Make sure axis label not cut off
         plt.tight_layout()
+
+        if self.same_colors:    
+            j = 0
+            for i in range(len(graph.patches)):
+                if type(graph.patches[i]) == mpl.patches.PathPatch:
+                    mybox = graph.patches[i]
+                    color = mybox.get_facecolor()
+                    # mybox.set_edgecolor(color)
+
+                    mybox.set_edgecolor(color)
+                    mybox.set_linewidth(0.75)
+
+                    # If you want the whiskers etc to match, each box has 6 associated Line2D objects (to make the whiskers, fliers, etc.)
+                    # Loop over them here, and use the same colour as above
+                    for _ in range(6):
+                        line = graph.lines[j]
+                        line.set_markerfacecolor(color)
+                        # line.set_markeredgecolor(color)
+                        # line.set_color(color)
+                        line.set_mfc(color) # Color of outliers
+                        # line.set_mec(color) # Color for box lines
+                        line.set_lw(0.75) # Thinner lines
+                        line.set_mew(0.75) # Thinner lines
+                        # line.set_color('r') # Quartile-related colors
+                        j += 1
 
         if self.no_legend:
             plt.legend([],[], frameon=False)
@@ -258,7 +330,9 @@ class PlotHelper():
             plt.style.use('dark_background')
         graph = seaborn.boxplot(
             x=self.columns[0], y=self.columns[1],
-            hue=self.columns[2], data=self.df)
+            hue=self.columns[2], data=self.df,
+            palette=self.palette,
+            dodge=not self.not_dodge)
         # Distinguishing accuracy range
         # TODO: Make this generic (to support loss values etc)
         graph.set(ylim=(45, 101))
@@ -304,7 +378,8 @@ class PlotHelper():
             x=self.columns[3],
             y=self.columns[1],
             hue=self.columns[2],
-            data=self.df
+            data=self.df,
+            palette=self.palette
         )
         self._graph_specific_options(graph, title, darkplot, dash)
 

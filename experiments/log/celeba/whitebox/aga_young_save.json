@@ -1,17 +1,17 @@
 {
-    "name": "pin_wavy",
-    "start time": "2022-08-16 14:17:40.986278",
+    "name": "aga_young_save",
+    "start time": "2022-08-28 22:40:24.527028",
     "attack_config": {
         "train_config": {
             "data_config": {
                 "name": "celeba",
-                "prop": "Wavy_Hair",
+                "prop": "Young",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "Mouth_Slightly_Open",
+                "classify": "Male",
                 "cwise_samples": null,
                 "squeeze": false,
                 "processed_variant": false,
@@ -51,14 +51,14 @@
         ],
         "black_box": null,
         "white_box": {
-            "attack": "permutation_invariant",
-            "epochs": 100,
-            "batch_size": 150,
+            "attack": "affinity",
+            "epochs": 120,
+            "batch_size": 500,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
             "train_sample": 750,
             "val_sample": 50,
-            "save": false,
+            "save": true,
             "load": null,
             "regression_config": null,
             "eval_every": 10,
@@ -72,11 +72,29 @@
             "custom_layers_conv": null,
             "start_n_conv": 0,
             "first_n_conv": null,
-            "permutation_config": {
-                "focus": "all",
-                "scale_invariance": false
+            "permutation_config": null,
+            "affinity_config": {
+                "num_final": 16,
+                "only_latent": false,
+                "random_edge_selection": false,
+                "frac_retain_pairs": 0.2,
+                "better_retain_pair": false,
+                "optimal_data_identity": false,
+                "model_sample_for_optimal_data_identity": 50,
+                "num_samples_use": 50,
+                "layer_agnostic": false,
+                "inner_dims": [
+                    1024,
+                    64
+                ],
+                "shared_layerwise_params": true,
+                "sequential_variant": false,
+                "num_rnn_layers": 2,
+                "layers_to_target_conv": null,
+                "layers_to_target_fc": null,
+                "perpoint_based_selection": 0,
+                "flip_selection_logic": false
             },
-            "affinity_config": null,
             "comparison_config": null
         },
         "tries": 3,
@@ -92,7 +110,7 @@
         "victim_target_epoch": null
     },
     "result": {
-        "permutation_invariant": {
+        "affinity": {
             "0.0": {
                 "adv_acc": [
                     null,
@@ -100,9 +118,9 @@
                     null
                 ],
                 "victim_acc": [
-                    78.1,
-                    65.5,
-                    72.5
+                    87.7,
+                    90.6,
+                    70.5
                 ]
             },
             "0.1": {
@@ -112,9 +130,9 @@
                     null
                 ],
                 "victim_acc": [
-                    62.4,
-                    68.0,
-                    62.8
+                    67.7,
+                    72.5,
+                    65.60000000000001
                 ]
             },
             "0.2": {
@@ -124,9 +142,9 @@
                     null
                 ],
                 "victim_acc": [
-                    57.5,
-                    61.1,
-                    59.4
+                    68.9,
+                    75.3,
+                    60.8
                 ]
             },
             "0.3": {
@@ -136,9 +154,9 @@
                     null
                 ],
                 "victim_acc": [
-                    59.3,
-                    58.3,
-                    58.7
+                    67.9,
+                    72.39999999999999,
+                    69.0
                 ]
             },
             "0.4": {
@@ -148,9 +166,9 @@
                     null
                 ],
                 "victim_acc": [
-                    50.7,
-                    54.2,
-                    50.4
+                    51.5,
+                    53.6,
+                    53.5
                 ]
             },
             "0.6": {
@@ -160,9 +178,9 @@
                     null
                 ],
                 "victim_acc": [
-                    51.1,
-                    51.5,
-                    53.0
+                    57.49999999999999,
+                    54.400000000000006,
+                    55.400000000000006
                 ]
             },
             "0.7": {
@@ -172,9 +190,9 @@
                     null
                 ],
                 "victim_acc": [
-                    66.3,
-                    63.0,
-                    57.7
+                    64.60000000000001,
+                    58.00000000000001,
+                    61.1
                 ]
             },
             "0.8": {
@@ -184,9 +202,9 @@
                     null
                 ],
                 "victim_acc": [
-                    69.3,
-                    67.3,
-                    74.2
+                    71.5,
+                    72.6,
+                    81.80000000000001
                 ]
             },
             "0.9": {
@@ -196,9 +214,9 @@
                     null
                 ],
                 "victim_acc": [
-                    70.7,
-                    66.9,
-                    77.0
+                    61.3,
+                    76.49999999999999,
+                    78.60000000000001
                 ]
             },
             "1.0": {
@@ -208,12 +226,12 @@
                     null
                 ],
                 "victim_acc": [
-                    89.0,
-                    76.2,
-                    81.8
+                    73.9,
+                    75.2,
+                    70.10000000000001
                 ]
             }
         }
     },
-    "save time": "2022-08-16 21:18:22.891924"
+    "save time": "2022-08-31 03:03:22.901627"
 }

@@ -373,12 +373,34 @@ class WhiteBoxAttackConfig(Serializable):
     comparison_config: Optional[ComparisonAttackConfig] = None
 
 @dataclass
+class FairnessEvalConfig(Serializable):
+    """
+        Configuration values for fairness-based model evaluation
+    """
+    train_config: TrainConfig
+    """Configuration used when training models"""
+    prop: str
+    """Which attribute to use as 'group' in analyses"""
+    value_min: float = 0.0
+    """Distribution from which data is drawn for attr=0"""
+    value_max: float = 1.0
+    """Distribution from which data is drawn for attr=1"""
+    batch_size: int = 256
+    """Batch size to use for loaders when generating predictions"""
+    num_models: Optional[int] = 250
+    """Number of victim models (per distribution) to test on"""
+    on_cpu: Optional[bool] = False
+    """Keep models read on CPU?"""
+    preload: Optional[bool] = False
+    """Pre-load data while launching attack (faster, if memory available)?"""
+
+@dataclass
 class AttackConfig(Serializable):
     """
         Configuration values for attacks in general.
     """
     train_config: TrainConfig
-    """Configuratdion used when training models"""
+    """Configuration used when training models"""
     values: List
     """List of values (on property specified) to launch attack against. In regression, this the list of values to train on"""
     black_box:  Optional[BlackBoxAttackConfig] = None

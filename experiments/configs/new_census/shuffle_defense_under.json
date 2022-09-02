@@ -4,7 +4,7 @@
         "prop": "sex",
         "split": "victim",
         "squeeze": true,
-        "value": 0.4
+        "value": 0.2
     },
     "misc_config": {
         "shuffle_defense_config": {
