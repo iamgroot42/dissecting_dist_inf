@@ -302,15 +302,6 @@ class AffinityAttackConfig(Serializable):
 
 
 @dataclass
-class RegressionConfig(Serializable):
-    """
-        Configuration for regression-based attacks
-    """
-    additional_values_to_test: Optional[List] = None
-    """Values of property to use while testing in addition to ratios used to train"""
-
-
-@dataclass
 class ComparisonAttackConfig(Serializable):
     Start_epoch: int
     """Epoch to use for 'before'"""
