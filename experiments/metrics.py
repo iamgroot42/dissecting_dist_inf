@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
             for e in range(train_config.epochs):
                 model = models_vic[e][i-1]
-                vlosse, vacce = validate_epoch(
+                vloss1, vacc1 = validate_epoch(
                     loader2,
                     model, criterion,
                     verbose=True,
@@ -106,7 +106,7 @@ if __name__ == "__main__":
                     regression=train_config.regression,
                     multi_class=train_config.multi_class)
 
-                R_crosse, _ = validate_epoch(
+                _, vacc2 = validate_epoch(
                     loader1,
                     model, criterion,
                     verbose=False,
@@ -116,12 +116,12 @@ if __name__ == "__main__":
                     regression=train_config.regression,
                     multi_class=train_config.multi_class)
 
-                vloss.append(vlosse)
-                vacc.append(vacce)
-                R_cross.append(R_crosse)
+                vloss.append(vloss1)
+                vacc.append(vacc1)
+                R_cross.append(vacc1-vacc2)
 
-            R_cross = np.array(R_cross) - np.array(vloss)
-            logger.add_result(ratio, vloss, vacc, R_cross = list(R_cross))
+            
+            logger.add_result(ratio, loss=vloss,acc=vacc,R_cross=R_cross)
 
     # Save logger
     logger.save()

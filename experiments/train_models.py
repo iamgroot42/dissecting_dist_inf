@@ -1,7 +1,8 @@
 # Handle multiple workers
+from traceback import print_list
 import torch.multiprocessing
 torch.multiprocessing.set_sharing_strategy('file_system')
-
+import numpy as np
 from distribution_inference.config.core import DPTrainingConfig, MiscTrainConfig
 from distribution_inference.defenses.active.augment import AugmentDefense
 from simple_parsing import ArgumentParser
@@ -17,6 +18,7 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 EXTRA = False  #True
 if __name__ == "__main__":
+    print("started")
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path)
@@ -46,13 +48,7 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(train_config)
 
-    # Define logger
-    exp_name = "_".join([config.data_config.split,
-                        config.data_config.prop,
-                        config.model_arch,
-                        str(config.data_config.value),
-                        str(config.offset)])
-    logger = TrainingResult(exp_name, train_config)
+    
 
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
@@ -60,7 +56,15 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(
         data_config.name)(train_config.save_every_epoch)
+    exp_name = "_".join([config.data_config.split,
+                        config.data_config.prop,
+                        config.model_arch if config.model_arch else ds_info.default_model,
+                        str(config.data_config.value),
+                        str(config.offset)])
+    # Define logger
     
+    logger = TrainingResult(exp_name, train_config)
+   
     # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
     shuffle_defense = None
     if train_config.misc_config is not None:
@@ -96,19 +100,25 @@ if __name__ == "__main__":
     # Train models
     for i in range(1, train_config.num_models + 1):
         # Skip training model if it already exists
+        """"
         if not train_config.save_every_epoch:
             save_path = ds.get_save_path(train_config, None)
             if ds.check_if_exists(save_path, str(i + train_config.offset)):
                 print(
                     f"Model {i + train_config.offset} already exists. Skipping training.")
                 continue
-
+        """
         print("Training classifier %d / %d" % (i, train_config.num_models))
 
         # Get data loaders
         train_loader, val_loader = ds.get_loaders(
             batch_size=train_config.batch_size)
-
+        plist = []
+        for t in train_loader:
+            _,_,prop_l = t
+            for k in prop_l:
+                plist.append(k)
+        print(np.mean(plist))
         # Get model
         if dp_config is None:
             model = ds_info.get_model(model_arch=train_config.model_arch)
@@ -147,7 +157,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            save_model(model, save_path)
+            #save_model(model, save_path)
 
             # Save logger
             logger.save()

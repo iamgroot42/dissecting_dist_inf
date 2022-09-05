@@ -14,6 +14,13 @@
                 "sample_type": "over"
             }
         },
+        "misc_config": {
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "data_level": true,
+                "sample_type": "over"
+            }
+        },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0

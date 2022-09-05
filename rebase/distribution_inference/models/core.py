@@ -7,8 +7,9 @@ from sklearn.metrics import log_loss
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier as KN
-from sklearn.linear_model import LogisticRegression
 from sklearn.gaussian_process import GaussianProcessClassifier as GPC
+from sklearn.naive_bayes import MultinomialNB as MNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 import torch.nn.functional as F
 from dgl.nn.pytorch import GraphConv
@@ -77,7 +78,7 @@ class RandomForest(BaseModel):
     def __init__(self,
                  max_depth: int = None,
                  n_estimators: int = 100,
-                 n_jobs: int = None,
+                 n_jobs: int = -1,
                  min_samples_leaf: int = 1):
         super().__init__(is_sklearn_model=True)
         self.model = RandomForestClassifier(
@@ -126,6 +127,32 @@ class GaussianProcessClassifier(BaseModel):
             max_iter_predict=max_iter_predict,
             n_jobs=n_jobs)
 
+class KNeighborsClassifier(BaseModel):
+    def __init__(self,
+                n_neighbors: int = 5,
+                leaf_size:int=30,
+                p:int=2,
+                n_jobs:int = -1
+                ):
+        super().__init__(is_sklearn_model=True)
+        self.model = KN(n_neighbors=n_neighbors,leaf_size=leaf_size,p=p,n_jobs=n_jobs)
+
+class GaussianProcessClassifier(BaseModel):
+    def __init__(self,
+                n_restarts_optimizer: int = 0,
+                max_iter_predict:int=100,
+                n_jobs:int = -1
+                ):
+        super().__init__(is_sklearn_model=True)
+        self.model = GPC(n_restarts_optimizer=n_restarts_optimizer,
+        max_iter_predict=max_iter_predict,n_jobs=n_jobs)
+
+class MultinomialNB(BaseModel):
+    def __init__(self,
+                alpha:float = 1.0
+                ):
+        super().__init__(is_sklearn_model=True)
+        self.model = MNB(alpha=alpha)
 
 class InceptionModel(BaseModel):
     def __init__(self,

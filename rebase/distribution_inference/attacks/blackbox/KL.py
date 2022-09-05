@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from typing import List, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution,PredictionsOnOneDistribution
 
 
 class KLAttack(Attack):

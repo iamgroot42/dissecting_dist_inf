@@ -283,6 +283,8 @@ class CustomDatasetWrapper:
                          shuffle: bool = True,
                          model_arch: str = None,
                          custom_models_path: str = None) -> List:
+        if model_arch==None or model_arch=="None":
+            model_arch=self.info_object.default_model
         # Get path to load models
         if custom_models_path:
             folder_path = custom_models_path
@@ -312,6 +314,8 @@ class CustomDatasetWrapper:
             state across iterations of being trained (sorted in epoch order)
         """
         # Get path to load models
+        if model_arch==None:
+            model_arch=self.info_object.default_model
         model_paths, folder_path, total_models = self._get_model_paths(
             train_config,
             n_models=n_models,
