@@ -69,6 +69,7 @@ class KLAttack(Attack):
         # No concept of "choice" (are we in the Matrix :P)
         choice_information = (None, None)
         return [(acc, preds), (None, None), choice_information]
+
     def _get_kl_preds(self, ka, kb, kc1, kc2):
         # Apply sigmoid to ones that are not already sigmoided
         ka_, kb_ = ka, kb
