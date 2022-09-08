@@ -190,7 +190,19 @@ class CustomDatasetWrapper:
                 raise ValueError("Defense returned null mask")
             self.mask_data_selection(mask)
             self.set_augment_process_fn(process_fn)
-                    
+            temp_test_loader = DataLoader(
+                self.ds_val,
+                batch_size=batch_size,
+                shuffle=False,
+                num_workers=10,
+                worker_init_fn=utils.worker_init_fn,
+                #pin_memory=True,
+                prefetch_factor=prefetch_factor
+            )
+            # Testing shuffling on val data as well
+            mask, process_fn = self.shuffle_defense.initialize(temp_test_loader)
+            self.ds_val.mask_data_selection(mask)
+            self.ds_val.set_augment_process_fn(process_fn)
 
         # This function should return new loaders at every call
         train_loader = DataLoader(
