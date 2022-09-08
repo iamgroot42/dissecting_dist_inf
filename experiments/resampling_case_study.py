@@ -14,7 +14,7 @@ from distribution_inference.datasets.utils import get_dataset_wrapper, get_datas
 from distribution_inference.config import DatasetConfig, FairnessEvalConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.attacks.blackbox.utils import get_preds
-from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -46,16 +46,15 @@ if __name__ == "__main__":
     # Get dataset info object
     ds_info = get_dataset_information(model_data_config.name)()
 
-    # Withoout-SHuffle model_config
-    train_config_wo_shuffle = replace(train_config)
-    train_config_wo_shuffle.misc_config = None
+    # Withoout-Shuffle model_config
+    train_config_wo_shuffle = replace(train_config, misc_config=None)
     
     # Create config objects for data-loading
     data_config: DatasetConfig = replace(model_data_config)
     ds_baseline = ds_wrapper_class(
         data_config, skip_data=False)
     train_0_config = replace(train_config_wo_shuffle)
-    train_0_config.data_config.prop="0.5"
+    train_0_config.data_config = replace(train_0_config.data_config, prop=0.5)
     # Check if models are graph-related
     are_graph_models = ds_baseline.is_graph_data
     if are_graph_models:

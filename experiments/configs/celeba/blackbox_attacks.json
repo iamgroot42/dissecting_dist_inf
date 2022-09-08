@@ -2,8 +2,8 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Male",
-            "classify": "Smiling",
+            "prop": "Young",
+            "classify": "Male",
             "split": "adv",
             "value": 0.5,
             "cwise_samples": 1e6,
@@ -32,9 +32,9 @@
         "num_adv_models": 50,
         "batch_size": 512,
         "attack_type": [
+            "KL",
             "loss_and_threshold",
-            "threshold_perpoint",
-            "KL"
+            "threshold_perpoint"
         ],
         "ratios": [
             0.05,
@@ -45,7 +45,8 @@
             0.5,
             1.0
         ],
-        "preload": true
+        "preload": true,
+        "kl_frac": 0.8
     },
-    "num_victim_models": 500
+    "num_victim_models": 250
 }

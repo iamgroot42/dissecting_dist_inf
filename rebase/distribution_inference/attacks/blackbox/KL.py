@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from typing import List, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution,PredictionsOnOneDistribution
 
 
 class KLAttack(Attack):
@@ -30,6 +30,7 @@ class KLAttack(Attack):
                 accs.append(result[0][0])
                 preds.append(result[0][1])
             return [(accs, preds), (None, None), (None,None)]
+
     def attack_not_epoch(self,
                preds_adv: PredictionsOnDistributions,
                preds_vic: PredictionsOnDistributions,
@@ -68,6 +69,7 @@ class KLAttack(Attack):
         # No concept of "choice" (are we in the Matrix :P)
         choice_information = (None, None)
         return [(acc, preds), (None, None), choice_information]
+
     def _get_kl_preds(self, ka, kb, kc1, kc2):
         # Apply sigmoid to ones that are not already sigmoided
         ka_, kb_ = ka, kb

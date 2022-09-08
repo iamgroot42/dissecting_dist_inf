@@ -53,5 +53,5 @@
         ],
         "preload": true
     },
-    "num_victim_models": 500
+    "num_victim_models": 250
 }

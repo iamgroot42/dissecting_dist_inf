@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from typing import List, Callable
 
-from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions,PredictionsOnOneDistribution
+from distribution_inference.attacks.blackbox.core import Attack, PredictionsOnDistributions, PredictionsOnOneDistribution
 
 
 class label_only_KLAttack(Attack):
@@ -19,39 +19,43 @@ class label_only_KLAttack(Attack):
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
         assert not self.config.multi_class, "No label only attack for multi class"
         if not epochwise_version:
-            return self.attack_not_epoch(preds_adv,preds_vic,ground_truth,calc_acc,not_using_logits)
+            return self.attack_not_epoch(preds_adv, preds_vic, ground_truth, calc_acc, not_using_logits)
         else:
             preds_v = [PredictionsOnDistributions(
-                PredictionsOnOneDistribution(preds_vic.preds_on_distr_1.preds_property_1[i],preds_vic.preds_on_distr_1.preds_property_2[i]),
-                PredictionsOnOneDistribution(preds_vic.preds_on_distr_2.preds_property_1[i],preds_vic.preds_on_distr_2.preds_property_2[i])
+                PredictionsOnOneDistribution(
+                    preds_vic.preds_on_distr_1.preds_property_1[i], preds_vic.preds_on_distr_1.preds_property_2[i]),
+                PredictionsOnOneDistribution(
+                    preds_vic.preds_on_distr_2.preds_property_1[i], preds_vic.preds_on_distr_2.preds_property_2[i])
             ) for i in range(len(preds_vic.preds_on_distr_2.preds_property_1))]
-            accs,preds=[],[]
+            accs, preds = [], []
             for x in preds_v:
-                result = self.attack_not_epoch(preds_adv,x,ground_truth,calc_acc,not_using_logits)
+                result = self.attack_not_epoch(
+                    preds_adv, x, ground_truth, calc_acc, not_using_logits)
                 accs.append(result[0][0])
                 preds.append(result[0][1])
-            return [(accs, preds), (None, None), (None,None)]
+            return [(accs, preds), (None, None), (None, None)]
+
     def attack_not_epoch(self,
-               preds_adv: PredictionsOnDistributions,
-               preds_vic: PredictionsOnDistributions,
-               ground_truth: Tuple[List, List] = None,
-               calc_acc: Callable = None,
-               not_using_logits: bool = False):
-        
+                         preds_adv: PredictionsOnDistributions,
+                         preds_vic: PredictionsOnDistributions,
+                         ground_truth: Tuple[List, List] = None,
+                         calc_acc: Callable = None,
+                         not_using_logits: bool = False):
+
         self.not_using_logits = not_using_logits
         thre = 0.5 if not_using_logits else 0
         # Get values using data from first distribution
         preds_1_first, preds_1_second = self._get_kl_preds(
-            1.*(preds_adv.preds_on_distr_1.preds_property_1>=thre),
-            1.*(preds_adv.preds_on_distr_1.preds_property_2>=thre),
-            1.*(preds_vic.preds_on_distr_1.preds_property_1>=thre),
-            1.*(preds_vic.preds_on_distr_1.preds_property_2>=thre))
+            1.*(preds_adv.preds_on_distr_1.preds_property_1 >= thre),
+            1.*(preds_adv.preds_on_distr_1.preds_property_2 >= thre),
+            1.*(preds_vic.preds_on_distr_1.preds_property_1 >= thre),
+            1.*(preds_vic.preds_on_distr_1.preds_property_2 >= thre))
         # Get values using data from second distribution
         preds_2_first, preds_2_second = self._get_kl_preds(
-            1.*(preds_adv.preds_on_distr_2.preds_property_1>=thre),
-            1.*(preds_adv.preds_on_distr_2.preds_property_2>=thre),
-            1.*(preds_vic.preds_on_distr_2.preds_property_1>=thre),
-            1.*(preds_vic.preds_on_distr_2.preds_property_2>=thre))
+            1.*(preds_adv.preds_on_distr_2.preds_property_1 >= thre),
+            1.*(preds_adv.preds_on_distr_2.preds_property_2 >= thre),
+            1.*(preds_vic.preds_on_distr_2.preds_property_1 >= thre),
+            1.*(preds_vic.preds_on_distr_2.preds_property_2 >= thre))
 
         # Combine data
         preds_first = np.concatenate((preds_1_first, preds_2_first), 1)
@@ -62,13 +66,15 @@ class label_only_KLAttack(Attack):
             preds -= np.min(preds, 0)
             preds /= np.max(preds, 0)
 
-        preds = np.mean(preds, 1)        
-        gt = np.concatenate((np.zeros(preds_first.shape[0]), np.ones(preds_second.shape[0])))
+        preds = np.mean(preds, 1)
+        gt = np.concatenate(
+            (np.zeros(preds_first.shape[0]), np.ones(preds_second.shape[0])))
         acc = 100 * np.mean((preds >= 0.5) == gt)
 
         # No concept of "choice" (are we in the Matrix :P)
         choice_information = (None, None)
         return [(acc, preds), (None, None), choice_information]
+
     def _get_kl_preds(self, ka, kb, kc1, kc2):
         # Convert 0/1 predictions to (0+eps, 1-eps)
         small_eps = 1e-2
@@ -81,9 +87,9 @@ class label_only_KLAttack(Attack):
         kb_[kb_ == 1] = 1 - small_eps
         kc1_[kc1_ == 1] = 1 - small_eps
         kc2_[kc2_ == 1] = 1 - small_eps
-        
+
         # Consider all unique pairs of models
-        xx, yy = np.triu_indices(ka.shape[0], k=1)
+        xx, yy = np.triu_indices(ka_.shape[0], k=1)
         # Randomly pick pairs of models
         random_pick = np.random.permutation(
             xx.shape[0])[:int(self.config.kl_frac * xx.shape[0])]
@@ -92,16 +98,16 @@ class label_only_KLAttack(Attack):
         # Compare the KL divergence between the two distributions
         # For both sets of victim models
         KL_vals_1_a = np.array([KL(ka_, x,
-            multi_class=self.config.multi_class) for x in kc1_])
+                                   multi_class=self.config.multi_class) for x in kc1_])
         self._check(KL_vals_1_a)
         KL_vals_1_b = np.array(
             [KL(kb_, x, multi_class=self.config.multi_class) for x in kc1_])
         self._check(KL_vals_1_b)
         KL_vals_2_a = np.array([KL(ka_, x,
-            multi_class=self.config.multi_class) for x in kc2_])
+                                   multi_class=self.config.multi_class) for x in kc2_])
         self._check(KL_vals_2_a)
         KL_vals_2_b = np.array([KL(kb_, x,
-            multi_class=self.config.multi_class) for x in kc2_])
+                                   multi_class=self.config.multi_class) for x in kc2_])
         self._check(KL_vals_2_b)
 
         preds_first = self._pairwise_compare(
@@ -111,7 +117,7 @@ class label_only_KLAttack(Attack):
 
         # Compare KL values
         return preds_first, preds_second
-    
+
     def _check(self, x):
         if np.sum(np.isinf(x)) > 0 or np.sum(np.isnan(x)) > 0:
             raise ValueError("Invalid values found!")
@@ -126,6 +132,8 @@ class label_only_KLAttack(Attack):
             pairwise_comparisons = (x_ - y_)
         preds = np.array([z[xx, yy] for z in pairwise_comparisons])
         return preds
+
+
 """
     def attack(self,
                preds_adv: PredictionsOnDistributions,
@@ -176,6 +184,7 @@ class label_only_KLAttack(Attack):
         return [(acc, preds), (None, None), choice_information]
     """
 
+
 def sigmoid(x):
     exp = np.exp(x)
     return exp / (1 + exp)
@@ -186,7 +195,7 @@ def KL(x, y, multi_class: bool = False):
     x_ = np.clip(x, small_eps, 1 - small_eps)
     y_ = np.clip(y, small_eps, 1 - small_eps)
     if multi_class:
-        return np.mean(np.sum(x_ * (np.log(x_) - np.log(y_)),axis=2),axis=1)
+        return np.mean(np.sum(x_ * (np.log(x_) - np.log(y_)), axis=2), axis=1)
     else:
         # Strategy 1: Add (or subtract) small noise to avoid NaNs/INFs
         # Get preds for other class as well

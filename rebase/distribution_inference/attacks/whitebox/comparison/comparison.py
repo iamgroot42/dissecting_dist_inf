@@ -18,6 +18,7 @@ from distribution_inference.attacks.blackbox.core import  PredictionsOnDistribut
 from distribution_inference.attacks.blackbox.KL import sigmoid, KL
 from distribution_inference.training.utils import load_model
 
+
 class ComparisonAttack:
     def __init__(self,
                 t_config: TrainConfig,
@@ -26,18 +27,19 @@ class ComparisonAttack:
                 save_m :bool=False,
                 name:str=None
                 ):
-        self.t_config = replace(t_config)
-        self.t_config.save_every_epoch = False
+        self.t_config = replace(t_config,
+                                save_every_epoch=False,
+                                epochs=self.wb_config.comparison_config.End_epoch-self.wb_config.comparison_config.Start_epoch)
         self.name = name
         assert wb_config.comparison_config, "No comparison config"
         self.wb_config = replace(wb_config)
-        self.t_config.epochs=self.wb_config.comparison_config.End_epoch-self.wb_config.comparison_config.Start_epoch
         self.info_object=info
         self.trial=None
         self.v_r=None
         self.save=save_m
         self.ratio=None
         self.model_num = 0
+
     def train(self,vic_models,ratio,v_r,trial:int,model_num:int):
         dp_config = None
         self.model_num=model_num
@@ -87,11 +89,13 @@ class ComparisonAttack:
             
                 save_model(model, save_path)
         return models
+
     def set_val(self,ratio,v_r,trial:int,model_num:int):
         self.trial=trial
         self.v_r=v_r
         self.ratio = ratio
         self.model_num = model_num
+
     def _model_save_path(self, train_config: TrainConfig, model_arch: str) -> str:
         base_models_dir = self.info_object.base_models_dir
         dp_config = None
@@ -143,15 +147,18 @@ class ComparisonAttack:
             os.makedirs(save_path)
 
         return save_path
+
     def _get_save_path(self, train_config: TrainConfig, name: str) -> str:
         prefix = self._model_save_path(train_config, model_arch=train_config.model_arch)
         if name is None:
             return prefix
         return os.path.join(prefix, name)
+
     def load_model(self, path: str, on_cpu: bool = False, model_arch: str = None) -> nn.Module:
         info_object = self.info_object
         model = info_object.get_model(cpu=on_cpu, model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
+
     def _get_model_paths(self,
                          train_config: TrainConfig,
                          n_models: int = None,
@@ -170,6 +177,7 @@ class ComparisonAttack:
         total_models = len(model_paths) if n_models is None else n_models
         log(f"Available models: {total_models}")
         return model_paths, folder_path, total_models
+    
     def get_models(self,
                    train_config: TrainConfig,
                    n_models: int = None,
@@ -229,6 +237,7 @@ class ComparisonAttack:
             return np.array(models, dtype='object'), mp
         else:
             return np.array(models, dtype='object')
+    
     def _attack_per_dis(self,
                 preds_adv1:PredictionsOnOneDistribution,
                 preds_adv2:PredictionsOnOneDistribution,

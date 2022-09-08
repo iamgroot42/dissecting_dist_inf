@@ -15,7 +15,7 @@
         }
     },
     "epochs": 10,
-    "offset": 1000,
+    "offset": 0,
     "learning_rate": 1e-4,
     "batch_size": 128,
     "weight_decay": 1e-3,

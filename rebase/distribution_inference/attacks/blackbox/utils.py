@@ -21,6 +21,7 @@ from distribution_inference.attacks.blackbox.generative import GenerativeAttack
 from distribution_inference.attacks.blackbox.binary_perpoint import BinaryPerPointThresholdAttack
 from distribution_inference.attacks.blackbox.KL_regression import KLRegression
 from distribution_inference.attacks.blackbox.label_KL import label_only_KLAttack
+
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
     "loss_and_threshold": LossAndThresholdAttack,
@@ -34,7 +35,7 @@ ATTACK_MAPPING = {
     "generative":GenerativeAttack,
     "binary_perpoint": BinaryPerPointThresholdAttack,
     "KL_regression": KLRegression,
-    "label_KL":label_only_KLAttack
+    "label_KL": label_only_KLAttack
 }
 
 
@@ -335,8 +336,7 @@ def get_vic_adv_preds_on_distr(
 
     # Check if models are graph-related
     are_graph_models = False
-    
-    if  epochwise_version:
+    if epochwise_version:
         if models_vic[0][0][0].is_graph_model:
             are_graph_models = True
     else:

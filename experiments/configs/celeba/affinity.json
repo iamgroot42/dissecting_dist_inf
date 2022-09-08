@@ -14,8 +14,8 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Young",
-            "classify": "Male",
+            "prop": "Male",
+            "classify": "Smiling",
             "split": "adv",
             "value": 0.5,
             "processed_variant": false
@@ -24,7 +24,7 @@
         "learning_rate": 0,
         "batch_size": 0
     },
-    "num_victim_models": 500,
+    "num_victim_models": 250,
     "tries": 3,
     "values": [
         0.0,

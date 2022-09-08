@@ -321,7 +321,6 @@ class CelebACustomBinary(base.CustomDataset):
     def mask_data_selection(self, mask):
         self.mask = mask
 
-
     def __getitem__(self, idx):
         should_augment = False
         if self.process_fn is not None:

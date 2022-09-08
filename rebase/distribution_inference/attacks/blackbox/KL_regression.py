@@ -1,7 +1,7 @@
-from distribution_inference.attacks.blackbox.KL import KLAttack,sigmoid,KL
-from distribution_inference.attacks.blackbox.core import Attack
-from typing import List, Callable,Tuple
+from distribution_inference.attacks.blackbox.KL import KLAttack, sigmoid, KL
+from typing import List, Callable, Tuple
 import numpy as np
+
 
 class KLRegression(KLAttack):
     def attack(self,
@@ -18,26 +18,27 @@ class KLRegression(KLAttack):
             epochwise_version and self.config.multi2), "No implementation for both epochwise and multi model"
         assert self.config.regression_config is not None, "Only for regression"
         self.not_using_logits = not_using_logits
-        p_c = [] 
+        p_c = []
         #nested for loop to test all combinations
         for pv in preds_vic:
             p_across = []
             for pa in preds_adv:
-                preds =  self._get_kl_preds(pa,pv)
+                preds = self._get_kl_preds(pa, pv)
                 #print(preds.shape)
                 p_across.append(preds)
             p_across = np.array(p_across)
-            p = np.divide(np.sum([i*x for i,x in zip(labels,p_across)],axis=0),
-            np.sum(p_across,axis=0)
-            )
+            p = np.divide(np.sum([i*x for i, x in zip(labels, p_across)], axis=0),
+                          np.sum(p_across, axis=0)
+                          )
             p_c.append(p)
         gt = np.array([[i]*preds_vic[0].shape[0] for i in labels])
 
-        return np.square(p_c-gt).mean(),np.mean(np.square(p_c-gt),axis=1)
-    def _get_kl_preds(self, ka,kc1):
-        ka_,kc1_ = ka,kc1
+        return np.square(p_c-gt).mean(), np.mean(np.square(p_c-gt), axis=1)
+
+    def _get_kl_preds(self, ka, kc1):
+        ka_, kc1_ = ka, kc1
         if not self.not_using_logits:
             ka_, kc1_ = sigmoid(ka), sigmoid(kc1)
         KL_vals_1_a = np.array([np.mean(KL(ka_, x,
-            multi_class=self.config.multi_class),axis=0) for x in kc1_])
+                                           multi_class=self.config.multi_class), axis=0) for x in kc1_])
         return KL_vals_1_a

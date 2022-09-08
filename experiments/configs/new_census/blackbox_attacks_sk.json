@@ -17,16 +17,9 @@
         "num_adv_models": 50,
         "batch_size": 30000,
         "attack_type": [
-            "KL",
-            "threshold_perpoint"
+            "KL"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
         "preload": true
@@ -43,7 +36,7 @@
         0.9,
         1.0
     ],
-    "num_victim_models": 10,
-    "adv_model_arch": "mlp3",
-    "victim_model_arch": "lr"
+    "num_victim_models": 250,
+    "adv_model_arch": "lr",
+    "victim_model_arch": "mlp2"
 }

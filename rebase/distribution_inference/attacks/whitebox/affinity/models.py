@@ -117,8 +117,7 @@ class WeightAndActMeta(nn.Module):
         self.num_layers = num_layers
 
         # Use version of config where only latent is used
-        config = replace(config)
-        config.use_latent = True
+        config = replace(config, use_latent=True)
 
         # Affinity meta-classifier
         self.act_clf = AffinityMetaClassifier(

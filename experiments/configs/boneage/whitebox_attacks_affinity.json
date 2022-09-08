@@ -3,23 +3,19 @@
         "attack": "affinity",
         "epochs": 100,
         "batch_size": 500,
-        "train_sample": 30,
-        "val_sample": 10,
         "affinity_config": {
             "num_final": 16,
-            "frac_retain_pairs": 0.2,
+            "frac_retain_pairs": 0.20,
             "num_samples_use": 50,
-            "shared_layerwise_params": true,
-            "better_retain_pair": true,
-            "optimal_data_identity": true,
-            "model_sample_for_optimal_data_identity": 5
-        }
+            "shared_layerwise_params": true
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {
             "name": "boneage",
-            "prop": "age",
-            "classify": "gender",
+            "prop": "gender",
+            "classify": "age",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
@@ -38,6 +34,5 @@
         0.8
     ],
     "on_cpu": true,
-    "num_victim_models": 5,
-    "num_total_adv_models": 60
+    "num_victim_models": 500
 }

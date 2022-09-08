@@ -5,7 +5,14 @@
             "prop": "sex",
             "split": "victim",
             "squeeze": true,
-            "value": 0.9
+            "value": 0.1
+        },
+        "misc_config": {
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "data_level": true,
+                "sample_type": "over"
+            }
         },
         "misc_config": {
             "shuffle_defense_config": {

@@ -1,0 +1,60 @@
+{
+    "name": "victim_High_Cheekbones_alexnet_0.1_0",
+    "start time": "2022-08-23 16:08:18.577380",
+    "train_config": {
+        "data_config": {
+            "name": "celeba",
+            "prop": "High_Cheekbones",
+            "value": 0.1,
+            "split": "victim",
+            "drop_senstive_cols": false,
+            "scale": 1.0,
+            "augment": false,
+            "classify": "Mouth_Slightly_Open",
+            "cwise_samples": null,
+            "squeeze": false,
+            "processed_variant": false,
+            "prune": 0
+        },
+        "epochs": 30,
+        "learning_rate": 2e-05,
+        "batch_size": 64,
+        "misc_config": {
+            "adv_config": null,
+            "dp_config": null,
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "sample_type": "under",
+                "data_level": true,
+                "augment": false,
+                "use_mixup": false
+            }
+        },
+        "lr_scheduler": null,
+        "verbose": true,
+        "num_models": 4,
+        "offset": 0,
+        "weight_decay": 0.001,
+        "get_best": true,
+        "cpu": false,
+        "expect_extra": true,
+        "save_every_epoch": false,
+        "extra_info": null,
+        "regression": false,
+        "multi_class": false,
+        "label_noise": 0,
+        "model_arch": "alexnet",
+        "parallel": false
+    },
+    "log": {
+        "0.1": {
+            "loss": [
+                0.4802623896839771
+            ],
+            "acc": [
+                0.7726063829787234
+            ]
+        }
+    },
+    "save time": "2022-08-23 16:17:13.030845"
+}

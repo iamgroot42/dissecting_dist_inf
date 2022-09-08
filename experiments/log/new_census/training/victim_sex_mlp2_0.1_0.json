@@ -1,0 +1,98 @@
+{
+    "name": "victim_sex_mlp2_0.1_0",
+    "start time": "2022-09-01 20:03:03.467798",
+    "train_config": {
+        "data_config": {
+            "name": "new_census",
+            "prop": "sex",
+            "value": 0.1,
+            "split": "victim",
+            "drop_senstive_cols": false,
+            "scale": 1.0,
+            "augment": false,
+            "classify": null,
+            "cwise_samples": null,
+            "squeeze": true,
+            "processed_variant": true,
+            "prune": 0
+        },
+        "epochs": 20,
+        "learning_rate": 0.001,
+        "batch_size": 200,
+        "misc_config": {
+            "adv_config": null,
+            "dp_config": null,
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "sample_type": "under",
+                "data_level": true,
+                "augment": false,
+                "use_mixup": false
+            }
+        },
+        "lr_scheduler": null,
+        "verbose": false,
+        "num_models": 20,
+        "offset": 0,
+        "weight_decay": 0.0001,
+        "get_best": true,
+        "cpu": false,
+        "expect_extra": true,
+        "save_every_epoch": false,
+        "extra_info": null,
+        "regression": false,
+        "multi_class": false,
+        "label_noise": 0,
+        "model_arch": "mlp2",
+        "parallel": false
+    },
+    "log": {
+        "0.1": {
+            "loss": [
+                0.4878070792144312,
+                0.48970357743267234,
+                0.4856734104984475,
+                0.489169321050205,
+                0.49117299752255367,
+                0.4878528286473023,
+                0.49098207611419165,
+                0.4922265103671341,
+                0.4857270018076797,
+                0.4853577061427687,
+                0.4870300408935946,
+                0.4848186475961278,
+                0.4871258420176087,
+                0.4907678712362026,
+                0.4856972452486908,
+                0.4854787994628172,
+                0.49253053769905697,
+                0.5001366490100717,
+                0.4847233365270383,
+                0.4924273868734368
+            ],
+            "acc": [
+                0.7656407872307458,
+                0.7658089260808925,
+                0.768168293816829,
+                0.7635270416860378,
+                0.7650294436696111,
+                0.7660351774368509,
+                0.7648752518208582,
+                0.7633503796683707,
+                0.7660483496048347,
+                0.7681721679838834,
+                0.7645645436231208,
+                0.7667371765070512,
+                0.7666519448318612,
+                0.7670935998760265,
+                0.7658724624205799,
+                0.7669688516968849,
+                0.7622098248876492,
+                0.7613381373004801,
+                0.7652309003564225,
+                0.7626003409267009
+            ]
+        }
+    },
+    "save time": "2022-09-01 20:16:50.774501"
+}

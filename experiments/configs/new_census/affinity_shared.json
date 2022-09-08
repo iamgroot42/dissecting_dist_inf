@@ -8,21 +8,16 @@
             "frac_retain_pairs": 0.2,
             "num_samples_use": 50,
             "shared_layerwise_params": true
-        }
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "sex",
+            "prop": "race",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
-        },
-        "misc_config": {
-            "shuffle_defense_config": {
-                "desired_value": 0.5,
-                "sample_ratio": 0.75
-            }
         },
         "epochs": 0,
         "learning_rate": 0,
@@ -30,6 +25,7 @@
     },
     "tries": 3,
     "values": [
+        0.0,
         0.1,
         0.2,
         0.3,
@@ -37,7 +33,8 @@
         0.6,
         0.7,
         0.8,
-        0.9
+        0.9,
+        1.0
     ],
     "num_victim_models": 500
 }

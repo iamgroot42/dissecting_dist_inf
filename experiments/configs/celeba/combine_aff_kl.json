@@ -14,7 +14,7 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Wavy_Hair",
+            "prop": "High_Cheekbones",
             "classify": "Mouth_Slightly_Open",
             "split": "adv",
             "value": 0.5,
@@ -49,9 +49,9 @@
         0.9,
         1.0
     ],
-    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/Wavy_Hair",
+    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/celeba/High_Cheekbones",
     "use_wb_latents": false,
-    "num_victim_models": 500,
+    "num_victim_models": 250,
     "num_total_adv_models": 500,
     "num_for_meta": 100
 }
