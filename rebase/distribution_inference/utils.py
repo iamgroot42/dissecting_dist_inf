@@ -70,7 +70,8 @@ def get_save_path():
     """
         Path where results/trained meta-models are stored
     """
-    return "./log"
+    # return "./log"
+    return "./log_new"
 
 
 def get_arxiv_node_params_mapping():

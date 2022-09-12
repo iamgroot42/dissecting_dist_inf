@@ -22,7 +22,8 @@ class DatasetInformation(base.DatasetInformation):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Celeb-A",
                          data_path="celeba",
-                         models_path="models_celeba/75_25",
+                         #  models_path="models_celeba/75_25",
+                         models_path="models_celeba/75_25_nobalancing",
                          properties=["Male", "Young",
                                      'Wavy_Hair', 'High_Cheekbones'],
                          values={"Male": ratios, "Young": ratios,
@@ -47,7 +48,7 @@ class DatasetInformation(base.DatasetInformation):
     def get_model(self, parallel: bool = False, fake_relu: bool = False,
                   latent_focus=None, cpu: bool = False,
                   model_arch: str = None) -> nn.Module:
-        if model_arch is None or model_arch=="None":
+        if model_arch is None or model_arch == "None":
             model_arch = self.default_model
 
         if model_arch == "inception":
@@ -281,7 +282,7 @@ class CelebACustomBinary(base.CustomDataset):
             for x in idx:
                 self.attr_dict[self.filenames[x]][classify] = 1 - \
                     self.attr_dict[self.filenames[x]][classify]
-        
+
         self.num_samples = len(self.filenames)
 
     def _create_df(self, attr_dict, filenames):
@@ -296,7 +297,7 @@ class CelebACustomBinary(base.CustomDataset):
 
     def _ratio_sample_data(self,
                            filenames, attr_dict, label_name,
-                           prop, ratio, cwise_sample):
+                           prop, ratio, subsample_size):
         # Make DF
         df = self._create_df(attr_dict, filenames)
 
@@ -305,8 +306,13 @@ class CelebACustomBinary(base.CustomDataset):
 
         parsed_df = utils.heuristic(
             df, condition, ratio,
-            cwise_sample, class_imbalance=1.0,
-            n_tries=100, class_col=label_name,
+            # cwise_sample,
+            cwise_sample=None,
+            class_imbalance=None,
+            # class_imbalance=1.0,
+            tot_samples=subsample_size,
+            n_tries=100,
+            class_col=label_name,
             verbose=True)
         # Extract filenames from parsed DF
         return parsed_df["filename"].tolist()
@@ -335,11 +341,12 @@ class CelebACustomBinary(base.CustomDataset):
             idx_ = idx if self.mask is None else self.mask[idx]
 
         if self.using_extra_data and self.mask is not None:
-            raise ValueError("Cannot have mask and augmented data ") 
+            raise ValueError("Cannot have mask and augmented data ")
 
         if self.features:
             if self.using_extra_data:
-                raise ValueError("Pre-extracted features not supported with augmententation-based data shuffling")
+                raise ValueError(
+                    "Pre-extracted features not supported with augmententation-based data shuffling")
             # Use extracted feature
             filename = self.filenames[idx_]
             x = self.features[filename]
@@ -434,33 +441,64 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             "splits", "75_25", self.split, "test.txt")
 
         # Define number of sub-samples
+        # prop_wise_subsample_sizes = {
+        #     "Smiling": {
+        #         "adv": {
+        #             "Male": (10000, 1000),
+        #             "Attractive": (10000, 1200)
+        #         },
+        #         "victim": {
+        #             "Male": (15000, 3000),
+        #             "Attractive": (30000, 4000)
+        #         }
+        #     },
+        #     "Male": {
+        #         "adv": {
+        #             "Young": (3000, 350)
+        #         },
+        #         "victim": {
+        #             "Young": (8000, 1400)
+        #         }
+        #     },
+        #     "Mouth_Slightly_Open": {
+        #         "adv": {
+        #             "Wavy_Hair": (6500, 500),
+        #             "High_Cheekbones": (8000, 800)
+        #         },
+        #         "victim": {
+        #             "Wavy_Hair": (17000, 2500),
+        #             "High_Cheekbones": (25000, 3000)
+        #         }
+        #     }
+        # }
+
+        # Above was based on class-biased re-sampling
+        # Below is not
         prop_wise_subsample_sizes = {
             "Smiling": {
                 "adv": {
-                    "Male": (10000, 1000),
-                    "Attractive": (10000, 1200)
+                    "Male": (16000, 1500)
                 },
                 "victim": {
-                    "Male": (15000, 3000),
-                    "Attractive": (30000, 4000)
+                    "Male": (45000, 4000)
                 }
             },
             "Male": {
                 "adv": {
-                    "Young": (3000, 350)
+                    "Young": (7000, 800)
                 },
                 "victim": {
-                    "Young": (8000, 1400)
+                    "Young": (22000, 2500)
                 }
             },
             "Mouth_Slightly_Open": {
                 "adv": {
-                    "Wavy_Hair": (6500, 500),
-                    "High_Cheekbones": (8000, 800)
+                    "Wavy_Hair": (12000, 1400),
+                    "High_Cheekbones": (14000, 1700)
                 },
                 "victim": {
-                    "Wavy_Hair": (17000, 2500),
-                    "High_Cheekbones": (25000, 3000)
+                    "Wavy_Hair": (30000, 4500),
+                    "High_Cheekbones": (45000, 5000)
                 }
             }
         }

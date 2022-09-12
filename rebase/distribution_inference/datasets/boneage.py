@@ -53,7 +53,8 @@ class DatasetInformation(base.DatasetInformation):
         ratios = [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
         super().__init__(name="RSNA-Boneage",
                          data_path="rsnabone/data",
-                         models_path="models_boneage",
+                        #  models_path="models_boneage",
+                         models_path="models_boneage_nobalancing",
                          properties=["gender", "age"],
                          values={"gender": ratios, "age": ratios},
                          supported_models=["densenet", "bonemodel", "svm"],
@@ -298,14 +299,26 @@ class BoneWrapper(base.CustomDatasetWrapper):
                          skip_data=skip_data,
                          label_noise=label_noise,
                          shuffle_defense=shuffle_defense)
+        # self.sample_sizes = {
+        #     "gender": {
+        #         "adv": (700, 200),
+        #         "victim": (1400, 400)
+        #     },
+        #     "age": {
+        #         "adv": (700, 200),
+        #         "victim": (1400, 400)
+        #     }
+        # }
+        # Above was based on class-biased re-sampling
+        # Below is not
         self.sample_sizes = {
             "gender": {
-                "adv": (700, 200),
-                "victim": (1400, 400)
+                "adv": (1400, 300),
+                "victim": (2800, 600)
             },
             "age": {
-                "adv": (700, 200),
-                "victim": (1400, 400)
+                "adv": (1400, 350),
+                "victim": (3000, 700)
             }
         }
         # Define DI object
@@ -346,12 +359,20 @@ class BoneWrapper(base.CustomDatasetWrapper):
 
         self.df_train = utils.heuristic(
             df_train, self._filter, self.ratio,
-            n_train, class_imbalance=1.0,
+            cwise_sample=None,
+            class_imbalance=None,
+            # n_train,
+            # class_imbalance=1.0,
+            tot_samples=n_train,
             class_col=self.classify,
             n_tries=300)
         self.df_val = utils.heuristic(
             df_val, self._filter, self.ratio,
-            n_test, class_imbalance=1.0,
+            cwise_sample=None,
+            class_imbalance=None,
+            # n_test,
+            # class_imbalance=1.0,
+            tot_samples=n_test,
             class_col=self.classify,
             n_tries=300)
 
