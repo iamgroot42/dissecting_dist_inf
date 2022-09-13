@@ -7,16 +7,16 @@
             "squeeze": true,
             "value": 0.5
         },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0,
         "misc_config": {
             "shuffle_defense_config": {
                 "desired_value": 0.5,
                 "data_level": true,
-                "sample_type": "under"
+                "sample_type": "over"
             }
-        },
-        "epochs": 0,
-        "learning_rate": 0,
-        "batch_size": 0
+        }
     },
     "tries": 5,
     "black_box": {
@@ -33,7 +33,14 @@
         "tune_final_threshold": false
     },
     "values": [
-        0.1
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9
     ],
-    "num_victim_models": 50
+    "num_victim_models": 250
 }

@@ -4,8 +4,11 @@ from simple_parsing import ArgumentParser
 import os
 import matplotlib
 import seaborn as sns
-import matplotlib.pyplot as plt
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb, to_rgb
+
+# Increase DPI
+import matplotlib as mpl
+mpl.rcParams['figure.dpi'] = 300
+
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 matplotlib.rcParams["font.family"] = "Times New Roman"

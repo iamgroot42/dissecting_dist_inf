@@ -5,8 +5,7 @@
             "prop": "Male",
             "classify": "Smiling",
             "split": "victim",
-            "value": 0.1,
-            "cwise_samples": 1e6,
+            "value": 0.8,
             "processed_variant": false
         },
         "epochs": 0,
@@ -16,13 +15,13 @@
             "shuffle_defense_config": {
                 "desired_value": 0.5,
                 "data_level": true,
-                "sample_type": "over"
+                "sample_type": "under"
             }
         }
     },
     "prop": "Male",
     "value_min": 0.0,
     "value_max": 1.0,
-    "num_models": 100,
+    "num_models": 50,
     "preload": true
 }
