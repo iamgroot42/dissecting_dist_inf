@@ -84,7 +84,7 @@ class ZhangAttack(Attack):
             victim_pred_use, victim_acc_use = preds_2, te_acc_2
 
         # No concept of "choice" (are we in the Matrix :P)
-        return [(victim_acc_use, victim_pred_use), (None, None), (None,None)]
+        return [(100*victim_acc_use, victim_pred_use), (None, None), (None,None)]
 
 
 def sigmoid(x):
