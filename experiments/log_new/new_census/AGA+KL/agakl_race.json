@@ -1,0 +1,222 @@
+{
+    "name": "agakl_race",
+    "start time": "2022-09-14 09:05:15.447311",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "new_census",
+                "prop": "race",
+                "value": 0.5,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": null,
+                "cwise_samples": null,
+                "squeeze": true,
+                "processed_variant": true,
+                "prune": 0
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false,
+            "label_noise": 0,
+            "model_arch": null,
+            "parallel": false
+        },
+        "values": [
+            0.0,
+            0.1,
+            0.2,
+            0.3,
+            0.4,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0
+        ],
+        "black_box": {
+            "attack_type": [
+                "KL"
+            ],
+            "ratios": [
+                1.0
+            ],
+            "batch_size": 30000,
+            "num_adv_models": 150,
+            "granularity": 0.05,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
+            "multi_class": false,
+            "save": false,
+            "tune_final_threshold": false,
+            "Start_epoch": 1,
+            "End_epoch": 20,
+            "relative_threshold": false,
+            "loss_variant": false,
+            "random_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false,
+            "regression_config": null
+        },
+        "white_box": {
+            "attack": "affinity",
+            "epochs": 120,
+            "batch_size": 1000,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 750,
+            "val_sample": 50,
+            "save": true,
+            "load": null,
+            "regression_config": null,
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "multi_class": false,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": null,
+            "affinity_config": {
+                "num_final": 16,
+                "only_latent": false,
+                "random_edge_selection": false,
+                "frac_retain_pairs": 0.2,
+                "better_retain_pair": false,
+                "optimal_data_identity": false,
+                "model_sample_for_optimal_data_identity": 50,
+                "num_samples_use": 50,
+                "layer_agnostic": false,
+                "inner_dims": [
+                    1024,
+                    64
+                ],
+                "shared_layerwise_params": true,
+                "sequential_variant": false,
+                "num_rnn_layers": 2,
+                "layers_to_target_conv": null,
+                "layers_to_target_fc": null,
+                "perpoint_based_selection": 0,
+                "flip_selection_logic": false
+            },
+            "comparison_config": null
+        },
+        "tries": 3,
+        "num_victim_models": 250,
+        "on_cpu": false,
+        "adv_misc_config": null,
+        "num_total_adv_models": 500,
+        "victim_local_attack": false,
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null,
+        "wb_path": "/u/as9rw/work/fnb/experiments/log_new/affinity/classification/new_census/race",
+        "save_bb": false,
+        "save_data": true,
+        "restore_data": null,
+        "use_wb_latents": false,
+        "num_for_meta": 100
+    },
+    "result": {
+        "AGA+KL": {
+            "0.0": {
+                "adv_acc": [
+                    100.0,
+                    100.0,
+                    100.0
+                ],
+                "victim_acc": [
+                    99.8,
+                    99.0,
+                    100.0
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    100.0,
+                    100.0,
+                    100.0
+                ],
+                "victim_acc": [
+                    96.2,
+                    99.0,
+                    99.0
+                ]
+            },
+            "0.2": {
+                "adv_acc": [
+                    98.0,
+                    98.0,
+                    99.0
+                ],
+                "victim_acc": [
+                    75.8,
+                    93.4,
+                    80.4
+                ]
+            },
+            "0.3": {
+                "adv_acc": [
+                    89.0,
+                    89.0,
+                    82.0
+                ],
+                "victim_acc": [
+                    69.0,
+                    63.800000000000004,
+                    70.39999999999999
+                ]
+            },
+            "0.4": {
+                "adv_acc": [
+                    68.5
+                ],
+                "victim_acc": [
+                    53.6
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    68.0
+                ],
+                "victim_acc": [
+                    55.400000000000006
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    77.5
+                ],
+                "victim_acc": [
+                    64.60000000000001
+                ]
+            }
+        }
+    },
+    "save time": "2022-09-14 10:39:38.762055"
+}
