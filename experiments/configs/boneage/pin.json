@@ -10,8 +10,8 @@
     "train_config": {
         "data_config": {
             "name": "boneage",
-            "prop": "age",
-            "classify": "gender",
+            "prop": "gender",
+            "classify": "age",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
@@ -30,5 +30,5 @@
         0.8
     ],
     "on_cpu": true,
-    "num_victim_models": 500
+    "num_victim_models": 250
 }

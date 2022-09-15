@@ -34,5 +34,5 @@
         0.8
     ],
     "on_cpu": true,
-    "num_victim_models": 500
+    "num_victim_models": 250
 }
