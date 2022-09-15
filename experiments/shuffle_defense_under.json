@@ -19,7 +19,7 @@
     "learning_rate": 1e-3,
     "batch_size": 200,
     "weight_decay": 1e-4,
-    "num_models": 250,
+    "num_models": 50,
     "verbose": false,
     "get_best": true
 }
