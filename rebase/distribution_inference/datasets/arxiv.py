@@ -20,7 +20,8 @@ class DatasetInformation(base.DatasetInformation):
         degrees = [9, 10, 11, 12, 12.5, 13, 13.5, 14, 15, 16, 17]
         super().__init__(name="arXiv",
                          data_path="ogbn_data/",
-                         models_path="models_arxiv_new",
+                        #  models_path="models_arxiv_new",
+                         models_path="models_arxiv_nobalancing",
                          properties=["mean"],
                          values={"mean": degrees},
                          supported_models=["gcn"],
@@ -240,6 +241,14 @@ class ArxivNodeDataset(NodeLevelDataset):
         perm = ch.randperm(n_elems)[:int(ratio * n_elems)]
         self.train_idx = self.train_idx[perm]
 
+    def not_label_ratio_preserving_pick(self, total_tr, total_te):
+        # Take random sample (no replacement) from self.train_idx
+        perm_train = ch.randperm(len(self.train_idx))[:total_tr]
+        perm_test = ch.randperm(len(self.test_idx))[:total_te]
+
+        self.train_idx = self.train_idx[perm_train]
+        self.test_idx = self.test_idx[perm_test]
+
     def label_ratio_preserving_pick(self, total_tr, total_te):
         # While maintaining relative label ratios for classes
         # Sample a set of size total
@@ -354,6 +363,7 @@ class ArxivWrapper(base.CustomDatasetWrapper):
                 "victim": (62000, 35000)
             }
         }
+        # TODO: Update above quantity for non-balanced case
         # Define DI object
         self.info_object = DatasetInformation()
 
@@ -378,7 +388,8 @@ class ArxivWrapper(base.CustomDatasetWrapper):
         # Modify mean degree
         self.ds.change_mean_degree(self.ratio, self.prune)
 
-        self.ds.label_ratio_preserving_pick(
+        # self.ds.label_ratio_preserving_pick(
+        self.ds.not_label_ratio_preserving_pick(
             self.sample_sizes[self.prop][self.split][0],
             self.sample_sizes[self.prop][self.split][1])
         

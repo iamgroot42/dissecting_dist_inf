@@ -11,7 +11,7 @@ from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv, get
 from distribution_inference.config import DatasetConfig, AttackConfig, BlackBoxAttackConfig, TrainConfig
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import AttackResult
-from dataclasses import replace
+
 
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
@@ -55,9 +55,6 @@ if __name__ == "__main__":
     # Create new DS object for both and victim
     data_config_adv_1, data_config_vic_1 = get_dfs_for_victim_and_adv(
         data_config)
-
-    # Temporary modification
-    data_config_vic_1 = replace(data_config_vic_1, value=0.1)
     
     ds_vic_1 = ds_wrapper_class(
         data_config_vic_1,
@@ -69,10 +66,8 @@ if __name__ == "__main__":
 
     def single_evaluation(models_1_path=None, models_2_paths=None):
         # Load victim models for first value
-        train_config_ = replace(train_config, misc_config=None)
         models_vic_1 = ds_vic_1.get_models(
-            train_config_,
-            # train_config,
+            train_config,
             n_models=attack_config.num_victim_models,
             on_cpu=attack_config.on_cpu,
             shuffle=False,
@@ -168,7 +163,6 @@ if __name__ == "__main__":
                     logger.add_results(attack_type, prop_value,
                                        result[0][0], result[1][0])
                     print(result[0][0])
-                    print(1 * (result[0][1] >=0.5))
                     # Save predictions, if requested
                     if bb_attack_config.save and attacker_obj.supports_saving_preds:
                         save_dic = attacker_obj.wrap_preds_to_save(result)

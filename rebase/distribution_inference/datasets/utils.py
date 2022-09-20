@@ -70,8 +70,12 @@ def heuristic(df, condition, ratio: float,
               cwise_sample: int,
               class_imbalance: float = 2.0,
               n_tries: int = 1000,
+              tot_samples: int = None,
               class_col: str = "label",
               verbose: bool = True):
+    if tot_samples is not None and class_imbalance is not None:
+        raise ValueError("Cannot request class imbalance and total-sample based methods together")
+
     vals, pckds = [], []
     iterator = range(n_tries)
     if verbose:
@@ -96,9 +100,15 @@ def heuristic(df, condition, ratio: float,
                     one_ids)[:int(1 / class_imbalance * cwise_sample)]
             else:
                 raise ValueError(f"Invalid class_imbalance value: {class_imbalance}")
-
+            
             # Combine them together
             pckd = np.sort(np.concatenate((zero_ids, one_ids), 0))
+            pckd_df = pckd_df.iloc[pckd]
+
+        elif tot_samples is not None:
+            # Combine both and randomly sample 'tot_samples' from them
+            pckd = np.random.permutation(np.concatenate([zero_ids, one_ids]))[:tot_samples]
+            pckd = np.sort(pckd)
             pckd_df = pckd_df.iloc[pckd]
 
         vals.append(condition(pckd_df).mean())

@@ -184,26 +184,26 @@ class CustomDatasetWrapper:
                 #pin_memory=True,
                 prefetch_factor=prefetch_factor
             )
-            # Data-level defense, apply logic here
-            mask, process_fn = self.shuffle_defense.initialize(temp_train_loader)
-            if mask is None:
-                raise ValueError("Defense returned null mask")
-            self.mask_data_selection(mask)
-            self.set_augment_process_fn(process_fn)
             temp_test_loader = DataLoader(
-                self.ds_val,
-                batch_size=batch_size,
+               self.ds_val,
+                batch_size=batch_size * val_factor,
                 shuffle=False,
-                num_workers=10,
+                num_workers=num_workers,
                 worker_init_fn=utils.worker_init_fn,
                 #pin_memory=True,
                 prefetch_factor=prefetch_factor
             )
-            # Testing shuffling on val data as well
-            mask, process_fn = self.shuffle_defense.initialize(temp_test_loader)
-            self.ds_val.mask_data_selection(mask)
-            self.ds_val.set_augment_process_fn(process_fn)
 
+            # Data-level defense, apply logic here
+            mask_train, process_fn = self.shuffle_defense.initialize(temp_train_loader)
+            mask_val, _ = self.shuffle_defense.initialize(temp_test_loader)
+
+            if mask_train is None or mask_val is None:
+                raise ValueError("Defense returned null mask")
+
+            self.mask_data_selection(mask_train, mask_val)
+            self.set_augment_process_fn(process_fn)
+                    
         # This function should return new loaders at every call
         train_loader = DataLoader(
             self.ds_train,
@@ -283,8 +283,9 @@ class CustomDatasetWrapper:
     def __str__(self):
         return f"{type(self).__name__}(prop={self.prop}, ratio={self.ratio}, split={self.split}, classify={self.classify})"
     
-    def mask_data_selection(self, mask):
-        self.ds_train.mask_data_selection(mask)
+    def mask_data_selection(self, train_mask, val_mask):
+        self.ds_train.mask_data_selection(train_mask)
+        self.ds_val.mask_data_selection(val_mask)
     
     def set_augment_process_fn(self, data):
         self.ds_train.set_augment_process_fn(data)

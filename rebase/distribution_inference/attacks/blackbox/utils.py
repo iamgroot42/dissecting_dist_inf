@@ -21,6 +21,7 @@ from distribution_inference.attacks.blackbox.generative import GenerativeAttack
 from distribution_inference.attacks.blackbox.binary_perpoint import BinaryPerPointThresholdAttack
 from distribution_inference.attacks.blackbox.KL_regression import KLRegression
 from distribution_inference.attacks.blackbox.label_KL import label_only_KLAttack
+from distribution_inference.attacks.blackbox.zhang import ZhangAttack
 
 ATTACK_MAPPING = {
     "threshold_perpoint": PerPointThresholdAttack,
@@ -35,7 +36,8 @@ ATTACK_MAPPING = {
     "generative":GenerativeAttack,
     "binary_perpoint": BinaryPerPointThresholdAttack,
     "KL_regression": KLRegression,
-    "label_KL": label_only_KLAttack
+    "label_KL": label_only_KLAttack,
+    "zhang": ZhangAttack
 }
 
 

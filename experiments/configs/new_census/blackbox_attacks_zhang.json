@@ -1,31 +1,36 @@
 {
-    "white_box": {
-        "attack": "permutation_invariant",
-        "epochs": 200,
-        "batch_size": 1000,
-        "permutation_config": {
-            "focus": "fc"
-        }
-    },
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "race",
+            "prop": "sex",
             "split": "adv",
             "squeeze": true,
-            "value": 0.5
+            "value": 0.5,
+            "cwise_samples": 500
         },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 3,
+    "tries": 5,
+    "black_box": {
+        "granularity": 0.05,
+        "num_adv_models": 50,
+        "batch_size": 30000,
+        "attack_type": [
+            "zhang"
+        ],
+        "ratios": [
+            1.0
+        ],
+        "preload": true
+    },
     "values": [
         0.0,
         0.1,
         0.2,
-		0.3,
-		0.4,
+        0.3,
+        0.4,
         0.6,
         0.7,
         0.8,

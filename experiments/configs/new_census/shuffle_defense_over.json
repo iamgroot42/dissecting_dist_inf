@@ -13,13 +13,13 @@
             "sample_type": "over"
         }
     },
-    "offset": 100000,
+    "offset": 0,
     "epochs": 10,
     "model_arch": "mlp2",
     "learning_rate": 1e-3,
     "batch_size": 200,
     "weight_decay": 1e-4,
-    "num_models": 50,
+    "num_models": 250,
     "verbose": false,
     "get_best": true
 }

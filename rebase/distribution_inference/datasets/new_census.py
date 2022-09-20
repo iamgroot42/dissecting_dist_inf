@@ -19,7 +19,8 @@ class DatasetInformation(base.DatasetInformation):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="New Census",
                          data_path="census_new/census_2019_1year",
-                         models_path="models_new_census/60_40",
+                         models_path="models_new_census/60_40_nobalancing",
+                        #  models_path="models_new_census/60_40",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios},
                          supported_models=["mlp2", "random_forest", "lr", "mlp3"],
@@ -234,14 +235,28 @@ class _CensusIncome:
             lambda_fn = self._get_prop_label_lambda(filter_prop)
 
         # For 1-year Census data
+        # prop_wise_subsample_sizes = {
+        #     "adv": {
+        #         "sex": (20000, 12000),
+        #         "race": (14000, 9000),
+        #     },
+        #     "victim": {
+        #         "sex": (30000, 20000),
+        #         "race": (21000, 14000),
+        #     },
+        # }
+
+        # Above was based on class-biased re-sampling
+        # Below is not
         prop_wise_subsample_sizes = {
+            # 1:4 split, instead of a 2:3 split
             "adv": {
-                "sex": (20000, 12000),#12000
-                "race": (14000, 9000),
+                "sex": (50000, 25000),
+                "race": (25000, 12500),
             },
             "victim": {
-                "sex": (30000, 20000),
-                "race": (21000, 14000),
+                "sex": (200000, 100000),
+                "race": (100000, 50000),
             },
         }
 
@@ -251,8 +266,11 @@ class _CensusIncome:
         else:
             subsample_size = custom_limit
         return utils.heuristic(df, lambda_fn, ratio,
-                               subsample_size,
-                               class_imbalance=0.7211,  # Calculated based on original distribution
+                            #    subsample_size,
+                               cwise_sample=None,
+                               class_imbalance=None,
+                            #    class_imbalance=0.7211,  # Calculated based on original distribution
+                               tot_samples=subsample_size,
                                n_tries=100,
                                class_col='income',
                                verbose=False)
@@ -374,5 +392,5 @@ class CensusWrapper(base.CustomDatasetWrapper):
         if not os.path.isdir(save_path):
             os.makedirs(save_path)
 
-        print("Loading models from path", save_path)
+        # print("Loading models from path", save_path)
         return save_path

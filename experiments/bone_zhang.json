@@ -1,11 +1,13 @@
 {
     "train_config": {
         "data_config": {
-            "name": "new_census",
-            "prop": "sex",
+            "name": "boneage",
+            "prop": "age",
+            "classify": "gender",
             "split": "adv",
             "squeeze": true,
-            "value": 0.5
+            "value": 0.5,
+            "cwise_samples": null
         },
         "epochs": 0,
         "learning_rate": 0,
@@ -17,32 +19,20 @@
         "num_adv_models": 50,
         "batch_size": 30000,
         "attack_type": [
-            "KL",
-            "threshold_perpoint",
-            "loss_and_threshold"
+            "zhang"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
         "preload": true
     },
     "values": [
-        0.0,
-        0.1,
         0.2,
         0.3,
         0.4,
         0.6,
         0.7,
-        0.8,
-        0.9,
-        1.0
+        0.8
     ],
     "num_victim_models": 250
 }
