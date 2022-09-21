@@ -106,9 +106,9 @@ if __name__ == "__main__":
         # Get data loaders
         train_loader, val_loader = ds.get_loaders(
             batch_size=train_config.batch_size)
-        # print(len(train_loader.dataset))
+        #print(1/(len(train_loader.dataset)*train_config.batch_size))
         # print(len(val_loader.dataset))
-        # exit(0)
+        #exit(0)
         plist = []
         # for t in train_loader:
         #     _,_,prop_l = t
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         if dp_config is None:
             model = ds_info.get_model(model_arch=train_config.model_arch)
         else:
-            model = ds_info.get_model_for_dp()
+            model = ds_info.get_model_for_dp(model_arch=train_config.model_arch)
 
         # Train model
         if EXTRA:

@@ -2,8 +2,8 @@
     "train_config": {
         "data_config": {
             "name": "boneage",
-            "prop": "age",
-            "classify": "gender",
+            "prop": "gender",
+            "classify": "age",
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
