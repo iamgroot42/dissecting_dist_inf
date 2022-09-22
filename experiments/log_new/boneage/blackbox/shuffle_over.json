@@ -1,6 +1,6 @@
 {
-    "name": "age_label",
-    "start time": "2022-09-15 15:54:26.117202",
+    "name": "shuffle_over",
+    "start time": "2022-09-20 18:00:18.298315",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -20,7 +20,17 @@
             "epochs": 0,
             "learning_rate": 0.0,
             "batch_size": 0,
-            "misc_config": null,
+            "misc_config": {
+                "adv_config": null,
+                "dp_config": null,
+                "shuffle_defense_config": {
+                    "desired_value": 0.5,
+                    "sample_type": "over",
+                    "data_level": true,
+                    "augment": false,
+                    "use_mixup": false
+                }
+            },
             "lr_scheduler": null,
             "verbose": false,
             "num_models": 1,
@@ -47,7 +57,7 @@
         ],
         "black_box": {
             "attack_type": [
-                "label_KL"
+                "KL"
             ],
             "ratios": [
                 1.0
@@ -87,7 +97,7 @@
         "victim_target_epoch": null
     },
     "result": {
-        "label_KL": {
+        "KL": {
             "0.2": {
                 "adv_acc": [
                     null,
@@ -97,11 +107,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    70.39999999999999,
+                    72.0,
+                    69.6,
+                    69.8,
+                    73.2
                 ]
             },
             "0.3": {
@@ -113,11 +123,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    71.8,
+                    72.39999999999999,
+                    75.4,
+                    74.0,
+                    72.0
                 ]
             },
             "0.4": {
@@ -129,11 +139,11 @@
                     null
                 ],
                 "victim_acc": [
-                    96.2,
-                    93.8,
-                    93.4,
-                    92.0,
-                    94.8
+                    71.0,
+                    64.4,
+                    61.6,
+                    68.2,
+                    71.8
                 ]
             },
             "0.6": {
@@ -145,11 +155,11 @@
                     null
                 ],
                 "victim_acc": [
-                    87.0,
-                    85.2,
-                    87.0,
-                    86.4,
-                    80.4
+                    18.8,
+                    25.4,
+                    27.6,
+                    23.0,
+                    23.599999999999998
                 ]
             },
             "0.7": {
@@ -161,11 +171,11 @@
                     null
                 ],
                 "victim_acc": [
-                    98.6,
-                    98.6,
-                    98.4,
-                    98.6,
-                    98.6
+                    24.6,
+                    24.6,
+                    23.400000000000002,
+                    24.0,
+                    25.0
                 ]
             },
             "0.8": {
@@ -177,14 +187,14 @@
                     null
                 ],
                 "victim_acc": [
-                    99.6,
-                    99.2,
-                    99.8,
-                    98.8,
-                    99.2
+                    37.0,
+                    28.000000000000004,
+                    34.599999999999994,
+                    28.799999999999997,
+                    34.4
                 ]
             }
         }
     },
-    "save time": "2022-09-15 17:08:00.714118"
+    "save time": "2022-09-20 19:05:23.929255"
 }
