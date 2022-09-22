@@ -6,6 +6,7 @@ import torch.nn as nn
 import distribution_inference.datasets.base as base
 from distribution_inference.models.core import GCN
 from distribution_inference.config import DatasetConfig, TrainConfig
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from collections import Counter
 from distribution_inference.training.utils import load_model
 from distribution_inference.utils import get_arxiv_node_params_mapping
@@ -352,18 +353,26 @@ class ArxivWrapper(base.CustomDatasetWrapper):
                  data_config: DatasetConfig,
                  skip_data: bool = False,
                  label_noise: float = 0,
-                 epoch: bool = False):
+                 epoch: bool = False,
+                 shuffle_defense: ShuffleDefense = None
+                 ):
         # Call parent constructor
         super().__init__(data_config, skip_data, label_noise, is_graph_data=True)
 
         # Define how much data (nodes) needed to sample
+        # self.sample_sizes = {
+        #     "mean": {
+        #         "adv": (30000, 10000),
+        #         "victim": (62000, 35000)
+        #     }
+        # }
+        # TODO: Update above quantity for non-balanced case
         self.sample_sizes = {
             "mean": {
-                "adv": (30000, 10000),
-                "victim": (62000, 35000)
+                "adv": (25000, 8000),
+                "victim": (50000, 30000)
             }
         }
-        # TODO: Update above quantity for non-balanced case
         # Define DI object
         self.info_object = DatasetInformation()
 

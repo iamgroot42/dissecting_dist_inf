@@ -1,5 +1,4 @@
 import os
-from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import pandas as pd
 import torch as ch
 import torch.nn as nn
@@ -12,6 +11,7 @@ from torchvision.models import densenet121
 from torch.utils.data import DataLoader
 
 import distribution_inference.datasets.base as base
+from distribution_inference.defenses.active.shuffle import ShuffleDefense
 from distribution_inference.models.core import BoneModel, DenseNet, SVMClassifier
 from distribution_inference.config import DatasetConfig, TrainConfig
 from distribution_inference.utils import ensure_dir_exists
