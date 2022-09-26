@@ -1,17 +1,17 @@
 {
-    "name": "both_svm",
-    "start time": "2022-09-22 08:42:13.861903",
+    "name": "sex_ln_0.4",
+    "start time": "2022-09-23 08:05:16.780786",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "boneage",
-                "prop": "gender",
+                "name": "new_census",
+                "prop": "sex",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "age",
+                "classify": null,
                 "cwise_samples": null,
                 "squeeze": true,
                 "processed_variant": true,
@@ -33,17 +33,21 @@
             "extra_info": null,
             "regression": false,
             "multi_class": false,
-            "label_noise": 0,
+            "label_noise": 0.4,
             "model_arch": null,
             "parallel": false
         },
         "values": [
+            0.0,
+            0.1,
             0.2,
             0.3,
             0.4,
             0.6,
             0.7,
-            0.8
+            0.8,
+            0.9,
+            1.0
         ],
         "black_box": {
             "attack_type": [
@@ -52,7 +56,7 @@
             "ratios": [
                 1.0
             ],
-            "batch_size": 50,
+            "batch_size": 30000,
             "num_adv_models": 50,
             "granularity": 0.05,
             "preload": true,
@@ -76,19 +80,19 @@
         "white_box": null,
         "tries": 5,
         "num_victim_models": 250,
-        "on_cpu": true,
+        "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
-        "victim_model_arch": "svm",
-        "adv_model_arch": "svm",
+        "victim_model_arch": null,
+        "adv_model_arch": null,
         "adv_processed_variant": false,
         "adv_target_epoch": null,
         "victim_target_epoch": null
     },
     "result": {
         "KL": {
-            "0.2": {
+            "0.0": {
                 "adv_acc": [
                     null,
                     null,
@@ -100,8 +104,40 @@
                     100.0,
                     100.0,
                     100.0,
-                    100.0,
-                    100.0
+                    99.8,
+                    99.8
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    79.4,
+                    72.2,
+                    80.60000000000001,
+                    80.4,
+                    59.0
+                ]
+            },
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    53.2,
+                    66.4,
+                    61.6,
+                    67.80000000000001,
+                    66.4
                 ]
             },
             "0.3": {
@@ -113,11 +149,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    60.199999999999996,
+                    60.6,
+                    55.800000000000004,
+                    59.4,
+                    58.599999999999994
                 ]
             },
             "0.4": {
@@ -129,11 +165,11 @@
                     null
                 ],
                 "victim_acc": [
-                    98.6,
-                    98.0,
-                    98.4,
-                    98.2,
-                    98.6
+                    48.8,
+                    50.8,
+                    47.0,
+                    48.4,
+                    52.400000000000006
                 ]
             },
             "0.6": {
@@ -145,11 +181,11 @@
                     null
                 ],
                 "victim_acc": [
-                    99.2,
-                    99.4,
-                    99.0,
-                    99.2,
-                    99.0
+                    51.6,
+                    49.4,
+                    55.60000000000001,
+                    54.6,
+                    53.6
                 ]
             },
             "0.7": {
@@ -161,11 +197,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    54.0,
+                    54.6,
+                    55.800000000000004,
+                    57.99999999999999,
+                    52.6
                 ]
             },
             "0.8": {
@@ -177,14 +213,46 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    64.60000000000001,
+                    62.0,
+                    66.2,
+                    61.8,
+                    62.0
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    73.0,
+                    80.4,
+                    75.8,
+                    79.4,
+                    77.4
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.0,
+                    97.39999999999999,
+                    99.4,
+                    94.8,
+                    97.2
                 ]
             }
         }
     },
-    "save time": "2022-09-22 16:41:05.375599"
+    "save time": "2022-09-23 11:21:22.261494"
 }

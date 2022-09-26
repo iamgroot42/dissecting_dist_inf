@@ -1,17 +1,17 @@
 {
-    "name": "both_svm",
-    "start time": "2022-09-22 08:42:13.861903",
+    "name": "age_10",
+    "start time": "2022-09-22 18:59:37.313119",
     "attack_config": {
         "train_config": {
             "data_config": {
                 "name": "boneage",
-                "prop": "gender",
+                "prop": "age",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "age",
+                "classify": "gender",
                 "cwise_samples": null,
                 "squeeze": true,
                 "processed_variant": true,
@@ -52,9 +52,9 @@
             "ratios": [
                 1.0
             ],
-            "batch_size": 50,
-            "num_adv_models": 50,
-            "granularity": 0.05,
+            "batch_size": 30000,
+            "num_adv_models": 10,
+            "granularity": 0.005,
             "preload": true,
             "multi": null,
             "multi2": null,
@@ -76,12 +76,12 @@
         "white_box": null,
         "tries": 5,
         "num_victim_models": 250,
-        "on_cpu": true,
+        "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
-        "victim_model_arch": "svm",
-        "adv_model_arch": "svm",
+        "victim_model_arch": null,
+        "adv_model_arch": null,
         "adv_processed_variant": false,
         "adv_target_epoch": null,
         "victim_target_epoch": null
@@ -129,11 +129,11 @@
                     null
                 ],
                 "victim_acc": [
-                    98.6,
-                    98.0,
-                    98.4,
-                    98.2,
-                    98.6
+                    77.60000000000001,
+                    87.6,
+                    96.6,
+                    94.8,
+                    98.0
                 ]
             },
             "0.6": {
@@ -145,11 +145,11 @@
                     null
                 ],
                 "victim_acc": [
-                    99.2,
-                    99.4,
-                    99.0,
-                    99.2,
-                    99.0
+                    98.0,
+                    94.39999999999999,
+                    94.8,
+                    98.8,
+                    93.2
                 ]
             },
             "0.7": {
@@ -186,5 +186,5 @@
             }
         }
     },
-    "save time": "2022-09-22 16:41:05.375599"
+    "save time": "2022-09-22 19:58:06.084781"
 }

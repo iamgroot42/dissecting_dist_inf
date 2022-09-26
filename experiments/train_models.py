@@ -119,7 +119,8 @@ if __name__ == "__main__":
         if dp_config is None:
             model = ds_info.get_model(model_arch=train_config.model_arch)
         else:
-            model = ds_info.get_model_for_dp()
+            model = ds_info.get_model_for_dp(
+                model_arch=train_config.model_arch)
 
         # Train model
         if EXTRA:
@@ -153,8 +154,8 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            # save_model(model, save_path)
-            exit(0)
+            save_model(model, save_path)
+            # exit(0)
 
             # Save logger
             # logger.save()
