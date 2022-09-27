@@ -77,6 +77,17 @@ class KLAttack(Attack):
         if not self.not_using_logits:
             ka_, kb_ = sigmoid(ka), sigmoid(kb)
             kc1_, kc2_ = sigmoid(kc1), sigmoid(kc2)
+        
+        # Use log-odds-ratio to order data and pick only top half
+        if self.config.log_odds_order:
+            small_eps = 1e-4
+            log_vals_a = np.log((small_eps + ka_) / (small_eps + 1 - ka_))
+            log_vals_b = np.log((small_eps + kb_) / (small_eps + 1 - kb_))
+            ordering = np.mean(np.abs(log_vals_a - log_vals_b), 0)
+            ordering = np.argsort(ordering)[::-1]
+            # Pick only first half
+            ordering = ordering[:len(ordering) // 2]
+            ka_, kb_ = ka_[:, ordering], kb_[:, ordering]
 
         # Consider all unique pairs of models
         xx, yy = np.triu_indices(ka.shape[0], k=1)

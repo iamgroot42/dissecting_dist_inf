@@ -124,15 +124,67 @@
                 "adv_acc": [
                     null,
                     null,
+                    null,
+                    null,
                     null
                 ],
                 "victim_acc": [
                     99.0,
                     98.8,
-                    99.8
+                    99.8,
+                    99.2,
+                    99.0
+                ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    99.8,
+                    99.8,
+                    99.6,
+                    99.2,
+                    99.6
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
                 ]
             }
         }
     },
-    "save time": "2022-09-26 10:22:53.308489"
+    "save time": "2022-09-26 12:01:52.800877"
 }

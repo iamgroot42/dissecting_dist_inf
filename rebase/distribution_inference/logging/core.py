@@ -181,8 +181,6 @@ class TrainingResult(Result):
         self.check_rec(self.dic, ['log', prop])
         # Log loss of model
         
-        
         for e in metrics.keys():
             self.conditional_append(self.dic['log'][prop],
-                    e, metrics[e])
-        
+                    e, metrics[e])        
