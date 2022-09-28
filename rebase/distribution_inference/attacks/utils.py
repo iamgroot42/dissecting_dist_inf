@@ -25,7 +25,12 @@ ATTACK_MAPPING = {
     "train_acc": "Train Accuracy",
     "loss": "Test Loss",
     "train_loss": "Train Loss",
-    "label_KL": "Label-only KL"
+    "label_KL": "Label-only KL",
+	"zhang": "Zhang et.al.",
+    "loss_ratio": "Loss Ratio",
+    "acc_ratio": "0-1 Loss Ratio",
+    "loss_dif": "Loss Difference",
+    "acc_dif": "0-1 Loss Difference",
 }
 
 

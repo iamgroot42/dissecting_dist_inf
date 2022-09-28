@@ -88,6 +88,7 @@ class KLAttack(Attack):
             # Pick only first half
             ordering = ordering[:len(ordering) // 2]
             ka_, kb_ = ka_[:, ordering], kb_[:, ordering]
+            kc1_, kc2_ = kc1_[:, ordering], kc2_[:, ordering]
 
         # Consider all unique pairs of models
         xx, yy = np.triu_indices(ka.shape[0], k=1)
