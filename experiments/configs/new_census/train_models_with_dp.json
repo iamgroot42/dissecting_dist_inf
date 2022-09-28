@@ -1,8 +1,8 @@
 {
     "misc_config": {
         "dp_config": {
-            "epsilon": 0.1,
-            "delta": 4e-6,
+            "epsilon": 5,
+            "delta": 1e-8,
             "max_grad_norm": 1.0,
             "physical_batch_size": 500
         }
