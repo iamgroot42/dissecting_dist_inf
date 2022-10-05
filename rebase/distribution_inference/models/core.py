@@ -137,6 +137,7 @@ class KNeighborsClassifier(BaseModel):
         super().__init__(is_sklearn_model=True)
         self.model = KN(n_neighbors=n_neighbors,leaf_size=leaf_size,p=p,n_jobs=n_jobs)
 
+
 class GaussianProcessClassifier(BaseModel):
     def __init__(self,
                 n_restarts_optimizer: int = 0,
@@ -147,12 +148,14 @@ class GaussianProcessClassifier(BaseModel):
         self.model = GPC(n_restarts_optimizer=n_restarts_optimizer,
         max_iter_predict=max_iter_predict,n_jobs=n_jobs)
 
+
 class MultinomialNB(BaseModel):
     def __init__(self,
                 alpha:float = 1.0
                 ):
         super().__init__(is_sklearn_model=True)
         self.model = MNB(alpha=alpha)
+
 
 class InceptionModel(BaseModel):
     def __init__(self,
