@@ -7,7 +7,7 @@ import torch.nn as nn
 import copy
 from typing import List, Literal
 
-from distribution_inference.config import SyntheticDatasetConfig, TrainConfig
+from distribution_inference.config import SyntheticDatasetConfig, TrainConfig, DatasetConfig
 from distribution_inference.models.core import AnyLayerMLP, RandomForest, LRClassifier
 from distribution_inference.training.utils import load_model
 import distribution_inference.datasets.base as base
@@ -16,30 +16,41 @@ import distribution_inference.datasets.base as base
 # Mapping between numbers and corresponding configs
 # Useful to point to relevant folder to load data/models from
 # and keep track of different kinds of experiments
+# TODO: Read JSON from file and parse
 CONFIG_MAPPING = {
-    1: (),
-    2: ()
+    1: SyntheticDatasetConfig(
+        dimensionality=10,
+        noise_mean = 1.0,
+        noise_cov = 0.98,
+        noise_model = 1.0,
+        mean_range = 5.0,
+        dist_diff_mean = 1.0,
+        dist_diff_std = 1.0,
+        layer = [15,5], 
+        cov = 3.0,
+        diff_posteriors=True
+  )
 }
-
 
 class DatasetInformation(base.DatasetInformation):
     def __init__(self, epoch_wise: bool = False):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        # Use 'properties' to refer to specific configs
         super().__init__(name="Synthetic Data",
                          data_path="synthetic",
                          models_path="models/synthetic",
-                         properties=None,
+                         properties=list(CONFIG_MAPPING.keys()),
                          values=None,
                          supported_models=None,
                          default_model="mlp_1",
                          epoch_wise=epoch_wise)
 
-    def get_model(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
+    def get_model(self, n_inp: int, cpu: bool = False, model_arch: str = None) -> nn.Module:
         if model_arch is None or model_arch == "None":
             model_arch = self.default_model
         if model_arch.startswith("mlp_"):
             depth = int(model_arch.split("mlp_")[1])
-            model = AnyLayerMLP(n_inp=105, depth=depth)
+            model = AnyLayerMLP(n_inp=n_inp, depth=depth)
         elif model_arch == "random_forest":
             model = RandomForest(min_samples_leaf=5, n_jobs=4, n_estimators=10)
         elif model_arch == "lr":
@@ -51,9 +62,9 @@ class DatasetInformation(base.DatasetInformation):
             model = model.cuda()
         return model
 
-    def get_model_for_dp(self, cpu: bool = False, model_arch: str = None) -> nn.Module:
+    def get_model_for_dp(self, n_inp:int, cpu: bool = False, model_arch: str = None) -> nn.Module:
         if model_arch == "mlp_1":
-            model = AnyLayerMLP(n_inp=105, depth=1)
+            model = AnyLayerMLP(n_inp=n_inp, depth=1)
         else:
             raise NotImplementedError("Model architecture not supported")
 
@@ -66,7 +77,6 @@ class GroundTruthModel(nn.Module):
     """
         Model f(x) used to generate ground-truth predictions.
     """
-
     def __init__(self, input_dim: int, n_classes: int, hidden_dim: List[int]):
         super().__init__()
         self.n_classes = n_classes
@@ -108,11 +118,16 @@ class Distribution:
             "cov": self.cov,
             "y_model": self.y_model.state_dict()
         }
+    
+    def load_params(self, param_dict):
+        self.mean = param_dict["mean"]
+        self.cov = param_dict["cov"]
+        self.y_model.load_state_dict(param_dict["y_model"])
 
     def sample(self, n):
         x = np.random.multivariate_normal(self.mean, self.cov, n)
         y = self.y_model(ch.from_numpy(x).float())
-        y = 1 * (y.detach().numpy() >= 0)
+        y = ch.argmax(y.detach(), dim=1).numpy()
         y = y.reshape(y.shape[0], 1)
         return x, y
 
@@ -140,6 +155,10 @@ class VicAdvDistribution:
             "adv": self.adv_distr.get_params(),
             "victim": self.vic_distr.get_params()
         }
+    
+    def load_params(self, param_dict):
+        self.adv_distr.load_params(param_dict["adv"])
+        self.vic_distr.load_params(param_dict["victim"])
 
     def sample(self, n: int, split: Literal["victim", "adv"]):
         if split == "victim":
@@ -180,7 +199,7 @@ class SyntheticDataset:
         cov_copy = np.diagflat(cov_list + np.random.uniform(0, config.dist_diff_mean))
 
         # Create y_model for both distrs
-        model_D0 = GroundTruthModel(config.dimensionality, 1, config.layer)
+        model_D0 = GroundTruthModel(config.dimensionality, config.num_classes, config.layer)
         model_D1 = copy.deepcopy(model_D0)
         if not self.diff_posteriors:
             model_D1 = self.__get_perturbed_model_copy(model_D1)
@@ -205,8 +224,9 @@ class SyntheticDataset:
         """
             Load up exact distribution parameters from provided path
         """
-        # TODO: Implement
-        raise NotImplementedError("Not implemented yet")
+        param_dict = ch.load(path)
+        self.distr_0.load_params(param_dict["d0"])
+        self.distr_1.load_params(param_dict["d1"])
         
     def __get_perturbed_model_copy(self, model):
         model_p = copy.deepcopy(model)
@@ -242,7 +262,7 @@ class SyntheticDataset:
 
 class SyntheticWrapper(base.CustomDatasetWrapper):
     def __init__(self,
-                 data_config: SyntheticDatasetConfig,
+                 data_config: DatasetConfig,
                  skip_data: bool = False,
                  epoch: bool = False,
                  label_noise: float = 0,
@@ -251,8 +271,15 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
                          skip_data=skip_data,
                          label_noise=label_noise,
                          shuffle_defense=shuffle_defense)
+        self.distribution_config = CONFIG_MAPPING.get(self.prop, None)
+        if self.distribution_config is None:
+            raise ValueError("Requested config not available")
+
+        self.dimensionality = self.distribution_config.dimensionality
+
         if not skip_data:
-            self.ds = SyntheticDataset(data_config, drop_senstive_cols=self.drop_senstive_cols)
+            self.ds = SyntheticDataset(self.distribution_config,
+                                       drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)
 
     def load_data(self, n_samples=None):
@@ -273,14 +300,12 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
 
     def load_model(self, path: str, on_cpu: bool = False, model_arch: str = None) -> nn.Module:
         info_object = self.info_object
-        model = info_object.get_model(cpu=on_cpu, model_arch=model_arch)
+        model = info_object.get_model(n_inp=self.dimensionality, cpu=on_cpu, model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
-        # TODO: Implement (copied fron new_census for now)
-        raise NotImplementedError("Will implement later")
-
-        base_models_dir = self.info_object.base_models_dir        
+        base_models_dir = self.info_object.base_models_dir
+        base_models_dir = os.path.join(base_models_dir, self.prop)
 
         dp_config = None
         shuffle_defense_config = None
@@ -317,14 +342,11 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
             base_path = os.path.join(
                 base_models_dir, "label_noise:{}".format(train_config.label_noise))
 
-        save_path = os.path.join(base_path, self.prop, self.split)
+        save_path = os.path.join(base_path, self.split)
 
         if self.ratio is not None:
             save_path = os.path.join(save_path, str(self.ratio))
 
-        if self.scale != 1.0:
-            save_path = os.path.join(
-                self.scalesave_path, "sample_size_scale:{}".format(self.scale))
         if self.drop_senstive_cols:
             save_path = os.path.join(save_path, "drop")
 

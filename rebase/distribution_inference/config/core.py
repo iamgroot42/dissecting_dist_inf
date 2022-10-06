@@ -124,9 +124,10 @@ class SyntheticDatasetConfig(Serializable):
     """Add (0, dist_diff_std) to D0 std to get D1 std"""
     layer: List[int]
     """List with dimensionalities of layers (for ground truth f(x))"""
-    
     diff_posteriors: bool
     """Use same P(y|a) for the distributions?"""
+    num_classes: Optional[int] = 2
+    """Number of classes for task (default: 2)"""
 
 
 @dataclass
