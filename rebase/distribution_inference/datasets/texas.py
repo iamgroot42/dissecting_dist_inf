@@ -345,7 +345,10 @@ class _Texas:
             sample_size = custom_limit
         return utils.multiclass_heuristic(
             df, lambda_fn, ratio,
-            sample_size,
+            cwise_sample=None,
+            class_imbalance=None,
+            # sample_size,
+            tot_samples=sample_size,
             n_tries=10,
             class_col='label',
             verbose=False)
