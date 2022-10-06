@@ -35,6 +35,7 @@ class RegressionConfig(Serializable):
     additional_values_to_test: Optional[List] = None
     """Values of property to use while testing in addition to ratios used to train"""
 
+
 @dataclass
 class DPTrainingConfig(Serializable):
     """
@@ -98,6 +99,34 @@ class DatasetConfig(Serializable):
     """Use processed version of data (relevant for BoneAge,CelebA)?"""
     prune: Optional[float] = 0
     """Prune graph by removing nodes? (only valid for arXiv dataset)"""
+
+
+@dataclass
+class SyntheticDatasetConfig(Serializable):
+    """
+        Dataset config for sythetic data
+    """
+    dimensionality: int
+    """Input data dimensionality"""
+    adv_noise_to_mean: float
+    """Add noise <= noise_mean to victim's mean to generate adv's mean"""
+    noise_cov: float
+    """Add noise in (1, noise_cov) to victim's cov to generate adv's cov"""
+    noise_model: float
+    """Noise to add to model parameters to make different P(y|a) between the two distributions"""
+    mean_range: float
+    """Sample means for D0 in (-mean_range, mean_range)"""
+    cov: float
+    """Sample cov for D0 in range (1, cov)"""
+    dist_diff_mean: float
+    """Add (-dist_diff_mean, dist_diff_mean) to D0 mean to get D1 mean"""
+    dist_diff_std: float
+    """Add (0, dist_diff_std) to D0 std to get D1 std"""
+    layer: List[int]
+    """List with dimensionalities of layers (for ground truth f(x))"""
+    
+    diff_posteriors: bool
+    """Use same P(y|a) for the distributions?"""
 
 
 @dataclass
