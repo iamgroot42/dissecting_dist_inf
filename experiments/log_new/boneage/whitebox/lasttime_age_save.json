@@ -1,6 +1,6 @@
 {
-    "name": "lasttime_age",
-    "start time": "2022-10-06 16:54:40.113163",
+    "name": "lasttime_age_save",
+    "start time": "2022-10-07 09:19:22.700114",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -54,7 +54,7 @@
             "weight_decay": 0.001,
             "train_sample": 750,
             "val_sample": 50,
-            "save": false,
+            "save": true,
             "load": null,
             "regression_config": null,
             "eval_every": 10,
@@ -127,9 +127,9 @@
                     null
                 ],
                 "victim_acc": [
-                    91.8,
-                    99.4,
-                    99.8
+                    99.6,
+                    83.60000000000001,
+                    99.2
                 ]
             },
             "0.4": {
@@ -139,48 +139,12 @@
                     null
                 ],
                 "victim_acc": [
-                    70.0,
-                    83.60000000000001,
-                    79.80000000000001
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    86.8,
-                    79.4,
-                    62.6
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    94.19999999999999,
-                    95.0,
-                    97.8
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    99.2,
-                    98.4,
-                    93.8
+                    91.8,
+                    68.19999999999999,
+                    82.4
                 ]
             }
         }
     },
-    "save time": "2022-10-06 23:31:00.990961"
+    "save time": "2022-10-07 12:25:13.526763"
 }

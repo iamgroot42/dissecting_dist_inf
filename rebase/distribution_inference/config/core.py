@@ -126,6 +126,10 @@ class SyntheticDatasetConfig(Serializable):
     """List with dimensionalities of layers (for ground truth f(x))"""
     diff_posteriors: bool
     """Use same P(y|a) for the distributions?"""
+    n_samples_adv: int
+    """Number of samples allowed to use for adversary"""
+    n_samples_vic: int
+    """Number of samples allowed to use for victim"""
     num_classes: Optional[int] = 2
     """Number of classes for task (default: 2)"""
 

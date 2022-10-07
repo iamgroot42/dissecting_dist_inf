@@ -1,17 +1,17 @@
 {
-    "name": "lasttime_age",
-    "start time": "2022-10-06 16:54:40.113163",
+    "name": "aga_race_new",
+    "start time": "2022-10-07 09:22:01.504698",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "boneage",
-                "prop": "age",
+                "name": "new_census",
+                "prop": "race",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "gender",
+                "classify": null,
                 "cwise_samples": null,
                 "squeeze": true,
                 "processed_variant": true,
@@ -38,12 +38,16 @@
             "parallel": false
         },
         "values": [
+            0.0,
+            0.1,
             0.2,
             0.3,
             0.4,
             0.6,
             0.7,
-            0.8
+            0.8,
+            0.9,
+            1.0
         ],
         "black_box": null,
         "white_box": {
@@ -54,7 +58,7 @@
             "weight_decay": 0.001,
             "train_sample": 750,
             "val_sample": 50,
-            "save": false,
+            "save": true,
             "load": null,
             "regression_config": null,
             "eval_every": 10,
@@ -96,7 +100,7 @@
         },
         "tries": 3,
         "num_victim_models": 250,
-        "on_cpu": true,
+        "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
@@ -108,6 +112,30 @@
     },
     "result": {
         "affinity": {
+            "0.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.8,
+                    99.6,
+                    99.4
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    93.8,
+                    94.8,
+                    95.0
+                ]
+            },
             "0.2": {
                 "adv_acc": [
                     null,
@@ -115,9 +143,9 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0
+                    80.0,
+                    85.39999999999999,
+                    91.0
                 ]
             },
             "0.3": {
@@ -127,60 +155,12 @@
                     null
                 ],
                 "victim_acc": [
-                    91.8,
-                    99.4,
-                    99.8
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    70.0,
-                    83.60000000000001,
-                    79.80000000000001
-                ]
-            },
-            "0.6": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    86.8,
-                    79.4,
-                    62.6
-                ]
-            },
-            "0.7": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    94.19999999999999,
-                    95.0,
-                    97.8
-                ]
-            },
-            "0.8": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    99.2,
-                    98.4,
-                    93.8
+                    65.0,
+                    65.2,
+                    65.39999999999999
                 ]
             }
         }
     },
-    "save time": "2022-10-06 23:31:00.990961"
+    "save time": "2022-10-07 12:34:51.706914"
 }

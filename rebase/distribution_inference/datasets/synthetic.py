@@ -18,9 +18,9 @@ import distribution_inference.datasets.base as base
 # and keep track of different kinds of experiments
 # TODO: Read JSON from file and parse
 CONFIG_MAPPING = {
-    1: SyntheticDatasetConfig(
+    "1": SyntheticDatasetConfig(
         dimensionality=10,
-        noise_mean = 1.0,
+        adv_noise_to_mean=1.0,
         noise_cov = 0.98,
         noise_model = 1.0,
         mean_range = 5.0,
@@ -28,6 +28,8 @@ CONFIG_MAPPING = {
         dist_diff_std = 1.0,
         layer = [15,5], 
         cov = 3.0,
+        n_samples_vic = 5000,
+        n_samples_adv=1000,
         diff_posteriors=True
   )
 }
@@ -41,16 +43,16 @@ class DatasetInformation(base.DatasetInformation):
                          models_path="models/synthetic",
                          properties=list(CONFIG_MAPPING.keys()),
                          values=None,
-                         supported_models=None,
+                         supported_models=[f"mlp_{d}" for d in range(1, 5)],
                          default_model="mlp_1",
                          epoch_wise=epoch_wise)
 
-    def get_model(self, n_inp: int, cpu: bool = False, model_arch: str = None) -> nn.Module:
+    def get_model(self, n_inp: int, n_classes: int, cpu: bool = False, model_arch: str = None) -> nn.Module:
         if model_arch is None or model_arch == "None":
             model_arch = self.default_model
         if model_arch.startswith("mlp_"):
             depth = int(model_arch.split("mlp_")[1])
-            model = AnyLayerMLP(n_inp=n_inp, depth=depth)
+            model = AnyLayerMLP(n_inp=n_inp, n_classes=n_classes, depth=depth)
         elif model_arch == "random_forest":
             model = RandomForest(min_samples_leaf=5, n_jobs=4, n_estimators=10)
         elif model_arch == "lr":
@@ -62,9 +64,9 @@ class DatasetInformation(base.DatasetInformation):
             model = model.cuda()
         return model
 
-    def get_model_for_dp(self, n_inp:int, cpu: bool = False, model_arch: str = None) -> nn.Module:
+    def get_model_for_dp(self, n_inp:int, n_classes:int, cpu: bool = False, model_arch: str = None) -> nn.Module:
         if model_arch == "mlp_1":
-            model = AnyLayerMLP(n_inp=n_inp, depth=1)
+            model = AnyLayerMLP(n_inp=n_inp, n_classes=n_classes, depth=1)
         else:
             raise NotImplementedError("Model architecture not supported")
 
@@ -125,10 +127,11 @@ class Distribution:
         self.y_model.load_state_dict(param_dict["y_model"])
 
     def sample(self, n):
-        x = np.random.multivariate_normal(self.mean, self.cov, n)
+        x = np.random.multivariate_normal(self.mean, self.cov, n).astype(np.float32)
         y = self.y_model(ch.from_numpy(x).float())
         y = ch.argmax(y.detach(), dim=1).numpy()
-        y = y.reshape(y.shape[0], 1)
+        # y = y.reshape(y.shape[0], 1)
+        print(np.mean(y))
         return x, y
 
 
@@ -186,6 +189,8 @@ class SyntheticDataset:
         self.dist_diff_std = config.dist_diff_std
         self.drop_senstive_cols = drop_senstive_cols
         self.cov = config.cov
+        self.n_samples_adv = config.n_samples_adv
+        self.n_samples_vic = config.n_samples_vic
 
         # Start with some parameters for D0
         mean = np.random.uniform(-config.mean_range, config.mean_range, config.dimensionality)
@@ -235,12 +240,13 @@ class SyntheticDataset:
                 param.add_(ch.randn(param.size()) * self.config.dist_diff_mean)
         return model_p
 
-    def get_data(self, n_samples: int, alpha: float, split: Literal["victim", "adv"], label_noise: float = 0.0):
+    def get_data(self, alpha: float, split: Literal["victim", "adv"], label_noise: float = 0.0):
         """
           Generate n_samples from the distribution (1-alpha)D0 + (alpha)D1.
           Achieves so by sampling (1-alpha) ratio of samples from D0, and 
           remaining from D1. Uses vic/adv split depending on 'split'
         """
+        n_samples = self.n_samples_adv if split == "adv" else self.n_samples_vic
         n_samples_one = int(n_samples * alpha)
         n_samples_zero = n_samples - n_samples_one
 
@@ -257,6 +263,10 @@ class SyntheticDataset:
         if not self.drop_senstive_cols:
             # Add p_labels as an extra dimension onto x
             x = np.concatenate((x, p_labels.reshape(-1, 1)), axis=1)
+        
+        x = ch.from_numpy(x)
+        y = ch.from_numpy(y)
+        p_labels = ch.from_numpy(p_labels)
         return x, y, p_labels
 
 
@@ -276,23 +286,29 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
             raise ValueError("Requested config not available")
 
         self.dimensionality = self.distribution_config.dimensionality
+        self.n_classes = self.distribution_config.num_classes
 
         if not skip_data:
             self.ds = SyntheticDataset(self.distribution_config,
                                        drop_senstive_cols=self.drop_senstive_cols)
         self.info_object = DatasetInformation(epoch_wise=epoch)
 
-    def load_data(self, n_samples=None):
-        return self.ds.get_data(n_samples=n_samples,
-                                split=self.split,
+    def load_data(self):
+        x, y, p = self.ds.get_data(split=self.split,
                                 alpha=self.ratio,
                                 label_noise=self.label_noise)
+        # Split into train and val data
+        val_ratio = 0.2
+        val_indices = np.random.choice(x.shape[0], int(x.shape[0] * val_ratio), replace=False)
+        train_indices = np.array(list(set(range(x.shape[0])) - set(val_indices)))
+        x_train, y_train, p_train = x[train_indices], y[train_indices], p[train_indices]
+        x_val, y_val, p_val = x[val_indices], y[val_indices], p[val_indices]
+        return (x_train, y_train, p_train), (x_val, y_val, p_val)
 
     def get_loaders(self,batch_size: int,
-                    n_samples: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,):
-        train_data, val_data, _ = self.load_data(n_samples)
+        train_data, val_data = self.load_data()
         self.ds_train = TensorDataset(*train_data)
         self.ds_val = TensorDataset(*val_data)
         return super().get_loaders(batch_size, shuffle=shuffle,
@@ -300,7 +316,10 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
 
     def load_model(self, path: str, on_cpu: bool = False, model_arch: str = None) -> nn.Module:
         info_object = self.info_object
-        model = info_object.get_model(n_inp=self.dimensionality, cpu=on_cpu, model_arch=model_arch)
+        model = info_object.get_model(n_inp=self.dimensionality,
+                                      n_classes=self.n_classes,
+                                      cpu=on_cpu,
+                                      model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
