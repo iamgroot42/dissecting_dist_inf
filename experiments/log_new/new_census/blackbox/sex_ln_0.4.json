@@ -1,17 +1,17 @@
 {
-    "name": "age_label",
-    "start time": "2022-09-15 15:54:26.117202",
+    "name": "sex_ln_0.4",
+    "start time": "2022-09-23 08:05:16.780786",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "boneage",
-                "prop": "age",
+                "name": "new_census",
+                "prop": "sex",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "gender",
+                "classify": null,
                 "cwise_samples": null,
                 "squeeze": true,
                 "processed_variant": true,
@@ -33,28 +33,32 @@
             "extra_info": null,
             "regression": false,
             "multi_class": false,
-            "label_noise": 0,
+            "label_noise": 0.4,
             "model_arch": null,
             "parallel": false
         },
         "values": [
+            0.0,
+            0.1,
             0.2,
             0.3,
             0.4,
             0.6,
             0.7,
-            0.8
+            0.8,
+            0.9,
+            1.0
         ],
         "black_box": {
             "attack_type": [
-                "label_KL"
+                "KL"
             ],
             "ratios": [
                 1.0
             ],
             "batch_size": 30000,
             "num_adv_models": 50,
-            "granularity": 0.005,
+            "granularity": 0.05,
             "preload": true,
             "multi": null,
             "multi2": null,
@@ -87,8 +91,8 @@
         "victim_target_epoch": null
     },
     "result": {
-        "label_KL": {
-            "0.2": {
+        "KL": {
+            "0.0": {
                 "adv_acc": [
                     null,
                     null,
@@ -100,8 +104,40 @@
                     100.0,
                     100.0,
                     100.0,
-                    100.0,
-                    100.0
+                    99.8,
+                    99.8
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    79.4,
+                    72.2,
+                    80.60000000000001,
+                    80.4,
+                    59.0
+                ]
+            },
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    53.2,
+                    66.4,
+                    61.6,
+                    67.80000000000001,
+                    66.4
                 ]
             },
             "0.3": {
@@ -113,11 +149,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    60.199999999999996,
+                    60.6,
+                    55.800000000000004,
+                    59.4,
+                    58.599999999999994
                 ]
             },
             "0.4": {
@@ -129,11 +165,11 @@
                     null
                 ],
                 "victim_acc": [
-                    96.2,
-                    93.8,
-                    93.4,
-                    92.0,
-                    94.8
+                    48.8,
+                    50.8,
+                    47.0,
+                    48.4,
+                    52.400000000000006
                 ]
             },
             "0.6": {
@@ -145,11 +181,11 @@
                     null
                 ],
                 "victim_acc": [
-                    87.0,
-                    85.2,
-                    87.0,
-                    86.4,
-                    80.4
+                    51.6,
+                    49.4,
+                    55.60000000000001,
+                    54.6,
+                    53.6
                 ]
             },
             "0.7": {
@@ -161,11 +197,11 @@
                     null
                 ],
                 "victim_acc": [
-                    98.6,
-                    98.6,
-                    98.4,
-                    98.6,
-                    98.6
+                    54.0,
+                    54.6,
+                    55.800000000000004,
+                    57.99999999999999,
+                    52.6
                 ]
             },
             "0.8": {
@@ -177,14 +213,46 @@
                     null
                 ],
                 "victim_acc": [
-                    99.6,
-                    99.2,
-                    99.8,
-                    98.8,
-                    99.2
+                    64.60000000000001,
+                    62.0,
+                    66.2,
+                    61.8,
+                    62.0
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    73.0,
+                    80.4,
+                    75.8,
+                    79.4,
+                    77.4
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.0,
+                    97.39999999999999,
+                    99.4,
+                    94.8,
+                    97.2
                 ]
             }
         }
     },
-    "save time": "2022-09-15 17:08:00.714118"
+    "save time": "2022-09-23 11:21:22.261494"
 }

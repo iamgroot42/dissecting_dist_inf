@@ -22,7 +22,7 @@ class DatasetInformation(base.DatasetInformation):
         self.num_classes = 20
         super().__init__(name="Texas 100 v2",
                          data_path="texas_100_v2/",
-                         models_path="models_texas",
+                         models_path="models_texas/nobalancing",
                          properties=["sex", "race", "ethnicity"],
                          values={"sex": ratios, "race": ratios,
                                  "ethnicity": ratios},
@@ -327,14 +327,14 @@ class _Texas:
         # For this dataaset
         prop_wise_sample_sizes = {
             "adv": {
-                "sex": (14000, 3000),
-                "race": (14000, 3000),
-                "ethnicity": (9000, 2000)
+                "sex": (18858, 6284),
+                "race": (15540, 5206),
+                "ethnicity": (12175, 4102)
             },
             "victim": {
-                "sex": (40000, 8000),
-                "race": (35000, 8000),
-                "ethnicity": (35000, 8000)
+                "sex": (56555, 18797),
+                "race": (46533, 15503),
+                "ethnicity": (36590, 12176)
             },
         }
 

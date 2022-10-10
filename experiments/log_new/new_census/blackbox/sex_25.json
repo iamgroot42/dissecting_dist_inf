@@ -1,17 +1,17 @@
 {
-    "name": "age_label",
-    "start time": "2022-09-15 15:54:26.117202",
+    "name": "sex_25",
+    "start time": "2022-09-22 15:56:50.839806",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "boneage",
-                "prop": "age",
+                "name": "new_census",
+                "prop": "sex",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "gender",
+                "classify": null,
                 "cwise_samples": null,
                 "squeeze": true,
                 "processed_variant": true,
@@ -38,23 +38,27 @@
             "parallel": false
         },
         "values": [
+            0.0,
+            0.1,
             0.2,
             0.3,
             0.4,
             0.6,
             0.7,
-            0.8
+            0.8,
+            0.9,
+            1.0
         ],
         "black_box": {
             "attack_type": [
-                "label_KL"
+                "KL"
             ],
             "ratios": [
                 1.0
             ],
             "batch_size": 30000,
-            "num_adv_models": 50,
-            "granularity": 0.005,
+            "num_adv_models": 25,
+            "granularity": 0.05,
             "preload": true,
             "multi": null,
             "multi2": null,
@@ -87,8 +91,8 @@
         "victim_target_epoch": null
     },
     "result": {
-        "label_KL": {
-            "0.2": {
+        "KL": {
+            "0.0": {
                 "adv_acc": [
                     null,
                     null,
@@ -102,6 +106,38 @@
                     100.0,
                     100.0,
                     100.0
+                ]
+            },
+            "0.1": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    98.2,
+                    98.0,
+                    98.2,
+                    98.6,
+                    97.2
+                ]
+            },
+            "0.2": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    88.2,
+                    78.2,
+                    88.4,
+                    87.8,
+                    81.39999999999999
                 ]
             },
             "0.3": {
@@ -113,11 +149,11 @@
                     null
                 ],
                 "victim_acc": [
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0,
-                    100.0
+                    73.8,
+                    69.19999999999999,
+                    62.6,
+                    66.0,
+                    66.4
                 ]
             },
             "0.4": {
@@ -129,11 +165,11 @@
                     null
                 ],
                 "victim_acc": [
-                    96.2,
-                    93.8,
-                    93.4,
-                    92.0,
-                    94.8
+                    57.599999999999994,
+                    51.800000000000004,
+                    55.2,
+                    54.800000000000004,
+                    59.599999999999994
                 ]
             },
             "0.6": {
@@ -145,11 +181,11 @@
                     null
                 ],
                 "victim_acc": [
-                    87.0,
-                    85.2,
-                    87.0,
-                    86.4,
-                    80.4
+                    51.800000000000004,
+                    52.400000000000006,
+                    52.800000000000004,
+                    49.2,
+                    53.6
                 ]
             },
             "0.7": {
@@ -161,11 +197,11 @@
                     null
                 ],
                 "victim_acc": [
-                    98.6,
-                    98.6,
-                    98.4,
-                    98.6,
-                    98.6
+                    65.60000000000001,
+                    68.0,
+                    68.0,
+                    62.8,
+                    69.0
                 ]
             },
             "0.8": {
@@ -177,14 +213,46 @@
                     null
                 ],
                 "victim_acc": [
-                    99.6,
-                    99.2,
-                    99.8,
-                    98.8,
-                    99.2
+                    76.8,
+                    76.2,
+                    86.8,
+                    88.6,
+                    89.4
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    96.6,
+                    99.4,
+                    98.0,
+                    98.4,
+                    97.0
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
                 ]
             }
         }
     },
-    "save time": "2022-09-15 17:08:00.714118"
+    "save time": "2022-09-22 18:39:19.231959"
 }

@@ -14,7 +14,6 @@ from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
 import os
 import torch.nn as nn
-from distribution_inference.attacks.utils import get_dfs_for_victim_and_adv
 
 
 def train(model, loaders, train_config: TrainConfig,
@@ -204,10 +203,11 @@ if __name__ == "__main__":
         # Get dataset wrapper
         ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
-        
-
         # Create new DS object
-        ds = ds_wrapper_class(data_config, epoch=train_config.save_every_epoch)
+        ds = ds_wrapper_class(data_config,
+                              epoch=train_config.save_every_epoch,
+                              shuffle_defense=None,
+                              label_noise=train_config.label_noise)
         """
         # train_ds, val_ds = ds.load_data()
         # print(len(train_ds))
@@ -242,7 +242,7 @@ if __name__ == "__main__":
             if dp_config is None:
                 model = ds_info.get_model(model_arch=train_config.model_arch)
             else:
-                model = ds_info.get_model_for_dp()
+                model = ds_info.get_model_for_dp(model_arch=train_config.model_arch)
 
             # Train model
             
@@ -257,6 +257,6 @@ if __name__ == "__main__":
             logger.add_result(data_config.value, loss=vlosses,
                               acc=vacces, **extras)
 
-    # Save logger
-    if args.exp:
-        logger.save()
+            # Save logger
+            if args.exp:
+                logger.save()

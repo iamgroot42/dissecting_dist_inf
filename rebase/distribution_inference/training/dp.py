@@ -166,4 +166,7 @@ def train(model, loaders, train_config: TrainConfig,
 
     test_loss, test_acc = test_opacus(model, val_loader, device)
 
+    # Extract model from GradSampleModule
+    model = model._module
+
     return model, (test_loss, test_acc)

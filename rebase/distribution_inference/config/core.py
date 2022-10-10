@@ -236,6 +236,8 @@ class BlackBoxAttackConfig(Serializable):
     """Where applicable (PPTT), ues loss values instead of logits"""
     random_order: Optional[bool] = False
     """Order points randomly instead of optimal ordering"""
+    log_odds_order: Optional[bool] = False
+    """Order data according to log-odds ratio? Relevant only for KL attack"""
 
     kl_frac: Optional[float] = 0.8
     """Frac of pairs to use (if KL test)"""

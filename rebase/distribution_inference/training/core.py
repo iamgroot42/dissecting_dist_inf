@@ -174,7 +174,7 @@ def validate_epoch(val_loader, model, criterion,
                 # Get model outputs
                 outputs_adv = model(adv_x)
                 if not multi_class:
-                    outputs = outputs[:, 0]
+                    outputs_adv = outputs_adv[:, 0]
 
                 if not regression:
                     if multi_class:

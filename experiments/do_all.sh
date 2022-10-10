@@ -8,7 +8,7 @@ j=0
 for i in $1
 do
 echo $i
-python train_more.py --load_config "./texas_eth.json" --ratios $i --split $2 --offset $3 --gpu $j &
+python train_more.py --load_config "./texas_race.json" --ratios $i --split $2 --offset $3 --gpu $j &
 #python comparison_save.py --load_config nc_comp.json --en sex_comp --gpu $j --trial_offset $2 --ratios $i &
 #python whitebox_affinity.py --load_config race_aff.json --en "Not_saving" --gpu $j --ratios $i --trial $2 & 
 #python generate_metric_plot.py --log_path log/new_census/training/victim_race_mlp2_race_0.json --wanted loss R_cross --title "Census 19 race $i" --ratios $i --savepath race_R_vs_loss_$i

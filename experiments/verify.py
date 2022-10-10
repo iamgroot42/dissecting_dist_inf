@@ -24,7 +24,7 @@ if __name__ == "__main__":
         type=str, required=True)
     parser.add_argument(
         "--ratios", nargs='+', help="ratios", type=float)
-    
+
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     train_config: TrainConfig = TrainConfig.load(
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
     # Print out arguments
     flash_utils(train_config)
-    
+
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
     exp_name = "_".join([train_config.data_config.split, train_config.data_config.prop,
@@ -55,18 +55,18 @@ if __name__ == "__main__":
     ds_info = get_dataset_information(
         data_config.name)(True)
     _, data_config_vic = get_dfs_for_victim_and_adv(
-            data_config, prop_value=0.0)
-    
+        data_config, prop_value=0.0)
+
     ds_vic_1 = ds_wrapper_class(
         data_config_vic,
         label_noise=train_config.label_noise)
     _, loader1 = ds_vic_1.get_loaders(batch_size=train_config.batch_size)
     _, data_config_vic = get_dfs_for_victim_and_adv(
-            data_config, prop_value=1.0)
+        data_config, prop_value=1.0)
     ds_vic_2 = ds_wrapper_class(
-            data_config_vic,
-            label_noise=train_config.label_noise,
-            epoch=True)
+        data_config_vic,
+        label_noise=train_config.label_noise,
+        epoch=True)
     _, loader2 = ds_vic_2.get_loaders(batch_size=train_config.batch_size)
     if train_config.regression:
         criterion = nn.MSELoss()
@@ -82,7 +82,6 @@ if __name__ == "__main__":
             data_config_vic,
             label_noise=train_config.label_noise,
             epoch=True)
-        
 
         # Get model
         models_vic = ds_vic_use.get_models(
@@ -93,35 +92,34 @@ if __name__ == "__main__":
             epochwise_version=True,
             model_arch=train_config.model_arch,
             custom_models_path=None)
-        
-        
+
         for i in tqdm(range(1, train_config.num_models + 1)):
-            vloss,vacc = [],[]
+            vloss, vacc = [], []
             for e in range(train_config.epochs):
                 model = models_vic[e][i-1]
                 vloss1, vacc1 = validate_epoch(
-                        loader1,
-                        model, criterion,
-                        verbose=False,
-                        adv_config=None,
-                        expect_extra=train_config.expect_extra,
-                        input_is_list=False,
-                        regression=train_config.regression,
-                        multi_class=train_config.multi_class)
-                
-                
+                    loader1,
+                    model, criterion,
+                    verbose=False,
+                    adv_config=None,
+                    expect_extra=train_config.expect_extra,
+                    input_is_list=False,
+                    regression=train_config.regression,
+                    multi_class=train_config.multi_class)
+
                 vloss2, vacc2 = validate_epoch(
-                        loader2,
-                        model, criterion,
-                        verbose=False,
-                        adv_config=None,
-                        expect_extra=train_config.expect_extra,
-                        input_is_list=False,
-                        regression=train_config.regression,
-                        multi_class=train_config.multi_class)
-                
-                vacc.append(vacc2/vacc1)
+                    loader2,
+                    model, criterion,
+                    verbose=False,
+                    adv_config=None,
+                    expect_extra=train_config.expect_extra,
+                    input_is_list=False,
+                    regression=train_config.regression,
+                    multi_class=train_config.multi_class)
+
+                # Use 1 - acc (0-1 loss)
+                vacc.append((1-vacc2)/(1-vacc1))
                 vloss.append(vloss2/vloss1)
-            
-            logger.add_result(ratio, loss_ratio=vloss,acc_ratio=vacc)
+
+            logger.add_result(ratio, loss_ratio=vloss, acc_ratio=vacc)
     logger.save()
