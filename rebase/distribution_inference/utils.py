@@ -77,6 +77,13 @@ def get_save_path():
     return "./log_new"
 
 
+def get_synthetic_configs_path():
+    """
+        Path where synthetic config files are stored
+    """
+    return "./configs/synthetic/data_configs"
+
+
 def get_arxiv_node_params_mapping():
     """
         Get parameters for Zipf distribution estimation

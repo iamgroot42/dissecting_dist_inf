@@ -1,0 +1,14 @@
+{
+    "dimensionality": 10,
+    "adv_noise_to_mean": 1.0,
+    "noise_cov": 0.98,
+    "noise_model": 1.0,
+    "mean_range": 5.0,
+    "dist_diff_mean": 1.0,
+    "dist_diff_std": 1.0,
+    "layer": [15, 5],
+    "cov": 3.0,
+    "n_samples_vic": 5000,
+    "n_samples_adv": 1000,
+    "diff_posteriors": true
+}

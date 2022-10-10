@@ -1,0 +1,18 @@
+{
+    "data_config": {
+        "name": "synthetic",
+        "prop": "1",
+        "split": "victim",
+        "value": 0.5,
+        "drop_senstive_cols": true
+    },
+    "offset": 0,
+    "epochs": 50,
+    "learning_rate": 1e-3,
+    "batch_size": 200,
+    "weight_decay": 1e-4,
+    "num_models": 1,
+    "get_best": true,
+    "verbose": false,
+    "model_arch": "mlp_1"
+}
