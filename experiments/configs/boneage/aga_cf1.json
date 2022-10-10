@@ -1,0 +1,44 @@
+{
+    "white_box": {
+        "attack": "affinity",
+        "epochs": 200,
+        "batch_size": 250,
+        "learning_rate": 2e-4,
+        "weight_decay": 1e-4,
+        "affinity_config": {
+            "num_final": 16,
+            "frac_retain_pairs": 0.30,
+            "num_samples_use": 40,
+            "shared_layerwise_params": true,
+            "inner_dims": [
+                256,
+                64,
+                16
+            ]
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "boneage",
+            "prop": "gender",
+            "classify": "age",
+            "split": "adv",
+            "squeeze": true,
+            "value": 0.5
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "tries": 3,
+    "values": [
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8
+    ],
+    "on_cpu": true,
+    "num_victim_models": 250
+}

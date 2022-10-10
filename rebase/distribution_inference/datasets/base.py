@@ -8,7 +8,7 @@ import torch.nn as nn
 from typing import List
 import warnings
 
-from distribution_inference.utils import check_if_inside_cluster, warning_string, log,check_user
+from distribution_inference.utils import check_if_inside_cluster, warning_string, log, check_user
 from distribution_inference.config import DatasetConfig, TrainConfig, WhiteBoxAttackConfig
 from distribution_inference.attacks.whitebox.utils import get_weight_layers
 import distribution_inference.datasets.utils as utils
@@ -17,8 +17,10 @@ import distribution_inference.datasets.utils as utils
 class Constants:
     splits = ["victim", "adv"]
     if check_if_inside_cluster():
-        base_data_directory = "/scratch/{}/datasets/".format(check_user())
-        base_models_directory = "/scratch/{}/".format(check_user())
+        base_data_directory = "/project/uvasrg_paid/datasets/"
+        base_models_directory = "/project/uvasrg_paid/models/"
+        # base_data_directory = "/scratch/{}/datasets/".format(check_user())
+        # base_models_directory = "/scratch/{}/".format(check_user())
     else:
         base_data_directory = "/p/adversarialml/as9rw/datasets/"
         base_models_directory = "/p/adversarialml/as9rw/"

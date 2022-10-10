@@ -137,6 +137,7 @@ class KNeighborsClassifier(BaseModel):
         super().__init__(is_sklearn_model=True)
         self.model = KN(n_neighbors=n_neighbors,leaf_size=leaf_size,p=p,n_jobs=n_jobs)
 
+
 class GaussianProcessClassifier(BaseModel):
     def __init__(self,
                 n_restarts_optimizer: int = 0,
@@ -147,12 +148,14 @@ class GaussianProcessClassifier(BaseModel):
         self.model = GPC(n_restarts_optimizer=n_restarts_optimizer,
         max_iter_predict=max_iter_predict,n_jobs=n_jobs)
 
+
 class MultinomialNB(BaseModel):
     def __init__(self,
                 alpha:float = 1.0
                 ):
         super().__init__(is_sklearn_model=True)
         self.model = MNB(alpha=alpha)
+
 
 class InceptionModel(BaseModel):
     def __init__(self,
@@ -632,3 +635,27 @@ class GCN(BaseModel):
             if i == latent:
                 return h
         return h
+
+
+class AnyLayerMLP(BaseModel):
+    def __init__(self, n_inp: int, n_classes: int, depth: int = 1):
+        super().__init__(is_conv=False)
+        self.mapping = {
+            1: [32],
+            2: [32, 16],
+            3: [32, 16, 8],
+            4: [32, 16, 8, 4],
+        }
+        if depth not in self.mapping:
+            raise ValueError(f"Depth {depth} not supported")
+        desired_dims = self.mapping[depth]
+        self.layers = nn.ModuleList()
+        self.layers.append(nn.Linear(n_inp, desired_dims[0]))
+        for i in range(1, len(desired_dims)):
+            self.layers.append(nn.Linear(desired_dims[i - 1], desired_dims[i]))
+            self.layers.append(nn.ReLU())
+        self.layers.append(nn.Linear(desired_dims[-1], n_classes))
+        self.model = nn.Sequential(*self.layers)
+    
+    def forward(self, x: ch.Tensor) -> ch.Tensor:
+        return self.model(x)

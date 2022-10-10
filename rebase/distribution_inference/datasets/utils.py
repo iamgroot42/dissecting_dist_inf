@@ -4,7 +4,7 @@ from tqdm import tqdm
 import pandas as pd
 import torch as ch
 
-from distribution_inference.datasets import new_census, celeba, boneage,census, texas, arxiv
+from distribution_inference.datasets import new_census, celeba, boneage,census, texas, arxiv, synthetic
 
 DATASET_INFO_MAPPING = {
     "new_census": new_census.DatasetInformation,
@@ -12,7 +12,8 @@ DATASET_INFO_MAPPING = {
     "boneage": boneage.DatasetInformation,
     "old_census": census.DatasetInformation,
     "texas": texas.DatasetInformation,
-    "arxiv": arxiv.DatasetInformation
+    "arxiv": arxiv.DatasetInformation,
+    "synthetic": synthetic.DatasetInformation,
 }
 
 DATASET_WRAPPER_MAPPING = {
@@ -21,7 +22,8 @@ DATASET_WRAPPER_MAPPING = {
     "boneage": boneage.BoneWrapper,
     "old_census": census.CensusWrapper,
     "texas": texas.TexasWrapper,
-    "arxiv": arxiv.ArxivWrapper
+    "arxiv": arxiv.ArxivWrapper,
+    "synthetic": synthetic.SyntheticWrapper
 }
 
 
@@ -128,6 +130,7 @@ def heuristic(df, condition, ratio: float,
 def multiclass_heuristic(
         df, condition, ratio: float,
         total_samples: int,
+        class_ratio_maintain: bool,
         n_tries: int = 1000,
         class_col: str = "label",
         verbose: bool = True):
@@ -145,27 +148,32 @@ def multiclass_heuristic(
     class_counts = class_counts / (1. * np.sum(class_counts))
     per_class_samples = class_counts * total_samples
     for _ in iterator:
-        # For each class
-        inner_pckds = []
-        for i, cid in enumerate(class_labels):
-            # Find rows that have that specific class label
-            df_i = df[df[class_col] == cid]
-            pcked_df = filter(df_i, condition, ratio, verbose=False)
-            # Randomly sample from this set
-            # Since sampling is uniform at random, should preserve ratio
-            # Either way- we pick a sample that is closest to desired ratio
-            # So that aspect should be covered anyway
-            if int(per_class_samples[i]) < 1:
-                raise ValueError(f"Not enough data to sample from class {cid}")
-            if int(per_class_samples[i]) > len(pcked_df):
-                print(warning_string(
-                    f"Requested {int(per_class_samples[i])} but only {len(pcked_df)} avaiable for class {cid}"))
-            else:
-                pcked_df = pcked_df.sample(
-                    int(per_class_samples[i]), replace=True)
-            inner_pckds.append(pcked_df.reset_index(drop=True))
-        # Concatenate all inner_pckds into one
-        pckd_df = pd.concat(inner_pckds)
+
+        if class_ratio_maintain:
+            # For each class
+            inner_pckds = []
+            for i, cid in enumerate(class_labels):
+                # Find rows that have that specific class label
+                df_i = df[df[class_col] == cid]
+                pcked_df = filter(df_i, condition, ratio, verbose=False)
+                # Randomly sample from this set
+                # Since sampling is uniform at random, should preserve ratio
+                # Either way- we pick a sample that is closest to desired ratio
+                # So that aspect should be covered anyway
+
+                if int(per_class_samples[i]) < 1:
+                    raise ValueError(f"Not enough data to sample from class {cid}")
+                if int(per_class_samples[i]) > len(pcked_df):
+                    print(warning_string(
+                        f"Requested {int(per_class_samples[i])} but only {len(pcked_df)} avaiable for class {cid}"))
+                else:
+                    pcked_df = pcked_df.sample(
+                        int(per_class_samples[i]), replace=True)
+                inner_pckds.append(pcked_df.reset_index(drop=True))
+            # Concatenate all inner_pckds into one
+            pckd_df = pd.concat(inner_pckds)
+        else:
+            pcked_df = filter(df, condition, ratio, verbose=False)
 
         vals.append(condition(pckd_df).mean())
         pckds.append(pckd_df)
