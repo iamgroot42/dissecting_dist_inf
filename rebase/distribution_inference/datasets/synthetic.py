@@ -107,7 +107,14 @@ class Distribution:
         using given y_model.
     """
 
-    def __init__(self, mean, cov, y_model):
+    def __init__(self, config: SyntheticDatasetConfig):
+        self.mean = None
+        self.cov = None
+        self.y_model = GroundTruthModel(config.dimensionality,
+                                        config.num_classes,
+                                        config.layer)
+    
+    def initialize_params(self, mean, cov, y_model):
         self.mean = mean
         self.cov = cov
         self.y_model = y_model
@@ -138,11 +145,13 @@ class VicAdvDistribution:
         Adversary's parameter estimates may be a bit off (domain shift), 
         and the labels might be too (will be added later).
     """
-    def __init__(self, config: SyntheticDatasetConfig, mean, cov, y_model: GroundTruthModel):
+    def __init__(self, config: SyntheticDatasetConfig):
         self.config = config
+        self.vic_distr = Distribution(config)
+        self.adv_distr = Distribution(config)
 
     def initialize_params(self, mean, cov, y_model: GroundTruthModel):
-        self.vic_distr = Distribution(mean, cov, y_model)
+        self.vic_distr.initialize_params(mean, cov, y_model)
 
         # Create perturbed mean for adv
         if self.config.adv_noise_to_mean > 0:
@@ -158,7 +167,7 @@ class VicAdvDistribution:
             cov_adv = cov
 
         # TODO: y_model variation different for the adversary
-        self.adv_distr = Distribution(mean_adv, cov_adv, y_model)
+        self.adv_distr.initialize_params(mean_adv, cov_adv, y_model)
 
     def get_params(self):
         return {
@@ -198,8 +207,8 @@ class SyntheticDataset:
         self.cov = config.cov
         self.n_samples_adv = config.n_samples_adv
         self.n_samples_vic = config.n_samples_vic
-        self.NUM_MAX_TRIES = 100
-        self.ACCEPTABLE_CUTOFF = 0.3
+        self.NUM_MAX_TRIES = 200
+        self.ACCEPTABLE_CUTOFF = 0.2
 
         self.distr_0 = VicAdvDistribution(self.config)
         self.distr_1 = VicAdvDistribution(self.config)
@@ -233,21 +242,25 @@ class SyntheticDataset:
             if not self.diff_posteriors:
                 model_D1 = self.__get_perturbed_model_copy(model_D1)
 
-            # Create D0 for vic/adv
+            # Initialize D0 for vic/adv
             self.distr_0.initialize_params(mean, cov, model_D0)
-            # Create D1 for vic/adv
+            # Initialize D1 for vic/adv
             self.distr_1.initialize_params(mean_copy, cov_copy, model_D1)
 
-            _, y, _ = self.get_data(0.5, "victim")
-            diff = min(ch.mean(1. * y), 1 - ch.mean(1. * y)).item()
-            if (0.5 - diff) < (0.5 - self.ACCEPTABLE_CUTOFF):
-                candidate_d0.append(self.distr_0)
-                candidate_d1.append(self.distr_1)
+            _, y_1, _ = self.get_data(0.0, "victim")
+            _, y_2, _ = self.get_data(1.0, "victim")
+            diff_1 = ch.abs(ch.mean(1. * y_1) - 0.5).item()
+            diff_2 = ch.abs(ch.mean(1. * y_2) - 0.5).item()
+            if (diff_1 < self.ACCEPTABLE_CUTOFF) and (diff_2 < self.ACCEPTABLE_CUTOFF):
+                print(ch.mean(1. * y_1), ch.mean(1. * y_2))
+                candidate_d0.append(self.distr_0.get_params())
+                candidate_d1.append(self.distr_1.get_params())
 
         # Pick one of the models uniformly at random
         random_selection = np.random.randint(len(candidate_d0))
-        self.distr_0 = candidate_d0[random_selection]
-        self.distr_1 = candidate_d1[random_selection]
+        print(f"Picking out of {len(candidate_d0)}/{self.NUM_MAX_TRIES} candidates")
+        self.distr_0.load_params(candidate_d0[random_selection])
+        self.distr_1.load_params(candidate_d1[random_selection])
 
     def save_params(self, path):
         """
@@ -280,6 +293,8 @@ class SyntheticDataset:
           Achieves so by sampling (1-alpha) ratio of samples from D0, and 
           remaining from D1. Uses vic/adv split depending on 'split'
         """
+        if alpha < 0 or alpha > 1:
+            raise ValueError("Invalid alpha value provided: should be in [0, 1]")
         n_samples = self.n_samples_adv if split == "adv" else self.n_samples_vic
         n_samples_one = int(n_samples * alpha)
         n_samples_zero = n_samples - n_samples_one
@@ -351,6 +366,8 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
             list(set(range(x.shape[0])) - set(val_indices)))
         x_train, y_train, p_train = x[train_indices], y[train_indices], p[train_indices]
         x_val, y_val, p_val = x[val_indices], y[val_indices], p[val_indices]
+        print(ch.mean(1. * y_train))
+        print(ch.mean(1. * y_val))
         return (x_train, y_train, p_train), (x_val, y_val, p_val)
 
     def get_loaders(self, batch_size: int,

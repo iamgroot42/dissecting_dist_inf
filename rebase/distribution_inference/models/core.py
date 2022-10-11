@@ -641,10 +641,7 @@ class AnyLayerMLP(BaseModel):
     def __init__(self, n_inp: int, n_classes: int, depth: int = 1):
         super().__init__(is_conv=False)
         self.mapping = {
-            1: [32],
-            2: [32, 16],
-            3: [32, 16, 8],
-            4: [32, 16, 8, 4],
+            1: [16, 8, 4],
         }
         if depth not in self.mapping:
             raise ValueError(f"Depth {depth} not supported")

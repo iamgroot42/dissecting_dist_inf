@@ -1,8 +1,9 @@
 import torch as ch
 import pickle
+import numpy as np
 from cleverhans.future.torch.attacks.projected_gradient_descent import projected_gradient_descent
 
-from distribution_inference.config import AttackConfig
+from distribution_inference.config import AttackConfig, EarlyStoppingConfig
 
 
 class AverageMeter(object):
@@ -75,3 +76,21 @@ def generate_adversarial_input(model, data,
                 sanity_checks=sanity_checks,
                 binary_sigmoid=True)
     return adv_data
+
+
+class EarlyStopper:
+    def __init__(self, config: EarlyStoppingConfig):
+        self.patience = config.patience
+        self.min_delta = config.min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+
+    def step(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False

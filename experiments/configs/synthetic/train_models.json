@@ -3,15 +3,19 @@
         "name": "synthetic",
         "prop": "1",
         "split": "victim",
-        "value": 0.5,
+        "value": 1.0,
         "drop_senstive_cols": true
     },
+    "early_stopping": {
+        "patience": 5,
+        "min_delta": 2e-3
+    },
     "offset": 0,
-    "epochs": 50,
+    "epochs": 300,
     "learning_rate": 1e-3,
-    "batch_size": 200,
+    "batch_size": 500,
     "weight_decay": 1e-4,
-    "num_models": 1,
+    "num_models": 12,
     "get_best": true,
     "verbose": false,
     "model_arch": "mlp_1"

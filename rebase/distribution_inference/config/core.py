@@ -160,8 +160,23 @@ class LRScheduler(Serializable):
     """Number of epochs to wait before reducing learning rate"""
     mode: Optional[str] = "min"
     """Mode to use for learning rate scheduler"""
+    threshold: Optional[float] = 1e-4
+    """Threshold to measure new optimum"""
     verbose: Optional[bool] = True
-    """Whether to print out per-classifier stats"""
+    """Whether to print changes in LR"""
+
+
+@dataclass
+class EarlyStoppingConfig(Serializable):
+    """
+        Hyper-parameters for early stopping
+    """
+    patience: Optional[int] = 5
+    """Number of epochs to wait before stopping training"""
+    min_delta: Optional[float] = 1e-2
+    """Minimum change required in validation loss"""
+    verbose: Optional[bool] = True
+    """Whether to print early termination status"""
 
 
 @dataclass
@@ -209,6 +224,8 @@ class TrainConfig(Serializable):
     """Model architecture to use (defaults to dataset-specific)"""
     parallel: Optional[bool] = False
     """Use multiple GPUs for model training?"""
+    early_stopping: Optional[EarlyStoppingConfig] = None
+    """Use early stopping?"""
 
 @dataclass
 class GenerativeAttackConfig(Serializable):
