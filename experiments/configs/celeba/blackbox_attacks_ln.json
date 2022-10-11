@@ -41,5 +41,5 @@
         "preload": true,
         "kl_frac": 0.8
     },
-    "num_victim_models": 100
+    "num_victim_models": 250
 }

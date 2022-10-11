@@ -2,17 +2,17 @@
     "data_config": {
         "name": "new_census",
         "prop": "sex",
-        "split": "adv",
+        "split": "victim",
         "squeeze": true,
         "value": 1.0
     },
-    "model_arch": "mlp3",
     "offset": 0,
-    "epochs": 8,
+    "epochs": 20,
     "learning_rate": 1e-3,
     "batch_size": 200,
-    "verbose": false,
     "weight_decay": 1e-4,
     "num_models": 250,
-    "get_best": true
+    "get_best": true,
+    "verbose": false,
+    "model_arch": "mlp3"
 }

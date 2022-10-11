@@ -61,7 +61,7 @@ if __name__ == "__main__":
     plt.rc('ytick', labelsize=13)
     plt.rc('axes', labelsize=14)
 
-    # plt.style.use('dark_background')
+    plt.style.use('dark_background')
 
     # Plot curves corresponding to ratios
     colors = ['blue', 'orange', 'green', 'lightcoral', 'purple']
@@ -134,8 +134,8 @@ if __name__ == "__main__":
     plt.style.use('seaborn')
     plt.gca().invert_yaxis()
     plt.legend()
-    plt.savefig("./bound_curves_regression.pdf")
-    # plt.savefig("./bound_curves_regression.png")
+    # plt.savefig("./bound_curves_regression.pdf")
+    plt.savefig("./bound_curves_regression.png")
 
     # print(bound(0.1, 0.2, 2))
     # print(bound(0.5, 0.6, 2))

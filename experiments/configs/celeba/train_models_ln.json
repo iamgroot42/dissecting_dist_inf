@@ -13,9 +13,8 @@
     "batch_size": 128,
     "weight_decay": 1e-3,
     "num_models": 250,
-    "label_noise": 0.2,
-    "save_every_epoch": false,
     "get_best": true,
     "verbose": false,
-    "model_arch": "alexnet"
+    "model_arch": "alexnet",
+    "label_noise": 0.2
 }

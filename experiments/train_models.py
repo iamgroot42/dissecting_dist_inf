@@ -18,7 +18,6 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 EXTRA = False  #True
 if __name__ == "__main__":
-    print("started")
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path)
