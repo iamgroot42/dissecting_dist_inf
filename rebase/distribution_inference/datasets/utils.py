@@ -173,7 +173,7 @@ def multiclass_heuristic(
             # Concatenate all inner_pckds into one
             pckd_df = pd.concat(inner_pckds)
         else:
-            pcked_df = filter(df, condition, ratio, verbose=False)
+            pckd_df = filter(df, condition, ratio, verbose=False)
 
         vals.append(condition(pckd_df).mean())
         pckds.append(pckd_df)

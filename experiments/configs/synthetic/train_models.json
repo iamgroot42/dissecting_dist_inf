@@ -1,9 +1,9 @@
 {
     "data_config": {
         "name": "synthetic",
-        "prop": "1",
+        "prop": "4",
         "split": "victim",
-        "value": 1.0,
+        "value": 0.0,
         "drop_senstive_cols": true
     },
     "early_stopping": {
@@ -18,5 +18,5 @@
     "num_models": 12,
     "get_best": true,
     "verbose": false,
-    "model_arch": "mlp_1"
+    "model_arch": "mlp_4"
 }
