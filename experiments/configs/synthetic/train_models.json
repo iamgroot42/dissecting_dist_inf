@@ -15,7 +15,7 @@
     "learning_rate": 1e-3,
     "batch_size": 500,
     "weight_decay": 1e-4,
-    "num_models": 12,
+    "num_models": 20,
     "get_best": true,
     "verbose": false,
     "model_arch": "mlp_4"
