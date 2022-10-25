@@ -604,7 +604,7 @@ class GCN(BaseModel):
     def __init__(self, n_hidden, n_layers,
                  dropout,  num_classes,
                  num_features):
-        super().__init__(is_conv=True,
+        super().__init__(is_conv=False,
                          is_graph_model=True,
                          transpose_features=False)
 

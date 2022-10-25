@@ -1,0 +1,34 @@
+{
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 200,
+        "batch_size": 1000,
+        "permutation_config": {
+            "focus": "fc"
+        }
+    },
+    "train_config": {
+        "data_config": {
+            "name": "arxiv",
+            "multi_class": true,
+            "prop": "mean",
+            "split": "adv",
+            "value": 13
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "tries": 3,
+    "values": [
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17
+    ],
+    "num_victim_models": 250
+}

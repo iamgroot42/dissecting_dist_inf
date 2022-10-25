@@ -1,20 +1,20 @@
 {
-    "name": "pin_wavy",
-    "start time": "2022-10-25 11:17:51.593832",
+    "name": "pin",
+    "start time": "2022-10-24 16:12:15.167853",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "celeba",
-                "prop": "High_Cheekbones",
-                "value": 0.5,
+                "name": "arxiv",
+                "prop": "mean",
+                "value": 13.0,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "Mouth_Slightly_Open",
+                "classify": null,
                 "cwise_samples": null,
                 "squeeze": false,
-                "processed_variant": false,
+                "processed_variant": true,
                 "prune": 0
             },
             "epochs": 0,
@@ -39,27 +39,25 @@
             "early_stopping": null
         },
         "values": [
-            0.0,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.6,
-            0.7,
-            0.8,
-            0.9,
-            1.0
+            9,
+            10,
+            11,
+            12,
+            14,
+            15,
+            16,
+            17
         ],
         "black_box": null,
         "white_box": {
             "attack": "permutation_invariant",
-            "epochs": 100,
-            "batch_size": 150,
+            "epochs": 200,
+            "batch_size": 1000,
             "learning_rate": 0.001,
             "weight_decay": 0.01,
-            "train_sample": 800,
-            "val_sample": 0,
-            "save": true,
+            "train_sample": 750,
+            "val_sample": 50,
+            "save": false,
             "load": null,
             "regression_config": null,
             "eval_every": 10,
@@ -74,7 +72,7 @@
             "start_n_conv": 0,
             "first_n_conv": null,
             "permutation_config": {
-                "focus": "all",
+                "focus": "fc",
                 "scale_invariance": false
             },
             "affinity_config": null,
@@ -82,7 +80,7 @@
         },
         "tries": 3,
         "num_victim_models": 250,
-        "on_cpu": true,
+        "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
@@ -94,67 +92,15 @@
     },
     "result": {
         "permutation_invariant": {
-            "0.0": {
+            "9": {
                 "adv_acc": [
-                    null,
-                    null,
                     null
                 ],
                 "victim_acc": [
-                    98.2,
-                    99.4,
-                    98.0
-                ]
-            },
-            "0.1": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    99.0,
-                    98.8,
-                    98.2
-                ]
-            },
-            "0.2": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    88.0,
-                    93.0,
-                    92.0
-                ]
-            },
-            "0.3": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    86.0,
-                    83.8,
-                    83.2
-                ]
-            },
-            "0.4": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    63.6,
-                    65.0,
-                    63.8
+                    50.0
                 ]
             }
         }
     },
-    "save time": "2022-10-25 14:50:36.449956"
+    "save time": "2022-10-24 16:28:51.666951"
 }
