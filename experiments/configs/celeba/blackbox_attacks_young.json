@@ -32,7 +32,8 @@
         "num_adv_models": 50,
         "batch_size": 512,
         "attack_type": [
-            "KL"
+            "KL",
+            "loss_and_threshold"
         ],
         "ratios": [
             1.0

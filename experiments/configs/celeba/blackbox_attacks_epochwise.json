@@ -6,6 +6,7 @@
             "classify": "Smiling",
             "split": "adv",
             "value": 0.5,
+            "cwise_samples": 1e6,
             "processed_variant": false
         },
         "epochs": 0,

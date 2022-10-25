@@ -1,19 +1,29 @@
 {
+    "white_box": {
+        "attack": "permutation_invariant",
+        "epochs": 100,
+        "batch_size": 150,
+        "train_sample": 800,
+        "val_sample": 0,
+        "save": true,
+        "permutation_config": {
+            "focus": "all"
+        }
+    },
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Male",
-            "classify": "Smiling",
+            "prop": "High_Cheekbones",
+            "classify": "Mouth_Slightly_Open",
             "split": "adv",
             "value": 0.5,
-            "cwise_samples": 1e6,
             "processed_variant": false
         },
         "epochs": 0,
         "learning_rate": 0,
         "batch_size": 0
     },
-    "tries": 5,
+    "tries": 3,
     "values": [
         0.0,
         0.1,
@@ -27,18 +37,5 @@
         1.0
     ],
     "on_cpu": true,
-    "black_box": {
-        "granularity": 0.005,
-        "num_adv_models": 50,
-        "batch_size": 512,
-        "attack_type": [
-            "label_KL"
-        ],
-        "ratios": [
-            1.0
-        ],
-        "preload": true,
-        "kl_frac": 0.8
-    },
     "num_victim_models": 250
 }

@@ -4,10 +4,9 @@
         "prop": "Male",
         "classify": "Smiling",
         "split": "adv",
-        "value": 0.0,
+        "value": 0.5,
         "processed_variant": true
     },
-    "offset": 3000,
     "epochs": 25,
     "learning_rate": 1e-3,
     "batch_size": 64,
@@ -15,5 +14,5 @@
     "num_models": 1,
     "get_best": true,
     "verbose": false,
-    "model_arch": "alexnet"
+    "model_arch": "mlp2"
 }
