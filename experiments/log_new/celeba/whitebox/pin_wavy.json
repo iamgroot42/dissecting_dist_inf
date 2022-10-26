@@ -153,8 +153,68 @@
                     65.0,
                     63.8
                 ]
+            },
+            "0.6": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    61.8,
+                    62.4,
+                    61.2
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    80.2,
+                    88.0,
+                    65.4
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    92.0,
+                    90.4,
+                    91.6
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    92.6,
+                    97.4,
+                    87.6
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    99.0,
+                    92.4,
+                    97.8
+                ]
             }
         }
     },
-    "save time": "2022-10-25 14:50:36.449956"
+    "save time": "2022-10-25 18:16:52.952022"
 }
