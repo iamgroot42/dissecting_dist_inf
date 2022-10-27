@@ -168,6 +168,11 @@ class CustomDatasetWrapper:
         # Active defenses
         self.shuffle_defense = shuffle_defense
 
+        # Keep track of which exact points were used for train/testing
+        # in the form of indices
+        self.used_for_train = None
+        self.used_for_test = None
+
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,

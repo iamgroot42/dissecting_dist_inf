@@ -268,7 +268,7 @@ class CelebACustomBinary(base.CustomDataset):
         self.filenames.sort()
 
         # Apply requested filter
-        self.filenames = self._ratio_sample_data(
+        self.filenames, self.picked_ids = self._ratio_sample_data(
             self.filenames, self.attr_dict,
             classify, prop, ratio, cwise_sample)
 
@@ -304,7 +304,7 @@ class CelebACustomBinary(base.CustomDataset):
         # Make filter
         def condition(x): return x[prop] == 1
 
-        parsed_df = utils.heuristic(
+        parsed_df, ids = utils.heuristic(
             df, condition, ratio,
             # cwise_sample,
             cwise_sample=None,
@@ -313,9 +313,10 @@ class CelebACustomBinary(base.CustomDataset):
             tot_samples=subsample_size,
             n_tries=100,
             class_col=label_name,
-            verbose=True)
+            verbose=True,
+            get_indices = True)
         # Extract filenames from parsed DF
-        return parsed_df["filename"].tolist()
+        return parsed_df["filename"].tolist(), ids
 
     def __len__(self):
         if self.process_fn:
@@ -441,39 +442,6 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             "splits", "75_25", self.split, "test.txt")
 
         # Define number of sub-samples
-        # prop_wise_subsample_sizes = {
-        #     "Smiling": {
-        #         "adv": {
-        #             "Male": (10000, 1000),
-        #             "Attractive": (10000, 1200)
-        #         },
-        #         "victim": {
-        #             "Male": (15000, 3000),
-        #             "Attractive": (30000, 4000)
-        #         }
-        #     },
-        #     "Male": {
-        #         "adv": {
-        #             "Young": (3000, 350)
-        #         },
-        #         "victim": {
-        #             "Young": (8000, 1400)
-        #         }
-        #     },
-        #     "Mouth_Slightly_Open": {
-        #         "adv": {
-        #             "Wavy_Hair": (6500, 500),
-        #             "High_Cheekbones": (8000, 800)
-        #         },
-        #         "victim": {
-        #             "Wavy_Hair": (17000, 2500),
-        #             "High_Cheekbones": (25000, 3000)
-        #         }
-        #     }
-        # }
-
-        # Above was based on class-biased re-sampling
-        # Below is not
         prop_wise_subsample_sizes = {
             "Smiling": {
                 "adv": {
@@ -532,6 +500,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                     num_workers: int = 24,
                     prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
+        self.used_for_train = self.ds_train.picked_ids
+        self.used_for_test = self.ds_val.picked_ids
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
                                    val_factor=val_factor,
