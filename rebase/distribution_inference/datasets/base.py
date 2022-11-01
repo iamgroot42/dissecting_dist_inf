@@ -332,7 +332,7 @@ class CustomDatasetWrapper:
             state across iterations of being trained (sorted in epoch order)
         """
         # Get path to load models
-        if model_arch==None:
+        if model_arch==None or model_arch=="None":
             model_arch=self.info_object.default_model
         model_paths, folder_path, total_models = self._get_model_paths(
             train_config,

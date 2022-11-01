@@ -1,20 +1,20 @@
 {
-    "name": "male_label_proper",
-    "start time": "2022-11-01 11:55:01.560047",
+    "name": "bone_gender_zhang",
+    "start time": "2022-09-21 01:12:41.353683",
     "attack_config": {
         "train_config": {
             "data_config": {
-                "name": "celeba",
-                "prop": "Male",
+                "name": "boneage",
+                "prop": "gender",
                 "value": 0.5,
                 "split": "adv",
                 "drop_senstive_cols": false,
                 "scale": 1.0,
                 "augment": false,
-                "classify": "Smiling",
-                "cwise_samples": 1000000,
-                "squeeze": false,
-                "processed_variant": false,
+                "classify": "age",
+                "cwise_samples": null,
+                "squeeze": true,
+                "processed_variant": true,
                 "prune": 0
             },
             "epochs": 0,
@@ -35,31 +35,26 @@
             "multi_class": false,
             "label_noise": 0,
             "model_arch": null,
-            "parallel": false,
-            "early_stopping": null
+            "parallel": false
         },
         "values": [
-            0.0,
-            0.1,
             0.2,
             0.3,
             0.4,
             0.6,
             0.7,
-            0.8,
-            0.9,
-            1.0
+            0.8
         ],
         "black_box": {
             "attack_type": [
-                "label_KL"
+                "zhang"
             ],
             "ratios": [
                 1.0
             ],
-            "batch_size": 512,
+            "batch_size": 30000,
             "num_adv_models": 50,
-            "granularity": 0.005,
+            "granularity": 0.05,
             "preload": true,
             "multi": null,
             "multi2": null,
@@ -71,7 +66,6 @@
             "relative_threshold": false,
             "loss_variant": false,
             "random_order": false,
-            "log_odds_order": false,
             "kl_frac": 0.8,
             "kl_voting": false,
             "generative_attack": null,
@@ -82,7 +76,7 @@
         "white_box": null,
         "tries": 5,
         "num_victim_models": 250,
-        "on_cpu": true,
+        "on_cpu": false,
         "adv_misc_config": null,
         "num_total_adv_models": 1000,
         "victim_local_attack": false,
@@ -93,39 +87,7 @@
         "victim_target_epoch": null
     },
     "result": {
-        "label_KL": {
-            "0.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    98.4,
-                    98.4,
-                    99.0,
-                    99.2,
-                    99.0
-                ]
-            },
-            "0.1": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    94.6,
-                    89.4,
-                    93.0,
-                    87.8,
-                    87.6
-                ]
-            },
+        "zhang": {
             "0.2": {
                 "adv_acc": [
                     null,
@@ -135,11 +97,11 @@
                     null
                 ],
                 "victim_acc": [
-                    71.8,
-                    79.4,
-                    76.6,
-                    75.2,
-                    77.0
+                    79.0,
+                    77.8,
+                    98.8,
+                    95.39999999999999,
+                    98.8
                 ]
             },
             "0.3": {
@@ -151,11 +113,11 @@
                     null
                 ],
                 "victim_acc": [
-                    59.599999999999994,
-                    60.6,
-                    69.8,
-                    71.0,
-                    65.2
+                    92.2,
+                    76.0,
+                    54.6,
+                    65.8,
+                    73.8
                 ]
             },
             "0.4": {
@@ -167,11 +129,11 @@
                     null
                 ],
                 "victim_acc": [
-                    57.599999999999994,
-                    56.99999999999999,
-                    58.4,
-                    57.8,
-                    54.6
+                    50.2,
+                    52.6,
+                    77.4,
+                    73.6,
+                    59.8
                 ]
             },
             "0.6": {
@@ -183,11 +145,11 @@
                     null
                 ],
                 "victim_acc": [
-                    57.199999999999996,
-                    58.599999999999994,
-                    57.599999999999994,
-                    60.0,
-                    58.4
+                    62.0,
+                    65.0,
+                    81.0,
+                    71.6,
+                    49.4
                 ]
             },
             "0.7": {
@@ -199,11 +161,11 @@
                     null
                 ],
                 "victim_acc": [
-                    64.4,
-                    67.80000000000001,
-                    71.2,
-                    65.4,
-                    62.8
+                    57.8,
+                    81.39999999999999,
+                    51.6,
+                    96.6,
+                    78.60000000000001
                 ]
             },
             "0.8": {
@@ -215,14 +177,14 @@
                     null
                 ],
                 "victim_acc": [
-                    80.4,
-                    81.6,
-                    77.0,
-                    77.2,
-                    79.60000000000001
+                    94.8,
+                    99.6,
+                    97.0,
+                    85.2,
+                    72.6
                 ]
             }
         }
     },
-    "save time": "2022-11-01 18:33:37.268168"
+    "save time": "2022-09-21 02:28:49.217570"
 }

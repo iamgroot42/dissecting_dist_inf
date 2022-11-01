@@ -1,7 +1,7 @@
 {
     "data_config": {
         "name": "texas",
-        "prop": "ethnicity",
+        "prop": "race",
         "split": "victim",
         "squeeze": true,
         "value": 0.5,
