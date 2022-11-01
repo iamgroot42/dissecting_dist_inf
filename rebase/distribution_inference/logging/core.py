@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 from simple_parsing.helpers import Serializable
 import pickle
+import numpy as np
 from distribution_inference.config import AttackConfig, DefenseConfig
 from distribution_inference.utils import get_save_path
 

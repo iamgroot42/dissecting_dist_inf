@@ -167,11 +167,9 @@ class CustomDatasetWrapper:
 
         # Active defenses
         self.shuffle_defense = shuffle_defense
-
-        # Keep track of which exact points were used for train/testing
-        # in the form of indices
-        self.used_for_train = None
-        self.used_for_test = None
+    
+    def get_used_indices(self):
+        raise NotImplementedError("Dataset does not implement get_used_indices")
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
@@ -346,6 +344,7 @@ class CustomDatasetWrapper:
         n_failed = []
         models = []
         mp = []
+        before_ids, after_ids = [], []
         with tqdm(total=total_models, desc="Loading models") as pbar:
             if len(n_failed) >= 5:
                 raise Exception(f"Had trouble loading {len(n_failed)} models ({n_failed}), aborting")
@@ -409,7 +408,14 @@ class CustomDatasetWrapper:
                         # Could not load (for whatever reason)
                         n_failed.append(mpath)
                         continue
-                    models.append(model)
+                    
+                    # Has before/after information
+                    if type(model) == tuple:
+                        models.append(model[0])
+                        before_ids.append((model[1][0][0], model[1][1][0]))
+                        after_ids.append((np.sort(model[1][0][1]), np.sort(model[1][1][1])))
+                    else:
+                        models.append(model)
                     i += 1
                     mp.append(mpath)
 
@@ -428,6 +434,9 @@ class CustomDatasetWrapper:
         if n_models is not None and len(models) != n_models:
             warnings.warn(warning_string(
                 f"\nNumber of models loaded ({len(models)}) is less than requested ({n_models})"))
+        
+        if len(before_ids) > 0:
+            return np.array(models, dtype='object'), (before_ids, after_ids)
         if get_names:
             return np.array(models, dtype='object'), mp
         else:

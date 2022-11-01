@@ -38,12 +38,23 @@ def extract_adv_params(
     return adv_params
 
 
-def save_model(model, path):
+def save_model(model, path, indices=None):
     if model.is_sklearn_model:
+        if indices is not None:
+            raise NotImplementedError("Saving sklearn model with indices is not implemented")
         with open(path, 'wb') as f:
             pickle.dump(model, f)
     else:
-        ch.save(model.state_dict(), path)
+        if indices is not None:
+            state_dict = {
+                "actual_model": model.state_dict(),
+                "train_ids": indices[0],
+                "test_ids": indices[1],
+            }
+        else:
+            state_dict = model.state_dict()
+
+        ch.save(state_dict, path)
 
 
 def load_model(model, path, on_cpu: bool = False):
@@ -55,7 +66,15 @@ def load_model(model, path, on_cpu: bool = False):
             # Sklearn model is obviously not a graph model
             model.is_graph_model = False
         else:
-            model.load_state_dict(ch.load(path, map_location=map_location))
+            model_dict = ch.load(path, map_location=map_location)
+            if "actual_model" in model_dict:
+                # Information about training data also stored; return
+                model.load_state_dict(model_dict["actual_model"])
+                train_ids = model_dict["train_ids"]
+                test_ids = model_dict["test_ids"]
+                return model, (train_ids, test_ids)
+            else:
+                model.load_state_dict(ch.load(path, map_location=map_location))
     except:
         raise Exception("Could not load model from {}".format(path))
     return model
