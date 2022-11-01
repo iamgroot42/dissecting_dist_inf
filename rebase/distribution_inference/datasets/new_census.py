@@ -365,7 +365,7 @@ class CensusWrapper(base.CustomDatasetWrapper):
                     # simply load 'normal' model of that ratio
                     base_path = os.path.join(base_models_dir, "normal")
                 else:
-                    base_path = os.path.join(base_models_dir, "shuffle_defense",
+                    base_path = os.path.join(base_models_dir, "shuffle_defense","test_shuffled",
                                              "%s" % shuffle_defense_config.sample_type,
                                              "%.2f" % shuffle_defense_config.desired_value)
         else:

@@ -14,13 +14,15 @@ from distribution_inference.config import TrainConfig, DatasetConfig, MiscTrainC
 from distribution_inference.utils import flash_utils
 from distribution_inference.logging.core import TrainingResult
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
-
+import os
 
 EXTRA = False  #True
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path)
+    parser.add_argument('--gpu',
+                        default=None, help="device number")
     args, remaining_argv = parser.parse_known_args()
     # Attempt to extract as much information from config file as you can
     config = TrainConfig.load(args.load_config, drop_extra_fields=False)
@@ -29,7 +31,8 @@ if __name__ == "__main__":
     parser.add_arguments(TrainConfig, dest="train_config", default=config)
     args = parser.parse_args(remaining_argv)
     train_config = args.train_config
-
+    if args.gpu:
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     # Extract configuration information from config file
     dp_config = None
     train_config: TrainConfig = train_config
@@ -105,9 +108,9 @@ if __name__ == "__main__":
         # Get data loaders
         train_loader, val_loader = ds.get_loaders(
             batch_size=train_config.batch_size)
-        # print(len(train_loader.dataset))
+        #print(1/(len(train_loader.dataset)*train_config.batch_size))
         # print(len(val_loader.dataset))
-        # exit(0)
+        #exit(0)
         plist = []
         # for t in train_loader:
         #     _,_,prop_l = t
@@ -158,7 +161,7 @@ if __name__ == "__main__":
             save_path = ds.get_save_path(train_config, file_name)
 
             # Save model
-            save_model(model, save_path)
+            #save_model(model, save_path)
             # exit(0)
 
             # Save logger
