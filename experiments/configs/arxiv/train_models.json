@@ -3,7 +3,7 @@
         "name": "arxiv",
         "multi_class": true,
         "prop": "mean",
-        "split": "victim",
+        "split": "adv",
         "value": 17
     },
     "offset": 0,

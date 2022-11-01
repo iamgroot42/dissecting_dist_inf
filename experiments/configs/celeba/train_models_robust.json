@@ -4,12 +4,12 @@
         "prop": "Young",
         "classify": "Male",
         "split": "victim",
-        "value": 1.0,
+        "value": 0.8,
         "processed_variant": false
     },
     "misc_config": {
         "adv_config": {
-            "epsilon": 4,
+            "epsilon": 8,
             "iters": 7,
             "clip_min": -1,
             "clip_max": 1,
@@ -21,7 +21,7 @@
     "learning_rate": 1e-4,
     "batch_size": 128,
     "weight_decay": 1e-3,
-    "num_models": 250,
+    "num_models": 25,
     "get_best": true,
     "verbose": false,
     "model_arch": "alexnet"

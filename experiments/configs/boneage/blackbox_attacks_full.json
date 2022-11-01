@@ -7,7 +7,7 @@
             "split": "adv",
             "squeeze": true,
             "value": 0.5,
-            "processed_variant": true
+            "processed_variant": false
         },
         "epochs": 0,
         "learning_rate": 0,
@@ -19,16 +19,9 @@
         "num_adv_models": 50,
         "batch_size": 50,
         "attack_type": [
-            "loss_and_threshold",
-            "threshold_perpoint"
+            "KL"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
         "preload": false,
@@ -42,9 +35,9 @@
         0.7,
         0.8
     ],
-    "num_victim_models": 250,
+    "num_victim_models": 100,
     "victim_model_arch": "densenet",
-    "adv_model_arch": "bonemodel",
-    "adv_processed_variant": false,
+    "adv_model_arch": "svm",
+    "adv_processed_variant": true,
     "on_cpu": true
 }

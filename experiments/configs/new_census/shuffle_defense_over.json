@@ -2,7 +2,7 @@
     "data_config": {
         "name": "new_census",
         "prop": "sex",
-        "split": "victim",
+        "split": "adv",
         "squeeze": true,
         "value": 0.1
     },

@@ -13,7 +13,10 @@
     },
     "tries": 5,
     "values": [
-        9, 10, 11, 12, 13, 14, 15, 16, 17
+        14,
+        15,
+        16,
+        17
     ],
     "on_cpu": false,
     "black_box": {
@@ -23,18 +26,12 @@
         "batch_size": 512,
         "attack_type": [
             "KL",
-            "threshold_perpoint"
+            "loss_and_threshold"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
         "preload": true
     },
-    "num_victim_models": 500
+    "num_victim_models": 250
 }

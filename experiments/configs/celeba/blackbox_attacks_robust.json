@@ -11,7 +11,7 @@
         },
         "misc_config": {
             "adv_config": {
-                "epsilon": 4,
+                "epsilon": 8,
                 "iters": 7,
                 "clip_min": -1,
                 "clip_max": 1,

@@ -34,9 +34,9 @@ if __name__ == "__main__":
     binary = len(degrees) == 2
 
     # Directories where saved models are stored
-    train_dirs = [os.path.join(BASE_MODELS_DIR, "adv", "deg" + x)
+    train_dirs = [os.path.join(BASE_MODELS_DIR, "adv/mean", "deg" + x)
                   for x in degrees]
-    test_dirs = [os.path.join(BASE_MODELS_DIR, "victim", "deg" + x)
+    test_dirs = [os.path.join(BASE_MODELS_DIR, "victim/mean", "deg" + x)
                  for x in degrees]
 
     # Load models, convert to features
@@ -117,7 +117,10 @@ if __name__ == "__main__":
     metamodel, test_loss = train_meta_model(
         metamodel, (X_train, Y_train), (X_test, Y_test),
         epochs=args.iters, binary=binary, regression=args.regression,
-        lr=0.01, batch_size=args.batch_size, eval_every=10,
+        # lr=0.01,
+        lr=0.001,
+        batch_size=args.batch_size,
+        eval_every=10,
         combined=True, val_data=val_data, gpu=args.gpu)
 
     print("[Test] Accuracy: %.4f" % test_loss)

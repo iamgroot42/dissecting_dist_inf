@@ -16,7 +16,7 @@ from distribution_inference.logging.core import TrainingResult
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
 
 
-EXTRA = False  #True
+EXTRA = True
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                 "save_path_fn": ds.get_save_path,
                 "more_metrics": EXTRA},
                 shuffle_defense=shuffle_defense)
-            logger.add_result(data_config.value, vloss, vacc, extras)
+            # logger.add_result(data_config.value, vloss, vacc, extras)
         else:
             model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                          train_config=train_config,
@@ -157,9 +157,15 @@ if __name__ == "__main__":
             file_name = str(i + train_config.offset) + suffix
             save_path = ds.get_save_path(train_config, file_name)
 
+            indices = None
+            if EXTRA:
+                # Also note which IDs were used for train, test
+                train_ids, test_ids = ds.get_used_indices()
+                indices = (train_ids, test_ids)
+
             # Save model
-            save_model(model, save_path)
+            save_model(model, save_path, indices=indices)
             # exit(0)
 
             # Save logger
-            # logger.save()
+            logger.save()

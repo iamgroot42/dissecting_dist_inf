@@ -2,7 +2,7 @@
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "race",
+            "prop": "sex",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
@@ -14,10 +14,10 @@
     "tries": 5,
     "black_box": {
         "granularity": 0.05,
-        "num_adv_models": 400,
+        "num_adv_models": 50,
         "batch_size": 30000,
         "attack_type": [
-            "KL"
+            "label_KL"
         ],
         "ratios": [
             1.0

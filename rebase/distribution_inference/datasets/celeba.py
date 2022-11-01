@@ -22,7 +22,6 @@ class DatasetInformation(base.DatasetInformation):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Celeb-A",
                          data_path="celeba",
-                         #  models_path="models_celeba/75_25",
                          models_path="models_celeba/75_25_nobalancing",
                          properties=["Male", "Young",
                                      'Wavy_Hair', 'High_Cheekbones'],
@@ -268,7 +267,7 @@ class CelebACustomBinary(base.CustomDataset):
         self.filenames.sort()
 
         # Apply requested filter
-        self.filenames, self.picked_ids = self._ratio_sample_data(
+        self.filenames, self.ids = self._ratio_sample_data(
             self.filenames, self.attr_dict,
             classify, prop, ratio, cwise_sample)
 
@@ -327,6 +326,8 @@ class CelebACustomBinary(base.CustomDataset):
 
     def mask_data_selection(self, mask):
         self.mask = mask
+        if self.ids is not None:
+            self.ids = self.ids[mask]
 
     def __getitem__(self, idx):
         should_augment = False
@@ -492,6 +493,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
             transform=self.test_transforms,
             features=features)
         return ds_train, ds_val
+    
+    def get_used_indices(self):
+        return self.ds_train.ids, self.ds_val.ids
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
@@ -500,8 +504,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                     num_workers: int = 24,
                     prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
-        self.used_for_train = self.ds_train.picked_ids
-        self.used_for_test = self.ds_val.picked_ids
+        self.used_for_train = self.ds_train.ids
+        self.used_for_test = self.ds_val.ids
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
                                    val_factor=val_factor,
