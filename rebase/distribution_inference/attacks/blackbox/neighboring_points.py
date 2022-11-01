@@ -37,6 +37,7 @@ def get_estimate(loader, models: List[nn.Module],
               verbose: bool = True,
               multi_class: bool = False,
               latent: int = None,
+              not_using_logits: bool = False,
               num_neighbor: int = 10,
               mean : float=0.0,
               std: float = 0.1):
@@ -44,7 +45,7 @@ def get_estimate(loader, models: List[nn.Module],
     noise = AddGaussianNoise(mean,std)
     predictions = []
     ground_truth = []
-    inputs = []
+    thre = 0.5 if not_using_logits else 0
     # Accumulate all data for given loader
     for data in loader:
         if len(data) == 2:
@@ -84,7 +85,7 @@ def get_estimate(loader, models: List[nn.Module],
                             prediction = model(neighbor.cuda()).detach()
                             if not multi_class:
                                 prediction = prediction[:, 0]
-                        p_collected.append(prediction.cpu().numpy())
+                        p_collected.append(1.0*prediction.cpu().numpy()>=thre)
                     predictions_on_model.append(np.mean(p_collected))
         predictions.append(predictions_on_model)
         # Shift model back to CPU
@@ -123,17 +124,12 @@ def _get_preds_for_vic_and_adv(
         loader_adv = loader
         loader_vic = loader
     
-    def to_preds(x):
-        exp = np.exp(x)
-        return exp / (1 + exp)
 
     # Get predictions for adversary models and data
     preds_adv, ground_truth_repeat = get_estimate(
         loader_adv, models_adv, preload=preload,
-        multi_class=multi_class)
-    if not_using_logits and not use_prob_adv:
-        preds_adv = to_preds(preds_adv)
-
+        multi_class=multi_class,not_using_logits=not_using_logits)
+    
     # Get predictions for victim models and data
     if epochwise_version:
         # Track predictions for each epoch
@@ -141,9 +137,8 @@ def _get_preds_for_vic_and_adv(
         for models_inside_vic in tqdm(models_vic):
             preds_vic_inside, ground_truth = get_estimate(
                 loader_vic, models_inside_vic, preload=preload,
-                verbose=False, multi_class=multi_class)
-            if not_using_logits and not use_prob_vic:
-                preds_vic_inside = to_preds(preds_vic_inside)
+                verbose=False, multi_class=multi_class,not_using_logits=not_using_logits)
+          
 
             # In epoch-wise mode, we need prediction results
             # across epochs, not models
