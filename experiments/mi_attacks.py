@@ -3,6 +3,7 @@
     https://github.com/privacytrustlab/ml_privacy_meter/
 """
 
+from re import L
 import numpy as np
 import torch as ch
 from scipy.stats import norm
@@ -104,6 +105,7 @@ def prior_knowledge(loader, n_per_dist):
     return (X[p_zero], Y[p_zero]), (X[p_one], Y[p_one]), indices_picked
 
 
+@ch.no_grad()
 def get_loss_values(models, criterion, prior_data_one_x, prior_data_one_y, prior_data_zero_x, prior_data_zero_y):
     # Get loss values for prior knowledge
     losses_zero, losses_one = [], []
@@ -127,12 +129,16 @@ def get_loss_values(models, criterion, prior_data_one_x, prior_data_one_y, prior
     return losses_zero, losses_one
 
 
+@ch.no_grad()
 def get_loss_values_victim(models, criterion, prior_data_one_x, prior_data_one_y, prior_data_zero_x, prior_data_zero_y):
     # Get loss values for prior knowledge
     losses_zero, losses_one = [], []
     for i, model_vic in tqdm(enumerate(models), desc="Collecting loss values from victim models"):
         model_vic.eval()
         pz_out = model_vic(prior_data_zero_x[i].cuda()).detach()
+        # Weird bug
+        if ch.sum(ch.isnan(pz_out)):
+            pz_out = model_vic(prior_data_zero_x[i].cuda()).detach()
         po_out = model_vic(prior_data_one_x[i].cuda()).detach()
         if pz_out.shape[1] == 1: # Squeeze if binary task (binary loss used with it)
             pz_out = pz_out.squeeze(1)
@@ -146,31 +152,32 @@ def get_loss_values_victim(models, criterion, prior_data_one_x, prior_data_one_y
     return losses_zero, losses_one
 
 
-def mi_attacks_on_ratio(attack_config, n_per_dist: int = 20, alpha: float = 0.01):
+def mi_attacks_on_ratio(attack_config, ratio: float, n_per_dist: int = 20, alpha: float = 0.01):
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(attack_config.train_config.data_config.name)
 
+    data_config_to_use = replace(attack_config.train_config.data_config, value=ratio)
+    train_config_to_use = replace(attack_config.train_config, data_config=data_config_to_use)
+
     # Create new DS object for both adv and victim
     data_config_adv, data_config_vic = get_dfs_for_victim_and_adv(
-        attack_config.train_config.data_config)
+        data_config_to_use)
 
     # Load up victim models
     # Create new DS object for both adv and victim
     ds_vic = ds_wrapper_class(
         data_config_vic, skip_data=False,
-        label_noise=attack_config.train_config.label_noise,
-        epoch=attack_config.train_config.save_every_epoch)
+        label_noise=train_config_to_use.label_noise,
+        epoch=train_config_to_use.save_every_epoch)
     ds_adv = ds_wrapper_class(data_config_adv)
-    train_adv_config = get_train_config_for_adv(attack_config.train_config, attack_config)
+    train_adv_config = get_train_config_for_adv(train_config_to_use, attack_config)
     train_adv_config = replace(train_adv_config, offset=0)
 
     # Load victim models
     models_vic, (ids_before, ids_after) = ds_vic.get_models(
-        attack_config.train_config,
+        train_config_to_use,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
-        shuffle=False,
-        epochwise_version=attack_config.train_config.save_every_epoch,
         model_arch=attack_config.victim_model_arch,)
     
     # Load adv models
@@ -227,14 +234,20 @@ def mi_attacks_on_ratio(attack_config, n_per_dist: int = 20, alpha: float = 0.01
     # Predict membership for all members
     members_zero = 1 * np.sum(losses_vic_zero <= thresholds_zero, axis=-1)
     members_one = 1 * np.sum(losses_vic_one <= thresholds_one, axis=-1)
-    print()
-    print(np.sum(members_zero, axis=0),"/", thresholds_zero.shape[1])
-    print(np.sum(members_one, axis=0),"/", thresholds_one.shape[1])
+    
+    ratios = np.zeros_like(1. * members_zero)
+    zero_top = (members_zero > members_one)
+    one_top = (members_zero <= members_one)
+    ratios[zero_top] = 1. * members_zero[zero_top] / (members_zero[zero_top] + members_one[zero_top])
+    ratios[one_top] = 1. * members_one[one_top] / (members_zero[one_top] + members_one[one_top])
+    # Cases where both are zero, just defer to predicting 0.5 (guess)
+    ratios[np.isnan(ratios)] = 0.5
 
-    print("My life sucks")
+    # Make binary-based prediction using the ratio here
+    num_predicted = np.sum(np.abs(ratios - 0.5) > 0.02)
 
-    # Infer re-sampling rate
-    # If fewer D+ members, alpha = m/(m+m'), else m'/(m+m')    
+    mse = np.sum((ratio - ratios) ** 2)
+    return mse, num_predicted
 
 
 if __name__ == "__main__":
@@ -247,4 +260,17 @@ if __name__ == "__main__":
         args.load_config, drop_extra_fields=False)
 
     # Run MI attack
-    mi_attacks_on_ratio(attack_config, n_per_dist=20, alpha=0.9)
+    mses = []
+    neffs = []
+    preds = []
+    for value in attack_config.values:
+        mse, num_predicted = mi_attacks_on_ratio(attack_config, ratio=value, n_per_dist=100, alpha=0.12)
+        mses.append(mse)
+        preds.append(num_predicted)
+        neff = (value * (1 - value)) / mse
+        neffs.append(neff)
+        print(value, ":", mse)
+
+    print("Final MSE value: ", np.mean(mses))
+    print("Final n_eff: ", np.mean(neff))
+    print("Num predicted as (not 0.5):", preds)

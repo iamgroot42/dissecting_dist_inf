@@ -46,14 +46,18 @@ class label_only_KLAttack(Attack):
         thre = 0.5 if not_using_logits else 0
         # Get values using data from first distribution
         preds_1_first, preds_1_second = self._get_kl_preds(
-            1.*(preds_adv.preds_on_distr_1.preds_property_1 >= thre),
-            1.*(preds_adv.preds_on_distr_1.preds_property_2 >= thre),
+            # 1.*(preds_adv.preds_on_distr_1.preds_property_1 >= thre),
+            # 1.*(preds_adv.preds_on_distr_1.preds_property_2 >= thre),
+            preds_adv.preds_on_distr_1.preds_property_1,
+            preds_adv.preds_on_distr_1.preds_property_2,
             1.*(preds_vic.preds_on_distr_1.preds_property_1 >= thre),
             1.*(preds_vic.preds_on_distr_1.preds_property_2 >= thre))
         # Get values using data from second distribution
         preds_2_first, preds_2_second = self._get_kl_preds(
-            1.*(preds_adv.preds_on_distr_2.preds_property_1 >= thre),
-            1.*(preds_adv.preds_on_distr_2.preds_property_2 >= thre),
+            # 1.*(preds_adv.preds_on_distr_2.preds_property_1 >= thre),
+            # 1.*(preds_adv.preds_on_distr_2.preds_property_2 >= thre),
+            preds_adv.preds_on_distr_2.preds_property_1,
+            preds_adv.preds_on_distr_2.preds_property_2,
             1.*(preds_vic.preds_on_distr_2.preds_property_1 >= thre),
             1.*(preds_vic.preds_on_distr_2.preds_property_2 >= thre))
 
@@ -79,12 +83,12 @@ class label_only_KLAttack(Attack):
         # Convert 0/1 predictions to (0+eps, 1-eps)
         small_eps = 1e-2
         ka_, kb_, kc1_, kc2_ = ka, kb, kc1, kc2
-        ka_[ka_ == 0] = small_eps
-        kb_[kb_ == 0] = small_eps
+        # ka_[ka_ == 0] = small_eps
+        # kb_[kb_ == 0] = small_eps
         kc1_[kc1_ == 0] = small_eps
         kc2_[kc2_ == 0] = small_eps
-        ka_[ka_ == 1] = 1 - small_eps
-        kb_[kb_ == 1] = 1 - small_eps
+        # ka_[ka_ == 1] = 1 - small_eps
+        # kb_[kb_ == 1] = 1 - small_eps
         kc1_[kc1_ == 1] = 1 - small_eps
         kc2_[kc2_ == 1] = 1 - small_eps
 

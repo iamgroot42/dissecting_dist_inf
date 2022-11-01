@@ -5,7 +5,7 @@
             "prop": "sex",
             "split": "adv",
             "squeeze": true,
-            "value": 0.2
+            "value": 0.9
         },
         "offset": 2000,
         "epochs": 0,
@@ -22,7 +22,7 @@
     "tries": 5,
     "black_box": {
         "granularity": 0.05,
-        "num_adv_models": 11,
+        "num_adv_models": 50,
         "batch_size": 30000,
         "attack_type": [
             "KL"
@@ -36,8 +36,12 @@
     "values": [
         0.1,
         0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
         0.8,
         0.9
     ],
-    "num_victim_models": 6
+    "num_victim_models": 50
 }
