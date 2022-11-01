@@ -18,7 +18,6 @@ import os
 
 EXTRA = False  #True
 if __name__ == "__main__":
-    print("started")
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path)
@@ -120,7 +119,12 @@ if __name__ == "__main__":
         # print(np.mean(plist))
         # Get model
         if dp_config is None:
-            model = ds_info.get_model(model_arch=train_config.model_arch)
+            if data_config.name == "synthetic":
+                model = ds_info.get_model(model_arch=train_config.model_arch,
+                                          n_inp=ds.dimensionality,
+                                          n_classes=ds.n_classes)
+            else:
+                model = ds_info.get_model(model_arch=train_config.model_arch)
         else:
             model = ds_info.get_model_for_dp(
                 model_arch=train_config.model_arch)

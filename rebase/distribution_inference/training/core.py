@@ -7,7 +7,7 @@ import numpy as np
 from copy import deepcopy
 import os
 
-from distribution_inference.training.utils import AverageMeter, generate_adversarial_input, save_model
+from distribution_inference.training.utils import AverageMeter, generate_adversarial_input, save_model, EarlyStopper
 from distribution_inference.config import TrainConfig, AdvTrainingConfig
 from distribution_inference.training.dp import train as train_with_dp
 from distribution_inference.training.graph import train as gcn_train
@@ -281,6 +281,11 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
     # Wrap with dataparallel if requested
     if train_config.parallel:
         model = ch.nn.DataParallel(model)
+    
+    early_stopper = None
+    if train_config.early_stopping is not None:
+        early_stop_config = train_config.early_stopping
+        early_stopper = EarlyStopper(early_stop_config)
 
     # Get data loaders
     if len(loaders) == 2:
@@ -302,7 +307,9 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
         criterion = nn.CrossEntropyLoss()
     else:
         criterion = nn.BCEWithLogitsLoss()
+
     # LR Scheduler
+    lr_scheduler = None
     if train_config.lr_scheduler is not None:
         scheduler_config = train_config.lr_scheduler
         if len(loaders) == 2:
@@ -311,10 +318,9 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             optimizer, mode=scheduler_config.mode,
             factor=scheduler_config.factor,
             patience=scheduler_config.patience,
+            threshold=scheduler_config.threshold,
             cooldown=scheduler_config.cooldown,
             verbose=scheduler_config.verbose)
-    else:
-        lr_scheduler = None
 
     iterator = range(1, train_config.epochs + 1)
     if not train_config.verbose:
@@ -427,6 +433,14 @@ def train_without_dp(model, loaders, train_config: TrainConfig,
             if not os.path.isdir(os.path.dirname(save_path)):
                 os.makedirs(os.path.dirname(save_path))
             save_model(model, save_path)
+        
+        # If early stopper is present, implement
+        if early_stopper is not None:
+            should_stop = early_stopper.step(vloss)
+            if should_stop:
+                if early_stop_config:
+                    print(warning_string("\nEarly stopping!\n"))
+                break
 
     # Special case for CelebA
     # Return epsilon back to normal

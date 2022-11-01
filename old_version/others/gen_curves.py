@@ -899,7 +899,10 @@ def process_data(meta, threshold, raw, ratios):
                 other_ratio = r2
             else:
                 other_ratio = r1
-
+            
+            if other_ratio == 0.3:
+                print(ratios[i], ratios[j], raw[i][hmm])
+            
             wanted_r = "%.1f" % picked_ratio
             collection[wanted_r] = collection.get(
                 wanted_r, []) + [(other_ratio, raw[i][hmm] / 100)]
@@ -925,7 +928,7 @@ if __name__ == "__main__":
     plt.rc('ytick', labelsize=13)
     plt.rc('axes', labelsize=14)
 
-    # plt.style.use('dark_background')
+    plt.style.use('dark_background')
 
     # Plot curves corresponding to ratios
     picked_ratio = 0.2
@@ -1045,8 +1048,8 @@ if __name__ == "__main__":
     # plt.grid()
     plt.style.use('seaborn')
     plt.legend()
-    plt.savefig("./bound_curves_%.1f.pdf" % picked_ratio)
-    # plt.savefig("./bound_curves_%.1f.png" % picked_ratio)
+    # plt.savefig("./bound_curves_%.1f.pdf" % picked_ratio)
+    plt.savefig("./bound_curves_%.1f.png" % picked_ratio)
 
     # print(bound(0.1, 0.2, 2))
     # print(bound(0.5, 0.6, 2))

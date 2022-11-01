@@ -1,0 +1,44 @@
+{
+    "train_config": {
+        "data_config": {
+            "name": "texas",
+            "prop": "sex",
+            "split": "adv",
+            "squeeze": true,
+            "multi_class": true,
+            "value": 0.5,
+            "drop_senstive_cols": false,
+            "cwise_samples": 500
+        },
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 0
+    },
+    "tries": 5,
+    "values": [
+        0.0,
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0
+    ],
+    "black_box": {
+        "granularity": 0.05,
+        "num_adv_models": 50,
+        "multi_class": true,
+        "batch_size": 1000,
+        "attack_type": [
+            "zhang"
+        ],
+        "ratios": [
+            1.0
+        ],
+        "preload": true
+    },
+    "num_victim_models": 250
+}

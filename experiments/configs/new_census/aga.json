@@ -1,13 +1,20 @@
 {
     "white_box": {
         "attack": "affinity",
-        "epochs": 120,
-        "batch_size": 1000,
+        "epochs": 200,
+        "batch_size": 250,
+        "learning_rate": 5e-4,
+        "weight_decay": 1e-3,
         "affinity_config": {
-            "num_final": 16,
-            "frac_retain_pairs": 0.2,
-            "num_samples_use": 50,
-            "shared_layerwise_params": true
+            "num_final": 8,
+            "frac_retain_pairs": 0.30,
+            "num_samples_use": 40,
+            "shared_layerwise_params": true,
+            "inner_dims": [
+                256,
+                128,
+                32
+            ]
         },
         "save": true
     },

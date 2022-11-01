@@ -103,6 +103,8 @@ if __name__ == "__main__":
     # Columns for axis and names
     columns = [r'{}'.format(args.x), args.y, args.legend, "Epoch"]
 
+    print(args)
+
     # Set color pallete
     color_options = {
         "green": sns.color_palette(["#228B22", "#90EE90"]),

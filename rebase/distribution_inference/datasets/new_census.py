@@ -136,12 +136,12 @@ class _CensusIncome:
 
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
-            TRAIN_DF = self.get_filter(TRAIN_DF, filter_prop,
+            TRAIN_DF, train_ids = self.get_filter(TRAIN_DF, filter_prop,
                                        split, prop_ratio, is_test=0,
                                        custom_limit=custom_limit,
                                        scale=scale)
             train_prop_labels = 1 * (lambda_fn(TRAIN_DF).to_numpy())
-            TEST_DF = self.get_filter(TEST_DF, filter_prop,
+            TEST_DF, test_ids = self.get_filter(TEST_DF, filter_prop,
                                       split, prop_ratio, is_test=1,
                                       custom_limit=custom_limit,
                                       scale=scale)
@@ -155,8 +155,7 @@ class _CensusIncome:
                     label_noise*len(y_tr)), replace=False)
                 y_tr[idx, 0] = 1 - y_tr[idx, 0]
 
-            return (x_tr, y_tr,train_prop_labels), (x_te, y_te,test_prop_labels), cols
-
+            return ((x_tr, y_tr,train_prop_labels), (x_te, y_te,test_prop_labels), cols), (train_ids, test_ids)
            
         if split == "all":
             return prepare_one_set(self.train_df, self.test_df)
@@ -235,17 +234,6 @@ class _CensusIncome:
             lambda_fn = self._get_prop_label_lambda(filter_prop)
 
         # For 1-year Census data
-        # prop_wise_subsample_sizes = {
-        #     "adv": {
-        #         "sex": (20000, 12000),
-        #         "race": (14000, 9000),
-        #     },
-        #     "victim": {
-        #         "sex": (30000, 20000),
-        #         "race": (21000, 14000),
-        #     },
-        # }
-
         # Above was based on class-biased re-sampling
         # Below is not
         prop_wise_subsample_sizes = {
@@ -273,21 +261,25 @@ class _CensusIncome:
                                tot_samples=subsample_size,
                                n_tries=100,
                                class_col='income',
-                               verbose=False)
+                               verbose=False,
+                               get_indices=True)
 
 
 class CensusSet(base.CustomDataset):
-    def __init__(self, data, targets, prop_labels, squeeze=False):
+    def __init__(self, data, targets, prop_labels, squeeze=False, ids=None):
         super().__init__()
         self.data = ch.from_numpy(data).float()
         self.targets = ch.from_numpy(targets).float()
         self.prop_labels = ch.from_numpy(prop_labels).float()
         self.squeeze = squeeze
         self.num_samples = len(self.data)
+        self.ids = ids
     
     def mask_data_selection(self, mask):
         self.mask = mask
         self.num_samples = len(self.mask)
+        if self.ids is not None:
+            self.ids = self.ids[mask]
 
     def __getitem__(self, index):
         index_ = self.mask[index] if self.mask is not None else index
@@ -319,19 +311,25 @@ class CensusWrapper(base.CustomDatasetWrapper):
         self.info_object = DatasetInformation(epoch_wise=epoch)
         
     def load_data(self, custom_limit=None):
-        return self.ds.get_data(split=self.split,
+        data, splits = self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
                                 filter_prop=self.prop,
                                 custom_limit=custom_limit,
                                 scale=self.scale,
                                 label_noise = self.label_noise)
+        self.used_for_train = splits[0]
+        self.used_for_test = splits[1]
+        return data
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False):
         train_data, val_data, _ = self.load_data(self.cwise_samples)
-        self.ds_train = CensusSet(*train_data, squeeze=self.squeeze)
-        self.ds_val = CensusSet(*val_data, squeeze=self.squeeze)
+        self.ds_train = CensusSet(*train_data, squeeze=self.squeeze, ids = self.used_for_train)
+        self.ds_val = CensusSet(*val_data, squeeze=self.squeeze, ids = self.used_for_test)
+        # Update (based on how masking was done)
+        self.used_for_train = self.ds_train.mask
+        self.used_for_test = self.ds_val.mask
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 

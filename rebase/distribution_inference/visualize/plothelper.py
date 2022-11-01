@@ -161,7 +161,7 @@ class PlotHelper():
                                     self.columns[0]: float(ratio),
                                     # Temporary (below) - ideally all results should be in [0, 100] across entire module
                                     # self.columns[1]: result,
-                                    self.columns[1]: result, # * 100,
+                                    self.columns[1]:  result * 100,
                                     self.columns[2]: column_names,
                                     self.columns[3]: epoch + 1})
                         else:

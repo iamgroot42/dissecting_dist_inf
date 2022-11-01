@@ -75,9 +75,13 @@ class KLAttack(Attack):
         ka_, kb_ = ka, kb
         kc1_, kc2_ = kc1, kc2
         if not self.not_using_logits:
-            ka_, kb_ = sigmoid(ka), sigmoid(kb)
-            kc1_, kc2_ = sigmoid(kc1), sigmoid(kc2)
-        
+            if self.config.multi_class:
+                ka_, kb_ = softmax(ka), softmax(kb)
+                kc1_, kc2_ = softmax(kc1), softmax(kc2)
+            else:
+                ka_, kb_ = sigmoid(ka), sigmoid(kb)
+                kc1_, kc2_ = sigmoid(kc1), sigmoid(kc2)
+
         # Use log-odds-ratio to order data and pick only top half
         if self.config.log_odds_order:
             small_eps = 1e-4
@@ -122,6 +126,7 @@ class KLAttack(Attack):
     
     def _check(self, x):
         if np.sum(np.isinf(x)) > 0 or np.sum(np.isnan(x)) > 0:
+            print("Invalid values:", x)
             raise ValueError("Invalid values found!")
 
     def _pairwise_compare(self, x, y, xx, yy):
@@ -187,6 +192,13 @@ class KLAttack(Attack):
 def sigmoid(x):
     exp = np.exp(x)
     return exp / (1 + exp)
+
+
+def softmax(x):
+    # Numericaly stable softmax
+    z = x - np.max(x, -1, keepdims=True)
+    exp = np.exp(z)
+    return exp / np.sum(exp, -1, keepdims=True)
 
 
 def KL(x, y, multi_class: bool = False):

@@ -11,13 +11,12 @@
         },
         "epochs": 0,
         "learning_rate": 0,
-        "batch_size": 0,
-        "label_noise": 0.2
+        "batch_size": 0
     },
     "tries": 5,
     "black_box": {
         "granularity": 0.005,
-        "num_adv_models": 50,
+        "num_adv_models": 400,
         "batch_size": 30000,
         "attack_type": [
             "KL"
@@ -25,9 +24,7 @@
         "ratios": [
             1.0
         ],
-        "preload": true,
-        "tune_final_threshold": false,
-        "kl_frac": 0.8
+        "preload": true
     },
     "values": [
         0.2,

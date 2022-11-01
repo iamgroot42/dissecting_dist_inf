@@ -13,7 +13,7 @@
             "shuffle_defense_config": {
                 "desired_value": 0.5,
                 "data_level": true,
-                "sample_type": "under"
+                "sample_type": "over"
             }
         },
         "epochs": 0,
@@ -29,16 +29,9 @@
             "KL"
         ],
         "ratios": [
-            0.05,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.5,
             1.0
         ],
-        "preload": true,
-        "tune_final_threshold": false
+        "preload": true
     },
     "values": [
         0.2,

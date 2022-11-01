@@ -74,11 +74,12 @@ def heuristic(df, condition, ratio: float,
               n_tries: int = 1000,
               tot_samples: int = None,
               class_col: str = "label",
-              verbose: bool = True):
+              verbose: bool = True,
+              get_indices: bool = False):
     if tot_samples is not None and class_imbalance is not None:
         raise ValueError("Cannot request class imbalance and total-sample based methods together")
 
-    vals, pckds = [], []
+    vals, pckds, indices = [], [], []
     iterator = range(n_tries)
     if verbose:
         iterator = tqdm(iterator)
@@ -115,6 +116,7 @@ def heuristic(df, condition, ratio: float,
 
         vals.append(condition(pckd_df).mean())
         pckds.append(pckd_df)
+        indices.append(pckd)
 
         # Print best ratio so far in descripton
         if verbose:
@@ -124,6 +126,9 @@ def heuristic(df, condition, ratio: float,
     vals = np.abs(np.array(vals) - ratio)
     # Pick the one closest to desired ratio
     picked_df = pckds[np.argmin(vals)]
+    picked_indices = indices[np.argmin(vals)]
+    if get_indices:
+        return picked_df.reset_index(drop=True), picked_indices
     return picked_df.reset_index(drop=True)
 
 

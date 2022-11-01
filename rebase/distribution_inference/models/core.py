@@ -604,7 +604,7 @@ class GCN(BaseModel):
     def __init__(self, n_hidden, n_layers,
                  dropout,  num_classes,
                  num_features):
-        super().__init__(is_conv=True,
+        super().__init__(is_conv=False,
                          is_graph_model=True,
                          transpose_features=False)
 
@@ -641,10 +641,10 @@ class AnyLayerMLP(BaseModel):
     def __init__(self, n_inp: int, n_classes: int, depth: int = 1):
         super().__init__(is_conv=False)
         self.mapping = {
-            1: [32],
-            2: [32, 16],
-            3: [32, 16, 8],
-            4: [32, 16, 8, 4],
+            1: [16],
+            2: [16, 8],
+            3: [16, 8, 4],
+            4: [64, 16, 8]
         }
         if depth not in self.mapping:
             raise ValueError(f"Depth {depth} not supported")

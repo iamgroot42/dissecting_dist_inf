@@ -43,8 +43,17 @@ class ZhangAttack(Attack):
         kc1, kc2 = preds_vic.preds_property_1, preds_vic.preds_property_2
         # Apply sigmoid to ones that are not already sigmoided
         if not self.not_using_logits:
-            ka, kb = sigmoid(ka), sigmoid(kb)
-            kc1, kc2 = sigmoid(kc1), sigmoid(kc2)
+            if self.config.multi_class:
+                ka, kb = softmax(ka), softmax(kb)
+                kc1, kc2 = softmax(kc1), softmax(kc2)
+                # Reshape (n, k, l) to (n, k * l) for multi-class
+                ka = ka.reshape(ka.shape[0], -1)
+                kb = kb.reshape(kb.shape[0], -1)
+                kc1 = kc1.reshape(kc1.shape[0], -1)
+                kc2 = kc2.reshape(kc2.shape[0], -1)
+            else:
+                ka, kb = sigmoid(ka), sigmoid(kb)
+                kc1, kc2 = sigmoid(kc1), sigmoid(kc2)
         
         # Use same architecture as in paper
         self.meta_model = MLPClassifier((20, 8), early_stopping=True)
@@ -90,3 +99,10 @@ class ZhangAttack(Attack):
 def sigmoid(x):
     exp = np.exp(x)
     return exp / (1 + exp)
+
+
+def softmax(x):
+    # Numericaly stable softmax
+    z = x - np.max(x, -1, keepdims=True)
+    exp = np.exp(z)
+    return exp / np.sum(exp, -1, keepdims=True)

@@ -65,7 +65,7 @@ class DatasetInformation(base.DatasetInformation):
         ratios = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
         super().__init__(name="Census",
                          data_path="census",
-                         models_path="models_census/50_50_new/normal",
+                         models_path="models_census/50_50_new_nobalancing/normal",
                          properties=["sex", "race"],
                          values={"sex": ratios, "race": ratios, },
                          supported_models=["ported"],
@@ -330,22 +330,40 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
             b = x['race:White'] == 0
             return a & b
     # Rerun with 0.5:0.5
+    # prop_wise_subsample_sizes = {
+    #     "adv": {
+    #         "sex": (1100, 500),
+    #         "race": (2000, 1000),
+    #         "bothfw": (900, 400),
+    #         "bothfn": (210, 100),
+    #         "bothmn": (260, 130),
+    #         "bothmw": (2000, 960),
+    #     },
+    #     "victim": {
+    #         "sex": (1100, 500),
+    #         "race": (2000, 1000),
+    #         "bothfw": (900, 400),
+    #         "bothfn": (210, 100),
+    #         "bothmn": (260, 130),
+    #         "bothmw": (2000, 960),
+    #     },
+    # }
     prop_wise_subsample_sizes = {
         "adv": {
-            "sex": (1100, 500),
-            "race": (2000, 1000),
-            "bothfw": (900, 400),
-            "bothfn": (210, 100),
-            "bothmn": (260, 130),
-            "bothmw": (2000, 960),
+            # "sex": (1100, 500),
+            # "race": (2000, 1000),
+            # "bothfw": (900, 400),
+            # "bothfn": (210, 100),
+            # "bothmn": (260, 130),
+            # "bothmw": (2000, 960),
         },
         "victim": {
-            "sex": (1100, 500),
-            "race": (2000, 1000),
-            "bothfw": (900, 400),
-            "bothfn": (210, 100),
-            "bothmn": (260, 130),
-            "bothmw": (2000, 960),
+            # "sex": (1100, 500),
+            # "race": (2000, 1000),
+            # "bothfw": (900, 400),
+            # "bothfn": (210, 100),
+            # "bothmn": (260, 130),
+            # "bothmw": (2000, 960),
         },
     }
 
@@ -354,7 +372,11 @@ def get_filter(df, filter_prop, split, ratio, is_test, custom_limit=None):
     else:
         subsample_size = custom_limit
     return utils.heuristic(df, lambda_fn, ratio,
-                           subsample_size, class_imbalance=3,
+                           cwise_sample=None,
+                           class_imbalance=None,
+                        #    subsample_size,
+                        #    class_imbalance=3,
+                           tot_samples=subsample_size,
                            n_tries=100, class_col='income',
                            verbose=False)
 

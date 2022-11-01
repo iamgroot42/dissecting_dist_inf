@@ -168,6 +168,11 @@ class CustomDatasetWrapper:
         # Active defenses
         self.shuffle_defense = shuffle_defense
 
+        # Keep track of which exact points were used for train/testing
+        # in the form of indices
+        self.used_for_train = None
+        self.used_for_test = None
+
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,
@@ -338,9 +343,13 @@ class CustomDatasetWrapper:
             model_arch=model_arch,
             custom_models_path=custom_models_path)
         i = 0
+        n_failed = []
         models = []
         mp = []
         with tqdm(total=total_models, desc="Loading models") as pbar:
+            if len(n_failed) >= 5:
+                raise Exception(f"Had trouble loading {len(n_failed)} models ({n_failed}), aborting")
+
             if epochwise_version:
                 model_paths = list(model_paths)
                 model_paths.sort(key=lambda i: int(i))
@@ -392,9 +401,14 @@ class CustomDatasetWrapper:
                 elif os.path.isdir(os.path.join(folder_path, mpath)):
                     continue
                 else:
-                    model = self.load_model(os.path.join(
-                        folder_path, mpath), on_cpu=on_cpu,
-                        model_arch=model_arch)
+                    try:
+                        model = self.load_model(os.path.join(
+                            folder_path, mpath), on_cpu=on_cpu,
+                            model_arch=model_arch)
+                    except:
+                        # Could not load (for whatever reason)
+                        n_failed.append(mpath)
+                        continue
                     models.append(model)
                     i += 1
                     mp.append(mpath)

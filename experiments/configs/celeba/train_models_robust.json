@@ -3,13 +3,13 @@
         "name": "celeba",
         "prop": "Young",
         "classify": "Male",
-        "split": "adv",
-        "value": 0.0,
+        "split": "victim",
+        "value": 1.0,
         "processed_variant": false
     },
     "misc_config": {
         "adv_config": {
-            "epsilon": 16,
+            "epsilon": 4,
             "iters": 7,
             "clip_min": -1,
             "clip_max": 1,
@@ -17,11 +17,11 @@
             "scale_by_255": true
         }
     },
-    "epochs": 20,
-    "learning_rate": 1e-3,
-    "batch_size": 200,
-    "weight_decay": 1e-4,
-    "num_models": 1000,
+    "epochs": 10,
+    "learning_rate": 1e-4,
+    "batch_size": 128,
+    "weight_decay": 1e-3,
+    "num_models": 250,
     "get_best": true,
     "verbose": false,
     "model_arch": "alexnet"

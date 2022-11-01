@@ -391,16 +391,19 @@ class ArxivWrapper(base.CustomDatasetWrapper):
     def get_features(self):
         return self.ds.get_features()
 
-    def load_data(self):
+    def load_data(self, custom_limit=None):
         self.ds = ArxivNodeDataset(self.split)
 
         # Modify mean degree
         self.ds.change_mean_degree(self.ratio, self.prune)
 
         # self.ds.label_ratio_preserving_pick(
+        if custom_limit is None:
+            num_train, num_val = self.sample_sizes[self.prop][self.split]
+        else:
+            num_train, num_val = custom_limit, custom_limit
         self.ds.not_label_ratio_preserving_pick(
-            self.sample_sizes[self.prop][self.split][0],
-            self.sample_sizes[self.prop][self.split][1])
+            num_train, num_val)
         
         # Get train/test ID splits
         train_idx, test_idx = self.ds.get_idx_split()
@@ -420,7 +423,7 @@ class ArxivWrapper(base.CustomDatasetWrapper):
                     num_workers: int = 2,
                     prefetch_factor: int = 2):
         # Prepare data and get splits
-        train_idx, test_idx = self.load_data()
+        train_idx, test_idx = self.load_data(self.cwise_samples)
 
         if shuffle:
             train_idx = ch.randperm(train_idx)

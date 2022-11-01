@@ -14,7 +14,7 @@
     "train_config": {
         "data_config": {
             "name": "new_census",
-            "prop": "race",
+            "prop": "sex",
             "split": "adv",
             "squeeze": true,
             "value": 0.5
@@ -48,9 +48,9 @@
         0.9,
         1.0
     ],
-    "wb_path": "/u/as9rw/work/fnb/experiments/log/affinity/classification/new_census/race",
+    "wb_path": "/u/as9rw/work/fnb/experiments/log_new/affinity/classification/new_census/sex",
     "use_wb_latents": false,
-    "num_victim_models": 500,
+    "num_victim_models": 250,
     "num_total_adv_models": 500,
     "num_for_meta": 100
 }

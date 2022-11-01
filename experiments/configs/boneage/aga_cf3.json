@@ -15,7 +15,8 @@
                 128,
                 32
             ]
-        }
+        },
+        "save": true
     },
     "train_config": {
         "data_config": {

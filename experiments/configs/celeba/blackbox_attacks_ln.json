@@ -16,12 +16,6 @@
     },
     "tries": 5,
     "values": [
-        0.0,
-        0.1,
-        0.2,
-        0.3,
-        0.4,
-        0.6,
         0.7,
         0.8,
         0.9,
@@ -41,5 +35,5 @@
         "preload": true,
         "kl_frac": 0.8
     },
-    "num_victim_models": 100
+    "num_victim_models": 250
 }

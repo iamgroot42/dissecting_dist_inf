@@ -9,6 +9,7 @@ from distribution_inference.config import DatasetConfig, AttackConfig, WhiteBoxA
 from distribution_inference.utils import flash_utils, warning_string
 from distribution_inference.logging.core import AttackResult
 from distribution_inference.attacks.whitebox.affinity.utils import get_seed_data_loader, identify_relevant_points, make_ds_and_loader
+from dataclasses import replace
 
 
 if __name__ == "__main__":
@@ -80,6 +81,7 @@ if __name__ == "__main__":
     # Make train config for adversarial models
     train_config_adv = get_train_config_for_adv(train_config, attack_config)
 
+    # """
     # Load victim models for first value
     models_vic_1 = ds_vic_1.get_models(
         train_config,
@@ -87,6 +89,7 @@ if __name__ == "__main__":
         on_cpu=attack_config.on_cpu,
         shuffle=False,
         model_arch=attack_config.victim_model_arch)
+    # """
 
     # For each value (of property) asked to experiment with
     for prop_value in args.ratios if args.ratios else attack_config.values:
@@ -95,6 +98,7 @@ if __name__ == "__main__":
         data_config_adv_2, data_config_vic_2 = get_dfs_for_victim_and_adv(
             data_config, prop_value=prop_value)
 
+        # """
         # Create new DS object for both and victim (for other ratio)
         ds_vic_2 = ds_wrapper_class(
             data_config_vic_2,
@@ -137,8 +141,11 @@ if __name__ == "__main__":
                 on_cpu=attack_config.on_cpu,
                 shuffle=False,
                 model_arch=attack_config.adv_model_arch)
+        # """
 
-        for _ in range(args.trial if args.trial else attack_config.tries):
+        for t in range(args.trial if args.trial else attack_config.tries):
+
+            # """
 
             # Prepare train, val data
             if attack_config.victim_local_attack:
@@ -156,15 +163,23 @@ if __name__ == "__main__":
                     wb_config=wb_attack_config,
                     wrap_with_loader=False
                 )
+            # """
 
             # Create attacker object
             attacker_obj = get_attack(wb_attack_config.attack)(
                 None, wb_attack_config)
 
+            # """
             # Decide which models and DS to use
             models_1_use = models_vic_1 if attack_config.victim_local_attack else models_adv_1
             models_2_use = models_vic_2 if attack_config.victim_local_attack else models_adv_2
             ds_use = [ds_vic_1, ds_vic_2] if attack_config.victim_local_attack else [ds_adv_1, ds_adv_2]
+
+            # Temporary- use 0/1 ratio values for ds_adv_1 and ds_adv_2
+            data_config_adv_1_copy = replace(data_config_adv_1, value=0.0)
+            data_config_adv_2_copy = replace(data_config_adv_2, value=1.0)
+            ds_use[0] = ds_wrapper_class(data_config_adv_1_copy)
+            ds_use[1] = ds_wrapper_class(data_config_adv_2_copy)
 
             # Get seed-data
             if wb_attack_config.affinity_config.perpoint_based_selection > 0:
@@ -239,12 +254,56 @@ if __name__ == "__main__":
                 else:
                     features_val = attacker_obj.make_affinity_features(
                         val_data[0], seed_data_loader)
+            
+            # Save features_train, features_test, features_val
+            # print("Dumping features to disk")
+            # import pickle
+            # with open("features_train_" + str(prop_value) + "_" + str(t) + ".pkl", "wb") as f:
+            #     pickle.dump(features_train, f)
+            # with open("features_test_" + str(prop_value) + "_" + str(t) + ".pkl", "wb") as f:
+            #     pickle.dump(features_test, f)
+            # if features_val is not None:
+            #     with open("features_val_" + str(prop_value) + "_" + str(t) + ".pkl", "wb") as f:
+            #         pickle.dump(features_val, f)
+            # with open("retained_pairs_" + str(prop_value) + "_" + str(t) + ".pkl", "wb") as f:
+            #     pickle.dump(attacker_obj.retained_pairs, f)
+            # continue
 
             # Execute attack
             chosen_accuracy = attacker_obj.execute_attack(
                 train_data=(features_train, train_data[1]),
                 test_data=(features_test, test_data[1]),
                 val_data=(features_val, val_data[1]))
+            # """
+
+            # Load from pickle file
+            """
+            print("Loading features from disk")
+            import pickle
+            with open("features_train_" + str(prop_value) + "_" + str(t) + ".pkl", "rb") as f:
+                features_train = pickle.load(f)
+            with open("features_test_" + str(prop_value) + "_" + str(t) + ".pkl", "rb") as f:
+                features_test = pickle.load(f)
+            with open("features_val_" + str(prop_value) + "_" + str(t) + ".pkl", "rb") as f:
+                features_val = pickle.load(f)
+            with open("retained_pairs_" + str(prop_value) + "_" + str(t) + ".pkl", "rb") as f:
+                retained_pairs = pickle.load(f)
+
+            attacker_obj.retained_pairs = retained_pairs
+            train_labels = np.concatenate((np.zeros(len(features_train) // 2), np.ones(len(features_train) // 2)))
+            test_labels = np.concatenate((np.zeros(len(features_test) // 2), np.ones(len(features_test) // 2)))
+            val_labels = np.concatenate((np.zeros(len(features_val) // 2), np.ones(len(features_val) // 2)))
+
+            attacker_obj.num_dim = features_train[0][0].shape[0]
+            attacker_obj.num_layers = len(features_train[0]) - 1
+            attacker_obj.num_logit_features = features_train[0][-1].shape[0]
+
+            # Execute attack
+            chosen_accuracy = attacker_obj.execute_attack(
+                train_data=(features_train, train_labels),
+                test_data=(features_test, test_labels),
+                val_data=(features_val, val_labels))
+            """
 
             print("Test accuracy: %.3f" % chosen_accuracy)
             logger.add_results(wb_attack_config.attack,
@@ -259,3 +318,4 @@ if __name__ == "__main__":
 
             # Keep saving results (more I/O, minimal loss of information in crash)
             logger.save()
+            # exit(0)

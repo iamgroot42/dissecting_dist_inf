@@ -1,4 +1,5 @@
 import os
+from random import random
 from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import numpy as np
 import torch as ch
@@ -6,33 +7,29 @@ from torch.utils.data import TensorDataset
 import torch.nn as nn
 import copy
 from typing import List, Literal
+from tqdm import tqdm
 
 from distribution_inference.config import SyntheticDatasetConfig, TrainConfig, DatasetConfig
 from distribution_inference.models.core import AnyLayerMLP, RandomForest, LRClassifier
 from distribution_inference.training.utils import load_model
 import distribution_inference.datasets.base as base
+from distribution_inference.utils import get_synthetic_configs_path
 
 
 # Mapping between numbers and corresponding configs
 # Useful to point to relevant folder to load data/models from
 # and keep track of different kinds of experiments
-# TODO: Read JSON from file and parse
-CONFIG_MAPPING = {
-    "1": SyntheticDatasetConfig(
-        dimensionality=10,
-        adv_noise_to_mean=1.0,
-        noise_cov = 0.98,
-        noise_model = 1.0,
-        mean_range = 5.0,
-        dist_diff_mean = 1.0,
-        dist_diff_std = 1.0,
-        layer = [15,5], 
-        cov = 3.0,
-        n_samples_vic = 5000,
-        n_samples_adv=1000,
-        diff_posteriors=True
-  )
-}
+CONFIG_MAPPING = {}
+def read_up_configs():
+    global CONFIG_MAPPING
+    dir_path = get_synthetic_configs_path()
+    for filename in os.listdir(dir_path):
+        if filename.endswith(".json"):
+            config = SyntheticDatasetConfig.load(os.path.join(dir_path, filename))
+            CONFIG_MAPPING[filename.removesuffix(".json")] = config
+# Called whenever this module is imported
+read_up_configs()
+
 
 class DatasetInformation(base.DatasetInformation):
     def __init__(self, epoch_wise: bool = False):
@@ -64,7 +61,7 @@ class DatasetInformation(base.DatasetInformation):
             model = model.cuda()
         return model
 
-    def get_model_for_dp(self, n_inp:int, n_classes:int, cpu: bool = False, model_arch: str = None) -> nn.Module:
+    def get_model_for_dp(self, n_inp: int, n_classes: int, cpu: bool = False, model_arch: str = None) -> nn.Module:
         if model_arch == "mlp_1":
             model = AnyLayerMLP(n_inp=n_inp, n_classes=n_classes, depth=1)
         else:
@@ -79,6 +76,7 @@ class GroundTruthModel(nn.Module):
     """
         Model f(x) used to generate ground-truth predictions.
     """
+
     def __init__(self, input_dim: int, n_classes: int, hidden_dim: List[int]):
         super().__init__()
         self.n_classes = n_classes
@@ -109,29 +107,35 @@ class Distribution:
         using given y_model.
     """
 
-    def __init__(self, mean, cov, y_model):
+    def __init__(self, config: SyntheticDatasetConfig):
+        self.mean = None
+        self.cov = None
+        self.y_model = GroundTruthModel(config.dimensionality,
+                                        config.num_classes,
+                                        config.layer)
+    
+    def initialize_params(self, mean, cov, y_model):
         self.mean = mean
         self.cov = cov
         self.y_model = y_model
-    
+
     def get_params(self):
         return {
             "mean": self.mean,
             "cov": self.cov,
             "y_model": self.y_model.state_dict()
         }
-    
+
     def load_params(self, param_dict):
         self.mean = param_dict["mean"]
         self.cov = param_dict["cov"]
         self.y_model.load_state_dict(param_dict["y_model"])
 
     def sample(self, n):
-        x = np.random.multivariate_normal(self.mean, self.cov, n).astype(np.float32)
+        x = np.random.multivariate_normal(
+            self.mean, self.cov, n).astype(np.float32)
         y = self.y_model(ch.from_numpy(x).float())
         y = ch.argmax(y.detach(), dim=1).numpy()
-        # y = y.reshape(y.shape[0], 1)
-        print(np.mean(y))
         return x, y
 
 
@@ -141,24 +145,36 @@ class VicAdvDistribution:
         Adversary's parameter estimates may be a bit off (domain shift), 
         and the labels might be too (will be added later).
     """
+    def __init__(self, config: SyntheticDatasetConfig):
+        self.config = config
+        self.vic_distr = Distribution(config)
+        self.adv_distr = Distribution(config)
 
-    def __init__(self, config: SyntheticDatasetConfig, mean, cov, y_model: GroundTruthModel):
-        self.vic_distr = Distribution(mean, cov, y_model)
+    def initialize_params(self, mean, cov, y_model: GroundTruthModel):
+        self.vic_distr.initialize_params(mean, cov, y_model)
 
-        # Create perturbed mean/cov for adv
-        mean_adv = mean + np.random.rand(config.dimensionality) * config.adv_noise_to_mean
-        cov_adv = np.diagflat(
-            cov.diagonal() + np.random.rand(config.dimensionality) * config.noise_cov)
+        # Create perturbed mean for adv
+        if self.config.adv_noise_to_mean > 0:
+            mean_adv = mean + \
+                np.random.rand(self.config.dimensionality) * self.config.adv_noise_to_mean
+        else:
+            mean_adv = mean
+        # Create perturbed cov for adv
+        if self.config.noise_cov > 0:
+            cov_adv = np.diagflat(
+                cov.diagonal() + np.random.rand(self.config.dimensionality) * self.config.noise_cov)
+        else:
+            cov_adv = cov
 
         # TODO: y_model variation different for the adversary
-        self.adv_distr = Distribution(mean_adv, cov_adv, y_model)
-    
+        self.adv_distr.initialize_params(mean_adv, cov_adv, y_model)
+
     def get_params(self):
         return {
             "adv": self.adv_distr.get_params(),
             "victim": self.vic_distr.get_params()
         }
-    
+
     def load_params(self, param_dict):
         self.adv_distr.load_params(param_dict["adv"])
         self.vic_distr.load_params(param_dict["victim"])
@@ -191,30 +207,61 @@ class SyntheticDataset:
         self.cov = config.cov
         self.n_samples_adv = config.n_samples_adv
         self.n_samples_vic = config.n_samples_vic
+        self.NUM_MAX_TRIES = 200
+        self.ACCEPTABLE_CUTOFF = 0.2
 
+        self.distr_0 = VicAdvDistribution(self.config)
+        self.distr_1 = VicAdvDistribution(self.config)
+    
+    def initialize_data(self):
         # Start with some parameters for D0
-        mean = np.random.uniform(-config.mean_range, config.mean_range, config.dimensionality)
-        mean_copy = mean + np.random.uniform(-config.dist_diff_mean, config.dist_diff_mean, config.dimensionality)
+        mean = np.random.uniform(-self.config.mean_range,
+                                 self.config.mean_range, self.config.dimensionality)
+        mean_copy = mean + \
+            np.random.uniform(-self.config.dist_diff_mean,
+                              self.config.dist_diff_mean, self.config.dimensionality)
         # set variance range between 1 and cov
-        cov_list = np.random.uniform(1, config.cov, config.dimensionality)
+        cov_list = np.random.uniform(1, self.config.cov, self.config.dimensionality)
 
         # Create D1 with some offset between D0 and D1
         cov = np.diagflat(cov_list)
         # not sure if can let it go negative
-        cov_copy = np.diagflat(cov_list + np.random.uniform(0, config.dist_diff_mean))
+        cov_copy = np.diagflat(
+            cov_list + np.random.uniform(0, self.config.dist_diff_mean))
 
-        # Create y_model for both distrs
-        model_D0 = GroundTruthModel(config.dimensionality, config.num_classes, config.layer)
-        model_D1 = copy.deepcopy(model_D0)
-        if not self.diff_posteriors:
-            model_D1 = self.__get_perturbed_model_copy(model_D1)
+        candidate_d0, candidate_d1 = [], []
+        # Heuristic - try 100 times, pick all < 0.3, and sample any one of them
+        # uniformly at random. This is based on the following
+        # observation - every 2-3 in 10 models satisfy requirement.
+        for i in tqdm(range(self.NUM_MAX_TRIES), desc="Collecting candidate f(x) models"):
+            # Create y_model for both distrs
+            model_D0 = GroundTruthModel(
+                self.config.dimensionality, self.config.num_classes, self.config.layer)
+            # Keep trying new inits as long as average label predictions not in acceptable range
+            model_D1 = copy.deepcopy(model_D0)
+            if not self.diff_posteriors:
+                model_D1 = self.__get_perturbed_model_copy(model_D1)
 
-        # Create D0 for vic/adv
-        self.distr_0 = VicAdvDistribution(config, mean, cov, model_D0)
-        # Create D1 for vic/adv
-        self.distr_1 = VicAdvDistribution(
-            config, mean_copy, cov_copy, model_D1)
-    
+            # Initialize D0 for vic/adv
+            self.distr_0.initialize_params(mean, cov, model_D0)
+            # Initialize D1 for vic/adv
+            self.distr_1.initialize_params(mean_copy, cov_copy, model_D1)
+
+            _, y_1, _ = self.get_data(0.0, "victim")
+            _, y_2, _ = self.get_data(1.0, "victim")
+            diff_1 = ch.abs(ch.mean(1. * y_1) - 0.5).item()
+            diff_2 = ch.abs(ch.mean(1. * y_2) - 0.5).item()
+            if (diff_1 < self.ACCEPTABLE_CUTOFF) and (diff_2 < self.ACCEPTABLE_CUTOFF):
+                print(ch.mean(1. * y_1), ch.mean(1. * y_2))
+                candidate_d0.append(self.distr_0.get_params())
+                candidate_d1.append(self.distr_1.get_params())
+
+        # Pick one of the models uniformly at random
+        random_selection = np.random.randint(len(candidate_d0))
+        print(f"Picking out of {len(candidate_d0)}/{self.NUM_MAX_TRIES} candidates")
+        self.distr_0.load_params(candidate_d0[random_selection])
+        self.distr_1.load_params(candidate_d1[random_selection])
+
     def save_params(self, path):
         """
             Save parameters related to current distribution in provided path
@@ -232,7 +279,7 @@ class SyntheticDataset:
         param_dict = ch.load(path)
         self.distr_0.load_params(param_dict["d0"])
         self.distr_1.load_params(param_dict["d1"])
-        
+
     def __get_perturbed_model_copy(self, model):
         model_p = copy.deepcopy(model)
         with ch.no_grad():
@@ -246,6 +293,8 @@ class SyntheticDataset:
           Achieves so by sampling (1-alpha) ratio of samples from D0, and 
           remaining from D1. Uses vic/adv split depending on 'split'
         """
+        if alpha < 0 or alpha > 1:
+            raise ValueError("Invalid alpha value provided: should be in [0, 1]")
         n_samples = self.n_samples_adv if split == "adv" else self.n_samples_vic
         n_samples_one = int(n_samples * alpha)
         n_samples_zero = n_samples - n_samples_one
@@ -257,13 +306,13 @@ class SyntheticDataset:
         y = np.concatenate((y_0, y_1))
         p_labels = np.concatenate(
             (np.zeros(n_samples_zero), np.ones(n_samples_one)))
-        
+
         # TODO: Implement label-noise later
-        
+
         if not self.drop_senstive_cols:
             # Add p_labels as an extra dimension onto x
             x = np.concatenate((x, p_labels.reshape(-1, 1)), axis=1)
-        
+
         x = ch.from_numpy(x)
         y = ch.from_numpy(y)
         p_labels = ch.from_numpy(p_labels)
@@ -281,31 +330,47 @@ class SyntheticWrapper(base.CustomDatasetWrapper):
                          skip_data=skip_data,
                          label_noise=label_noise,
                          shuffle_defense=shuffle_defense)
-        self.distribution_config = CONFIG_MAPPING.get(self.prop, None)
+        self.distribution_config: SyntheticDatasetConfig = CONFIG_MAPPING.get(self.prop, None)
+        print(CONFIG_MAPPING)
         if self.distribution_config is None:
-            raise ValueError("Requested config not available")
+            raise ValueError(f"Requested config {self.prop} not available")
 
         self.dimensionality = self.distribution_config.dimensionality
         self.n_classes = self.distribution_config.num_classes
+        self.info_object = DatasetInformation()
 
         if not skip_data:
+            # Check if data for this distribution already exists and saved on disk
             self.ds = SyntheticDataset(self.distribution_config,
                                        drop_senstive_cols=self.drop_senstive_cols)
+            data_path = os.path.join(
+                self.info_object.base_data_dir, f"{self.prop}.pt")
+            if os.path.exists(data_path):
+                print("Loading distribution from disk")
+                self.ds.load_params(data_path)
+            else:
+                print("Initializing new distribution")
+                self.ds.initialize_data()
+                self.ds.save_params(data_path)
         self.info_object = DatasetInformation(epoch_wise=epoch)
 
     def load_data(self):
         x, y, p = self.ds.get_data(split=self.split,
-                                alpha=self.ratio,
-                                label_noise=self.label_noise)
+                                   alpha=self.ratio,
+                                   label_noise=self.label_noise)
         # Split into train and val data
         val_ratio = 0.2
-        val_indices = np.random.choice(x.shape[0], int(x.shape[0] * val_ratio), replace=False)
-        train_indices = np.array(list(set(range(x.shape[0])) - set(val_indices)))
+        val_indices = np.random.choice(x.shape[0], int(
+            x.shape[0] * val_ratio), replace=False)
+        train_indices = np.array(
+            list(set(range(x.shape[0])) - set(val_indices)))
         x_train, y_train, p_train = x[train_indices], y[train_indices], p[train_indices]
         x_val, y_val, p_val = x[val_indices], y[val_indices], p[val_indices]
+        print(ch.mean(1. * y_train))
+        print(ch.mean(1. * y_val))
         return (x_train, y_train, p_train), (x_val, y_val, p_val)
 
-    def get_loaders(self,batch_size: int,
+    def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
                     eval_shuffle: bool = False,):
         train_data, val_data = self.load_data()

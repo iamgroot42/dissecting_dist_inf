@@ -9,7 +9,7 @@ import torch as ch
 import torch.nn as nn
 
 from distribution_inference.config import TrainConfig, DatasetConfig
-from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer,RandomForest,KNeighborsClassifier,GaussianProcessClassifier,MultinomialNB
+from distribution_inference.models.core import MLPFourLayer, MLPFiveLayer, RandomForest, KNeighborsClassifier, GaussianProcessClassifier, MultinomialNB
 import distribution_inference.datasets.base as base
 import distribution_inference.datasets.utils as utils
 from distribution_inference.training.utils import load_model
@@ -26,7 +26,8 @@ class DatasetInformation(base.DatasetInformation):
                          properties=["sex", "race", "ethnicity"],
                          values={"sex": ratios, "race": ratios,
                                  "ethnicity": ratios},
-                         supported_models=["mlp4", "random_forest","k_neighbors","gaussian_process","multinomial_naive_bayes"],
+                         supported_models=[
+                             "mlp4", "random_forest", "k_neighbors", "gaussian_process", "multinomial_naive_bayes"],
                          default_model="mlp4",
                          property_focus={
                              "sex": 'female',
@@ -52,7 +53,7 @@ class DatasetInformation(base.DatasetInformation):
             model = MultinomialNB()
         else:
             raise NotImplementedError("Model architecture not supported")
-        if not  model.is_sklearn_model:
+        if not model.is_sklearn_model:
             if not cpu:
                 model = model.cuda()
             else:
@@ -386,7 +387,8 @@ class TexasWrapper(base.CustomDatasetWrapper):
         if data_config.drop_senstive_cols:
             self.num_features_drop += 3
         self.info_object = DatasetInformation(
-            num_dropped_features=self.num_features_drop,epoch_wise=epoch)
+            num_dropped_features=self.num_features_drop, epoch_wise=epoch)
+
     def load_data(self, custom_limit=None):
         return self.ds.get_data(split=self.split,
                                 prop_ratio=self.ratio,
@@ -403,9 +405,9 @@ class TexasWrapper(base.CustomDatasetWrapper):
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,)
 
-    def load_model(self, path: str, model_arch: str,on_cpu: bool = False) -> nn.Module:
+    def load_model(self, path: str, model_arch: str, on_cpu: bool = False) -> nn.Module:
         info_object = self.info_object
-        model = info_object.get_model(cpu=on_cpu,model_arch=model_arch)
+        model = info_object.get_model(cpu=on_cpu, model_arch=model_arch)
         return load_model(model, path, on_cpu=on_cpu)
 
     def get_save_dir(self, train_config: TrainConfig, model_arch: str) -> str:
@@ -414,7 +416,7 @@ class TexasWrapper(base.CustomDatasetWrapper):
         dp_config = None
         if train_config.misc_config is not None:
             dp_config = train_config.misc_config.dp_config
-        
+
         # Standard logic
         if model_arch is None:
             model_arch = info_object.default_model

@@ -4,7 +4,7 @@
         "prop": "sex",
         "split": "victim",
         "squeeze": true,
-        "value": 1.0
+        "value": 0.5
     },
     "offset": 0,
     "epochs": 20,

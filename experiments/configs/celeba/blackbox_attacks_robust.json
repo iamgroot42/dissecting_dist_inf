@@ -2,8 +2,8 @@
     "train_config": {
         "data_config": {
             "name": "celeba",
-            "prop": "Male",
-            "classify": "Smiling",
+            "prop": "Young",
+            "classify": "Male",
             "split": "adv",
             "value": 0.5,
             "cwise_samples": 1e6,
@@ -11,7 +11,7 @@
         },
         "misc_config": {
             "adv_config": {
-                "epsilon": 16,
+                "epsilon": 4,
                 "iters": 7,
                 "clip_min": -1,
                 "clip_max": 1,

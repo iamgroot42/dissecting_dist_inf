@@ -1,0 +1,285 @@
+{
+    "name": "bb_remaining",
+    "start time": "2022-10-20 10:41:25.197418",
+    "attack_config": {
+        "train_config": {
+            "data_config": {
+                "name": "arxiv",
+                "prop": "mean",
+                "value": 13.0,
+                "split": "adv",
+                "drop_senstive_cols": false,
+                "scale": 1.0,
+                "augment": false,
+                "classify": null,
+                "cwise_samples": null,
+                "squeeze": false,
+                "processed_variant": true,
+                "prune": 0
+            },
+            "epochs": 0,
+            "learning_rate": 0.0,
+            "batch_size": 0,
+            "misc_config": null,
+            "lr_scheduler": null,
+            "verbose": false,
+            "num_models": 1,
+            "offset": 0,
+            "weight_decay": 0,
+            "get_best": true,
+            "cpu": false,
+            "expect_extra": true,
+            "save_every_epoch": false,
+            "extra_info": null,
+            "regression": false,
+            "multi_class": false,
+            "label_noise": 0,
+            "model_arch": null,
+            "parallel": false,
+            "early_stopping": null
+        },
+        "values": [
+            14,
+            15,
+            16,
+            17
+        ],
+        "black_box": {
+            "attack_type": [
+                "KL",
+                "loss_and_threshold"
+            ],
+            "ratios": [
+                1.0
+            ],
+            "batch_size": 512,
+            "num_adv_models": 50,
+            "granularity": 0.005,
+            "preload": true,
+            "multi": null,
+            "multi2": null,
+            "multi_class": true,
+            "save": false,
+            "tune_final_threshold": false,
+            "Start_epoch": 1,
+            "End_epoch": 20,
+            "relative_threshold": false,
+            "loss_variant": false,
+            "random_order": false,
+            "log_odds_order": false,
+            "kl_frac": 0.8,
+            "kl_voting": false,
+            "generative_attack": null,
+            "order_name": null,
+            "geo_mean": false,
+            "regression_config": null
+        },
+        "white_box": null,
+        "tries": 5,
+        "num_victim_models": 250,
+        "on_cpu": false,
+        "adv_misc_config": null,
+        "num_total_adv_models": 1000,
+        "victim_local_attack": false,
+        "victim_model_arch": null,
+        "adv_model_arch": null,
+        "adv_processed_variant": false,
+        "adv_target_epoch": null,
+        "victim_target_epoch": null
+    },
+    "result": {
+        "KL": {
+            "14": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    56.8,
+                    66.2,
+                    70.19999999999999,
+                    67.60000000000001,
+                    66.0
+                ]
+            },
+            "15": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    93.2,
+                    96.2,
+                    91.2,
+                    96.2,
+                    91.8
+                ]
+            },
+            "16": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    99.8,
+                    100.0,
+                    99.8,
+                    100.0,
+                    100.0
+                ]
+            },
+            "17": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0,
+                    100.0
+                ]
+            }
+        },
+        "loss_and_threshold": {
+            "14": {
+                "adv_acc": [
+                    63.0,
+                    57.99999999999999,
+                    59.0,
+                    59.0,
+                    67.0
+                ],
+                "victim_acc": [
+                    [
+                        50.0,
+                        50.8
+                    ],
+                    [
+                        49.8,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        61.8
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        51.800000000000004
+                    ]
+                ]
+            },
+            "15": {
+                "adv_acc": [
+                    55.00000000000001,
+                    63.0,
+                    62.0,
+                    60.0,
+                    62.0
+                ],
+                "victim_acc": [
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ]
+                ]
+            },
+            "16": {
+                "adv_acc": [
+                    64.0,
+                    77.0,
+                    79.0,
+                    78.0,
+                    64.0
+                ],
+                "victim_acc": [
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ]
+                ]
+            },
+            "17": {
+                "adv_acc": [
+                    85.0,
+                    83.0,
+                    83.0,
+                    80.0,
+                    87.0
+                ],
+                "victim_acc": [
+                    [
+                        50.6,
+                        50.0
+                    ],
+                    [
+                        52.0,
+                        50.0
+                    ],
+                    [
+                        50.2,
+                        50.0
+                    ],
+                    [
+                        50.0,
+                        50.0
+                    ],
+                    [
+                        50.4,
+                        50.0
+                    ]
+                ]
+            }
+        }
+    },
+    "save time": "2022-10-20 14:26:38.299105"
+}
