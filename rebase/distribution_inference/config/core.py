@@ -301,6 +301,13 @@ class BlackBoxAttackConfig(Serializable):
     geo_mean:Optional[bool] = False
     regression_config: Optional[RegressionConfig] = None
 
+    merlin_mean: Optional[float] = 0.0
+    """Mean for noise in merlin-based probability estimation"""
+    merlin_std: Optional[float] = 0.3
+    """Std for noise in merlin-based probability estimation"""
+    merlin_neighbors: Optional[int] = 100
+    """Number of samples for noise in merlin-based probability estimation"""
+
 
 @dataclass
 class PermutationAttackConfig(Serializable):
