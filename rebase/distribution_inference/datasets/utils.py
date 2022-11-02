@@ -47,7 +47,7 @@ def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 
-def filter(df, condition, ratio, verbose: bool = True):
+def filter(df, condition, ratio, verbose: bool = True, get_indices: bool = False):
     qualify = np.nonzero((condition(df)).to_numpy())[0]
     notqualify = np.nonzero(np.logical_not((condition(df)).to_numpy()))[0]
     current_ratio = len(qualify) / (len(qualify) + len(notqualify))
@@ -58,13 +58,27 @@ def filter(df, condition, ratio, verbose: bool = True):
         np.random.shuffle(notqualify)
         if ratio < 1:
             nqi = notqualify[:int(((1-ratio) * len(qualify))/ratio)]
-            return pd.concat([df.iloc[qualify], df.iloc[nqi]])
+            sampled_indices = np.concatenate((qualify, nqi))
+            concat_df = pd.concat([df.iloc[qualify], df.iloc[nqi]])
+            if get_indices:
+                return concat_df, sampled_indices
+            return concat_df
+        
+        if get_indices:
+            return df.iloc[qualify], qualify
         return df.iloc[qualify]
     else:
         np.random.shuffle(qualify)
         if ratio > 0:
             qi = qualify[:int((ratio * len(notqualify))/(1 - ratio))]
-            return pd.concat([df.iloc[qi], df.iloc[notqualify]])
+            concat_df = pd.concat([df.iloc[qi], df.iloc[notqualify]])
+            sampled_indices = np.concatenate((qi, notqualify))
+            if get_indices:
+                return concat_df, sampled_indices
+            return concat_df
+
+        if get_indices:
+            return df.iloc[notqualify], notqualify
         return df.iloc[notqualify]
 
 
@@ -86,7 +100,7 @@ def heuristic(df, condition, ratio: float,
     for _ in iterator:
         # Binary class- simply sample (as requested)
         # From each class
-        pckd_df = filter(df, condition, ratio, verbose=False)
+        pckd_df, pckd_ids = filter(df, condition, ratio, verbose=False, get_indices=True)
         zero_ids = np.nonzero(pckd_df[class_col].to_numpy() == 0)[0]
         one_ids = np.nonzero(pckd_df[class_col].to_numpy() == 1)[0]
         # Sub-sample data, if requested
@@ -116,7 +130,7 @@ def heuristic(df, condition, ratio: float,
 
         vals.append(condition(pckd_df).mean())
         pckds.append(pckd_df)
-        indices.append(pckd)
+        indices.append(pckd_ids[pckd])
 
         # Print best ratio so far in descripton
         if verbose:
