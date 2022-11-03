@@ -224,7 +224,8 @@ class BoneDataset(base.CustomDataset):
                  processed: bool = False,
                  classify: str = "age",
                  property: str = "gender",
-                 label_noise: float = 0.0):
+                 label_noise: float = 0.0,
+                 ids = None):
         super().__init__()
         if processed:
             self.features = argument
@@ -243,10 +244,12 @@ class BoneDataset(base.CustomDataset):
                 self.df.index, num_flip, replace=False)
             self.df.loc[random_indices, self.classify] = \
                 1 - self.df.loc[random_indices, self.classify]
+        self.ids = ids
     
     def mask_data_selection(self, mask):
         self.mask = mask
         self.num_samples = len(self.mask)
+        self.ids = self.ids[mask]
 
     def __getitem__(self, index):
         index_ = self.mask[index].item() if self.mask is not None else index
@@ -323,6 +326,11 @@ class BoneWrapper(base.CustomDatasetWrapper):
         }
         # Define DI object
         self.info_object = DatasetInformation(epoch_wise=epoch)
+    
+    def get_used_indices(self):
+        train_ids_after = self.ds_train.ids
+        val_ids_after = self.ds_val.ids
+        return (self._train_ids_before, train_ids_after), (self._val_ids_before, val_ids_after)
 
     def _filter(self, x):
         return x[self.prop] == 1
@@ -357,7 +365,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
         else:
             n_train, n_test = self.cwise_samples, self.cwise_samples
 
-        self.df_train = utils.heuristic(
+        self.df_train, train_ids = utils.heuristic(
             df_train, self._filter, self.ratio,
             cwise_sample=None,
             class_imbalance=None,
@@ -365,8 +373,9 @@ class BoneWrapper(base.CustomDatasetWrapper):
             # class_imbalance=1.0,
             tot_samples=n_train,
             class_col=self.classify,
-            n_tries=300)
-        self.df_val = utils.heuristic(
+            n_tries=300,
+            get_indices=True)
+        self.df_val, val_ids = utils.heuristic(
             df_val, self._filter, self.ratio,
             cwise_sample=None,
             class_imbalance=None,
@@ -374,7 +383,8 @@ class BoneWrapper(base.CustomDatasetWrapper):
             # class_imbalance=1.0,
             tot_samples=n_test,
             class_col=self.classify,
-            n_tries=300)
+            n_tries=300,
+            get_indices=True)
 
         # Create datasets using these DF objects
         if self.processed_variant:
@@ -384,12 +394,14 @@ class BoneWrapper(base.CustomDatasetWrapper):
                 processed=True,
                 classify=self.classify,
                 property=self.prop,
-                label_noise=self.label_noise)
+                label_noise=self.label_noise,
+                ids=train_ids)
             ds_val = BoneDataset(
                 self.df_val, features["val"],
                 processed=True,
                 classify=self.classify,
-                property=self.prop)
+                property=self.prop,
+                ids=val_ids)
         else:
             # Get transforms
             train_transform, test_transform = get_transforms(self.augment)
@@ -399,12 +411,14 @@ class BoneWrapper(base.CustomDatasetWrapper):
                 processed=False,
                 classify=self.classify,
                 property=self.prop,
-                label_noise=self.label_noise)
+                label_noise=self.label_noise,
+                ids=train_ids)
             ds_val = BoneDataset(
                 self.df_val, test_transform,
                 processed=False,
                 classify=self.classify,
-                property=self.prop)
+                property=self.prop,
+                ids=val_ids)
         return ds_train, ds_val
 
     def get_loaders(self, batch_size,
@@ -413,6 +427,8 @@ class BoneWrapper(base.CustomDatasetWrapper):
                     num_workers: int = 2,
                     prefetch_factor: int = 2):
         self.ds_train, self.ds_val = self.load_data()
+        self._train_ids_before = self.ds_train.ids
+        self._val_ids_before = self.ds_val.ids
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
                                    num_workers=num_workers,

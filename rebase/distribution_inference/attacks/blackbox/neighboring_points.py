@@ -26,17 +26,18 @@ class AddGaussianNoise():
 
 
 class neighborDataset(Dataset):
-    def __init__(self, num_sample, original, transform):
-        self.num_samples = num_sample
+    def __init__(self, num_neighbors, original, transform):
+        self.num_neighbors = num_neighbors
         self.X = []
-        for i in range(num_sample):
+        for _ in range(num_neighbors):
             self.X.append(transform(original))
+        self.X = ch.cat(self.X, 0)
 
     def __getitem__(self, index):
         return self.X[index]
 
     def __len__(self):
-        return self.num_samples
+        return self.X.shape[0]
 
 
 def get_estimate(loader, models: List[nn.Module],
@@ -78,23 +79,28 @@ def get_estimate(loader, models: List[nn.Module],
 
             for data in loader:
                 data_points, labels, _ = data
-                for eachd in data_points:
-                    #might want other batch_size in future
-                    new_loader = DataLoader(dataset=neighborDataset(
-                        num_neighbor, eachd, noise), batch_size=num_neighbor)
-                    p_collected = []
-                    for neighbor in new_loader:
-                        # Get prediction
-                        if latent != None:
-                            prediction = model(
+                # Infer batch size
+                batch_size_desired = len(data_points)
+                
+                # Create new loader that adds noise to data
+                new_loader = DataLoader(dataset=neighborDataset(
+                    num_neighbor, data_points, noise),
+                    batch_size=batch_size_desired)
+                p_collected = []
+                for neighbor in new_loader:
+                    # Get prediction
+                    if latent != None:
+                        prediction = model(
                                 neighbor.cuda(), latent=latent).detach()
-                        else:
-                            prediction = model(neighbor.cuda()).detach()
-                            if not multi_class:
-                                prediction = prediction[:, 0]
-                        p_collected.append(1. * (prediction.cpu().numpy() >= thre))
-                    predictions_on_model.append(np.mean(p_collected))
-        predictions.append(predictions_on_model)
+                    else:
+                        prediction = model(neighbor.cuda()).detach()
+                        if not multi_class:
+                            prediction = prediction[:, 0]
+                    p_collected.append(1. * (prediction.cpu().numpy() >= thre))
+                # Tile predictions and average over appropriate means
+                p_collected = np.array(p_collected).flatten().reshape(num_neighbor, -1)
+                predictions_on_model.append(np.mean(p_collected, 0))
+        predictions.append(np.concatenate(predictions_on_model, 0))
         # Shift model back to CPU
         model = model.cpu()
         del model

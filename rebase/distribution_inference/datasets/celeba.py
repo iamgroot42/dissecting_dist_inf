@@ -495,7 +495,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         return ds_train, ds_val
     
     def get_used_indices(self):
-        return self.ds_train.ids, self.ds_val.ids
+        train_ids_after = self.ds_train.ids
+        val_ids_after = self.ds_val.ids
+        return (self._train_ids_before, train_ids_after), (self._val_ids_before, val_ids_after)
 
     def get_loaders(self, batch_size: int,
                     shuffle: bool = True,
@@ -504,8 +506,8 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                     num_workers: int = 24,
                     prefetch_factor: int = 20):
         self.ds_train, self.ds_val = self.load_data()
-        self.used_for_train = self.ds_train.ids
-        self.used_for_test = self.ds_val.ids
+        self._train_ids_before = self.ds_train.ids
+        self._val_ids_before = self.ds_val.ids
         return super().get_loaders(batch_size, shuffle=shuffle,
                                    eval_shuffle=eval_shuffle,
                                    val_factor=val_factor,

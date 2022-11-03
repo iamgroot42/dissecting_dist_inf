@@ -75,6 +75,8 @@ if __name__ == "__main__":
             epochwise_version=attack_config.train_config.save_every_epoch,
             model_arch=attack_config.victim_model_arch,
             custom_models_path=models_1_path)
+        if type(models_vic_1) == tuple:
+            models_vic_1 = models_vic_1[0]
 
         # For each value (of property) asked to experiment with
         for prop_value in attack_config.values:
@@ -97,6 +99,8 @@ if __name__ == "__main__":
                 epochwise_version=attack_config.train_config.save_every_epoch,
                 model_arch=attack_config.victim_model_arch,
                 custom_models_path=models_2_paths[i] if models_2_paths else None)
+            if type(models_vic_2) == tuple:
+                models_vic_2 = models_vic_2[0]
 
             for t in range(attack_config.tries):
                 print("{}: trial {}".format(prop_value, t))
