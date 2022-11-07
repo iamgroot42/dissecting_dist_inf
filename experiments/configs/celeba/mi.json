@@ -1,0 +1,48 @@
+{
+    "train_config": {
+        "data_config": {
+            "name": "celeba",
+            "prop": "Male",
+            "classify": "Smiling",
+            "split": "victim",
+            "value": 0.9,
+            "processed_variant": false
+        },
+        "offset": 2000,
+        "epochs": 0,
+        "learning_rate": 0,
+        "batch_size": 256,
+        "misc_config": {
+            "shuffle_defense_config": {
+                "desired_value": 0.5,
+                "data_level": true,
+                "sample_type": "under"
+            }
+        }
+    },
+    "tries": 5,
+    "black_box": {
+        "granularity": 0.05,
+        "num_adv_models": 50,
+        "batch_size": 30000,
+        "attack_type": [
+            "KL"
+        ],
+        "ratios": [
+            1.0
+        ],
+        "preload": true,
+        "tune_final_threshold": false
+    },
+    "values": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.6,
+        0.7,
+        0.8,
+        0.9
+    ],
+    "num_victim_models": 50
+}

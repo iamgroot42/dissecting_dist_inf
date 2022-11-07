@@ -404,7 +404,7 @@ class CustomDatasetWrapper:
                         model = self.load_model(os.path.join(
                             folder_path, mpath), on_cpu=on_cpu,
                             model_arch=model_arch)
-                    except:
+                    except Exception as e:
                         # Could not load (for whatever reason)
                         n_failed.append(mpath)
                         continue

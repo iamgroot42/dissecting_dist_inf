@@ -137,7 +137,7 @@ class _CensusIncome:
         def prepare_one_set(TRAIN_DF, TEST_DF):
             # Apply filter to data
             if indeces:
-                TRAIN_DF_ = TRAIN_DF.iloc[indeces[0]]
+                TRAIN_DF_ = TRAIN_DF.iloc[indeces[0]].reset_index(drop=True)
                 train_ids = None
             else:
                 TRAIN_DF_, train_ids = self.get_filter(TRAIN_DF, filter_prop,
@@ -146,7 +146,7 @@ class _CensusIncome:
                                            scale=scale)
             train_prop_labels = 1 * (lambda_fn(TRAIN_DF_).to_numpy())
             if indeces:
-                TEST_DF_ = TEST_DF.iloc[indeces[1]]
+                TEST_DF_ = TEST_DF.iloc[indeces[1]].reset_index(drop=True)
                 test_ids = None
             else:
                 TEST_DF_, test_ids = self.get_filter(TEST_DF, filter_prop,

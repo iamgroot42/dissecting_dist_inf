@@ -356,7 +356,7 @@ class BoneWrapper(base.CustomDatasetWrapper):
         ch.cuda.empty_cache()
         return features.shape[1:]
 
-    def load_data(self):
+    def load_data(self, indexed_data = None):
         # Get DF files for train, val
         df_train, df_val = self.info_object._get_df(self.split)
         # Filter to achieve desired ratios and sample-sizes
@@ -365,26 +365,31 @@ class BoneWrapper(base.CustomDatasetWrapper):
         else:
             n_train, n_test = self.cwise_samples, self.cwise_samples
 
-        self.df_train, train_ids = utils.heuristic(
-            df_train, self._filter, self.ratio,
-            cwise_sample=None,
-            class_imbalance=None,
-            # n_train,
-            # class_imbalance=1.0,
-            tot_samples=n_train,
-            class_col=self.classify,
-            n_tries=300,
-            get_indices=True)
-        self.df_val, val_ids = utils.heuristic(
-            df_val, self._filter, self.ratio,
-            cwise_sample=None,
-            class_imbalance=None,
-            # n_test,
-            # class_imbalance=1.0,
-            tot_samples=n_test,
-            class_col=self.classify,
-            n_tries=300,
-            get_indices=True)
+        if indexed_data:
+            self.df_train= df_train.iloc[indexed_data[0]].reset_index(drop=True)
+            self.df_val = df_val.iloc[indexed_data[1]].reset_index(drop=True)
+            train_ids, val_ids = None, None
+        else:
+            self.df_train, train_ids = utils.heuristic(
+                df_train, self._filter, self.ratio,
+                cwise_sample=None,
+                class_imbalance=None,
+                # n_train,
+                # class_imbalance=1.0,
+                tot_samples=n_train,
+                class_col=self.classify,
+                n_tries=300,
+                get_indices=True)
+            self.df_val, val_ids = utils.heuristic(
+                df_val, self._filter, self.ratio,
+                cwise_sample=None,
+                class_imbalance=None,
+                # n_test,
+                # class_imbalance=1.0,
+                tot_samples=n_test,
+                class_col=self.classify,
+                n_tries=300,
+                get_indices=True)
 
         # Create datasets using these DF objects
         if self.processed_variant:
@@ -425,8 +430,9 @@ class BoneWrapper(base.CustomDatasetWrapper):
                     shuffle: bool = False,
                     eval_shuffle: bool = False,
                     num_workers: int = 2,
-                    prefetch_factor: int = 2):
-        self.ds_train, self.ds_val = self.load_data()
+                    prefetch_factor: int = 2,
+                    indexed_data = None):
+        self.ds_train, self.ds_val = self.load_data(indexed_data)
         self._train_ids_before = self.ds_train.ids
         self._val_ids_before = self.ds_val.ids
         return super().get_loaders(batch_size, shuffle=shuffle,

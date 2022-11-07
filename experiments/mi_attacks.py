@@ -60,6 +60,9 @@ def min_linear_logit_threshold_func(
     distribution_linear = np.append(distribution_linear, signal_max)
     threshold_linear = np.quantile(distribution_linear, q=alpha, interpolation='linear',**kwargs,)
 
+    # Clip loss values (should not be too close to zero)
+    min_loss = 1e-7
+    distribution[distribution < min_loss] = min_loss
     distribution = np.log(np.divide(np.exp(- distribution), (1 - np.exp(- distribution))))
     len_dist = len(distribution)
     loc, scale = norm.fit(distribution,**kwargs,)
@@ -135,8 +138,8 @@ def get_loss_values(models, criterion, prior_data_one_x, prior_data_one_y, prior
             if pz_out.shape[1] == 1: # Squeeze if binary task (binary loss used with it)
                 pz_out = pz_out.squeeze(1)
                 po_out = po_out.squeeze(1)
-            loss_zero = criterion(pz_out, pzy.cuda())
-            loss_one = criterion(po_out, poy.cuda())
+            loss_zero = criterion(pz_out, pzy.float().cuda())
+            loss_one = criterion(po_out, poy.float().cuda())
             lz_inner.append(loss_zero.cpu().numpy())
             lo_inner.append(loss_one.cpu().numpy())
         losses_zero.append(lz_inner)
@@ -160,8 +163,8 @@ def get_loss_values_victim(models, criterion, prior_data_one_x, prior_data_one_y
         if pz_out.shape[1] == 1: # Squeeze if binary task (binary loss used with it)
             pz_out = pz_out.squeeze(1)
             po_out = po_out.squeeze(1)
-        loss_zero = criterion(pz_out, prior_data_zero_y[i].cuda())
-        loss_one = criterion(po_out, prior_data_one_y[i].cuda())
+        loss_zero = criterion(pz_out, prior_data_zero_y[i].float().cuda())
+        loss_one = criterion(po_out, prior_data_one_y[i].float().cuda())
         losses_zero.append(loss_zero.cpu().numpy())
         losses_one.append(loss_one.cpu().numpy())
     losses_zero = np.array(losses_zero)
@@ -199,7 +202,7 @@ def mi_attacks_on_ratio(attack_config,
         n_models=attack_config.num_victim_models,
         on_cpu=attack_config.on_cpu,
         model_arch=attack_config.victim_model_arch,)
-    
+
     # Load adv models
     models_adv = ds_adv.get_models(
         train_adv_config,
@@ -207,14 +210,14 @@ def mi_attacks_on_ratio(attack_config,
         on_cpu=attack_config.on_cpu,
         model_arch=attack_config.adv_model_arch,
         target_epoch = attack_config.adv_target_epoch)
-    
+
     # Get loss values for data corresponding to ids_before and ids_after
     # Use adv models for these loss values
     if attack_config.train_config.multi_class:
         criterion = nn.CrossEntropyLoss(reduction="none")
     else:
         criterion = nn.BCEWithLogitsLoss(reduction="none")
-    
+
     # Get "prior knowledge" per victim model
     prior_data_zero_x, prior_data_zero_y = [], []
     prior_data_one_x, prior_data_one_y = [], []
@@ -257,7 +260,7 @@ def mi_attacks_on_ratio(attack_config,
         members_one = 1 * np.sum(losses_vic_one <= thresholds_one, axis=-1)
 
         return members_zero, members_one
-    
+
     def get_ratios(mz, mo):
         ratios = mz / (mz + mo)
         # Cases where both are zero, just defer to predicting 0.5 (guess)
@@ -268,7 +271,7 @@ def mi_attacks_on_ratio(attack_config,
     ratios = get_ratios(members_zero, members_one)
 
     # Make binary-based prediction using the ratio here
-    num_predicted = np.sum(np.abs(ratios - 0.5) > 0.05)
+    num_predicted = np.sum(np.abs(ratios - 0.5) > 0.03)
 
     mse = np.sum((ratio - ratios) ** 2)
     return mse, num_predicted
@@ -285,7 +288,7 @@ if __name__ == "__main__":
 
     # Run MI attack
     alpha = 0.05
-    n_per_dist = 100
+    n_per_dist = 500
 
     mses = []
     neffs = []

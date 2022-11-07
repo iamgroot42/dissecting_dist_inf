@@ -249,7 +249,8 @@ class CelebACustomBinary(base.CustomDataset):
                  shuffle: bool = False,
                  transform=None,
                  features=None,
-                 label_noise: float = 0):
+                 label_noise: float = 0,
+                 indices=None):
         super().__init__()
         self.attr_dict = attr_dict
         self.transform = transform
@@ -269,7 +270,8 @@ class CelebACustomBinary(base.CustomDataset):
         # Apply requested filter
         self.filenames, self.ids = self._ratio_sample_data(
             self.filenames, self.attr_dict,
-            classify, prop, ratio, cwise_sample)
+            classify, prop, ratio, cwise_sample,
+            indices=indices)
 
         if shuffle:
             np.random.shuffle(self.filenames)
@@ -296,24 +298,30 @@ class CelebACustomBinary(base.CustomDataset):
 
     def _ratio_sample_data(self,
                            filenames, attr_dict, label_name,
-                           prop, ratio, subsample_size):
+                           prop, ratio, subsample_size,
+                           indices=None):
         # Make DF
         df = self._create_df(attr_dict, filenames)
 
         # Make filter
         def condition(x): return x[prop] == 1
 
-        parsed_df, ids = utils.heuristic(
-            df, condition, ratio,
-            # cwise_sample,
-            cwise_sample=None,
-            class_imbalance=None,
-            # class_imbalance=1.0,
-            tot_samples=subsample_size,
-            n_tries=100,
-            class_col=label_name,
-            verbose=True,
-            get_indices = True)
+        if indices is not None:
+            parsed_df = df.iloc[indices]
+            ids = None
+        else:
+            parsed_df, ids = utils.heuristic(
+                df, condition, ratio,
+                # cwise_sample,
+                cwise_sample=None,
+                class_imbalance=None,
+                # class_imbalance=1.0,
+                tot_samples=subsample_size,
+                n_tries=100,
+                class_col=label_name,
+                verbose=True,
+                get_indices = True)
+
         # Extract filenames from parsed DF
         return parsed_df["filename"].tolist(), ids
 
@@ -428,7 +436,7 @@ class CelebaWrapper(base.CustomDatasetWrapper):
         ch.cuda.empty_cache()
         return features.shape[1:]
 
-    def load_data(self):
+    def load_data(self, indexed_data = None):
         # Read attributes file to get attribute names
         attrs, _ = _get_attributes(self.info_object.base_data_dir)
         # Create mapping between filename and attributes
@@ -482,16 +490,19 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                 self.info_object.base_data_dir, "features.pt"))
 
         # Create datasets
+        indices = [None, None] if indexed_data is None else indexed_data
         ds_train = CelebACustomBinary(
             self.classify, filelist_train, attr_dict,
             self.prop, self.ratio, cwise_sample[0],
             transform=self.train_transforms,
-            features=features, label_noise=self.label_noise)
+            features=features, label_noise=self.label_noise,
+            indices=indices[0])
         ds_val = CelebACustomBinary(
             self.classify, filelist_test, attr_dict,
             self.prop, self.ratio, cwise_sample[1],
             transform=self.test_transforms,
-            features=features)
+            features=features,
+            indices=indices[1],)
         return ds_train, ds_val
     
     def get_used_indices(self):
@@ -504,8 +515,9 @@ class CelebaWrapper(base.CustomDatasetWrapper):
                     eval_shuffle: bool = False,
                     val_factor: int = 2,
                     num_workers: int = 24,
-                    prefetch_factor: int = 20):
-        self.ds_train, self.ds_val = self.load_data()
+                    prefetch_factor: int = 20,
+                    indexed_data = None):
+        self.ds_train, self.ds_val = self.load_data(indexed_data)
         self._train_ids_before = self.ds_train.ids
         self._val_ids_before = self.ds_val.ids
         return super().get_loaders(batch_size, shuffle=shuffle,
