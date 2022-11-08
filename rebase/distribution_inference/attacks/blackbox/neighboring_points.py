@@ -16,10 +16,9 @@ class AddGaussianNoise():
     def __init__(self, mean=0., std=0.1):
         self.std = std
         self.mean = mean
-        self.dis = normal.Normal(mean, std)
 
     def __call__(self, tensor):
-        return tensor + self.dis.sample(tensor.size())
+        return self.mean + (self.std * ch.randn_like(tensor))
 
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
@@ -79,6 +78,7 @@ def get_estimate(loader, models: List[nn.Module],
 
             for data in loader:
                 data_points, labels, _ = data
+                data_points = data_points.cuda()
                 # Infer batch size
                 batch_size_desired = len(data_points)
                 
@@ -91,9 +91,9 @@ def get_estimate(loader, models: List[nn.Module],
                     # Get prediction
                     if latent != None:
                         prediction = model(
-                                neighbor.cuda(), latent=latent).detach()
+                                neighbor, latent=latent).detach()
                     else:
-                        prediction = model(neighbor.cuda()).detach()
+                        prediction = model(neighbor).detach()
                         if not multi_class:
                             prediction = prediction[:, 0]
                     p_collected.append(1. * (prediction.cpu().numpy() >= thre))
