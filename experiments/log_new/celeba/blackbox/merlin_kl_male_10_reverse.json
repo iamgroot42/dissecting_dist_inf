@@ -1,6 +1,6 @@
 {
-    "name": "merlin_kl_male_10",
-    "start time": "2022-11-03 14:01:41.918338",
+    "name": "merlin_kl_male_10_reverse",
+    "start time": "2022-11-08 13:24:24.768048",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -39,16 +39,14 @@
             "early_stopping": null
         },
         "values": [
-            0.0,
-            0.1,
-            0.2,
-            0.3,
-            0.4,
-            0.6,
-            0.7,
-            0.8,
+            1.0,
             0.9,
-            1.0
+            0.8,
+            0.7,
+            0.6,
+            0.4,
+            0.3,
+            0.2
         ],
         "black_box": {
             "attack_type": [
@@ -57,7 +55,7 @@
             "ratios": [
                 1.0
             ],
-            "batch_size": 1280,
+            "batch_size": 128,
             "num_adv_models": 50,
             "granularity": 0.005,
             "preload": true,
@@ -97,55 +95,21 @@
     },
     "result": {
         "KL": {
-            "0.0": {
+            "1.0": {
                 "adv_acc": [
-                    null,
                     null,
                     null,
                     null,
                     null
                 ],
                 "victim_acc": [
-                    75.2,
-                    73.2,
-                    72.8,
-                    74.0,
-                    78.8
-                ]
-            },
-            "0.1": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    77.2,
-                    70.39999999999999,
                     72.0,
-                    77.60000000000001,
-                    77.4
-                ]
-            },
-            "0.2": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    64.8,
-                    59.599999999999994,
-                    70.0,
-                    62.8,
-                    61.4
+                    70.6,
+                    73.8,
+                    68.2
                 ]
             }
         }
     },
-    "save time": "2022-11-09 04:19:37.900985"
+    "save time": "2022-11-09 08:39:13.035489"
 }

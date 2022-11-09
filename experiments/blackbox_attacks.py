@@ -26,10 +26,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--victim_path", help="path to victim'smodels directory",
         type=str, default=None)
+    parser.add_argument(
+        "--prop", help="Property for which to run the attack",
+        type=str, default=None)
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     attack_config: AttackConfig = AttackConfig.load(
         args.load_config, drop_extra_fields=False)
+
+    # Use given prop (if given) or the one in the config
+    if args.prop is not None:
+        attack_config.train_config.data_config.prop = args.prop
+
     # Extract configuration information from config file
     bb_attack_config: BlackBoxAttackConfig = attack_config.black_box
     train_config: TrainConfig = attack_config.train_config

@@ -16,9 +16,10 @@ class AddGaussianNoise():
     def __init__(self, mean=0., std=0.1):
         self.std = std
         self.mean = mean
+        self.dist = normal.Normal(mean, std)
 
     def __call__(self, tensor):
-        return self.mean + (self.std * ch.randn_like(tensor))
+        return tensor + self.dist.sample(tensor.shape).to(tensor.device)
 
     def __repr__(self):
         return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
