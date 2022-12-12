@@ -17,7 +17,7 @@ from distribution_inference.defenses.active.shuffle import ShuffleDefense
 import os
 
 
-EXTRA = False  #True
+EXTRA = True # False
 if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
@@ -132,12 +132,13 @@ if __name__ == "__main__":
 
         # Train model
         if EXTRA:
-            model, (vloss, vacc, extras) = train(model, (train_loader, val_loader),
+            # model, (vloss, vacc, extras) = train(model, (train_loader, val_loader),
+            model, (vloss, vacc) = train(model, (train_loader, val_loader),
                                                  train_config=train_config,
                                                  extra_options={
                 "curren_model_num": i + train_config.offset,
-                "save_path_fn": ds.get_save_path,
-                "more_metrics": EXTRA},
+                "save_path_fn": ds.get_save_path,},
+                # "more_metrics": EXTRA},
                 shuffle_defense=shuffle_defense)
             # logger.add_result(data_config.value, vloss, vacc, extras)
         else:

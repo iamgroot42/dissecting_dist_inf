@@ -4,13 +4,13 @@
         "prop": "sex",
         "split": "victim",
         "squeeze": true,
-        "value": 0.1
+        "value": 0.5
     },
     "misc_config": {
         "shuffle_defense_config": {
             "desired_value": 0.5,
             "data_level": true,
-            "sample_type": "under"
+            "sample_type": "over"
         }
     },
     "offset": 2000,

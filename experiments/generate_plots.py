@@ -140,6 +140,12 @@ if __name__ == "__main__":
     
     if args.remove_legend_title:
         graph.legend_.set_title(None)
+    
+    # import matplotlib.pyplot as plt
+    # plt.text(15, 82, r'Inference', fontsize=16, color="#de425b")
+    # plt.text(16, 92, r'Task$_{Test}$', fontsize=16, color="#00c7e5")
+    # plt.text(8, 96, r'Task$_{Train}$', fontsize=16, color="#0087ab")
+    # plt.legend([], [], frameon=False)
 
     # Save plot
     suffix = "pdf" if args.pdf else "png"

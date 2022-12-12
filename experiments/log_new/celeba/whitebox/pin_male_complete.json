@@ -1,6 +1,6 @@
 {
-    "name": "merlin_kl_male_10_reverse",
-    "start time": "2022-11-08 13:24:24.768048",
+    "name": "pin_male_complete",
+    "start time": "2022-12-12 13:58:25.576895",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -12,7 +12,7 @@
                 "scale": 1.0,
                 "augment": false,
                 "classify": "Smiling",
-                "cwise_samples": 1000,
+                "cwise_samples": null,
                 "squeeze": false,
                 "processed_variant": false,
                 "prune": 0
@@ -39,49 +39,42 @@
             "early_stopping": null
         },
         "values": [
-            1.0,
-            0.9,
-            0.8,
             0.7,
-            0.6,
-            0.4,
-            0.3,
-            0.2
+            0.8,
+            0.9,
+            1.0
         ],
-        "black_box": {
-            "attack_type": [
-                "KL"
-            ],
-            "ratios": [
-                1.0
-            ],
-            "batch_size": 128,
-            "num_adv_models": 50,
-            "granularity": 0.005,
-            "preload": true,
-            "multi": null,
-            "multi2": null,
-            "multi_class": false,
-            "save": false,
-            "tune_final_threshold": false,
-            "Start_epoch": 1,
-            "End_epoch": 20,
-            "relative_threshold": false,
-            "loss_variant": false,
-            "random_order": false,
-            "log_odds_order": false,
-            "kl_frac": 0.8,
-            "kl_voting": false,
-            "generative_attack": null,
-            "order_name": null,
-            "geo_mean": false,
+        "black_box": null,
+        "white_box": {
+            "attack": "permutation_invariant",
+            "epochs": 100,
+            "batch_size": 150,
+            "learning_rate": 0.001,
+            "weight_decay": 0.01,
+            "train_sample": 800,
+            "val_sample": 0,
+            "save": true,
+            "load": null,
             "regression_config": null,
-            "merlin_mean": 0.0,
-            "merlin_std": 0.5,
-            "merlin_neighbors": 10
+            "eval_every": 10,
+            "binary": true,
+            "gpu": true,
+            "shuffle": true,
+            "multi_class": false,
+            "custom_layers_fc": null,
+            "start_n_fc": 0,
+            "first_n_fc": null,
+            "custom_layers_conv": null,
+            "start_n_conv": 0,
+            "first_n_conv": null,
+            "permutation_config": {
+                "focus": "all",
+                "scale_invariance": false
+            },
+            "affinity_config": null,
+            "comparison_config": null
         },
-        "white_box": null,
-        "tries": 5,
+        "tries": 3,
         "num_victim_models": 250,
         "on_cpu": true,
         "adv_misc_config": null,
@@ -94,51 +87,56 @@
         "victim_target_epoch": null
     },
     "result": {
-        "KL": {
-            "1.0": {
+        "permutation_invariant": {
+            "0.7": {
                 "adv_acc": [
-                    null,
-                    null,
                     null,
                     null,
                     null
                 ],
                 "victim_acc": [
-                    72.0,
-                    70.6,
-                    73.8,
-                    68.2,
-                    76.4
+                    67.0,
+                    62.8,
+                    54.2
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    55.6,
+                    69.6,
+                    57.6
                 ]
             },
             "0.9": {
                 "adv_acc": [
                     null,
                     null,
-                    null,
-                    null,
                     null
                 ],
                 "victim_acc": [
-                    78.2,
-                    70.39999999999999,
-                    79.4,
-                    69.8,
-                    64.60000000000001
+                    67.4,
+                    89.4,
+                    60.8
                 ]
             },
-            "0.8": {
+            "1.0": {
                 "adv_acc": [
+                    null,
                     null,
                     null
                 ],
                 "victim_acc": [
-                    72.6,
-                    63.800000000000004,
-                    61.0
+                    73.0,
+                    75.4,
+                    78.8
                 ]
             }
         }
     },
-    "save time": "2022-11-10 23:44:25.912427"
+    "save time": "2022-12-12 16:22:27.469512"
 }

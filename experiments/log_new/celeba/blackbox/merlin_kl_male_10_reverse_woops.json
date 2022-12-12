@@ -1,6 +1,6 @@
 {
-    "name": "merlin_kl_male_10_reverse",
-    "start time": "2022-11-08 13:24:24.768048",
+    "name": "merlin_kl_male_10_reverse_woops",
+    "start time": "2022-11-11 09:20:15.356485",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -39,14 +39,9 @@
             "early_stopping": null
         },
         "values": [
-            1.0,
-            0.9,
             0.8,
             0.7,
-            0.6,
-            0.4,
-            0.3,
-            0.2
+            0.6
         ],
         "black_box": {
             "attack_type": [
@@ -95,50 +90,15 @@
     },
     "result": {
         "KL": {
-            "1.0": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    72.0,
-                    70.6,
-                    73.8,
-                    68.2,
-                    76.4
-                ]
-            },
-            "0.9": {
-                "adv_acc": [
-                    null,
-                    null,
-                    null,
-                    null,
-                    null
-                ],
-                "victim_acc": [
-                    78.2,
-                    70.39999999999999,
-                    79.4,
-                    69.8,
-                    64.60000000000001
-                ]
-            },
             "0.8": {
                 "adv_acc": [
-                    null,
                     null
                 ],
                 "victim_acc": [
-                    72.6,
-                    63.800000000000004,
                     61.0
                 ]
             }
         }
     },
-    "save time": "2022-11-10 23:44:25.912427"
+    "save time": "2022-11-11 14:30:52.375090"
 }

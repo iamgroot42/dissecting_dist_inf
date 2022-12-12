@@ -322,6 +322,7 @@ if __name__ == "__main__":
     print("Final n_eff: ", np.mean(neff))
     print("Num predicted as (not 0.5):", preds)
     print("Accuracies:", accs)
+    print("Mean accuracy", np.mean(accs))
 
     # Compute nleaked values
     n_leaked_regression = []

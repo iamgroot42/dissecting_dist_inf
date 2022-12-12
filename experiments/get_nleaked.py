@@ -86,3 +86,8 @@ if __name__ == "__main__":
         print("%.1f" % df["n_leaked"].mean())
     else:
         print("%.1f" % df["n_leaked"].median())
+    
+    print("Mean accuracy/loss: %.1f +/- %.1f" %
+          (df["acc_or_loss"].mean(), df["acc_or_loss"].std()))
+    print("Mean nleaked: %.1f +/- %.1f" %
+          (df["n_leaked"].mean(), df["n_leaked"].std()))

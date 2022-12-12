@@ -5,7 +5,7 @@
             "prop": "sex",
             "split": "adv",
             "squeeze": true,
-            "value": 0.9
+            "value": 0.5
         },
         "offset": 2000,
         "epochs": 0,

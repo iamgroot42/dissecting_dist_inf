@@ -3,9 +3,9 @@
         "name": "boneage",
         "prop": "age",
         "classify": "gender",
-        "split": "victim",
+        "split": "adv",
         "squeeze": true,
-        "value": 0.8
+        "value": 0.3
     },
     "misc_config": {
         "shuffle_defense_config": {

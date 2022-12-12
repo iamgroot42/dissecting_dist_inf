@@ -6,7 +6,7 @@
             "classify": "Smiling",
             "split": "adv",
             "value": 0.5,
-            "cwise_samples": 1e6,
+            "cwise_samples": 1e3,
             "processed_variant": false
         },
         "epochs": 0,
@@ -30,15 +30,17 @@
     "black_box": {
         "granularity": 0.005,
         "num_adv_models": 50,
-        "batch_size": 512,
+        "batch_size": 1280,
         "attack_type": [
-            "label_KL"
+            "KL"
         ],
         "ratios": [
             1.0
         ],
         "preload": true,
-        "kl_frac": 0.8
+        "kl_frac": 0.8,
+        "merlin_std": 0.5,
+        "merlin_neighbors": 10
     },
     "num_victim_models": 250
 }
