@@ -521,10 +521,15 @@ class CustomDatasetWrapper:
                         folder_path, mpath), on_cpu=on_cpu,
                         model_arch=model_arch)
 
+                    # Has before/after information
+                    model_part_use = model
+                    if type(model) == tuple:
+                        model_part_use = model[0]
+
                     # Extract model features
                     # Get model params, shift to GPU
                     dims, feature_vector = get_weight_layers(
-                        model, attack_config)
+                        model_part_use, attack_config)
                     feature_vectors.append(feature_vector)
                     i += 1
 

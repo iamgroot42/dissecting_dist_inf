@@ -157,14 +157,64 @@
             "0.6": {
                 "adv_acc": [
                     null,
+                    null,
                     null
                 ],
                 "victim_acc": [
                     71.8,
-                    72.8
+                    72.8,
+                    74.0
+                ]
+            },
+            "0.7": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    87.6,
+                    79.8,
+                    81.6
+                ]
+            },
+            "0.8": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    94.4,
+                    95.6,
+                    94.6
+                ]
+            },
+            "0.9": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    96.6,
+                    98.8,
+                    97.4
+                ]
+            },
+            "1.0": {
+                "adv_acc": [
+                    null,
+                    null,
+                    null
+                ],
+                "victim_acc": [
+                    97.4,
+                    97.2,
+                    99.8
                 ]
             }
         }
     },
-    "save time": "2022-12-12 18:25:04.534403"
+    "save time": "2022-12-12 21:48:01.736902"
 }

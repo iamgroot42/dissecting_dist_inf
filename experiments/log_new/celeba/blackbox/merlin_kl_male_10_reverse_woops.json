@@ -1,6 +1,6 @@
 {
     "name": "merlin_kl_male_10_reverse_woops",
-    "start time": "2022-11-11 09:20:15.356485",
+    "start time": "2022-11-13 16:23:37.769645",
     "attack_config": {
         "train_config": {
             "data_config": {
@@ -39,9 +39,7 @@
             "early_stopping": null
         },
         "values": [
-            0.8,
-            0.7,
-            0.6
+            0.8
         ],
         "black_box": {
             "attack_type": [
@@ -76,7 +74,7 @@
             "merlin_neighbors": 10
         },
         "white_box": null,
-        "tries": 5,
+        "tries": 2,
         "num_victim_models": 250,
         "on_cpu": true,
         "adv_misc_config": null,
@@ -92,13 +90,15 @@
         "KL": {
             "0.8": {
                 "adv_acc": [
+                    null,
                     null
                 ],
                 "victim_acc": [
-                    61.0
+                    75.2,
+                    65.8
                 ]
             }
         }
     },
-    "save time": "2022-11-11 14:30:52.375090"
+    "save time": "2022-11-14 08:41:00.098060"
 }
