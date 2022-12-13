@@ -36,21 +36,23 @@ if __name__ == "__main__":
         # Open log file
         logger = json.load(open(path, 'r'))
 
-        alpha_0 = float(logger['attack_config']['train_config']['data_config']['value'])
+        alpha_0 = float(logger['attack_config']
+                        ['train_config']['data_config']['value'])
         if logger['attack_config']['white_box'] is not None and logger['attack_config']['white_box']['regression_config'] is not None:
             is_regression = True
-        
+
         if logger['attack_config']['train_config']['data_config']['name'] in ['arxiv']:
             is_graph = True
 
         for attack_res in logger['result']:
             if args.wanted is not None and attack_res not in args.wanted:
                 print(f"Not plotting {attack_res}")
-                continue         
+                continue
 
             # Process and collect results
-            df = process_logfile_for_neffs(df, logger, attack_res, args.ratios, is_regression=is_regression)
-    
+            df = process_logfile_for_neffs(
+                df, logger, attack_res, args.ratios, is_regression=is_regression)
+
     # Convert data to dataframe
     df = pd.DataFrame(df)
 
@@ -62,7 +64,8 @@ if __name__ == "__main__":
         # Take median per trial
         df = df.groupby(['prop_val']).min().reset_index()
         # df = df.groupby(['prop_val']).median().reset_index()
-        df['n_leaked'] = df.apply(lambda row: Regression(row['prop_val']).get_n_effective(row['acc_or_loss']), axis=1)
+        df['n_leaked'] = df.apply(lambda row: Regression(
+            row['prop_val']).get_n_effective(row['acc_or_loss']), axis=1)
         print(df)
         exit(0)
     else:
@@ -76,10 +79,12 @@ if __name__ == "__main__":
 
         # If graph-based, use appropriate formula
         if is_graph:
-            df['n_leaked'] = df.apply(lambda row: GraphBinary(alpha_0, row['prop_val']).get_n_effective(row['acc_or_loss'] / 100.0,), axis=1)
+            df['n_leaked'] = df.apply(lambda row: GraphBinary(
+                alpha_0, row['prop_val']).get_n_effective(row['acc_or_loss'] / 100.0,), axis=1)
         else:
-            df['n_leaked'] = df.apply(lambda row: BinaryRatio(alpha_0, row['prop_val']).get_n_effective(row['acc_or_loss'] / 100.0,), axis=1)
-    
+            df['n_leaked'] = df.apply(lambda row: BinaryRatio(
+                alpha_0, row['prop_val']).get_n_effective(row['acc_or_loss'] / 100.0,), axis=1)
+
     print(df)
 
     if args.type == "mean":

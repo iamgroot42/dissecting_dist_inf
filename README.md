@@ -4,7 +4,7 @@ Code for our paper 'Dissecting Distribution Inference', appearing in SaTML 2023.
 
 Folder structure:
 
-- `rebase` : Main package that includes functionality for training models, launching white-box and black-box attacks, and logging & generating plots
+- `rebase` : Main package that includes functionality for training models, launching white-box and black-box attacks, and logging & generating plots.
 - `experiments` : Contains scripts to use the package for experiments.
 
 

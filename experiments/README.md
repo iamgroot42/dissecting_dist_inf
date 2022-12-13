@@ -1,6 +1,7 @@
 # Experiments
 
 Code for utilizing the `distribution_inference` package to run experiments.
+Example config files are provided in each of the folders to get started.
 Folder structure:
 
 - `configs`: Contains sample configuration files for various datasets for attacks, training models, etc.
@@ -17,15 +18,15 @@ Folder structure:
 
 ## Launching Permutation-Invariant Network meta-classifier attacks
 
-### For binary classification
+`python pin.py --load_config your_config_file.json --en name_for_your_experiment`
 
 `python whitebox_pin.py --load_config <your_config_file.json> --en <name_for_your_experiment>`
 
-### For direct regression
+`python pin_eval.py --load_config your_config_file.json --en name_for_your_experiment`
 
 `python whitebox_attacks_regression.py --load_config <your_config_file.json> --en <name_for_your_experiment>`
 
-### For using regression variant (saved) to perform binary classification
+`python aga.py --load_config your_config_file.json --en name_for_your_experiment`
 
 `python regression_for_classification.py --load_config <your_config_file.json> --path path_to_saved_meta_classifier`
 

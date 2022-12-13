@@ -51,6 +51,7 @@ if __name__ == "__main__":
     # Print out arguments
     flash_utils(train_config)
 
+
     # Get dataset wrapper
     ds_wrapper_class = get_dataset_wrapper(data_config.name)
 
@@ -64,7 +65,7 @@ if __name__ == "__main__":
                         str(config.offset)])
     # Define logger
     logger = TrainingResult(exp_name, train_config)
-   
+
     # If ShuffleDefense, get non-shuffled train loader, process, then get actual ones
     shuffle_defense = None
     if train_config.misc_config is not None:
@@ -81,9 +82,9 @@ if __name__ == "__main__":
 
     # Create new DS object
     ds = ds_wrapper_class(data_config,
-                         epoch=train_config.save_every_epoch,
-                         shuffle_defense=shuffle_defense,
-                         label_noise=train_config.label_noise)
+                          epoch=train_config.save_every_epoch,
+                          shuffle_defense=shuffle_defense,
+                          label_noise=train_config.label_noise)
 
     # train_ds, val_ds = ds.load_data()
     # y = []
