@@ -35,15 +35,6 @@ def log(x):
     print(warning_string(x))
 
 
-def check_if_inside_cluster():
-    """
-        Check if current code is being run inside a cluster.
-    """
-    if os.environ.get('ISRIVANNA') == "1":
-        return True
-    return False
-
-
 def check_user():
     return os.environ.get('USER')
 
@@ -73,15 +64,7 @@ def get_save_path():
     """
         Path where results/trained meta-models are stored
     """
-    # return "./log"
-    return "./log_new"
-
-
-def get_synthetic_configs_path():
-    """
-        Path where synthetic config files are stored
-    """
-    return "./configs/synthetic/data_configs"
+    return "./log"
 
 
 def get_arxiv_node_params_mapping():

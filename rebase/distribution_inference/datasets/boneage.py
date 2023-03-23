@@ -302,18 +302,6 @@ class BoneWrapper(base.CustomDatasetWrapper):
                          skip_data=skip_data,
                          label_noise=label_noise,
                          shuffle_defense=shuffle_defense)
-        # self.sample_sizes = {
-        #     "gender": {
-        #         "adv": (700, 200),
-        #         "victim": (1400, 400)
-        #     },
-        #     "age": {
-        #         "adv": (700, 200),
-        #         "victim": (1400, 400)
-        #     }
-        # }
-        # Above was based on class-biased re-sampling
-        # Below is not
         self.sample_sizes = {
             "gender": {
                 "adv": (1400, 300),

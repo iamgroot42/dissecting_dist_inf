@@ -8,6 +8,28 @@ Folder structure:
 - `plots`: Folder where generated plots are saved
 - `log`: Folder where experimental result (JSON files) are saved
 
+# Setting things up
+
+## Enviornment variables
+
+Please set the environment variable `DDI_DATA_DIRECTORY` to point to a directory where you want to store the datasets. This is used by the `datasets` package to store the datasets, and `DDI_MODELS_DIRECTORY` to point to a directory where models will be trained and saved (and then later loaded for attacks, evaluations).
+
+## Processed Datasets
+
+You can download and extract all the processed datasets (with victim/adversary splits) using [this link](https://archive.org/details/ddi_census_new). You can also selectively download individual datasets (by navigating under `zip files` and downloading the datasets you need).
+
+Make sure your extract all these datasets inside the same dataset directory/folder (`DDI_DATA_DIRECTORY`). For instance, when using celeba and boneage, your structure should look like:
+
+```
+DDI_DATA_DIRECTORY
+├── celeba
+│   ...
+├── rsnabone
+│   ...
+```
+
+After extracting the datasets, please set `DDI_DATA_DIRECTORY` to point to the directory where you unzip the file.
+
 ## Training models
 
 `python train_models.py --load_config <your_config_file.json>`

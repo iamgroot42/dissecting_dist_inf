@@ -22,8 +22,6 @@ if __name__ == "__main__":
     parser = ArgumentParser(add_help=False)
     parser.add_argument(
         "--load_config", help="Specify config file", type=Path)
-    parser.add_argument('--gpu',
-                        default=None, help="device number")
     args, remaining_argv = parser.parse_known_args()
     # Attempt to extract as much information from config file as you can
     config = TrainConfig.load(args.load_config, drop_extra_fields=False)
